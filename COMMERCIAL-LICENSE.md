@@ -13,7 +13,7 @@ the project can stay maintained and independent.
 
 ## How to get one
 
-Email **info@ngnhacks.ca** with:
+Email **info@joinresearch.ca** with:
 
 - Your company name and website
 - A one-line description of how you plan to use OpenLeads
