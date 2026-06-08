@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 If you find a security issue, please **do not open a public issue**. Email
-**info@ngnhacks.ca** with details and steps to reproduce. We aim to respond within
+**info@joinresearch.ca** with details and steps to reproduce. We aim to respond within
 72 hours and will credit you (if you wish) once a fix ships.
 
 ## Scope & sensible expectations
