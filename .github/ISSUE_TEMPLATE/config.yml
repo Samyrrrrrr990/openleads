@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & ideas
+    url: https://github.com/Samyrrrrrr990/openleads/discussions
+    about: Ask questions and share what you built with OpenLeads.
+  - name: 🔒 Security issue
+    url: https://github.com/Samyrrrrrr990/openleads/blob/main/SECURITY.md
+    about: Please report vulnerabilities privately, not as public issues.
+  - name: 💼 Commercial license
+    url: https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md
+    about: Want to use OpenLeads commercially? Here's how.

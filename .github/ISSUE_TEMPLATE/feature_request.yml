@@ -1,0 +1,39 @@
+name: 💡 Feature request
+description: Suggest an idea or a new free data source
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      placeholder: I'm always frustrated when ...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - New free company source
+        - New free people source
+        - Email engine / verification
+        - Output formats
+        - Cold-email companion
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles
+      options:
+        - label: This keeps the core engine dependency-free (stdlib only), or belongs in an optional extra.
+        - label: This uses free, keyless, Terms-of-Service-friendly sources.

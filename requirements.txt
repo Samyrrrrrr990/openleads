@@ -1,0 +1,7 @@
+# OpenLeads core has ZERO hard dependencies for the lead engine itself —
+# it uses only the Python standard library (urllib, smtplib, csv, json).
+#
+# These are only needed for the optional cold-email campaign companion
+# (automation.py), which talks to OpenRouter for copywriting.
+requests>=2.31.0
+python-dotenv>=1.0.0

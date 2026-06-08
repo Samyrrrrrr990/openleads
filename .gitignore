@@ -1,0 +1,39 @@
+# ─── Secrets ─── NEVER commit these
+.env
+.env.*
+!.env.example
+
+# ─── Real lead data / PII ─── keep scraped people's data out of git
+leads.csv
+leads_*.csv
+*_campaign_*.csv
+ngn_hacks_*.csv
+output/
+*.local.csv
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ─── Local tool / editor config ───
+.claude/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.log
+/tmp/

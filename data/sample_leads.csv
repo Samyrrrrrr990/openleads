@@ -1,0 +1,6 @@
+First Name,Last Name,Email,Title,Organization Name,Industry,# Employees,LinkedIn Url,City,Country,Website,Email Confidence
+Ada,Lovelace,ada@analyticalengine.io,Founder/CEO,Analytical Engine,B2B,4,,London,UK,https://analyticalengine.io,verified
+Alan,Turing,alan@enigma.dev,Founder,Enigma Labs,Artificial Intelligence,8,,Manchester,UK,https://enigma.dev,catch_all_guess
+Grace,Hopper,grace.hopper@cobolworks.com,Founder/CTO,COBOLworks,Developer Tools,12,,New York,USA,https://cobolworks.com,verified
+Katherine,Johnson,katherine@orbital.space,Founder,Orbital,Aerospace,6,,Hampton,USA,https://orbital.space,pattern_guess
+Hedy,Lamarr,hedy@spreadspectrum.io,Founder/CEO,Spread Spectrum,Hardware,3,,Vienna,Austria,https://spreadspectrum.io,verified

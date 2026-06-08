@@ -1,0 +1,56 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to file a bug! Please don't paste real scraped emails.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I run `python3 lead_engine.py ...`, I get ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command and flags you used.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 14 / Ubuntu 22.04 / Windows 11
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.11"
+    validations:
+      required: true
+  - type: checkboxes
+    id: port25
+    attributes:
+      label: Network
+      options:
+        - label: I understand SMTP verification needs outbound port 25 and it may be blocked on my network.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Paste console output. Redact any real email addresses.
+      render: shell
