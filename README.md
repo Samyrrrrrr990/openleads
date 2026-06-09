@@ -76,6 +76,16 @@ npx openleads find "50 fintech founders verified only"
 # or: npm i -g openleads
 ```
 
+**Try it in 10 seconds:**
+
+```bash
+pip install "openleads[chat]"
+openleads sources          # see every vertical you can search
+openleads                  # launch the chat and just type what you want
+```
+
+Verify the install: `openleads --version` should print `openleads 2.0.0`.
+
 ## ⚡ Quickstart
 
 ```bash
