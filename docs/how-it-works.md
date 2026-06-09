@@ -18,18 +18,22 @@ f.last@       a.lovelace@acme.io
 last@         lovelace@acme.io
 ```
 
-## 2. Does the domain even accept mail? (MX lookup)
+## 2. Does the domain even accept mail? (MX lookup, cross-checked)
 
-Before bothering a mail server, OpenLeads asks Google's **DNS-over-HTTPS** resolver for
-the domain's MX (mail exchanger) records:
+Before bothering a mail server, OpenLeads asks for the domain's MX (mail exchanger)
+records over **DNS-over-HTTPS** — and it asks **two independent resolvers**
+(Google *and* Cloudflare):
 
 ```
 GET https://dns.google/resolve?name=acme.io&type=MX
+GET https://cloudflare-dns.com/dns-query?name=acme.io&type=MX
 -> aspmx.l.example.com, alt1.aspmx.l.example.com, ...
 ```
 
-No MX records → the domain can't receive email → the lead is dropped. This is a free,
-instant filter that removes dead domains.
+Querying two resolvers does two things: it **survives one provider being down**, and it
+lets OpenLeads **reward agreement** — when both resolvers return the same mail exchangers,
+that's a stronger signal than one. No MX records at all → the domain can't receive email
+→ the lead is dropped. This is a free, instant filter that removes dead domains.
 
 ## 3. Verifying without sending (SMTP RCPT)
 
@@ -65,13 +69,48 @@ S: 250 OK                         <-- accepts garbage = catch-all
 If the random probe is accepted, the domain is flagged catch-all and the best-pattern
 guess is labeled `catch_all_guess` instead of `verified`. Honesty over vanity numbers.
 
-## Confidence levels
+## Confidence levels + a 0–100 score
+
+Every result keeps a human label **and** an explainable numeric score, so you can sort and
+threshold programmatically.
 
 | Label | Meaning |
 | --- | --- |
 | `verified` | A specific mailbox returned `250` and the domain is **not** catch-all. High confidence. |
 | `catch_all_guess` | Domain accepts everything; we return the most likely pattern but can't prove it. |
 | `pattern_guess` | Domain has MX but SMTP verification wasn't possible (e.g. port 25 blocked, greylisting). Best-effort. |
+| `none` | No MX (unusable domain), or a domain-less public record (e.g. an NPI doctor with no email). |
+
+The **score (0–100)** is built from independent signals, each adding or subtracting:
+
+| Signal | Effect |
+| --- | --- |
+| MX exists | required (else score 0 / `none`) |
+| Both DoH resolvers returned MX | small boost |
+| Resolvers **agree** on the mail exchangers | small boost |
+| SMTP `250` on a real candidate (not catch-all) | large boost → `verified` |
+| Catch-all detected | capped (moderate) |
+| Port 25 unreachable | MX-only score |
+| Common pattern (`first@` / `first.last@`) | small boost |
+| Role account (`info@`, `sales@`) | penalty |
+| Disposable domain (`mailinator.com`, …) | disqualified (score 0) |
+
+The exact signals that fired are attached to each lead (visible in JSON/NDJSON output as
+`signals`), so a score is never a black box.
+
+## Caching (be fast, be polite)
+
+OpenLeads keeps a small **SQLite cache** at `~/.openleads/cache.db`:
+
+| What | TTL |
+| --- | --- |
+| MX lookups (per domain) | 7 days |
+| SMTP verification (per name+domain) | 14 days |
+| Source datasets (e.g. the YC dump) | 1 day |
+
+A cache hit short-circuits the network entirely — re-runs are near-instant and mail servers
+aren't probed twice for the same thing. Manage it with `openleads cache info` /
+`openleads cache clear`, or bypass it with `--no-cache`.
 
 ## Caveats & etiquette
 

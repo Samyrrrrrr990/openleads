@@ -1,0 +1,34 @@
+{
+  "name": "openleads",
+  "version": "2.0.0",
+  "description": "Free, open-source Apollo alternative — find founders, developers, doctors & researchers and verify their emails. npx wrapper around the Python CLI.",
+  "bin": {
+    "openleads": "bin/openleads.js"
+  },
+  "files": [
+    "bin/openleads.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "preferGlobal": true,
+  "keywords": [
+    "leads",
+    "apollo-alternative",
+    "email-finder",
+    "prospecting",
+    "cli",
+    "osint",
+    "sales"
+  ],
+  "homepage": "https://github.com/Samyrrrrrr990/openleads",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Samyrrrrrr990/openleads.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Samyrrrrrr990/openleads/issues"
+  },
+  "license": "SEE LICENSE IN LICENSE"
+}

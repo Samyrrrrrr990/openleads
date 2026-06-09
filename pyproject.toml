@@ -4,40 +4,54 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openleads"
-version = "0.1.0"
-description = "A free, open-source Apollo alternative: find tech founders and verify their emails using only free, public data sources."
+version = "2.0.0"
+description = "Free, open-source Apollo alternative: a universal entity→verified-email engine with pluggable free data sources (founders, developers, doctors, researchers) and an interactive chat CLI."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "PolyForm-Noncommercial-1.0.0" }
 authors = [{ name = "Samyar Shafiee" }]
 keywords = [
-  "lead-generation", "email-finder", "apollo-alternative", "sales",
+  "lead-generation", "email-finder", "apollo-alternative", "sales", "cli",
   "prospecting", "cold-email", "smtp-verification", "yc", "founders", "osint",
+  "doctors", "researchers", "developers", "data-enrichment",
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
   "Topic :: Office/Business",
+  "Topic :: Communications :: Email",
   "Operating System :: OS Independent",
 ]
-dependencies = []  # core engine is stdlib-only
+dependencies = []  # core engine + library are stdlib-only
 
 [project.optional-dependencies]
+chat = ["rich>=13.0", "prompt_toolkit>=3.0"]
 campaign = ["requests>=2.31.0", "python-dotenv>=1.0.0"]
-dev = ["pytest>=7.0", "ruff>=0.4.0"]
+dev = ["pytest>=7.0", "ruff>=0.4.0", "build>=1.0", "twine>=5.0"]
+all = ["rich>=13.0", "prompt_toolkit>=3.0", "requests>=2.31.0", "python-dotenv>=1.0.0"]
+
+[project.scripts]
+openleads = "openleads.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/Samyrrrrrr990/openleads"
 Repository = "https://github.com/Samyrrrrrr990/openleads"
 Issues = "https://github.com/Samyrrrrrr990/openleads/issues"
+Changelog = "https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md"
 
-[project.scripts]
-openleads = "lead_engine:main"
+[tool.setuptools.packages.find]
+include = ["openleads*"]
 
 [tool.setuptools]
-py-modules = ["lead_engine"]
+# Ship the v1 back-compat shims as importable top-level modules too.
+py-modules = ["lead_engine", "automation"]
 
 [tool.ruff]
 line-length = 110
 target-version = "py38"
+
+[tool.ruff.lint]
+extend-select = ["I"]  # import sorting
+ignore = ["E402"]

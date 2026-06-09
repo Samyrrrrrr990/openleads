@@ -1,81 +1,83 @@
 # Architecture
 
-OpenLeads is deliberately small and readable. The whole engine is one file,
-`lead_engine.py`, organized into four clearly separated stages.
+OpenLeads v2.0 is a small, readable Python package built around one idea:
+**a universal email engine fed by pluggable sources.** The core library is
+100% standard library (zero runtime dependencies); the pretty chat TUI and the
+cold-email companion live behind optional extras.
 
 ```
-lead_engine.py
-├── 1. COMPANY DISCOVERY
-│   ├── fetch_companies()         # pull yc-oss all.json
-│   └── filter_companies()        # by status, size, website, industry
+openleads/
+├── cli.py            argparse front-end: find · sources · verify · cache · chat · campaign
+├── chat.py           interactive REPL (rich/prompt_toolkit if installed, else stdlib)
+├── intent.py         natural-language → Query (rule-based; optional free-LLM)
+├── engine.py         the pipeline: Query → Source.search() → resolve → score → Lead
+├── models.py         Entity · EmailResult · Lead · Query · SourceInfo (+ CSV schema)
+├── config.py         ~/.openleads paths, optional env (OPENROUTER_API_KEY, GITHUB_TOKEN)
+├── writers.py        csv · json · ndjson output
+├── ui.py             plain-text rendering (stdlib fallback for chat)
+├── _http.py          tiny urllib helpers (dataset-cached)
 │
-├── 2. PEOPLE DISCOVERY
-│   ├── fetch_founders(slug)      # scrape YC page Inertia JSON
-│   └── _deep_find()              # walk nested JSON for 'founders'
+├── emails/           THE EMAIL ENGINE (vertical-agnostic)
+│   ├── mx.py            multi-resolver DoH MX lookup + agreement
+│   ├── permute.py      name → candidate local-parts; role/disposable detection
+│   ├── smtp_verify.py  one SMTP RCPT conversation, catch-all probe (no DATA)
+│   └── resolve.py      orchestration + explainable 0–100 score
 │
-├── 3. EMAIL FINDING ENGINE
-│   ├── domain_of(website)        # url -> bare domain
-│   ├── mx_hosts(domain)          # DNS-over-HTTPS MX lookup
-│   ├── name_parts(full_name)     # -> (first, last)
-│   ├── candidate_emails()        # permutation patterns
-│   ├── smtp_probe()              # one SMTP convo, RCPT checks, catch-all probe
-│   └── find_email()              # orchestrates -> {email, confidence}
+├── sources/          PLUGGABLE DATA SOURCES
+│   ├── base.py         the Source contract
+│   ├── __init__.py     registry: discovers built-ins + ~/.openleads/sources/*.py
+│   ├── yc.py           startup founders (yc-oss)
+│   ├── github.py       developers & orgs (keyless GitHub API)
+│   ├── npi.py          U.S. doctors (NPI Registry)
+│   ├── openalex.py     researchers (OpenAlex)
+│   └── producthunt.py  trending products (public RSS)
 │
-└── 4. ASSEMBLY + OUTPUT
-    ├── split_location()          # "City, Region, Country" -> (city, country)
-    ├── pick_exec(founders)       # choose the most senior founder
-    ├── lead_row()                # map to CSV schema
-    ├── build_leads()             # the main loop
-    └── write_csv()               # emit leads.csv
+├── cache/store.py    sqlite3 cache: mx (7d) · verify (14d) · dataset (1d)
+└── campaign.py       optional cold-email companion ([campaign] extra)
+
+lead_engine.py        v1 back-compat shim → openleads
+automation.py         v1 back-compat shim → openleads.campaign
+npm/                  npx/npm wrapper around the Python CLI
 ```
 
 ## Data flow
 
 ```mermaid
 sequenceDiagram
-    participant CLI
-    participant YC as yc-oss API
-    participant Page as YC company page
-    participant DNS as Google DoH
-    participant MX as Mail server
+    participant U as User (chat / CLI)
+    participant I as intent.py
+    participant E as engine.py
+    participant S as Source plugin
+    participant M as emails/ (MX+SMTP)
+    participant K as cache (sqlite)
 
-    CLI->>YC: GET all.json
-    YC-->>CLI: ~6000 companies
-    loop per company (until count reached)
-        CLI->>Page: GET /companies/{slug}
-        Page-->>CLI: founders JSON
-        CLI->>DNS: resolve MX(domain)
-        DNS-->>CLI: mail hosts
-        CLI->>MX: HELO / MAIL FROM / RCPT TO (no DATA)
-        MX-->>CLI: 250 / 550 per candidate
-        CLI->>CLI: pick best email + confidence
+    U->>I: "50 fintech founders verified"
+    I-->>E: Query(source=yc, count=50, ...)
+    E->>S: search(query)
+    loop per entity (until count)
+        S-->>E: Entity(name, domain, ...)
+        E->>M: find_email(name, domain)
+        M->>K: MX cached?
+        K-->>M: hit / miss → DoH lookup (Google + Cloudflare)
+        M->>M: SMTP RCPT probe (+ catch-all)
+        M-->>E: EmailResult(email, label, score 0–100)
     end
-    CLI->>CLI: write leads.csv
+    E-->>U: stream leads → CSV / JSON / NDJSON
 ```
 
 ## Design principles
 
-1. **Zero dependencies in the core.** Only the Python standard library. Easy to audit,
-   trivial to run, nothing to `pip install`.
-2. **Each function does one thing.** Pure helpers (`domain_of`, `name_parts`,
-   `candidate_emails`, `split_location`) are unit-tested without network access.
-3. **Honest confidence.** Guesses are labeled as guesses. No inflated "verified" counts.
-4. **Polite by default.** Rate limiting and connection reuse are built in.
-5. **Separation of concerns.** The lead engine never sends email. Sending lives in the
-   optional `automation.py` companion and is opt-in.
+1. **Zero dependencies in the core.** Engine + library are stdlib only — easy to
+   audit, trivial to run. Pretty TUI and sending are opt-in extras.
+2. **One job per unit.** Sources discover; the email engine verifies; writers
+   format; the cache remembers. Each is testable in isolation, mostly without
+   the network.
+3. **Inverted moat.** Coverage scales by adding sources, not by owning a
+   database. The email engine is vertical-agnostic.
+4. **Honest confidence.** Guesses are labeled as guesses and scored 0–100;
+   domain-less records (e.g. NPI) are surfaced without faking emails.
+5. **Polite by default.** Connection reuse, small delays, multi-resolver MX, and
+   caching keep OpenLeads a good network citizen.
 
-## The companion: `automation.py`
-
-A separate, optional tool that consumes `leads.csv`:
-
-```
-get_apollo_leads()           # read leads.csv into dicts
-generate_email_and_subject() # LLM draft + format_body + placeholder guard + retry
-  ├── build_prompt()
-  ├── _clean_dashes()        # Unicode -> ASCII normalization
-  ├── format_body()          # "Hey {name}," + paragraph spacing
-  ├── has_placeholder()      # detect leftover [brackets]
-  └── strip_placeholders()   # last-resort scrub
-send_email()                 # SMTP send + save_to_sent() via IMAP
-run_campaign(dry_run)        # orchestration; --live to actually send
-```
+See [`how-it-works.md`](./how-it-works.md) for the email engine internals and
+[`sources.md`](./sources.md) for adding a vertical.

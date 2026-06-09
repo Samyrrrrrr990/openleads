@@ -40,6 +40,26 @@ This is not legal advice. When in doubt, consult a professional.
   High bounces hurt deliverability for everyone on your domain.
 - Send **relevant, personalized, low-volume** outreach. It performs better anyway.
 
+## Sensitive verticals (read this)
+
+v2.0 can reach beyond startup founders into verticals that carry extra ethical and
+legal weight. The data is public, but **public ≠ fair game for any use**.
+
+- **Healthcare providers (NPI):** The NPI Registry is public U.S. government data and
+  contains *practice* information, not personal/patient data — HIPAA does not apply to it.
+  But cold-emailing clinicians is heavily regulated and easily resented. The `npi` source
+  deliberately returns rich records **without fabricating emails** (NPI rarely exposes one).
+  Use it for legitimate research, directory building, or genuinely relevant B2B outreach —
+  never for medical spam, lead-list resale, or anything touching patients.
+- **Researchers / academics (OpenAlex, ORCID):** Scholarly metadata is open by design for
+  *scholarly* purposes. Respect that intent — relevant collaboration, recruiting, or
+  conference outreach is fine; bulk marketing blasts are not.
+- **Developers (GitHub):** A public profile email is published for project contact, not
+  for cold sales sequences. Be relevant and low-volume.
+
+When a vertical feels sensitive, it is. Default to less volume, more relevance, and an
+easy opt-out — or don't send at all.
+
 ## Data hygiene
 
 - Never commit scraped emails or `leads.csv` to a public repo (the `.gitignore` already
