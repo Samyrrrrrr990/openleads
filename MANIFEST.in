@@ -1,0 +1,14 @@
+# Ship the pre-built local dashboard so end users need no Node/build step.
+recursive-include openleads/web/static *
+
+# Docs, license, changelog in the source distribution.
+include README.md CHANGELOG.md LICENSE COMMERCIAL-LICENSE.md
+include CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md
+recursive-include docs *.md
+
+# Keep build artifacts and local data out of the sdist.
+global-exclude *.pyc __pycache__/*
+prune data
+prune output
+prune dist
+prune site

@@ -4,16 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openleads"
-version = "2.0.0"
-description = "Free, open-source Apollo alternative: a universal entity→verified-email engine with pluggable free data sources (founders, developers, doctors, researchers) and an interactive chat CLI."
+version = "3.0.0"
+description = "Free, open-source Apollo alternative: find anyone, verify deliverably (7-signal engine), write and send cold email — local-first, keyless, $0. Pluggable public-data sources, a chat CLI, and a local web dashboard."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "PolyForm-Noncommercial-1.0.0" }
 authors = [{ name = "Samyar Shafiee" }]
 keywords = [
   "lead-generation", "email-finder", "apollo-alternative", "sales", "cli",
-  "prospecting", "cold-email", "smtp-verification", "yc", "founders", "osint",
-  "doctors", "researchers", "developers", "data-enrichment",
+  "prospecting", "cold-email", "smtp-verification", "deliverability", "yc",
+  "founders", "osint", "doctors", "researchers", "developers", "data-enrichment",
+  "email-deliverability", "cold-outreach", "local-first",
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -29,6 +30,9 @@ dependencies = []  # core engine + library are stdlib-only
 [project.optional-dependencies]
 chat = ["rich>=13.0", "prompt_toolkit>=3.0"]
 campaign = ["requests>=2.31.0", "python-dotenv>=1.0.0"]
+outreach = ["requests>=2.31.0", "python-dotenv>=1.0.0"]
+# The web dashboard server is stdlib-only; this extra just pulls the chat niceties.
+web = ["rich>=13.0", "prompt_toolkit>=3.0"]
 dev = ["pytest>=7.0", "ruff>=0.4.0", "build>=1.0", "twine>=5.0"]
 all = ["rich>=13.0", "prompt_toolkit>=3.0", "requests>=2.31.0", "python-dotenv>=1.0.0"]
 
@@ -47,6 +51,10 @@ include = ["openleads*"]
 [tool.setuptools]
 # Ship the v1 back-compat shims as importable top-level modules too.
 py-modules = ["lead_engine", "automation"]
+
+[tool.setuptools.package-data]
+# Ship the pre-built local dashboard (no Node/build needed by end users).
+"openleads.web" = ["static/*", "static/**/*"]
 
 [tool.ruff]
 line-length = 110

@@ -1,0 +1,108 @@
+name: Release
+
+# Tag a release to publish everywhere:
+#   git tag v3.0.0 && git push origin v3.0.0
+#
+# Publishing is gated on secrets/OIDC being configured:
+#   • PyPI  — Trusted Publishing (recommended, no token) OR a PYPI_API_TOKEN secret.
+#   • npm   — an NPM_TOKEN secret.
+# If a credential is absent, that publish step is skipped (the build + GitHub
+# Release still run), so this never fails a release just because a token is unset.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # create the GitHub Release
+  id-token: write   # PyPI Trusted Publishing (OIDC)
+
+jobs:
+  build:
+    name: Build wheel + sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check dist/*
+      - name: Verify the dashboard shipped in the wheel
+        run: |
+          python - <<'PY'
+          import glob, zipfile, sys
+          whl = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(whl).namelist()
+          need = ["openleads/web/static/index.html", "openleads/web/static/app.js",
+                  "openleads/web/static/styles.css"]
+          missing = [n for n in need if n not in names]
+          print("wheel:", whl)
+          assert not missing, f"missing from wheel: {missing}"
+          print("OK — local dashboard is bundled.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+  github-release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist }
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*
+
+  pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist }
+      # Trusted Publishing if configured on PyPI; otherwise falls back to a token.
+      - name: Publish (Trusted Publishing / OIDC)
+        if: vars.PYPI_TRUSTED_PUBLISHING == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish (API token)
+        if: vars.PYPI_TRUSTED_PUBLISHING != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+        continue-on-error: true
+
+  npm:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+      - name: Publish npm wrapper
+        if: ${{ env.NPM_TOKEN != '' }}
+        working-directory: npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}

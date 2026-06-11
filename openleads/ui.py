@@ -30,14 +30,18 @@ def lead_line(lead: Lead, idx: int, total: int) -> str:
 
 
 def summary_line(leads: list[Lead]) -> str:
-    counts = dict(Counter(ld.confidence for ld in leads))
-    return f"[summary] {len(leads)} leads · confidence: {counts}"
+    tiers = Counter(ld.tier for ld in leads)
+    safe = tiers.get("safe", 0)
+    risky = tiers.get("risky", 0)
+    return (f"[summary] {len(leads)} leads · {safe} safe (deliverable) · "
+            f"{risky} risky (unconfirmed)")
 
 
 def banner() -> str:
+    from openleads import __version__
     return (
         "================================================================\n"
-        "  OpenLeads v2.0 — the free, open-source Apollo alternative\n"
-        "  founders · developers · doctors · researchers · anyone\n"
+        f"  OpenLeads v{__version__} — find anyone, verify deliverably, send\n"
+        "  founders · developers · doctors · researchers · anyone · free\n"
         "================================================================"
     )

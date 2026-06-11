@@ -40,12 +40,16 @@ class EmailResult:
 
     ``confidence`` keeps v1's human labels for back-compat; ``score`` (0-100) is
     additive and ``signals`` records which checks fired so the score is explainable.
+    v3 adds ``tier`` (safe|risky|bad — the send-decision) and ``reasons`` (a human
+    list of why), driven by the multi-signal consensus in ``openleads.emails.score``.
     """
 
     email: str = ""
     confidence: str = "none"  # verified | catch_all_guess | pattern_guess | none
     score: int = 0
     signals: dict = field(default_factory=dict)
+    tier: str = "bad"         # safe | risky | bad
+    reasons: list = field(default_factory=list)
 
 
 # v1 CSV schema, preserved exactly so automation.py / campaign keeps working.
@@ -56,6 +60,8 @@ CSV_FIELDS = [
     "Website", "Email Confidence",
     # v2 additions:
     "Email Score", "Source", "Vertical",
+    # v3 addition: the send-decision tier (safe | risky | bad).
+    "Email Tier",
 ]
 
 
@@ -79,6 +85,12 @@ class Lead:
     source: str = ""
     vertical: str = ""
     signals: dict = field(default_factory=dict)
+    tier: str = "bad"                       # safe | risky | bad (the send-decision)
+    reasons: list = field(default_factory=list)
+
+    @property
+    def domain(self) -> str:
+        return self.email.split("@", 1)[1].lower() if "@" in self.email else ""
 
     def to_csv_row(self) -> dict:
         """Map to the exact CSV header schema (``CSV_FIELDS``)."""
@@ -98,6 +110,7 @@ class Lead:
             "Email Score": self.score,
             "Source": self.source,
             "Vertical": self.vertical,
+            "Email Tier": self.tier,
         }
 
     def to_dict(self) -> dict:
@@ -118,6 +131,8 @@ class Lead:
             "score": self.score,
             "source": self.source,
             "vertical": self.vertical,
+            "tier": self.tier,
+            "reasons": self.reasons,
             "signals": self.signals,
         }
 
@@ -133,7 +148,8 @@ class Query:
     location: str | None = None
     title: str | None = None
     keyword: str | None = None
-    verified_only: bool = False
+    verified_only: bool = False     # keep only 'safe'-tier (deliverable) leads
+    deep: bool = False              # turn on heavier ground-truth harvesting
     fmt: str = "csv"                # csv | json | ndjson
     out: str | None = None
     max_companies: int = 400
@@ -158,3 +174,40 @@ class SourceInfo:
     kind: str          # "company" | "people"
     description: str
     vertical: str = "" # human label: "startup founders", "US doctors", ...
+
+
+@dataclass
+class Draft:
+    """A personalized outreach email produced by ``openleads.outreach.compose``."""
+
+    email: str = ""                 # recipient
+    subject: str = ""
+    body: str = ""                  # plain text (deliverability-first default)
+    first_name: str = ""
+    organization: str = ""
+    lint: dict = field(default_factory=dict)   # spam-lint report (score + warnings)
+    model: str = ""                 # which generator produced it ("template" or model id)
+
+    def to_dict(self) -> dict:
+        return {
+            "email": self.email, "subject": self.subject, "body": self.body,
+            "first_name": self.first_name, "organization": self.organization,
+            "lint": self.lint, "model": self.model,
+        }
+
+
+@dataclass
+class SendResult:
+    """Outcome of attempting to send one email."""
+
+    email: str = ""
+    status: str = "preview"         # sent | preview | skipped | error
+    message_id: str = ""
+    error: str = ""
+    detail: str = ""                # e.g. "suppressed: bounced", "daily cap reached"
+
+    def to_dict(self) -> dict:
+        return {
+            "email": self.email, "status": self.status, "message_id": self.message_id,
+            "error": self.error, "detail": self.detail,
+        }
