@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The local web dashboard · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — The local web dashboard." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link is-active" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> The local web dashboard</div>
+      <h1 id="the-local-web-dashboard">The local web dashboard</h1>
+<pre class="code" data-lang="bash"><code>openleads web                 # → http://127.0.0.1:8787
+openleads web --port 9000     # custom port
+openleads web --no-open       # don&#x27;t auto-open a browser</code></pre>
+<p>A full UI for the four clicks — <strong>find, write, connect, send</strong> — plus Leads, CRM, Settings, and Doctor. It's the same engine the CLI uses, in your browser.</p>
+<hr/>
+<h2 id="local-first-by-construction" class="anchored"><a class="hlink" href="#local-first-by-construction">#</a>Local-first, by construction</h2>
+<ul><li><strong>stdlib only.</strong> The server is a <code>ThreadingHTTPServer</code> from Python's standard</li></ul>
+<p>library (<code>openleads/web/server.py</code>). No Flask, no Node, no build step.</p>
+<ul><li><strong>Bound to localhost.</strong> It listens on <code>127.0.0.1</code> — not reachable from your</li></ul>
+<p>network.</p>
+<ul><li><strong>Pre-built UI.</strong> The single-page app is committed as plain static files in</li></ul>
+<p><code>openleads/web/static/</code> (<code>index.html</code>, <code>styles.css</code>, <code>app.js</code>). End users need   <strong>no toolchain</strong> — it ships in the wheel.</p>
+<ul><li><strong>No external requests from the page.</strong> A strict same-origin Content-Security-Policy</li></ul>
+<p>blocks third-party scripts, styles, and fonts. The UI uses your system fonts; no   CDN, no analytics, nothing phones home. The privacy promise holds end-to-end.</p>
+<h2 id="the-pages" class="anchored"><a class="hlink" href="#the-pages">#</a>The pages</h2>
+<div class="tablewrap"><table><thead><tr><th>Page</th><th>What</th></tr></thead><tbody><tr><td><strong>Find</strong> (1)</td><td>A command bar — type plain English, pick a source, set count, toggle deliverable-only / deep. Results <strong>stream in live</strong> into an engine console and a tiered table.</td></tr><tr><td><strong>Write</strong> (2)</td><td>Generate personalized, spam-linted drafts for your <code>safe</code> leads. Edit subject/body inline — your edits are what gets sent.</td></tr><tr><td><strong>Connect</strong> (3)</td><td>Settings &amp; mailbox setup. Provider presets, app password, sender identity, AI key, sending policy. Secrets are masked and never round-trip to the browser in full.</td></tr><tr><td><strong>Send</strong> (4)</td><td>Warmup status, deliverability grade, dry-run/live toggle, and a <strong>live send feed</strong>.</td></tr><tr><td><strong>Leads</strong></td><td>Everything found this session; filter by tier; "why safe" reasons.</td></tr><tr><td><strong>CRM</strong></td><td>Local SQLite CRM: totals, sent counts, suppression, and a status table.</td></tr><tr><td><strong>Doctor</strong></td><td>The <code>openleads doctor</code> checks, rendered as status dots.</td></tr></tbody></table></div>
+<h2 id="the-json-api" class="anchored"><a class="hlink" href="#the-json-api">#</a>The JSON API</h2>
+<p>The server exposes a small JSON API (<code>openleads/web/api.py</code>) that bridges to the same engine functions the CLI calls. Long-running actions stream <strong>newline-delimited JSON</strong> so the browser can render progress live.</p>
+<div class="tablewrap"><table><thead><tr><th>Endpoint</th><th>Method</th><th>Notes</th></tr></thead><tbody><tr><td><code>/api/state</code></td><td>GET</td><td>bootstrap: version, sources, settings, CRM snapshot</td></tr><tr><td><code>/api/sources</code></td><td>GET</td><td>available sources</td></tr><tr><td><code>/api/find</code></td><td>POST</td><td><strong>stream</strong> — <code>phase</code> / <code>lead</code> / <code>done</code> events</td></tr><tr><td><code>/api/verify</code></td><td>POST</td><td>verify concrete addresses</td></tr><tr><td><code>/api/write</code></td><td>POST</td><td>draft emails for given leads</td></tr><tr><td><code>/api/send</code></td><td>POST</td><td><strong>stream</strong> — dry-run or live; <code>send</code> / <code>done</code> events</td></tr><tr><td><code>/api/run</code></td><td>POST</td><td><strong>stream</strong> — the full find→write→send pipeline</td></tr><tr><td><code>/api/crm</code></td><td>GET/POST</td><td>CRM overview + rows</td></tr><tr><td><code>/api/settings</code></td><td>GET/POST</td><td>read / update settings (secret-aware)</td></tr><tr><td><code>/api/doctor</code></td><td>GET</td><td>structured health report</td></tr></tbody></table></div>
+<p>Stream events look like:</p>
+<pre class="code" data-lang="json"><code>{&quot;type&quot;:&quot;phase&quot;,&quot;message&quot;:&quot;searching yc…&quot;}
+{&quot;type&quot;:&quot;lead&quot;,&quot;lead&quot;:{&quot;email&quot;:&quot;ada@acme.ai&quot;,&quot;tier&quot;:&quot;safe&quot;,&quot;score&quot;:96, ...}}
+{&quot;type&quot;:&quot;done&quot;,&quot;count&quot;:41,&quot;safe&quot;:41,&quot;risky&quot;:9,&quot;leads&quot;:[...]}</code></pre>
+<h2 id="design-notes" class="anchored"><a class="hlink" href="#design-notes">#</a>Design notes</h2>
+<p>The interface is intentionally <strong>black and white with hints of red</strong> — a precision instrument, not a toy. It respects <code>prefers-reduced-motion</code>, uses your OS fonts for instant, offline, private rendering, and supports hash deep-links (<code>/#crm</code>, <code>/#settings</code>, …) so you can bookmark a view.</p>
+<h2 id="security" class="anchored"><a class="hlink" href="#security">#</a>Security</h2>
+<ul><li>localhost-only bind; same-origin CSP; <code>X-Content-Type-Options: nosniff</code>.</li><li>No inline scripts; static assets are path-traversal-guarded.</li><li>Secrets are stored <code>chmod 600</code> on disk and shown masked in the UI.</li><li>The server never leaks a traceback to the client — every endpoint returns</li></ul>
+<p>structured JSON errors.</p>
+<p>If you want to expose it beyond localhost (e.g. a home server), put it behind your own authenticated reverse proxy — OpenLeads deliberately ships no auth because it's built to run on the machine you're sitting at.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="sending.html"><span>← Previous</span><b>Sending</b></a>
+<a class="pn pn--next" href="sources.html"><span>Next →</span><b>Add a source</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#local-first-by-construction">Local-first, by construction</a><a class="toc__l2" href="#the-pages">The pages</a><a class="toc__l2" href="#the-json-api">The JSON API</a><a class="toc__l2" href="#design-notes">Design notes</a><a class="toc__l2" href="#security">Security</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

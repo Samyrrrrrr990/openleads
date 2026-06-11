@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How the email engine works · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — How the email engine works." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link is-active" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> How the email engine works</div>
+      <h1 id="how-the-email-engine-works">How the email engine works</h1>
+<p>The part of OpenLeads people care about most is how it finds and verifies an email for <strong>free</strong>. Here's the whole thing, no magic.</p>
+<h2 id="1-from-a-name-domain-to-candidates" class="anchored"><a class="hlink" href="#1-from-a-name-domain-to-candidates">#</a>1. From a name + domain to candidates</h2>
+<p>Given <code>Ada Lovelace</code> at <code>acme.io</code>, OpenLeads generates the email patterns that real companies actually use, in rough order of likelihood:</p>
+<pre class="code"><code>first.last@   ada.lovelace@acme.io
+firstlast@    adalovelace@acme.io
+first@        ada@acme.io
+flast@        alovelace@acme.io
+first_last@   ada_lovelace@acme.io
+f.last@       a.lovelace@acme.io
+last@         lovelace@acme.io</code></pre>
+<h2 id="2-does-the-domain-even-accept-mail" class="anchored"><a class="hlink" href="#2-does-the-domain-even-accept-mail">#</a>2. Does the domain even accept mail? (MX lookup, cross-checked)</h2>
+<p>Before bothering a mail server, OpenLeads asks for the domain's MX (mail exchanger) records over <strong>DNS-over-HTTPS</strong> — and it asks <strong>two independent resolvers</strong> (Google <em>and</em> Cloudflare):</p>
+<pre class="code"><code>GET https://dns.google/resolve?name=acme.io&amp;type=MX
+GET https://cloudflare-dns.com/dns-query?name=acme.io&amp;type=MX
+-&gt; aspmx.l.example.com, alt1.aspmx.l.example.com, ...</code></pre>
+<p>Querying two resolvers does two things: it <strong>survives one provider being down</strong>, and it lets OpenLeads <strong>reward agreement</strong> — when both resolvers return the same mail exchangers, that's a stronger signal than one. No MX records at all → the domain can't receive email → the lead is dropped. This is a free, instant filter that removes dead domains.</p>
+<h2 id="3-verifying-without-sending" class="anchored"><a class="hlink" href="#3-verifying-without-sending">#</a>3. Verifying without sending (SMTP RCPT)</h2>
+<p>This is the core trick. Email delivery is a short conversation. OpenLeads has the <strong>beginning</strong> of that conversation and then hangs up before any message is sent:</p>
+<pre class="code"><code>S: 220 aspmx.l.google.com ESMTP
+C: HELO openleads.local
+S: 250 Hello
+C: MAIL FROM:&lt;verify@yourdomain.com&gt;
+S: 250 OK
+C: RCPT TO:&lt;ada@acme.io&gt;
+S: 250 OK                         &lt;-- mailbox exists ✅
+C: QUIT</code></pre>
+<p>A <code>250</code>/<code>251</code> on <code>RCPT TO</code> means the server will accept mail for that address — i.e. the mailbox exists. A <code>550</code> means it doesn't. <strong>No <code>DATA</code> command is ever sent, so no email is delivered.</strong> This is exactly what paid verifiers do; it's just SMTP.</p>
+<h2 id="4-catch-all-detection" class="anchored"><a class="hlink" href="#4-catch-all-detection">#</a>4. Catch-all detection (honesty)</h2>
+<p>Some domains accept <strong>every</strong> address (<code>anything@domain.com</code> returns <code>250</code>), which makes per-mailbox verification meaningless. OpenLeads detects this by first probing a random, impossible address:</p>
+<pre class="code"><code>C: RCPT TO:&lt;qk7zx9plmn4w@acme.io&gt;
+S: 250 OK                         &lt;-- accepts garbage = catch-all</code></pre>
+<p>If the random probe is accepted, the domain is flagged catch-all and the best-pattern guess is labeled <code>catch_all_guess</code> instead of <code>verified</code>. Honesty over vanity numbers.</p>
+<h2 id="confidence-levels-a-0-100-score" class="anchored"><a class="hlink" href="#confidence-levels-a-0-100-score">#</a>Confidence levels + a 0–100 score</h2>
+<p>Every result keeps a human label <strong>and</strong> an explainable numeric score, so you can sort and threshold programmatically.</p>
+<div class="tablewrap"><table><thead><tr><th>Label</th><th>Meaning</th></tr></thead><tbody><tr><td><code>verified</code></td><td>A specific mailbox returned <code>250</code> and the domain is <strong>not</strong> catch-all. High confidence.</td></tr><tr><td><code>catch_all_guess</code></td><td>Domain accepts everything; we return the most likely pattern but can't prove it.</td></tr><tr><td><code>pattern_guess</code></td><td>Domain has MX but SMTP verification wasn't possible (e.g. port 25 blocked, greylisting). Best-effort.</td></tr><tr><td><code>none</code></td><td>No MX (unusable domain), or a domain-less public record (e.g. an NPI doctor with no email).</td></tr></tbody></table></div>
+<p>The <strong>score (0–100)</strong> is built from independent signals, each adding or subtracting:</p>
+<div class="tablewrap"><table><thead><tr><th>Signal</th><th>Effect</th></tr></thead><tbody><tr><td>MX exists</td><td>required (else score 0 / <code>none</code>)</td></tr><tr><td>Both DoH resolvers returned MX</td><td>small boost</td></tr><tr><td>Resolvers <strong>agree</strong> on the mail exchangers</td><td>small boost</td></tr><tr><td>SMTP <code>250</code> on a real candidate (not catch-all)</td><td>large boost → <code>verified</code></td></tr><tr><td>Catch-all detected</td><td>capped (moderate)</td></tr><tr><td>Port 25 unreachable</td><td>MX-only score</td></tr><tr><td>Common pattern (<code>first@</code> / <code>first.last@</code>)</td><td>small boost</td></tr><tr><td>Role account (<code>info@</code>, <code>sales@</code>)</td><td>penalty</td></tr><tr><td>Disposable domain (<code>mailinator.com</code>, …)</td><td>disqualified (score 0)</td></tr></tbody></table></div>
+<p>The exact signals that fired are attached to each lead (visible in JSON/NDJSON output as <code>signals</code>), so a score is never a black box.</p>
+<h2 id="caching" class="anchored"><a class="hlink" href="#caching">#</a>Caching (be fast, be polite)</h2>
+<p>OpenLeads keeps a small <strong>SQLite cache</strong> at <code>~/.openleads/cache.db</code>:</p>
+<div class="tablewrap"><table><thead><tr><th>What</th><th>TTL</th></tr></thead><tbody><tr><td>MX lookups (per domain)</td><td>7 days</td></tr><tr><td>SMTP verification (per name+domain)</td><td>14 days</td></tr><tr><td>Source datasets (e.g. the YC dump)</td><td>1 day</td></tr></tbody></table></div>
+<p>A cache hit short-circuits the network entirely — re-runs are near-instant and mail servers aren't probed twice for the same thing. Manage it with <code>openleads cache info</code> / <code>openleads cache clear</code>, or bypass it with <code>--no-cache</code>.</p>
+<h2 id="caveats-etiquette" class="anchored"><a class="hlink" href="#caveats-etiquette">#</a>Caveats &amp; etiquette</h2>
+<ul><li><strong>Port 25</strong> must be reachable outbound. Many cloud hosts allow it; some residential</li></ul>
+<p>ISPs block it. When blocked, OpenLeads falls back to pattern guesses.</p>
+<ul><li>Big providers (Google Workspace, Microsoft 365) sometimes greylist or accept-all,</li></ul>
+<p>reducing how many you can hard-verify. That's expected.</p>
+<ul><li>OpenLeads paces its probes (small delays, reuses one connection per domain) to be a</li></ul>
+<p>polite network citizen. Please don't remove those delays.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="architecture.html"><span>← Previous</span><b>Architecture</b></a>
+<a class="pn pn--next" href="responsible-use.html"><span>Next →</span><b>Responsible use</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-from-a-name-domain-to-candidates">1. From a name + domain to candidates</a><a class="toc__l2" href="#2-does-the-domain-even-accept-mail">2. Does the domain even accept mail? (MX lookup, cross-checked)</a><a class="toc__l2" href="#3-verifying-without-sending">3. Verifying without sending (SMTP RCPT)</a><a class="toc__l2" href="#4-catch-all-detection">4. Catch-all detection (honesty)</a><a class="toc__l2" href="#confidence-levels-a-0-100-score">Confidence levels + a 0–100 score</a><a class="toc__l2" href="#caching">Caching (be fast, be polite)</a><a class="toc__l2" href="#caveats-etiquette">Caveats &amp; etiquette</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quickstart — from zero to a sent campaign · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Quickstart — from zero to a sent campaign." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link is-active" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Quickstart — from zero to a sent campaign</div>
+      <h1 id="quickstart-from-zero-to-a-sent-campaign">Quickstart — from zero to a sent campaign</h1>
+<p>This is the 10-minute path: install, find leads, write the emails, connect your mailbox, and send — safely. Every sending step is <strong>dry-run by default</strong>.</p>
+<blockquote>TL;DR: <code>pip install &quot;openleads[all]&quot;</code> → <code>openleads web</code> → click through Find → Write → Connect → Send. Or stay in the terminal with <code>openleads run</code>.</blockquote>
+<hr/>
+<h2 id="1-install" class="anchored"><a class="hlink" href="#1-install">#</a>1. Install</h2>
+<pre class="code" data-lang="bash"><code>pip install &quot;openleads[all]&quot;     # engine + chat TUI + sending niceties
+openleads --version              # → openleads 3.0.0</code></pre>
+<p>Node user? <code>npx openleads</code> works too (it installs the Python package on first run).</p>
+<h2 id="2-sanity-check-your-setup" class="anchored"><a class="hlink" href="#2-sanity-check-your-setup">#</a>2. Sanity-check your setup</h2>
+<pre class="code" data-lang="bash"><code>openleads doctor</code></pre>
+<p><code>doctor</code> tells you, in plain language, what works and what to fix:</p>
+<ul><li><strong>DNS-over-HTTPS</strong> reachable? (needed for MX/SPF/DMARC checks)</li><li><strong>SMTP port 25</strong> open? If blocked (most home ISPs), don't worry — the engine</li></ul>
+<p>compensates with Gravatar + ground-truth + learned patterns.</p>
+<ul><li><strong>OpenRouter key</strong> set? Optional; unlocks AI drafting + smarter NL parsing.</li><li><strong>Mailbox</strong> configured + logs in? Needed only for <em>sending</em>.</li><li>Your <strong>sending domain's</strong> SPF/DKIM/DMARC grade.</li></ul>
+<h2 id="3-find-leads" class="anchored"><a class="hlink" href="#3-find-leads">#</a>3. Find leads</h2>
+<pre class="code" data-lang="bash"><code>openleads find &quot;50 AI founders in SF, verified only&quot; --out leads.csv</code></pre>
+<p>You'll see each lead stream in with a tier and a 0–100 score:</p>
+<ul><li><strong><code>safe</code></strong> — deliverable; sent by default.</li><li><strong><code>risky</code></strong> — kept, but held back unless you opt in.</li><li><strong><code>bad</code></strong> — dropped (no MX, disposable, unguessable).</li></ul>
+<p>Pick a source explicitly with <code>--source</code> (<code>openleads sources</code> lists them), narrow with <code>--location</code> / <code>--keyword</code>, and add <code>--deep</code> for heavier ground-truth harvesting (slower, more <code>safe</code> hits).</p>
+<h2 id="4-connect-your-mailbox" class="anchored"><a class="hlink" href="#4-connect-your-mailbox">#</a>4. Connect your mailbox (once)</h2>
+<pre class="code" data-lang="bash"><code>openleads config</code></pre>
+<p>Interactive setup for your provider (Gmail/Workspace, Outlook/M365, Zoho, or custom), your <strong>app password</strong> (not your normal password — see your provider's docs), and your sender identity (name, org, a few lines about what you're reaching out about).</p>
+<p>Secrets are written to <code>~/.openleads/secrets.json</code> (<code>chmod 600</code>) and never leave your machine. Prefer env vars / <code>.env</code>? Those still win. See <a href="sending.html"><code>sending.md</code></a>.</p>
+<h2 id="5-write-send" class="anchored"><a class="hlink" href="#5-write-send">#</a>5. Write + send</h2>
+<p>One command does the whole pipeline (dry-run first — always preview):</p>
+<pre class="code" data-lang="bash"><code>openleads run &quot;50 AI founders in SF&quot;          # preview drafts + sends
+openleads run &quot;50 AI founders in SF&quot; --live   # actually send</code></pre>
+<p>Or do it in pieces:</p>
+<pre class="code" data-lang="bash"><code>openleads write &quot;10 AI founders&quot; -o drafts.json   # just draft
+openleads send  &quot;10 AI founders&quot; --live           # find → write → send</code></pre>
+<p>Sending honors your <strong>warmup ramp</strong> and <strong>daily cap</strong>, paces sends with human-like delays, skips anyone on your <strong>suppression list</strong>, and adds one-click unsubscribe headers. No tracking pixels, ever.</p>
+<h2 id="6-prefer-a-ui" class="anchored"><a class="hlink" href="#6-prefer-a-ui">#</a>6. Prefer a UI?</h2>
+<pre class="code" data-lang="bash"><code>openleads web</code></pre>
+<p>Opens <code>http://127.0.0.1:8787</code> — the same engine, in your browser, fully local. See <a href="web.html"><code>web.md</code></a>.</p>
+<h2 id="7-manage-what-you-ve-done" class="anchored"><a class="hlink" href="#7-manage-what-you-ve-done">#</a>7. Manage what you've done</h2>
+<pre class="code" data-lang="bash"><code>openleads crm                 # leads + touches + status, locally in SQLite
+openleads crm --export out.csv
+openleads inbox               # optional: scan IMAP for replies &amp; bounces</code></pre>
+<p>Replies and bounces update status and <strong>stop</strong> follow-up sequences automatically.</p>
+<hr/>
+<h3 id="where-things-live" class="anchored"><a class="hlink" href="#where-things-live">#</a>Where things live</h3>
+<p>Everything is under <code>~/.openleads/</code> (override with <code>OPENLEADS_HOME</code>):</p>
+<div class="tablewrap"><table><thead><tr><th>File</th><th>What</th></tr></thead><tbody><tr><td><code>openleads.db</code></td><td>leads, touches, suppression, learned patterns, campaigns</td></tr><tr><td><code>cache.db</code></td><td>MX / SMTP / dataset cache (speeds up re-runs)</td></tr><tr><td><code>config.json</code></td><td>non-secret preferences</td></tr><tr><td><code>secrets.json</code></td><td>API keys + mailbox credentials (<code>chmod 600</code>)</td></tr><tr><td><code>sources/*.py</code></td><td>your own source plugins</td></tr></tbody></table></div>
+<p>Next: <a href="deliverability.html">Deliverability deep-dive</a> · <a href="sending.html">Sending guide</a> · <a href="web.html">Web dashboard</a> · <a href="sources.html">Write a source</a>.</p>
+      <nav class="prevnext">
+<span></span>
+<a class="pn pn--next" href="deliverability.html"><span>Next →</span><b>Deliverability</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-install">1. Install</a><a class="toc__l2" href="#2-sanity-check-your-setup">2. Sanity-check your setup</a><a class="toc__l2" href="#3-find-leads">3. Find leads</a><a class="toc__l2" href="#4-connect-your-mailbox">4. Connect your mailbox (once)</a><a class="toc__l2" href="#5-write-send">5. Write + send</a><a class="toc__l2" href="#6-prefer-a-ui">6. Prefer a UI?</a><a class="toc__l2" href="#7-manage-what-you-ve-done">7. Manage what you&#x27;ve done</a><a class="toc__l3" href="#where-things-live">Where things live</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>
