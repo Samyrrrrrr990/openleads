@@ -73,12 +73,15 @@ def _github_login(links: dict | None) -> str | None:
 
 
 def find_email(full_name: str, domain: str, cache=None, db=None,
-               links: dict | None = None, deep: bool = False) -> EmailResult:
+               links: dict | None = None, deep: bool = False,
+               known_email: str | None = None) -> EmailResult:
     """Find + verify the most likely email for ``full_name`` at ``domain``.
 
     ``db`` enables persistent pattern learning; ``links`` may carry a GitHub URL for
-    deep ground-truth; ``deep`` turns on the heavier harvesters. Returns an
-    :class:`EmailResult` with ``email``, ``tier``, 0-100 ``score`` and ``reasons``.
+    deep ground-truth; ``deep`` turns on the heavier harvesters. ``known_email`` is a
+    real address a source already exposed (e.g. a GitHub public email) — when it's on
+    ``domain`` it's treated as ground truth, making the lead ``safe`` for free.
+    Returns an :class:`EmailResult` with ``email``, ``tier``, ``score`` and ``reasons``.
     """
     domain = (domain or "").lower().strip()
     ordered = _ordered_candidates(full_name, domain, db)
@@ -103,9 +106,15 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
 
     best = ordered[0]
 
-    # --- ground truth (deep): real addresses beat any guess ----------------- #
+    # --- source-provided real email = instant ground truth ------------------ #
     gt_exact = None
-    if deep:
+    known = (known_email or "").lower().strip()
+    if known and "@" in known and known.endswith("@" + domain):
+        gt_exact = known
+        patterns.learn_from_email(db, gt_exact, full_name)
+
+    # --- ground truth (deep): real addresses beat any guess ----------------- #
+    if not gt_exact and deep:
         site = groundtruth.harvest_from_site(domain, cache=cache)
         gh_login = _github_login(links)
         gh = groundtruth.harvest_from_github(gh_login, cache=cache) if gh_login else []

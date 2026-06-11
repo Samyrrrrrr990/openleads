@@ -27,7 +27,7 @@ def test_partition_filters_suppressed_and_engaged(db):
     leads = [_lead("fresh@x.com"), _lead("bounced@x.com"), _lead("sent@x.com"),
              _lead("fresh@x.com")]  # duplicate
     fresh, skipped = dedupe.partition(db, leads)
-    assert [l.email for l in fresh] == ["fresh@x.com"]
+    assert [ld.email for ld in fresh] == ["fresh@x.com"]
     assert len(skipped) == 3
 
 

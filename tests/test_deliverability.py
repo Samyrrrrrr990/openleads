@@ -137,6 +137,22 @@ def test_assess_free_provider_with_gravatar_is_safe():
     assert out["tier"] == "safe"
 
 
+def test_find_email_uses_known_email_as_groundtruth(monkeypatch):
+    """A source-provided real email on the domain → instant 'safe' (no network)."""
+    from openleads.emails import resolve
+    monkeypatch.setattr(resolve, "_mx_lookup",
+                        lambda d, c: {"hosts": ["mx.acme.io"], "resolvers_ok": 2,
+                                      "agreement": True})
+    monkeypatch.setattr(resolve.mxmod, "dns_health",
+                        lambda d, cache=None: {"spf_present": True, "dmarc_present": True,
+                                               "dmarc_policy": "reject"})
+    monkeypatch.setattr(resolve.mxmod, "classify_provider", lambda h: "other")
+    res = resolve.find_email("Ada Lovelace", "acme.io", known_email="ada@acme.io")
+    assert res.tier == "safe"
+    assert res.email == "ada@acme.io"
+    assert res.signals.get("groundtruth_exact")
+
+
 def test_assess_role_account_demoted():
     base = assess({"mx_exists": True, "smtp_verified": True})
     role = assess({"mx_exists": True, "smtp_verified": True, "role_account": True})

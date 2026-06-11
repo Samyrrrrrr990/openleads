@@ -71,7 +71,8 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
 
         if entity.domain:
             result = find_email(entity.full_name, entity.domain, cache=use_cache,
-                                db=db, links=entity.links, deep=query.deep)
+                                db=db, links=entity.links, deep=query.deep,
+                                known_email=entity.extra.get("public_email"))
             # Skip non-deliverable domains (no MX / disposable / unguessable personal).
             if result.tier == "bad":
                 continue
