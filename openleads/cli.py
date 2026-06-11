@@ -76,15 +76,17 @@ def cmd_find(args) -> int:
     cache = Cache() if q.use_cache else None
     db = DB()
     print(ui.banner())
-    print(f"  target: {q.count} leads · source: {q.source or 'auto'} · "
-          f"deliverable-only: {'yes' if q.verified_only else 'no'} · "
-          f"deep: {'yes' if q.deep else 'no'} · format: {q.fmt}")
-    print("=" * 64)
+    print(ui.field("target", f"{q.count} leads"))
+    print(ui.field("source", q.source or "auto"))
+    print(ui.field("deliver", "safe only" if q.verified_only else "all tiers")
+          + (ui.c("  · deep", ui.FAINT) if q.deep else ""))
+    print(ui.field("format", q.fmt))
+    print(ui.rule())
     progress = {"n": 0}
 
     def on_progress(kind, payload):
         if kind == "phase":
-            print(f"[engine] {payload}")
+            print(ui.c(f"  ◆ {payload}", ui.FAINT))
         elif kind == "lead":
             progress["n"] += 1
             print(ui.lead_line(payload, progress["n"], q.count))
@@ -105,7 +107,7 @@ def cmd_find(args) -> int:
     print(ui.summary_line(leads))
     writers.write(leads, fmt=q.fmt, path=q.out)
     dest = q.out or ("leads.csv" if q.fmt == "csv" else "stdout")
-    print(f"[output] wrote {len(leads)} leads -> {dest}")
+    print(ui.c(f"  ↳ wrote {len(leads)} leads → {dest}\n", ui.GREY))
     return 0
 
 
@@ -120,10 +122,7 @@ def cmd_sources(args) -> int:
         print(f"{info.name}\n  kind:        {info.kind}\n  vertical:    {info.vertical}\n"
               f"  description: {info.description}")
         return 0
-    print("Available sources (drop a .py in ~/.openleads/sources to add your own):\n")
-    for info in list_sources():
-        print(f"  {info.name:<12} [{info.kind:<7}] {info.vertical}")
-        print(f"  {'':<12} {info.description}")
+    print(ui.sources_block(list_sources()))
     return 0
 
 

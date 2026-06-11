@@ -87,7 +87,7 @@ def test_state(server):
     status, _, body = _get(server, "/api/state")
     d = json.loads(body)
     assert status == 200
-    assert d["version"] == "3.0.0"
+    assert d["version"] == "3.1.0"
     assert isinstance(d["sources"], list) and len(d["sources"]) >= 5
     assert "crm" in d and "settings" in d
 

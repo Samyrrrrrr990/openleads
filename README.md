@@ -166,11 +166,19 @@ Works **fully offline** via a rule-based parser (no key needed). Set `OPENROUTER
 ```text
 $ openleads sources
   github       [people ] developers & open-source orgs
+  hn           [company] companies hiring now (Hacker News)
   npi          [people ] U.S. doctors & healthcare providers
   openalex     [people ] researchers & academics
   producthunt  [company] trending products & startups
   yc           [company] startup founders (Y Combinator)
 ```
+
+> **New in v3.1 — better leads, faster.** `hn` mines Hacker News' monthly "Who is
+> hiring?" thread for companies hiring *right now* — real domains and, very often,
+> **direct apply emails** that land as `safe` instantly. The `github` source was
+> rebuilt to return real, contactable developers (no more topic/org junk), and the
+> engine now resolves emails **concurrently** and **fails fast** with a clear
+> message instead of grinding for minutes. Try: `openleads find --source hn -n 25`.
 
 All **keyless and free**. Want a vertical we don't ship — recruiters, lawyers, real-estate agents, your CRM export? Drop a `*.py` file in `~/.openleads/sources/`:
 

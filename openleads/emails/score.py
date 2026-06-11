@@ -89,7 +89,12 @@ def assess(s: dict) -> dict:
     # --- decisive positives → safe ------------------------------------------ #
     if s.get("groundtruth_exact"):
         reasons.insert(0, "found publicly (ground-truth address)")
-        return _verdict(98, "safe", "verified", reasons, role)
+        # A published apply/contact address (e.g. jobs@company.com from an HN
+        # 'who is hiring' post) is a real, intended-for-contact mailbox — a role
+        # local-part does NOT demote ground truth below 'safe'.
+        if role:
+            reasons.append("published team/role address")
+        return _verdict(97, "safe", "verified", reasons)
 
     if s.get("smtp_verified") and not s.get("catch_all"):
         reasons.insert(0, "SMTP-verified mailbox")

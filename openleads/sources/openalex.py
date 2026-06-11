@@ -22,6 +22,18 @@ API = "https://api.openalex.org"
 MAILTO = "openleads@users.noreply.github.com"
 
 
+def _looks_like_person(name: str) -> bool:
+    """Reject concept/topic 'authors' (e.g. 'Machine Learning') from topic searches."""
+    name = (name or "").strip()
+    toks = [t for t in name.split() if t]
+    if not (2 <= len(toks) <= 4):
+        return False
+    junk = {"machine", "learning", "deep", "algorithm", "algorithms", "model",
+            "models", "network", "networks", "analysis", "review", "study",
+            "system", "systems", "data", "method", "methods", "approach", "based"}
+    return not ({t.lower() for t in toks} & junk)
+
+
 def _institution_of(author: dict) -> dict:
     insts = author.get("last_known_institutions") or []
     if insts:
@@ -77,16 +89,22 @@ class OpenAlexSource(Source):
 
     def search(self, query: Query) -> Iterator[Entity]:
         term = query.keyword or query.industry or ""
-        params = {"per_page": str(min(query.count, 50)), "mailto": MAILTO}
+        # Pull a wider set, then keep only real people with an institution domain
+        # (something we can actually email at). Quality over quantity.
+        params = {"per_page": str(min(max(query.count * 3, 25), 100)), "mailto": MAILTO}
         if term:
             params["search"] = term
         url = f"{API}/authors?" + urllib.parse.urlencode(params)
         data = get_json(url, cache=self.cache, ttl_ns="dataset")
         for ent in parse_authors(data or {}):
+            if not _looks_like_person(ent.full_name):
+                continue  # drop concept/topic 'authors' from topic searches
             # Enrich domain from the institution homepage if we don't have one.
             if not ent.domain and ent.extra.get("institution_id"):
                 home = self._institution_homepage(ent.extra["institution_id"])
                 if home:
                     ent.website = home
                     ent.domain = domain_of(home) or ""
+            if not ent.domain:
+                continue  # no institution domain → not emailable, skip
             yield ent

@@ -15,7 +15,7 @@ from openleads.sources.yc import (
 # --- registry --------------------------------------------------------------
 def test_registry_includes_builtins():
     reg = get_registry(reload=True)
-    for name in ("yc", "github", "npi", "openalex", "producthunt"):
+    for name in ("yc", "github", "npi", "openalex", "producthunt", "hn"):
         assert name in reg, f"missing built-in source: {name}"
 
 

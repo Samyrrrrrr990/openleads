@@ -110,3 +110,27 @@ def test_build_leads_verified_only_filters(monkeypatch):
                                                        score=40, tier="risky"))
     leads = build_leads(Query(source="fake", count=5, verified_only=True))
     assert leads == []  # only 'safe'-tier survives verified_only; risky is dropped
+
+
+def test_build_leads_concurrent_preserves_order(monkeypatch):
+    ents = [Entity(full_name=f"P{i}", domain=f"d{i}.io", source="fake") for i in range(12)]
+    get_registry(reload=True)["fake"] = _FakeSource(ents)
+
+    import openleads.engine as eng
+    monkeypatch.setattr(eng, "find_email",
+                        lambda n, d, **kw: EmailResult(email=f"{n}@{d}", confidence="verified",
+                                                       score=95, tier="safe"))
+    leads = build_leads(Query(source="fake", count=10))
+    # despite the thread pool, output order matches input order
+    assert [ld.email for ld in leads] == [f"P{i}@d{i}.io" for i in range(10)]
+
+
+def test_build_leads_futility_exit_emits_phase():
+    # a big domain-less source + verified_only → no safe leads → bail with a message
+    ents = [Entity(full_name=f"X{i}", organization="Org", source="fake") for i in range(300)]
+    get_registry(reload=True)["fake"] = _FakeSource(ents)
+    phases = []
+    leads = build_leads(Query(source="fake", count=10, verified_only=True),
+                        on_progress=lambda k, p: phases.append(p) if k == "phase" else None)
+    assert leads == []
+    assert any("no email domain" in str(p) for p in phases)

@@ -49,6 +49,12 @@ Entity(
 - **If you don't** (many public registries have no email/website), the engine
   still emits the record — the public data itself is valuable. Confidence is
   honestly labeled `none`. NPI (doctors) works exactly this way.
+- **If your source already exposes a real address** (a GitHub public email, an
+  "apply at jobs@…" line), put it in `extra["public_email"]` *and* set `domain` to
+  its domain. The engine treats an on-domain known address as **ground truth** and
+  marks the lead `safe` for free — no guessing, no SMTP probe needed. This works
+  even with no person name (great for company-only leads). The `hn` and `github`
+  sources do exactly this; it's the single biggest lever on lead quality.
 
 ### The `Query` you receive
 
