@@ -37,6 +37,82 @@ def _check_port25() -> tuple[bool, str]:
     return False, "blocked (most home ISPs do this — the engine compensates with Gravatar + ground truth)"
 
 
+def report() -> dict:
+    """Structured health report (same checks as ``run()``), for the web dashboard.
+
+    Returns a list of grouped checks: ``{group, label, status: ok|warn|bad, detail}``.
+    Nothing here sends mail; network checks are live but fast and best-effort.
+    """
+    checks: list[dict] = []
+
+    def add(group, label, status, detail=""):
+        checks.append({"group": group, "label": label, "status": status, "detail": detail})
+
+    # Runtime
+    add("Runtime", f"Python {sys.version.split()[0]}", "ok")
+    chat_ok = all(_has(m) for m in ("rich", "prompt_toolkit"))
+    add("Runtime", "chat TUI", "ok" if chat_ok else "warn",
+        "installed" if chat_ok else "optional: pip install 'openleads[chat]'")
+
+    # Network & verification
+    try:
+        net = _check_network()
+        add("Network & verification", "DNS-over-HTTPS", "ok" if net else "bad",
+            "reachable" if net else "no network")
+    except Exception as e:  # noqa: BLE001
+        add("Network & verification", "DNS-over-HTTPS", "bad", str(e))
+    p25_ok, p25_detail = _check_port25()
+    add("Network & verification", "SMTP port 25", "ok" if p25_ok else "warn", p25_detail)
+
+    # AI drafting
+    has_llm = bool(settings.get("openrouter_api_key"))
+    add("AI drafting (optional)", "OpenRouter key", "ok" if has_llm else "warn",
+        f"model {settings.get('openrouter_model')}" if has_llm
+        else "unset — drafts fall back to templates")
+    has_gh = bool(settings.get("github_token"))
+    add("AI drafting (optional)", "GitHub token", "ok" if has_gh else "warn",
+        "set" if has_gh else "unset — keyless still works, lower rate limit")
+
+    # Mailbox
+    user = settings.get("smtp_user")
+    if not user:
+        add("Mailbox (sending)", "mailbox", "warn",
+            "not configured — open Settings to enable sending")
+    else:
+        add("Mailbox (sending)", "mailbox", "ok",
+            f"{user} via {settings.get('smtp_provider')}")
+        try:
+            from openleads.outreach import providers
+            ok, msg = providers.test_login()
+            add("Mailbox (sending)", "SMTP login", "ok" if ok else "bad", msg)
+        except Exception as e:  # noqa: BLE001
+            add("Mailbox (sending)", "SMTP login", "bad", str(e))
+
+    # Sending-domain authentication
+    preflight = None
+    if user and "@" in user:
+        try:
+            from openleads.outreach import deliverability
+            pf = deliverability.preflight()
+            preflight = pf
+            add("Sending-domain auth", "SPF", "ok" if pf["spf"] else "bad",
+                "present" if pf["spf"] else "missing")
+            add("Sending-domain auth", "DKIM", "ok" if pf["dkim"] else "warn",
+                "found" if pf["dkim"] else "not found (selector probe)")
+            add("Sending-domain auth", "DMARC", "ok" if pf["dmarc"] else "bad",
+                f"p={pf['dmarc_policy'] or 'none'}" if pf["dmarc"] else "missing")
+            add("Sending-domain auth", f"readiness grade {pf['grade']}",
+                "ok" if pf["ready"] else "warn", f"{pf['score']}/100")
+        except Exception as e:  # noqa: BLE001
+            add("Sending-domain auth", "preflight", "warn", str(e))
+
+    ok = sum(1 for c in checks if c["status"] == "ok")
+    warn = sum(1 for c in checks if c["status"] == "warn")
+    bad = sum(1 for c in checks if c["status"] == "bad")
+    return {"checks": checks, "summary": {"ok": ok, "warn": warn, "bad": bad},
+            "preflight": preflight}
+
+
 def run(args=None) -> int:
     print("OpenLeads doctor\n" + "=" * 40)
 

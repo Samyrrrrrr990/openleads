@@ -27,8 +27,8 @@ function ensurePackage(py) {
   if (hasPackage(py)) return true;
   console.error("[openleads] First run: installing the Python package via pip…");
   const tries = [
-    ["-m", "pip", "install", "--user", "openleads[chat]"],
-    ["-m", "pip", "install", "openleads[chat]"],
+    ["-m", "pip", "install", "--user", "openleads[all]"],
+    ["-m", "pip", "install", "openleads[all]"],
   ];
   for (const args of tries) {
     const r = spawnSync(py, args, { stdio: "inherit" });
@@ -44,7 +44,7 @@ function main() {
     process.exit(1);
   }
   if (!ensurePackage(py)) {
-    console.error("[openleads] Could not auto-install. Please run:\n  pip install 'openleads[chat]'");
+    console.error("[openleads] Could not auto-install. Please run:\n  pip install 'openleads[all]'");
     process.exit(1);
   }
   const args = process.argv.slice(2);

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="'SF Pro Display',system-ui,sans-serif">
+  <defs>
+    <radialGradient id="g" cx="78%" cy="8%" r="70%">
+      <stop offset="0%" stop-color="#ff453a" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="#ff453a" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#08080a"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#g)"/>
+
+  <g transform="translate(84,84)">
+    <rect x="0" y="0" width="34" height="34" rx="9" fill="#f5f5f7"/>
+    <circle cx="17" cy="17" r="6" fill="#ff453a"/>
+    <text x="50" y="25" fill="#f6f6f8" font-size="26" font-family="'JetBrains Mono',monospace" letter-spacing="-0.5">open<tspan font-weight="700">leads</tspan></text>
+  </g>
+
+  <text x="84" y="300" fill="#f6f6f8" font-size="78" font-weight="800" letter-spacing="-3">Find anyone's email.</text>
+  <text x="84" y="386" fill="#ffffff" font-size="78" font-weight="800" letter-spacing="-3">Then land in their inbox.</text>
+  <rect x="84" y="402" width="690" height="6" rx="3" fill="#ff453a"/>
+
+  <text x="84" y="476" fill="#a3a3ae" font-size="29" font-weight="500">Apollo-grade leads + cold email. Open source, keyless, $0,</text>
+  <text x="84" y="514" fill="#a3a3ae" font-size="29" font-weight="500">and nothing ever leaves your machine.</text>
+
+  <g font-family="'JetBrains Mono',monospace" font-size="22" fill="#6a6a75">
+    <text x="84" y="582">$ pip install "openleads[all]"</text>
+    <text x="640" y="582" fill="#a3a3ae">·  github.com/Samyrrrrrr990/openleads</text>
+  </g>
+</svg>

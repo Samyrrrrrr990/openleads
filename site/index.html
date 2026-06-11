@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OpenLeads — the free, local cold-email machine</title>
+<meta name="description" content="Find anyone's verified email from free public data, write the cold email, and send it — locally, for $0. The open-source Apollo alternative with a deliverability engine that beats the free tiers." />
+<meta name="theme-color" content="#08080a" />
+
+<!-- social -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="OpenLeads — Apollo-grade leads + cold email. Free. Local." />
+<meta property="og:description" content="Find anyone → verify deliverably → write → send. Open source, keyless, $0, and nothing leaves your machine." />
+<meta property="og:image" content="og.svg" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ===================== NAV ===================== -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top">
+    <span class="brand__mark" aria-hidden="true"></span>
+    <span class="brand__name">open<b>leads</b></span>
+  </a>
+  <nav class="nav__links">
+    <a href="#flow">How it works</a>
+    <a href="#deliver">Deliverability</a>
+    <a href="#compare">Compare</a>
+    <a href="https://github.com/Samyrrrrrr990/openleads#readme">Docs</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" class="gh"><path d="M12 2C6.5 2 2 6.6 2 12.2c0 4.5 2.9 8.3 6.8 9.6.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.2-3.4-1.2-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.3 9.3 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .3.3.6.9.6 1.9v2.8c0 .3.2.6.7.5 3.9-1.3 6.8-5.1 6.8-9.6C22 6.6 17.5 2 12 2z"/></svg>
+      Star
+    </a>
+    <a class="solid-btn" href="#install">Install</a>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<main id="top">
+<section class="hero">
+  <div class="hero__glow" aria-hidden="true"></div>
+  <div class="container hero__inner">
+    <p class="eyebrow reveal">open source · keyless · runs on your machine</p>
+    <h1 class="hero__title reveal">
+      Find anyone's email.<br/>
+      <span class="redline">Then land in their inbox.</span>
+    </h1>
+    <p class="hero__sub reveal">
+      OpenLeads pulls founders, developers, doctors &amp; researchers from <b>free public data</b>,
+      verifies deliverability with an engine that beats Hunter &amp; Apollo's free tier, writes the
+      cold email, and sends it — <b>all locally, for $0</b>. No API keys. No seat fees. No cloud.
+    </p>
+
+    <div class="install-row reveal">
+      <button class="copy" data-copy='pip install "openleads[all]"'>
+        <span class="copy__prompt">$</span>
+        <code>pip install "openleads[all]"</code>
+        <svg viewBox="0 0 24 24" class="copy__ico"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      </button>
+      <span class="install-or">or</span>
+      <button class="copy copy--ghost" data-copy="npx openleads">
+        <span class="copy__prompt">$</span><code>npx openleads</code>
+        <svg viewBox="0 0 24 24" class="copy__ico"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      </button>
+    </div>
+
+    <div class="hero__stats reveal">
+      <span><b>0</b> API keys</span><i></i>
+      <span><b>$0</b> forever</span><i></i>
+      <span><b>7</b> deliverability signals</span><i></i>
+      <span><b>148</b> tests</span>
+    </div>
+  </div>
+
+  <!-- animated terminal -->
+  <div class="container">
+    <div class="terminal reveal" id="terminal" aria-label="OpenLeads terminal demo">
+      <div class="terminal__bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="terminal__title">openleads — run</span>
+        <span class="terminal__live"><i></i> live</span>
+      </div>
+      <pre class="terminal__body" id="term-body"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOUR CLICKS ===================== -->
+<section class="section" id="flow">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">the whole workflow, collapsed</p>
+      <h2>Four steps. One local app.</h2>
+      <p class="lead">Scraping in tool A, verifying in B, enriching in C, sending in D, warming up in E —
+        gone. OpenLeads is the entire cold-outreach stack in one place.</p>
+    </div>
+    <div class="flow">
+      <div class="flow__line" aria-hidden="true"><span id="flow-line"></span></div>
+      <article class="step reveal"><span class="step__n">01</span><h3>Find</h3>
+        <p>Describe who you want in plain English. The engine searches free, keyless public sources and resolves emails.</p></article>
+      <article class="step reveal"><span class="step__n">02</span><h3>Write</h3>
+        <p>Personalized, spam-linted, plain-text drafts — from a free LLM or a sharp template. Edit anything.</p></article>
+      <article class="step reveal"><span class="step__n">03</span><h3>Connect</h3>
+        <p>One-time mailbox setup with provider presets. A preflight grades your SPF / DKIM / DMARC before you send.</p></article>
+      <article class="step reveal"><span class="step__n">04</span><h3>Send</h3>
+        <p>Throttled, warmup-capped, suppression-aware. One-click unsubscribe headers. No tracking pixels. Ever.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DELIVERABILITY ===================== -->
+<section class="section section--alt" id="deliver">
+  <div class="container deliver">
+    <div class="deliver__copy reveal">
+      <p class="eyebrow">the part that actually matters</p>
+      <h2>A deliverability engine that doesn't rely on port&nbsp;25.</h2>
+      <p class="lead">Most free finders verify with a single SMTP <code>RCPT</code> probe over outbound
+        port&nbsp;25 — which home ISPs and clouds block. When it's blocked, every address quietly
+        degrades to a <code>first.last@</code> guess, and your campaign bounces.</p>
+      <p class="lead">OpenLeads cross-checks <b>seven independent signals</b> — most needing no port&nbsp;25
+        at all — then gates honestly into three tiers so you only send what's likely to land.</p>
+      <div class="tiers">
+        <span class="t t--safe">safe · send it</span>
+        <span class="t t--risky">risky · held back</span>
+        <span class="t t--bad">bad · dropped</span>
+      </div>
+    </div>
+    <ul class="signals reveal">
+      <li><b>MX consensus</b><span>two DoH resolvers must agree</span></li>
+      <li><b>SPF · DMARC · provider class</b><span>TXT lookups, no port 25</span></li>
+      <li><b>Disposable / role / free</b><span>static list filtering</span></li>
+      <li><b>Gravatar existence</b><span>md5 → 200/404, no port 25</span></li>
+      <li><b>Ground-truth harvest</b><span>real emails from commits &amp; security.txt</span></li>
+      <li><b>Learned domain patterns</b><span>compounds across every run</span></li>
+      <li><b>SMTP RCPT + catch-all</b><span>when port 25 is open, double-probed</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================== COMPARE ===================== -->
+<section class="section" id="compare">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">honest comparison</p>
+      <h2>vs. the free tiers.</h2>
+    </div>
+    <div class="compare reveal">
+      <table>
+        <thead><tr><th></th><th class="us">OpenLeads</th><th>Apollo / Hunter <span>free</span></th></tr></thead>
+        <tbody>
+          <tr><td>Cost</td><td class="us">$0, forever</td><td>credit-limited, then paid</td></tr>
+          <tr><td>API key required</td><td class="us">none</td><td>required</td></tr>
+          <tr><td>Who you can find</td><td class="us">founders, devs, doctors, researchers + any vertical you plug in</td><td>their database only</td></tr>
+          <tr><td>Email verification</td><td class="us">7-signal consensus + 0–100 score</td><td>paid feature</td></tr>
+          <tr><td>Writes the email</td><td class="us">yes — free LLM or template</td><td>no / upsell</td></tr>
+          <tr><td>Sends it for you</td><td class="us">yes — warmup, throttle, suppression</td><td>upsell</td></tr>
+          <tr><td>Where it runs</td><td class="us">your machine, no data leaves</td><td>their cloud</td></tr>
+          <tr><td>You own the code</td><td class="us">readable, hackable, MIT-ish OSS</td><td>black box</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SOURCES ===================== -->
+<section class="section section--alt" id="sources">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">coverage grows by code, not by invoice</p>
+      <h2>Pluggable, keyless sources.</h2>
+      <p class="lead">The email engine doesn't care <i>who</i> you're looking for. Add a vertical by dropping a single <code>.py</code> file.</p>
+    </div>
+    <div class="sources reveal">
+      <div class="src"><b>yc</b><span>startup founders</span><i>company</i></div>
+      <div class="src"><b>github</b><span>developers &amp; OSS orgs</span><i>people</i></div>
+      <div class="src"><b>npi</b><span>U.S. doctors</span><i>people</i></div>
+      <div class="src"><b>openalex</b><span>researchers &amp; academics</span><i>people</i></div>
+      <div class="src"><b>producthunt</b><span>trending products</span><i>company</i></div>
+      <div class="src src--add"><b>+ yours</b><span>lawyers, podcasters, agents…</span><i>drop a .py</i></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PRIVACY ===================== -->
+<section class="section privacy">
+  <div class="container privacy__inner reveal">
+    <svg viewBox="0 0 24 24" class="privacy__ico"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
+    <h2>Nothing leaves your laptop.</h2>
+    <p>No hosted backend. No accounts. No tracking pixels. Your leads, your drafts, your mailbox
+       credentials, and your CRM all live in a local SQLite file under <code>~/.openleads</code>.
+       The engine talks only to public data sources and <i>your</i> mail server.</p>
+  </div>
+</section>
+
+<!-- ===================== INSTALL ===================== -->
+<section class="section" id="install">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">try it in 10 seconds</p>
+      <h2>Install &amp; go.</h2>
+    </div>
+    <div class="install-grid">
+      <div class="code-card reveal">
+        <div class="code-card__head"><span>Python (recommended)</span></div>
+        <pre><code><span class="c-com"># zero-dependency engine + the full local app</span>
+<span class="c-cmd">pip install "openleads[all]"</span>
+
+<span class="c-com"># launch the local console (the 4 clicks, in your browser)</span>
+<span class="c-cmd">openleads web</span>
+
+<span class="c-com"># or one-shot the whole pipeline from the terminal</span>
+<span class="c-cmd">openleads run "50 fintech founders, verified only"</span></code></pre>
+      </div>
+      <div class="code-card reveal">
+        <div class="code-card__head"><span>Node / npx</span></div>
+        <pre><code><span class="c-com"># no install — wraps the Python CLI</span>
+<span class="c-cmd">npx openleads find "rust devs in Berlin"</span>
+
+<span class="c-com"># interactive chat REPL — just type what you want</span>
+<span class="c-cmd">npx openleads</span>
+
+<span class="c-com"># add your own vertical</span>
+<span class="c-cmd">cp lawyers.py ~/.openleads/sources/</span></code></pre>
+      </div>
+    </div>
+    <div class="install-foot reveal">
+      <a class="solid-btn solid-btn--lg" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">Get it on GitHub</a>
+      <a class="ghost-btn ghost-btn--lg" href="https://github.com/Samyrrrrrr990/openleads#readme">Read the docs</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <span class="brand__mark"></span>
+      <div>
+        <p class="brand__name">open<b>leads</b></p>
+        <p class="footer__tag">Apollo for everyone. For $0.</p>
+      </div>
+    </div>
+    <div class="footer__cols">
+      <div><h4>Product</h4>
+        <a href="#flow">How it works</a><a href="#deliver">Deliverability</a><a href="#compare">Compare</a></div>
+      <div><h4>Open source</h4>
+        <a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a>
+        <a href="https://pypi.org/project/openleads/">PyPI</a>
+        <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
+      <div><h4>Use responsibly</h4>
+        <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/docs/responsible-use.md">Responsible use</a>
+        <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/LICENSE">License</a></div>
+    </div>
+  </div>
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial — free for personal, research &amp; nonprofit use.</span>
+    <span>Built for everyone who has ever rage-quit a “request a demo” button.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

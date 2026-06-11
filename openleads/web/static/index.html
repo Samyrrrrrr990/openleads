@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<title>OpenLeads — local console</title>
+<meta name="description" content="OpenLeads local console — find anyone, verify deliverably, write and send cold email. Runs entirely on your machine." />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<!-- icon sprite (same-origin, CSP-safe) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-find" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-leads" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+    <symbol id="i-compose" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L8 21l-5 1 1-5z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
+    <symbol id="i-crm" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 6.6 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.4H3a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 4.6 6.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 4.6V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1A1.6 1.6 0 0 0 21 9h.1a2 2 0 0 1 0 4H21a1.6 1.6 0 0 0-1.6 1z"/></symbol>
+    <symbol id="i-doctor" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+  </defs>
+</svg>
+
+<div id="app" class="app" data-loading="true">
+  <!-- top bar -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="logo" aria-hidden="true"><span class="logo__mark"></span></span>
+      <span class="wordmark">open<b>leads</b></span>
+      <span class="badge badge--ver" id="version">v3</span>
+    </div>
+    <div class="topbar__right">
+      <span class="local-pill" title="Everything runs on this machine. No data leaves it.">
+        <span class="local-pill__dot"></span> running locally · private
+      </span>
+    </div>
+  </header>
+
+  <!-- sidebar -->
+  <nav class="sidebar" aria-label="Primary">
+    <div class="rail">
+      <p class="rail__group">The four clicks</p>
+      <a class="navlink" data-route="find"><svg class="ico"><use href="#i-find"/></svg><span>Find</span><i class="step">1</i></a>
+      <a class="navlink" data-route="compose"><svg class="ico"><use href="#i-compose"/></svg><span>Write</span><i class="step">2</i></a>
+      <a class="navlink" data-route="settings"><svg class="ico"><use href="#i-settings"/></svg><span>Connect</span><i class="step">3</i></a>
+      <a class="navlink" data-route="send"><svg class="ico"><use href="#i-send"/></svg><span>Send</span><i class="step">4</i></a>
+      <div class="rail__divider"></div>
+      <p class="rail__group">Workspace</p>
+      <a class="navlink" data-route="leads"><svg class="ico"><use href="#i-leads"/></svg><span>Leads</span></a>
+      <a class="navlink" data-route="crm"><svg class="ico"><use href="#i-crm"/></svg><span>CRM</span></a>
+      <a class="navlink" data-route="doctor"><svg class="ico"><use href="#i-doctor"/></svg><span>Doctor</span></a>
+    </div>
+    <div class="rail__foot">
+      <div class="readiness" id="readiness" title="Sender readiness">
+        <span class="readiness__label">deliverability</span>
+        <span class="readiness__grade" id="readiness-grade">—</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- main -->
+  <main class="main" id="main" tabindex="-1"></main>
+
+  <!-- toast region -->
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- boot splash -->
+  <div class="boot" id="boot">
+    <div class="boot__mark"></div>
+    <p class="boot__txt">starting local console…</p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
