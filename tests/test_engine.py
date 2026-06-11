@@ -105,7 +105,8 @@ def test_build_leads_verified_only_filters(monkeypatch):
     # Stub find_email so no network is touched.
     import openleads.engine as eng
     monkeypatch.setattr(eng, "find_email",
-                        lambda n, d, cache=None: EmailResult(email="ada@acme.io",
-                                                             confidence="pattern_guess", score=40))
+                        lambda n, d, **kw: EmailResult(email="ada@acme.io",
+                                                       confidence="pattern_guess",
+                                                       score=40, tier="risky"))
     leads = build_leads(Query(source="fake", count=5, verified_only=True))
-    assert leads == []  # pattern_guess dropped under verified_only
+    assert leads == []  # only 'safe'-tier survives verified_only; risky is dropped

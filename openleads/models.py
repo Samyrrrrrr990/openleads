@@ -148,7 +148,8 @@ class Query:
     location: str | None = None
     title: str | None = None
     keyword: str | None = None
-    verified_only: bool = False
+    verified_only: bool = False     # keep only 'safe'-tier (deliverable) leads
+    deep: bool = False              # turn on heavier ground-truth harvesting
     fmt: str = "csv"                # csv | json | ndjson
     out: str | None = None
     max_companies: int = 400

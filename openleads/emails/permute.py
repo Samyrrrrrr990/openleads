@@ -1,24 +1,55 @@
 """
-Name → domain → candidate email permutations.
+Name → domain → candidate email permutations, plus the shared local-part grammar.
 
-Pure helpers (no network) so they unit-test cleanly. Patterns are ordered by
-real-world prevalence at small companies (``first.last`` and ``first`` dominate).
+Pure helpers (no network) so they unit-test cleanly. ``PATTERN_TEMPLATES`` is the
+single source of truth for the local-part shapes we understand; both candidate
+generation (here) and pattern learning (:mod:`openleads.emails.patterns`) use it,
+so a learned pattern always round-trips to a candidate we can build.
 """
 from __future__ import annotations
 
 import re
 
+# Local-part templates, ordered by real-world prevalence at small/mid companies.
+# Tokens: {first} {last} {f}=first initial {l}=last initial
+PATTERN_TEMPLATES = (
+    "{first}.{last}",
+    "{first}",
+    "{first}{last}",
+    "{f}{last}",
+    "{first}_{last}",
+    "{f}.{last}",
+    "{last}",
+    "{last}.{first}",
+    "{first}.{f}",
+    "{last}{f}",
+)
+
 # Role / generic mailboxes we never want to guess as a person's address.
 ROLE_LOCALS = {
     "info", "admin", "support", "sales", "hello", "contact", "team", "office",
     "help", "billing", "careers", "jobs", "press", "media", "noreply", "no-reply",
-    "webmaster", "postmaster", "abuse", "marketing", "hr", "legal",
+    "webmaster", "postmaster", "abuse", "marketing", "hr", "legal", "accounts",
+    "enquiries", "inquiries", "general", "mail", "newsletter", "notifications",
+}
+
+# Free / personal mailbox providers: a local-part shape there tells us nothing
+# about anyone else, so we never pattern-guess or pattern-learn on these.
+FREE_PROVIDERS = {
+    "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.uk", "ymail.com",
+    "hotmail.com", "hotmail.co.uk", "outlook.com", "live.com", "msn.com",
+    "icloud.com", "me.com", "mac.com", "aol.com", "proton.me", "protonmail.com",
+    "pm.me", "gmx.com", "gmx.de", "mail.com", "zoho.com", "yandex.com",
+    "fastmail.com", "hey.com", "tutanota.com", "tuta.io",
 }
 
 # Domains that exist only to throw mail away — never worth verifying.
 DISPOSABLE_DOMAINS = {
     "mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com",
     "trashmail.com", "yopmail.com", "throwawaymail.com", "getnada.com",
+    "temp-mail.org", "sharklasers.com", "guerrillamail.info", "grr.la",
+    "maildrop.cc", "dispostable.com", "fakeinbox.com", "mailnesia.com",
+    "mohmal.com", "emailondeck.com", "spamgourmet.com", "33mail.com",
 }
 
 
@@ -44,20 +75,30 @@ def name_parts(full_name: str) -> tuple[str | None, str | None]:
     return first, last
 
 
+def fill(template: str, first: str, last: str) -> str | None:
+    """Render a local-part template for a name. None if it needs a part we lack."""
+    if not first:
+        return None
+    f = first[0] if first else ""
+    last_initial = last[0] if last else ""
+    if ("{last}" in template or "{l}" in template) and not last:
+        return None
+    try:
+        return template.format(first=first, last=last, f=f, l=last_initial)
+    except (KeyError, IndexError):
+        return None
+
+
 def candidate_emails(full_name: str, domain: str) -> list[str]:
     """Generate likely addresses for ``full_name`` at ``domain``, most-likely first."""
     first, last = name_parts(full_name)
     if not first:
         return []
-    if last:
-        locals_ = [
-            f"{first}.{last}", f"{first}", f"{first}{last}",
-            f"{first[0]}{last}", f"{first}_{last}", f"{first[0]}.{last}", f"{last}",
-        ]
-    else:
-        locals_ = [first]
+    if not last:
+        return [f"{first}@{domain}"]
     seen, out = set(), []
-    for lp in locals_:
+    for tmpl in PATTERN_TEMPLATES:
+        lp = fill(tmpl, first, last)
         if lp and lp not in seen:
             seen.add(lp)
             out.append(f"{lp}@{domain}")
@@ -73,6 +114,11 @@ def is_role_account(email: str) -> bool:
 def is_disposable(domain: str) -> bool:
     """True if the domain is a known disposable/throwaway mail provider."""
     return (domain or "").lower() in DISPOSABLE_DOMAINS
+
+
+def is_free_provider(domain: str) -> bool:
+    """True if the domain is a free/personal mailbox provider (gmail.com, …)."""
+    return (domain or "").lower() in FREE_PROVIDERS
 
 
 def is_common_pattern(email: str, full_name: str) -> bool:

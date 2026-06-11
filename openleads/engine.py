@@ -41,17 +41,26 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         score=email_result.score,
         source=entity.source,
         vertical=entity.extra.get("vertical", ""),
+        tier=email_result.tier,
+        reasons=email_result.reasons,
         signals=email_result.signals,
     )
 
 
-def build_leads(query: Query, cache=None, on_progress: ProgressFn = _noop) -> list[Lead]:
-    """Run the pipeline for ``query`` and return up to ``query.count`` leads."""
+def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _noop) -> list[Lead]:
+    """Run the pipeline for ``query`` and return up to ``query.count`` leads.
+
+    ``db`` (an :class:`openleads.db.DB`) enables persistent per-domain pattern
+    learning so accuracy compounds across runs. ``query.verified_only`` now means
+    "deliverable only" — it keeps only ``safe``-tier leads the engine is confident
+    won't bounce.
+    """
     name = query.source or default_source()
     source = get_source(name)
     if source is None:
         raise ValueError(f"unknown source: {name!r}. Try `openleads sources`.")
     source.cache = cache if query.use_cache else None
+    use_cache = cache if query.use_cache else None
 
     on_progress("phase", f"source={source.name} ({source.vertical}) — searching…")
 
@@ -61,18 +70,20 @@ def build_leads(query: Query, cache=None, on_progress: ProgressFn = _noop) -> li
             break
 
         if entity.domain:
-            result = find_email(entity.full_name, entity.domain,
-                                cache=cache if query.use_cache else None)
-            # Skip unusable domains (no MX) unless we're keeping rich records.
-            if result.confidence == "none" and not result.email:
+            result = find_email(entity.full_name, entity.domain, cache=use_cache,
+                                db=db, links=entity.links, deep=query.deep)
+            # Skip non-deliverable domains (no MX / disposable / unguessable personal).
+            if result.tier == "bad":
                 continue
         else:
             # Domain-less vertical (e.g. NPI): the public record is itself valuable.
             from openleads.models import EmailResult
-            result = EmailResult(confidence="none", score=0,
+            result = EmailResult(confidence="none", score=0, tier="bad",
+                                 reasons=["no email domain — public record only"],
                                  signals={"reason": "no_domain"})
 
-        if query.verified_only and result.confidence != "verified":
+        # verified_only → deliverable (safe) only.
+        if query.verified_only and result.tier != "safe":
             continue
 
         lead = entity_to_lead(entity, result)
