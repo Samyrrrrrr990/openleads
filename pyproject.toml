@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openleads"
-version = "3.0.0"
+version = "3.1.0"
 description = "Free, open-source Apollo alternative: find anyone, verify deliverably (7-signal engine), write and send cold email — local-first, keyless, $0. Pluggable public-data sources, a chat CLI, and a local web dashboard."
 readme = "README.md"
 requires-python = ">=3.8"

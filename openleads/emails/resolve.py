@@ -84,7 +84,32 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
     Returns an :class:`EmailResult` with ``email``, ``tier``, ``score`` and ``reasons``.
     """
     domain = (domain or "").lower().strip()
+    known = (known_email or "").lower().strip()
     ordered = _ordered_candidates(full_name, domain, db)
+
+    # --- ground truth, name-free fast path ---------------------------------- #
+    # A source handed us a real on-domain address (an HN apply email, a GitHub
+    # public email). It needs no name permutation — only a deliverable domain —
+    # so it works even for company-only leads with no person name.
+    if known and "@" in known and known.endswith("@" + domain):
+        gmx = _mx_lookup(domain, cache)
+        ghosts = gmx.get("hosts") or []
+        if ghosts and not is_disposable(domain):
+            gsig = {
+                "mx_exists": True,
+                "mx_resolvers_ok": gmx.get("resolvers_ok", 0),
+                "mx_agreement": gmx.get("agreement", False),
+                "disposable": False,
+                "free_provider": is_free_provider(domain),
+                "groundtruth_exact": True,
+                "role_account": is_role_account(known),
+                "common_pattern": is_common_pattern(known, full_name) if full_name else False,
+                "mx_provider": mxmod.classify_provider(ghosts),
+            }
+            gsig.update(mxmod.dns_health(domain, cache=cache))
+            patterns.learn_from_email(db, known, full_name)
+            return _emit(known, gsig)
+
     if not ordered:
         return _emit("", {"no_candidates": True, "mx_exists": True})
 

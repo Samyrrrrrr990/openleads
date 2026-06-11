@@ -4,6 +4,47 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [3.1.0] - 2026-06-11
+
+**Better leads, and they actually show up.** v3.0 shipped the engine; v3.1 fixes
+the thing that matters most — lead *quality and speed*. Previously only the YC
+source reliably produced emailable leads, the others quietly returned nothing, and
+a search could grind for minutes before coming up empty.
+
+### Added
+- **New source: `hn` — Hacker News "Who is hiring?"** The monthly thread is a
+  goldmine of companies hiring *right now*, posted as `Company | Role | …` with a
+  link and, very often, a **direct apply email**. Those emails are ground truth →
+  promoted to `safe` for free; the links give a real company domain. Keyless via
+  the Algolia API, one batch call, sub-second. This is the new flagship for
+  current, contactable B2B/tech leads.
+
+### Changed
+- **GitHub source rebuilt for quality.** It now filters hard for *real, contactable
+  developers* — a person-looking name plus a usable domain (public profile email →
+  ground truth, or a real personal/company site; social and blog-platform hosts are
+  rejected). Profiles are fetched concurrently (no more one-by-one + sleeps). Far
+  fewer junk/topic/org accounts, far higher hit rate.
+- **Engine is concurrent, fast-failing, and honest.** Email resolution runs in
+  parallel windows (a batch of MX/SMTP probes overlaps instead of blocking one at a
+  time), the scan **bails early** when a source can't satisfy the query (with a
+  clear message instead of a multi-minute silent wait), and underlying HTTP
+  failures are **surfaced** (e.g. "github returned HTTP 403 — set GITHUB_TOKEN")
+  instead of vanishing. Default HTTP timeout dropped 60s → 15s.
+- **Ground-truth resolution works for company-only leads.** A source-provided real
+  address (HN apply email, GitHub public email) now short-circuits to `safe` even
+  when there's no person name to permute — and a *published* role address
+  (`jobs@`, `careers@`) stays `safe` (it's the intended contact mailbox).
+- **OpenAlex** filters out concept/topic "authors" and only emits researchers with
+  an institution domain. **NPI/ProductHunt** no longer cause hangs (the engine
+  fast-marks domain-less records).
+- **Cache/DB are thread-safe** (shared safely across the new resolver threads).
+
+### CLI redesign
+- A proper **ASCII-art `OpenLeads` banner**, ANSI color, tier-colored results with
+  score meters, a proportional summary bar, and a clean `sources` listing. Color
+  auto-disables off-TTY / under `NO_COLOR`; force it with `FORCE_COLOR=1`.
+
 ## [3.0.0] - 2026-06-11
 
 **The ultimate update.** v2 found and verified leads. v3 becomes the complete,
@@ -119,6 +160,7 @@ extensible **"Apollo for everyone"** with an interactive chat CLI.
   IMAP "save to Sent".
 - Full project scaffolding: docs, tests, CI, issue/PR templates, license.
 
+[3.1.0]: https://github.com/Samyrrrrrr990/openleads/releases/tag/v3.1.0
 [3.0.0]: https://github.com/Samyrrrrrr990/openleads/releases/tag/v3.0.0
 [2.0.0]: https://github.com/Samyrrrrrr990/openleads/releases/tag/v2.0.0
 [0.1.0]: https://github.com/Samyrrrrrr990/openleads/releases/tag/v0.1.0

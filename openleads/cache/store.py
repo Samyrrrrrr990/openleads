@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 import time
 
 from openleads.config import cache_path
@@ -28,7 +29,10 @@ class Cache:
         self.ttls = dict(DEFAULT_TTLS)
         if ttls:
             self.ttls.update(ttls)
-        self._conn = sqlite3.connect(self.path)
+        # The engine resolves leads concurrently, so this connection is shared
+        # across threads — open it cross-thread and serialize calls with a lock.
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS cache ("
             "  ns TEXT NOT NULL, k TEXT NOT NULL, v TEXT NOT NULL,"
@@ -41,41 +45,45 @@ class Cache:
 
     def get(self, ns: str, key: str):
         """Return the cached value for (ns, key) if fresh, else None."""
-        row = self._conn.execute(
-            "SELECT v, ts FROM cache WHERE ns=? AND k=?", (ns, key)
-        ).fetchone()
-        if not row:
-            return None
-        value_json, ts = row
-        if time.time() - ts > self.ttl_for(ns):
-            self._conn.execute("DELETE FROM cache WHERE ns=? AND k=?", (ns, key))
-            self._conn.commit()
-            return None
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT v, ts FROM cache WHERE ns=? AND k=?", (ns, key)
+            ).fetchone()
+            if not row:
+                return None
+            value_json, ts = row
+            if time.time() - ts > self.ttl_for(ns):
+                self._conn.execute("DELETE FROM cache WHERE ns=? AND k=?", (ns, key))
+                self._conn.commit()
+                return None
         try:
             return json.loads(value_json)
         except (ValueError, TypeError):
             return None
 
     def set(self, ns: str, key: str, value) -> None:
-        self._conn.execute(
-            "INSERT OR REPLACE INTO cache (ns, k, v, ts) VALUES (?, ?, ?, ?)",
-            (ns, key, json.dumps(value), time.time()),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO cache (ns, k, v, ts) VALUES (?, ?, ?, ?)",
+                (ns, key, json.dumps(value), time.time()),
+            )
+            self._conn.commit()
 
     def clear(self) -> int:
         """Delete all cached rows. Returns how many were removed."""
-        cur = self._conn.execute("SELECT COUNT(*) FROM cache")
-        n = cur.fetchone()[0]
-        self._conn.execute("DELETE FROM cache")
-        self._conn.commit()
+        with self._lock:
+            cur = self._conn.execute("SELECT COUNT(*) FROM cache")
+            n = cur.fetchone()[0]
+            self._conn.execute("DELETE FROM cache")
+            self._conn.commit()
         return n
 
     def info(self) -> dict:
         """Counts per namespace, for ``openleads cache info``."""
-        rows = self._conn.execute(
-            "SELECT ns, COUNT(*) FROM cache GROUP BY ns"
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT ns, COUNT(*) FROM cache GROUP BY ns"
+            ).fetchall()
         return {"path": self.path, "counts": {ns: c for ns, c in rows}}
 
     def close(self) -> None:

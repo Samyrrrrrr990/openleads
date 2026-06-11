@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 import time
 from datetime import date, datetime
 from pathlib import Path
@@ -48,7 +49,11 @@ class DB:
 
     def __init__(self, path=None):
         self.path = str(path) if path else str(db_path())
-        self._conn = sqlite3.connect(self.path)
+        # The engine learns email patterns from concurrent resolver threads, so
+        # this connection is shared across threads — open it cross-thread and
+        # serialize the methods those threads touch (learn_pattern/patterns_for).
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._init()
 
@@ -92,19 +97,21 @@ class DB:
         domain = (domain or "").lower().strip()
         if not domain or not pattern:
             return
-        self._conn.execute(
-            "INSERT INTO patterns (domain, pattern, support, updated) VALUES (?,?,1,?) "
-            "ON CONFLICT(domain, pattern) DO UPDATE SET support = support + 1, updated = ?",
-            (domain, pattern, time.time(), time.time()),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO patterns (domain, pattern, support, updated) VALUES (?,?,1,?) "
+                "ON CONFLICT(domain, pattern) DO UPDATE SET support = support + 1, updated = ?",
+                (domain, pattern, time.time(), time.time()),
+            )
+            self._conn.commit()
 
     def patterns_for(self, domain: str) -> list[dict]:
         """Learned patterns for ``domain``, strongest first."""
-        rows = self._conn.execute(
-            "SELECT pattern, support FROM patterns WHERE domain=? ORDER BY support DESC",
-            ((domain or "").lower().strip(),),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT pattern, support FROM patterns WHERE domain=? ORDER BY support DESC",
+                ((domain or "").lower().strip(),),
+            ).fetchall()
         return [dict(r) for r in rows]
 
     # --- suppression ------------------------------------------------------- #
