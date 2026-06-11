@@ -20,6 +20,7 @@ import sys
 from openleads import __version__, intent, ui, writers
 from openleads.cache.store import Cache
 from openleads.config import openrouter_key
+from openleads.db import DB
 from openleads.engine import build_leads
 from openleads.models import Query
 from openleads.sources import get_source, list_sources
@@ -50,7 +51,10 @@ Slash commands:
   /sources            list available data sources
   /source NAME        pin the source (yc, github, npi, openalex, producthunt)
   /count N            set how many leads
-  /verified           toggle verified-only
+  /verified           toggle deliverable-only (safe tier)
+  /deep               toggle deep ground-truth harvesting (slower, more accurate)
+  /write              draft personalized emails for the current results
+  /send [live]        preview sends (or actually send with: /send live)
   /format FMT         csv | json | ndjson
   /export FILE        write the last results to FILE
   /cache              cache info  (/cache clear to empty it)
@@ -69,12 +73,15 @@ class Session:
         self.count: int = 20
         self.fmt: str = "csv"
         self.verified_only: bool = False
+        self.deep: bool = False
         self.last_leads: list = []
+        self.last_drafts: list = []
         self.cache = Cache()
+        self.db = DB()
 
     def base_query(self) -> Query:
         return Query(source=self.source, count=self.count, fmt=self.fmt,
-                     verified_only=self.verified_only)
+                     verified_only=self.verified_only, deep=self.deep)
 
 
 # --------------------------------------------------------------------------- #
@@ -139,7 +146,14 @@ def _handle_slash(cmd: str, sess: Session, console) -> bool:
             _say(console, "  usage: /count N")
     elif name == "/verified":
         sess.verified_only = not sess.verified_only
-        _say(console, f"  verified-only → {sess.verified_only}")
+        _say(console, f"  deliverable-only → {sess.verified_only}")
+    elif name == "/deep":
+        sess.deep = not sess.deep
+        _say(console, f"  deep harvesting → {sess.deep}")
+    elif name == "/write":
+        _do_write(sess, console)
+    elif name == "/send":
+        _do_send(sess, console, live=arg.strip().lower() in ("live", "--live", "yes"))
     elif name == "/format":
         if arg in ("csv", "json", "ndjson"):
             sess.fmt = arg
@@ -179,6 +193,47 @@ def _do_export(path: str, sess: Session, console):
     _say(console, f"  [green]✓[/] wrote {len(sess.last_leads)} leads → {path}")
 
 
+def _do_write(sess: Session, console):
+    """Draft personalized emails for the deliverable leads in the last result set."""
+    from openleads.outreach import compose
+    targets = [ld for ld in sess.last_leads if ld.email and ld.tier == "safe"]
+    if not targets:
+        _say(console, "  no deliverable (safe) leads to write — run a search first "
+                      "(tip: add 'verified only')")
+        return
+    _say(console, f"  writing {len(targets)} emails…")
+    sess.last_drafts = []
+    for ld in targets:
+        d = compose.draft(ld.to_dict())
+        sess.last_drafts.append(d)
+        warn = "" if d.lint.get("ok") else f"  [spam-lint {d.lint.get('score')}!]"
+        _say(console, f"\n  [bold]{d.email}[/]{warn}\n  Subject: {d.subject}")
+        for line in d.body.splitlines():
+            _say(console, f"    {line}")
+    _say(console, "\n  /send to preview delivery · /send live to actually send")
+
+
+def _do_send(sess: Session, console, live: bool):
+    """Send (or preview) the current drafts, honoring suppression + warmup."""
+    from openleads.outreach.sender import send_drafts
+    if not sess.last_drafts:
+        _do_write(sess, console)
+    if not sess.last_drafts:
+        return
+    if live:
+        _say(console, "  [yellow]sending for real…[/]")
+    results = send_drafts(sess.last_drafts, dry_run=not live, db=sess.db,
+                          campaign="chat")
+    sent = sum(1 for r in results if r.status == "sent")
+    prev = sum(1 for r in results if r.status == "preview")
+    skip = sum(1 for r in results if r.status == "skipped")
+    err = sum(1 for r in results if r.status == "error")
+    verb = "sent" if live else "previewed"
+    _say(console, f"  {verb}: {sent or prev} · skipped: {skip} · errors: {err}")
+    if not live:
+        _say(console, "  (/send live to actually deliver)")
+
+
 def _maybe_refine(text: str, sess: Session, console) -> bool:
     """Handle in-memory refinements on the last results. Return True if handled."""
     low = text.strip().lower()
@@ -207,6 +262,7 @@ def _run_search(text: str, sess: Session, console):
         industry=parsed.industry, location=parsed.location,
         title=parsed.title, keyword=parsed.keyword,
         verified_only=parsed.verified_only or base.verified_only,
+        deep=base.deep,
         fmt=base.fmt,
     )
     label = f"{q.source or 'auto'}"
@@ -222,7 +278,7 @@ def _run_search(text: str, sess: Session, console):
                 print(ui.lead_line(payload, len(leads), q.count))
 
     try:
-        result = build_leads(q, cache=sess.cache, on_progress=on_progress)
+        result = build_leads(q, cache=sess.cache, db=sess.db, on_progress=on_progress)
     except ValueError as e:
         _say(console, f"  [red]{e}[/]")
         return
@@ -283,6 +339,7 @@ def run() -> int:
             _run_search(text, session, console)
     finally:
         session.cache.close()
+        session.db.close()
     _say(console, "bye 👋")
     return 0
 
