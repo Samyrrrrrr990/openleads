@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Writing a source plugin · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Writing a source plugin." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link is-active" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Writing a source plugin</div>
+      <h1 id="writing-a-source-plugin">Writing a source plugin</h1>
+<p>A <strong>source</strong> is the only thing standing between OpenLeads and a new vertical. Everything downstream — email finding, SMTP verification, scoring, caching, CSV/JSON/NDJSON output, the chat CLI — is already done. You just teach OpenLeads how to <em>discover people</em> from some free, public dataset.</p>
+<p>This is the highest-leverage contribution you can make: one small file turns OpenLeads into "Apollo for <code>&lt;your vertical&gt;</code>".</p>
+<h2 id="the-contract" class="anchored"><a class="hlink" href="#the-contract">#</a>The contract</h2>
+<p>A source is a subclass of <code>openleads.sources.base.Source</code> that yields normalized <code>Entity</code> records:</p>
+<pre class="code" data-lang="python"><code>from typing import Iterator
+from openleads.sources.base import Source
+from openleads.models import Entity, Query
+
+
+class Source:
+    name: str        # registry key, lowercase, e.g. &quot;lawyers&quot;
+    kind: str        # &quot;company&quot; | &quot;people&quot;
+    vertical: str    # human label, e.g. &quot;attorneys&quot;
+    description: str  # one line shown by `openleads sources`
+
+    def search(self, query: Query) -&gt; Iterator[Entity]: ...</code></pre>
+<h3 id="the-entity-you-yield" class="anchored"><a class="hlink" href="#the-entity-you-yield">#</a>The <code>Entity</code> you yield</h3>
+<pre class="code" data-lang="python"><code>Entity(
+    full_name=&quot;Ada Lovelace&quot;,     # required for person email-finding
+    title=&quot;Partner&quot;,
+    organization=&quot;Acme LLP&quot;,
+    domain=&quot;acme.law&quot;,            # email domain if known/derivable (&quot;&quot; = none)
+    website=&quot;https://acme.law&quot;,
+    location=&quot;San Francisco, USA&quot;,
+    links={&quot;linkedin&quot;: &quot;...&quot;, &quot;bar_id&quot;: &quot;...&quot;},  # any profile URLs/ids
+    extra={&quot;industry&quot;: &quot;Law&quot;, &quot;city&quot;: &quot;SF&quot;, &quot;country&quot;: &quot;USA&quot;,
+           &quot;vertical&quot;: &quot;attorneys&quot;},             # surfaced in output
+    source=self.name,
+)</code></pre>
+<ul><li><strong>If you set <code>domain</code></strong>, the engine finds and verifies an email automatically.</li><li><strong>If you don't</strong> (many public registries have no email/website), the engine</li></ul>
+<p>still emits the record — the public data itself is valuable. Confidence is   honestly labeled <code>none</code>. NPI (doctors) works exactly this way.</p>
+<h3 id="the-query-you-receive" class="anchored"><a class="hlink" href="#the-query-you-receive">#</a>The <code>Query</code> you receive</h3>
+<p><code>Query</code> carries what the user asked for. Use what's relevant to your dataset:</p>
+<div class="tablewrap"><table><thead><tr><th>field</th><th>meaning</th></tr></thead><tbody><tr><td><code>count</code></td><td>how many leads the user wants (cap your fetch around this)</td></tr><tr><td><code>keyword</code> / <code>industry</code></td><td>free-text topic/specialty (e.g. "fintech", "pediatric")</td></tr><tr><td><code>location</code></td><td>place filter</td></tr><tr><td><code>title</code></td><td>role filter</td></tr><tr><td><code>verified_only</code></td><td>the engine applies this for you — you can ignore it</td></tr><tr><td><code>max_companies</code></td><td>scan budget (for sources that page through many entities)</td></tr></tbody></table></div>
+<h2 id="two-ways-to-add-one" class="anchored"><a class="hlink" href="#two-ways-to-add-one">#</a>Two ways to add one</h2>
+<h3 id="1-a-user-plugin-fastest" class="anchored"><a class="hlink" href="#1-a-user-plugin-fastest">#</a>1. A user plugin (no reinstall) — fastest</h3>
+<p>Drop a <code>*.py</code> file into <code>~/.openleads/sources/</code>. It's auto-discovered on the next run. Great for private/company-specific sources you don't want to publish.</p>
+<pre class="code" data-lang="python"><code># ~/.openleads/sources/crm_export.py
+import csv
+from openleads.sources.base import Source
+from openleads.models import Entity, Query
+
+class CRMExportSource(Source):
+    name = &quot;crm&quot;
+    kind = &quot;people&quot;
+    vertical = &quot;my CRM export&quot;
+    description = &quot;Reads contacts from ~/contacts.csv and verifies their emails.&quot;
+
+    def search(self, query: Query):
+        with open(&quot;/Users/me/contacts.csv&quot;, newline=&quot;&quot;) as f:
+            for i, row in enumerate(csv.DictReader(f)):
+                if i &gt;= query.count:
+                    break
+                yield Entity(full_name=row[&quot;name&quot;], organization=row[&quot;company&quot;],
+                             domain=row[&quot;domain&quot;], source=self.name)</code></pre>
+<pre class="code" data-lang="bash"><code>openleads sources            # &#x27;crm&#x27; now appears
+openleads find --source crm --count 50 --verified-only</code></pre>
+<h3 id="2-a-built-in-source-contribute-it-back" class="anchored"><a class="hlink" href="#2-a-built-in-source-contribute-it-back">#</a>2. A built-in source — contribute it back</h3>
+<p>Add a module under <code>openleads/sources/</code> (e.g. <code>lawyers.py</code>), implement the class, add a fixture-based parse test under <code>tests/</code>, and open a PR. The registry finds any <code>Source</code> subclass defined in the package automatically.</p>
+<h2 id="http-caching-and-politeness" class="anchored"><a class="hlink" href="#http-caching-and-politeness">#</a>HTTP, caching, and politeness</h2>
+<p>Use the shared helpers so you get caching and a sane User-Agent for free:</p>
+<pre class="code" data-lang="python"><code>from openleads._http import get_json, get_text
+
+def search(self, query):
+    data = get_json(&quot;https://api.example.com/people?q=...&quot;,
+                    cache=self.cache, ttl_ns=&quot;dataset&quot;)   # cached ~1 day
+    ...</code></pre>
+<ul><li><code>self.cache</code> is injected by the engine before <code>search()</code> runs (may be <code>None</code></li></ul>
+<p>when caching is disabled). Pass it straight through to <code>get_json</code>/<code>get_text</code>.</p>
+<ul><li><strong>Be polite:</strong> prefer keyless public APIs, respect rate limits, add small</li></ul>
+<p>delays when paging, and degrade gracefully (return fewer/no results, never   crash) when a service is down or its shape changes.</p>
+<ul><li><strong>Stay keyless.</strong> OpenLeads' promise is "no API keys." If a source <em>can</em> use an</li></ul>
+<p>optional token for higher limits (like GitHub's <code>GITHUB_TOKEN</code>), make it   optional — keyless must still work.</p>
+<h2 id="testing-your-parser" class="anchored"><a class="hlink" href="#testing-your-parser">#</a>Testing your parser</h2>
+<p>Keep the network-touching part thin and the parsing pure, then test the parser with a saved fixture (no network):</p>
+<pre class="code" data-lang="python"><code>def test_my_source_parse():
+    sample = {&quot;results&quot;: [{&quot;name&quot;: &quot;Ada&quot;, &quot;firm&quot;: &quot;Acme&quot;, &quot;domain&quot;: &quot;acme.law&quot;}]}
+    ents = MySource()._parse(sample)   # a pure helper you wrote
+    assert ents[0].domain == &quot;acme.law&quot;</code></pre>
+<p>That's it. Ship a vertical in ~30 lines.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="web.html"><span>← Previous</span><b>Web dashboard</b></a>
+<a class="pn pn--next" href="architecture.html"><span>Next →</span><b>Architecture</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#the-contract">The contract</a><a class="toc__l3" href="#the-entity-you-yield">The Entity you yield</a><a class="toc__l3" href="#the-query-you-receive">The Query you receive</a><a class="toc__l2" href="#two-ways-to-add-one">Two ways to add one</a><a class="toc__l3" href="#1-a-user-plugin-fastest">1. A user plugin (no reinstall) — fastest</a><a class="toc__l3" href="#2-a-built-in-source-contribute-it-back">2. A built-in source — contribute it back</a><a class="toc__l2" href="#http-caching-and-politeness">HTTP, caching, and politeness</a><a class="toc__l2" href="#testing-your-parser">Testing your parser</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

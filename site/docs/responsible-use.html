@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Responsible use · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Responsible use." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link is-active" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Responsible use</div>
+      <h1 id="responsible-use">Responsible use</h1>
+<p>OpenLeads is a powerful, free tool. With that comes responsibility. Read this before running campaigns.</p>
+<h2 id="what-openleads-is-for" class="anchored"><a class="hlink" href="#what-openleads-is-for">#</a>What OpenLeads is for</h2>
+<ul><li>Legitimate <strong>B2B outreach</strong> (sales, partnerships, sponsorships)</li><li><strong>Recruiting</strong> and talent sourcing</li><li><strong>Research</strong> on startup ecosystems</li><li>Building <strong>your own</strong> CRM/prospecting workflows</li></ul>
+<h2 id="what-it-is-not-for" class="anchored"><a class="hlink" href="#what-it-is-not-for">#</a>What it is <strong>not</strong> for</h2>
+<ul><li>Spam, bulk unsolicited blasting, or buying/selling scraped lists</li><li>Harassment, scams, phishing, or any deceptive messaging</li><li>Scraping behind logins or violating a site's Terms of Service</li><li>Circumventing rate limits or hammering mail servers</li></ul>
+<h2 id="know-the-law" class="anchored"><a class="hlink" href="#know-the-law">#</a>Know the law</h2>
+<p>Cold email is legal in many places <strong>if you follow the rules</strong>. You are responsible for compliance, which may include:</p>
+<ul><li><strong>CAN-SPAM (US):</strong> truthful headers/subject, a valid physical address, a working</li></ul>
+<p>unsubscribe, and honoring opt-outs promptly.</p>
+<ul><li><strong>GDPR / ePrivacy (EU/UK):</strong> have a lawful basis (often "legitimate interest" for B2B),</li></ul>
+<p>honor objections, and disclose how you got the contact.</p>
+<ul><li><strong>CASL (Canada):</strong> stricter consent rules — understand them before emailing Canadians.</li></ul>
+<p>This is not legal advice. When in doubt, consult a professional.</p>
+<h2 id="be-a-good-citizen-of-the-network" class="anchored"><a class="hlink" href="#be-a-good-citizen-of-the-network">#</a>Be a good citizen of the network</h2>
+<ul><li>Keep the built-in <strong>rate limits and delays</strong>. They protect mail servers and your</li></ul>
+<p>sending reputation.</p>
+<ul><li>Verification probes never send mail, but they still touch other people's</li></ul>
+<p>infrastructure — don't run them at abusive volume.</p>
+<ul><li>Use a <strong>dedicated sending domain/mailbox</strong>, warm it up, and watch your bounce rate.</li></ul>
+<p>High bounces hurt deliverability for everyone on your domain.</p>
+<ul><li>Send <strong>relevant, personalized, low-volume</strong> outreach. It performs better anyway.</li></ul>
+<h2 id="sensitive-verticals" class="anchored"><a class="hlink" href="#sensitive-verticals">#</a>Sensitive verticals (read this)</h2>
+<p>v2.0 can reach beyond startup founders into verticals that carry extra ethical and legal weight. The data is public, but <strong>public ≠ fair game for any use</strong>.</p>
+<ul><li><strong>Healthcare providers (NPI):</strong> The NPI Registry is public U.S. government data and</li></ul>
+<p>contains <em>practice</em> information, not personal/patient data — HIPAA does not apply to it.   But cold-emailing clinicians is heavily regulated and easily resented. The <code>npi</code> source   deliberately returns rich records <strong>without fabricating emails</strong> (NPI rarely exposes one).   Use it for legitimate research, directory building, or genuinely relevant B2B outreach —   never for medical spam, lead-list resale, or anything touching patients.</p>
+<ul><li><strong>Researchers / academics (OpenAlex, ORCID):</strong> Scholarly metadata is open by design for</li></ul>
+<p><em>scholarly</em> purposes. Respect that intent — relevant collaboration, recruiting, or   conference outreach is fine; bulk marketing blasts are not.</p>
+<ul><li><strong>Developers (GitHub):</strong> A public profile email is published for project contact, not</li></ul>
+<p>for cold sales sequences. Be relevant and low-volume.</p>
+<p>When a vertical feels sensitive, it is. Default to less volume, more relevance, and an easy opt-out — or don't send at all.</p>
+<h2 id="data-hygiene" class="anchored"><a class="hlink" href="#data-hygiene">#</a>Data hygiene</h2>
+<ul><li>Never commit scraped emails or <code>leads.csv</code> to a public repo (the <code>.gitignore</code> already</li></ul>
+<p>blocks this).</p>
+<ul><li>Delete data you no longer need.</li><li>Honor any opt-out or deletion request immediately.</li></ul>
+<p>Used well, OpenLeads helps small teams and nonprofits compete with expensive tools. Please keep it that way.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="how-it-works.html"><span>← Previous</span><b>Email engine</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#what-openleads-is-for">What OpenLeads is for</a><a class="toc__l2" href="#what-it-is-not-for">What it is not for</a><a class="toc__l2" href="#know-the-law">Know the law</a><a class="toc__l2" href="#be-a-good-citizen-of-the-network">Be a good citizen of the network</a><a class="toc__l2" href="#sensitive-verticals">Sensitive verticals (read this)</a><a class="toc__l2" href="#data-hygiene">Data hygiene</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

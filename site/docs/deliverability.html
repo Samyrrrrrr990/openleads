@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deliverability — how OpenLeads decides what&#x27;s safe to send · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Deliverability — how OpenLeads decides what&#x27;s safe to send." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link is-active" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Deliverability — how OpenLeads decides what&#x27;s safe to send</div>
+      <h1 id="deliverability-how-openleads-decides-what-s-safe-to-send">Deliverability — how OpenLeads decides what's safe to send</h1>
+<p>The crown jewel of v3. The goal: <strong>only mark an address <code>safe</code> when it's genuinely likely to land</strong>, and do it <strong>without depending on outbound port 25</strong>, which home ISPs and most clouds block.</p>
+<p>This is what separates OpenLeads from free-tier finders that quietly hand you <code>first.last@domain</code> guesses and let your campaign bounce.</p>
+<hr/>
+<h2 id="the-problem-with-single-probe-verification" class="anchored"><a class="hlink" href="#the-problem-with-single-probe-verification">#</a>The problem with single-probe verification</h2>
+<p>The classic "email verifier" opens an SMTP connection to the domain's mail server and issues <code>RCPT TO:&lt;candidate&gt;</code> — if the server says <code>250 OK</code>, the address exists.</p>
+<p>Two things break this:</p>
+<ol><li><strong>Port 25 is blocked.</strong> Residential ISPs and providers like AWS/GCP block</li></ol>
+<p>outbound port 25 by default. The probe never connects, so the verifier either    fails open (marks everything deliverable → bounces) or fails closed (marks    everything undeliverable → you lose real leads).</p>
+<ol><li><strong>Catch-all domains.</strong> Many domains accept <em>every</em> address (<code>250 OK</code> for</li></ol>
+<p><code>asdkfj@domain</code>), so a single probe tells you nothing.</p>
+<p>OpenLeads treats SMTP as <strong>one signal among seven</strong>, not the whole answer.</p>
+<h2 id="the-seven-signals" class="anchored"><a class="hlink" href="#the-seven-signals">#</a>The seven signals</h2>
+<p>All implemented in <code>openleads/emails/</code>. Each is best-effort; <strong>any signal error is treated as absent, never as a false positive</strong> — the engine biases toward <em>not</em> marking something <code>safe</code>.</p>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>Signal</th><th>Module</th><th>Port 25?</th></tr></thead><tbody><tr><td>1</td><td><strong>MX consensus</strong> — resolved over <strong>two</strong> DoH resolvers (Google + Cloudflare); they must agree the domain has mail exchangers</td><td><code>mx.py</code></td><td>no</td></tr><tr><td>2</td><td><strong>SPF / DMARC presence + policy, MX provider class</strong> — TXT lookups that show the domain is a real, configured mail sender</td><td><code>mx.py</code></td><td>no</td></tr><tr><td>3</td><td><strong>Disposable / role / free-provider filtering</strong> — static lists drop <code>info@</code>, <code>noreply@</code>, throwaway domains, etc.</td><td><code>patterns.py</code></td><td>no</td></tr><tr><td>4</td><td><strong>Gravatar existence</strong> — <code>md5(email)</code> → <code>gravatar.com</code> returns 200 (exists) or 404; a free existence hint with no mail connection</td><td><code>gravatar.py</code></td><td>no</td></tr><tr><td>5</td><td><strong>Ground-truth harvesting</strong> — the strongest signal: <em>real</em> addresses pulled from GitHub commit authors, <code>mailto:</code> links, and <code>/.well-known/security.txt</code>. An exact match is <code>safe</code> outright</td><td><code>groundtruth.py</code></td><td>no</td></tr><tr><td>6</td><td><strong>Learned domain patterns</strong> — once any ground-truth email is seen at a domain, its local-part shape (e.g. <code>{first}</code>) is stored and tried first for everyone else there. Compounds across runs</td><td><code>patterns.py</code></td><td>no</td></tr><tr><td>7</td><td><strong>SMTP <code>RCPT</code> + catch-all double-probe</strong> — when port 25 <em>is</em> open, a greylist-aware probe with a two-random-local catch-all test</td><td><code>smtp_verify.py</code></td><td><strong>yes</strong></td></tr></tbody></table></div>
+<h2 id="scoring-tiers" class="anchored"><a class="hlink" href="#scoring-tiers">#</a>Scoring → tiers</h2>
+<p><code>score.py</code> is a <strong>pure function</strong>: <code>signals → {score: 0–100, tier, confidence, reasons[]}</code>. Because it's pure, it's exhaustively unit-tested with no network.</p>
+<ul><li><strong><code>safe</code></strong> — emit and send by default. Triggers include:<ul><li>a <strong>ground-truth exact match</strong>; or</li><li><strong>SMTP-verified</strong> (non-catch-all); or</li><li><strong>learned-pattern match AND Gravatar hit AND healthy MX AND not catch-all</strong>; or</li><li><strong>Gravatar hit AND common pattern AND healthy SPF/DMARC</strong>.</li></ul></li><li><strong><code>risky</code></strong> — kept but <strong>not sent by default</strong>. Catch-all domains, pattern-only</li></ul>
+<p>guesses, port-25-blocked-without-corroboration, role-ish addresses.</p>
+<ul><li><strong><code>bad</code></strong> — dropped. No MX, disposable, invalid syntax.</li></ul>
+<p><code>confidence</code> keeps v2's labels (<code>verified</code> / <code>catch_all_guess</code> / <code>pattern_guess</code> / <code>none</code>) for backward compatibility; <code>tier</code> and <code>reasons[]</code> are the v3 additions that drive the UX ("why is this safe?").</p>
+<pre class="code" data-lang="python"><code>from openleads.emails.resolve import find_email, verify_address
+
+res = verify_address(&quot;ada@acme.ai&quot;)
+print(res.tier, res.score, res.reasons)
+# safe 96 [&#x27;ground-truth match (github commit)&#x27;, &#x27;MX consensus&#x27;, &#x27;SPF+DMARC present&#x27;]</code></pre>
+<h2 id="the-pattern-learning-flywheel" class="anchored"><a class="hlink" href="#the-pattern-learning-flywheel">#</a>The pattern-learning flywheel</h2>
+<p>This is why OpenLeads gets <strong>more accurate the more you use it</strong>. Every ground-truth email teaches the engine that domain's convention; that lesson is stored in <code>~/.openleads/openleads.db</code> (<code>patterns</code> table) and applied to every future person at that domain — promoting an otherwise-unconfirmed guess to <code>safe</code> when corroborated.</p>
+<p>Free tiers can't do this: their database is the moat, so they have no incentive to make <em>your</em> guesses smarter. OpenLeads' moat is the <em>engine</em>, so it does.</p>
+<h2 id="when-port-25-is-blocked" class="anchored"><a class="hlink" href="#when-port-25-is-blocked">#</a>When port 25 is blocked</h2>
+<p>You lose only signal #7. Signals #1–#6 still run, so you still get plenty of <code>safe</code> leads — they just need corroboration (ground truth, learned pattern + Gravatar, or healthy auth + common pattern) instead of a live <code>RCPT</code>. Run <code>openleads doctor</code> to see whether port 25 is open from your machine.</p>
+<h2 id="honesty-as-a-feature" class="anchored"><a class="hlink" href="#honesty-as-a-feature">#</a>Honesty as a feature</h2>
+<p>OpenLeads would rather under-claim than bounce your domain. A <code>risky</code> lead you <em>chose</em> to send beats a <code>safe</code> lead that wasn't. That conservatism is the whole point — deliverability is a reputation game, and one bad batch tanks your inbox placement.</p>
+<p>See also: <a href="sending.html">Sending guide</a> · <a href="architecture.html">Architecture</a>.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="quickstart.html"><span>← Previous</span><b>Quickstart</b></a>
+<a class="pn pn--next" href="sending.html"><span>Next →</span><b>Sending</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#the-problem-with-single-probe-verification">The problem with single-probe verification</a><a class="toc__l2" href="#the-seven-signals">The seven signals</a><a class="toc__l2" href="#scoring-tiers">Scoring → tiers</a><a class="toc__l2" href="#the-pattern-learning-flywheel">The pattern-learning flywheel</a><a class="toc__l2" href="#when-port-25-is-blocked">When port 25 is blocked</a><a class="toc__l2" href="#honesty-as-a-feature">Honesty as a feature</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

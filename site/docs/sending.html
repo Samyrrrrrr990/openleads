@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sending — cold email that lands, safely · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Sending — cold email that lands, safely." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link is-active" href="sending.html">Sending</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Sending — cold email that lands, safely</div>
+      <h1 id="sending-cold-email-that-lands-safely">Sending — cold email that lands, safely</h1>
+<p>OpenLeads sends over <strong>your own</strong> mailbox, with the guardrails that separate "reaches the inbox" from "lands in spam / burns your domain." Everything here is <strong>dry-run by default</strong>; real sends require an explicit <code>--live</code> (CLI) or the live toggle (web), plus a confirmation.</p>
+<blockquote>The finder never touches your mailbox. Only <code>run</code> / <code>send</code> / <code>campaign</code> do.</blockquote>
+<hr/>
+<h2 id="1-connect-a-mailbox" class="anchored"><a class="hlink" href="#1-connect-a-mailbox">#</a>1. Connect a mailbox</h2>
+<pre class="code" data-lang="bash"><code>openleads config</code></pre>
+<p>Pick a provider preset and supply an <strong>app password</strong> (not your account password):</p>
+<div class="tablewrap"><table><thead><tr><th>Provider</th><th>Host</th><th>Port</th><th>App-password docs</th></tr></thead><tbody><tr><td><code>gmail</code> / <code>workspace</code></td><td><code>smtp.gmail.com</code></td><td>465 (SSL)</td><td>Google App Passwords (needs 2FA)</td></tr><tr><td><code>outlook</code> / <code>office365</code></td><td><code>smtp.office365.com</code></td><td>587 (STARTTLS)</td><td>Microsoft App Password (Security)</td></tr><tr><td><code>zoho</code></td><td><code>smtp.zoho.com</code></td><td>465 (SSL)</td><td>Zoho app-specific password</td></tr><tr><td><code>custom</code></td><td>you set <code>smtp_host</code></td><td>465 or 587</td><td>your provider</td></tr></tbody></table></div>
+<p>Credentials are stored in <code>~/.openleads/secrets.json</code> (<code>chmod 600</code>). Env vars and a local <code>.env</code> still take precedence (handy for CI), so nothing forces you to put secrets in the store. Verify with <code>openleads doctor</code>, which attempts a real SMTP login and reports the result.</p>
+<h2 id="2-the-sender-preflight" class="anchored"><a class="hlink" href="#2-the-sender-preflight">#</a>2. The sender preflight</h2>
+<p>Before a single email goes out, <code>outreach/deliverability.py</code> audits <strong>your sending domain</strong> and returns a readiness grade:</p>
+<pre class="code"><code>SPF      present        (+30)
+DKIM     found          (+30)   ← selector probe / advisory
+DMARC    p=quarantine   (+40)
+─────────────────────────────
+grade A · 100/100 · ready</code></pre>
+<ul><li><strong>SPF</strong> authorizes your provider to send for your domain.</li><li><strong>DKIM</strong> cryptographically signs your mail.</li><li><strong>DMARC</strong> tells receivers what to do with unauthenticated mail (and <code>p=none</code> is</li></ul>
+<p>weak — push toward <code>p=quarantine</code>).</p>
+<p>Missing pieces are the #1 reason cold email hits spam. <code>doctor</code> and the web Send page both surface the grade + exact fixes.</p>
+<h2 id="3-warmup" class="anchored"><a class="hlink" href="#3-warmup">#</a>3. Warmup</h2>
+<p>Brand-new mailboxes that suddenly blast 200 emails get flagged. The warmup planner (<code>deliverability.warmup_status</code>) computes today's allowance from a ramp:</p>
+<pre class="code"><code>warmup_start = 10     # day 1 allowance
+warmup_step  = 5      # +5 each subsequent day
+daily_cap    = 40     # hard ceiling</code></pre>
+<p>Day 1 → 10, day 2 → 15, … capped at <code>daily_cap</code>. The sender refuses to exceed the day's allowance and tells you how many remain. Tune these in <code>openleads config</code> (group <code>sending</code>).</p>
+<h2 id="4-how-a-send-actually-goes-out" class="anchored"><a class="hlink" href="#4-how-a-send-actually-goes-out">#</a>4. How a send actually goes out</h2>
+<p><code>outreach/sender.py</code>, for each recipient:</p>
+<ol><li><strong>Suppression check</strong> — skips anyone bounced / unsubscribed / replied /</li></ol>
+<p>do-not-contact / duplicate. The suppression list is permanent and local.</p>
+<ol><li><strong>Warmup check</strong> — stops at the day's allowance.</li><li><strong>Human pacing</strong> — a randomized delay (<code>send_delay_min</code>–<code>send_delay_max</code> seconds,</li></ol>
+<p>default 25–90) between real sends.</p>
+<ol><li><strong>Proper headers</strong> — <code>Message-ID</code>, <code>Date</code>, threading headers, and</li></ol>
+<p><strong><code>List-Unsubscribe</code> + <code>List-Unsubscribe-Post</code></strong> (one-click). Plain-text default;    <strong>no open-tracking pixels</strong>.</p>
+<ol><li><strong>Logged + resumable</strong> — every attempt is written to the local CRM (<code>touches</code>), so</li></ol>
+<p>a crashed batch resumes cleanly and reporting is exact.</p>
+<p>By default OpenLeads sends <strong>only to <code>safe</code>-tier</strong> addresses. Opt into <code>risky</code> with the <code>include_risky</code> setting (off is safer).</p>
+<h2 id="5-drafting" class="anchored"><a class="hlink" href="#5-drafting">#</a>5. Drafting</h2>
+<p><code>outreach/compose.py</code> writes each email from the lead's facts:</p>
+<ul><li>With <code>OPENROUTER_API_KEY</code> set, a <strong>free LLM</strong> drafts a personalized subject + body</li></ul>
+<p>(retried until placeholder-free).</p>
+<ul><li>Without a key, a <strong>deterministic template</strong> is used.</li></ul>
+<p>Either way the draft is <strong>spam-linted</strong> (spammy-word score, link count, caps ratio, length) and stripped of stray placeholders and em-dash tells. You can edit any draft before sending — in the web Compose page, your edits are exactly what's sent.</p>
+<h2 id="6-follow-ups-reply-detection" class="anchored"><a class="hlink" href="#6-follow-ups-reply-detection">#</a>6. Follow-ups &amp; reply detection</h2>
+<p><code>outreach/sequences.py</code> schedules steps 2..N; <code>outreach/inbox.py</code> (optional IMAP) detects replies and bounces and <strong>stops</strong> the sequence, updating suppression. Run:</p>
+<pre class="code" data-lang="bash"><code>openleads inbox --days 21</code></pre>
+<h2 id="7-commands" class="anchored"><a class="hlink" href="#7-commands">#</a>7. Commands</h2>
+<pre class="code" data-lang="bash"><code>openleads run  &quot;&lt;query&gt;&quot;          # find → write → send (dry-run)
+openleads run  &quot;&lt;query&gt;&quot; --live   # …for real
+openleads send &quot;&lt;query&gt;&quot; --live   # same pipeline, terse output
+openleads write &quot;&lt;query&gt;&quot; -o drafts.json   # stop after drafting</code></pre>
+<h2 id="safety-defaults-in-one-place" class="anchored"><a class="hlink" href="#safety-defaults-in-one-place">#</a>Safety defaults, in one place</h2>
+<ul><li>Dry-run everywhere; <code>--live</code> + confirm to send.</li><li><code>safe</code>-tier only unless you opt into <code>risky</code>.</li><li>Hard daily cap + warmup ramp + human pacing.</li><li>Permanent suppression; one-click unsubscribe; no tracking pixels.</li><li>Per-recipient try/except — one failure never aborts the batch.</li></ul>
+<p>You still own compliance (CAN-SPAM, GDPR, CASL) — see <a href="responsible-use.html">responsible-use.md</a>. OpenLeads gives you the guardrails; using them well is on you.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="deliverability.html"><span>← Previous</span><b>Deliverability</b></a>
+<a class="pn pn--next" href="web.html"><span>Next →</span><b>Web dashboard</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-connect-a-mailbox">1. Connect a mailbox</a><a class="toc__l2" href="#2-the-sender-preflight">2. The sender preflight</a><a class="toc__l2" href="#3-warmup">3. Warmup</a><a class="toc__l2" href="#4-how-a-send-actually-goes-out">4. How a send actually goes out</a><a class="toc__l2" href="#5-drafting">5. Drafting</a><a class="toc__l2" href="#6-follow-ups-reply-detection">6. Follow-ups &amp; reply detection</a><a class="toc__l2" href="#7-commands">7. Commands</a><a class="toc__l2" href="#safety-defaults-in-one-place">Safety defaults, in one place</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>
