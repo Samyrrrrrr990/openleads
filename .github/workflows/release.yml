@@ -73,19 +73,27 @@ jobs:
     environment: release
     permissions:
       id-token: write
+    env:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
     steps:
       - uses: actions/download-artifact@v4
         with: { name: dist, path: dist }
-      # Trusted Publishing if configured on PyPI; otherwise falls back to a token.
+      # Prefer Trusted Publishing (no token) when enabled on PyPI; else use a token
+      # if one is set. With neither configured, both steps are skipped cleanly —
+      # no misleading green, no accidental publish.
       - name: Publish (Trusted Publishing / OIDC)
         if: vars.PYPI_TRUSTED_PUBLISHING == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Publish (API token)
-        if: vars.PYPI_TRUSTED_PUBLISHING != 'true'
+        if: ${{ vars.PYPI_TRUSTED_PUBLISHING != 'true' && env.PYPI_API_TOKEN != '' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-        continue-on-error: true
+      - name: No PyPI credentials configured
+        if: ${{ vars.PYPI_TRUSTED_PUBLISHING != 'true' && env.PYPI_API_TOKEN == '' }}
+        run: |
+          echo "::notice::Skipping PyPI publish — set up Trusted Publishing (repo var"
+          echo "PYPI_TRUSTED_PUBLISHING=true) or add a PYPI_API_TOKEN secret to enable it."
 
   npm:
     name: Publish to npm
