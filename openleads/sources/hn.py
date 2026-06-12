@@ -59,7 +59,17 @@ def _company_name(first_line: str) -> str:
     name = re.sub(r"\(YC[^)]*\)", "", name, flags=re.I)          # drop "(YC W24)"
     name = re.sub(r"https?://\S+", "", name)
     name = re.sub(r"\(\s*\)", "", name)                          # drop empty "( )"
+    # Some posts have no '|' and run the company name straight into a sentence
+    # ("Acme is hiring a senior engineer…"). Cut at the first clause/verb so we
+    # store "Acme", not a whole sentence as the organization name.
+    name = re.split(r"\b(?:is|are|—|–|-|:|,|\.| seeking| looking| hiring| wants"
+                    r"| needs| we're| we are)\b", name, maxsplit=1, flags=re.I)[0]
     name = name.strip(" -—–:•/\\\t")
+    # If it's still sentence-shaped (too many words), keep only the leading
+    # proper-noun-ish run so the CRM isn't full of marketing copy.
+    words = name.split()
+    if len(words) > 6:
+        name = " ".join(words[:6])
     return name[:60].strip()
 
 

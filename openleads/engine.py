@@ -59,6 +59,7 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         tier=email_result.tier,
         reasons=email_result.reasons,
         signals=email_result.signals,
+        confidence_pct=email_result.confidence_pct,
     )
 
 

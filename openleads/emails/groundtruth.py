@@ -21,6 +21,7 @@ and unit-tested.
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 from openleads._http import get_json, get_text
 from openleads.config import USER_AGENT, github_token
@@ -64,25 +65,34 @@ def extract_emails(text: str, domain: str | None = None) -> list[str]:
     return out
 
 
-def harvest_from_site(domain: str, cache=None, timeout: int = 15) -> list[str]:
-    """Scrape a domain's public pages for ``@domain`` addresses."""
+_SITE_PATHS = ("", "/contact", "/about", "/team",
+               "/.well-known/security.txt", "/security.txt")
+
+
+def harvest_from_site(domain: str, cache=None, timeout: int = 8) -> list[str]:
+    """Scrape a domain's public pages for ``@domain`` addresses.
+
+    Pages are fetched **concurrently** with a short timeout so a slow or dead site
+    can't stall the engine — this runs by default for every corporate-domain lead
+    (it's the free analogue of Hunter's domain search), so it has to be fast.
+    """
     if not domain:
         return []
+
+    def fetch(path: str) -> str | None:
+        return get_text(f"https://{domain}{path}", timeout=timeout,
+                        cache=cache, ttl_ns="dataset")
+
     found: list[str] = []
-    seen = set()
-    paths = ["", "/contact", "/about", "/team",
-             "/.well-known/security.txt", "/security.txt"]
-    for path in paths:
-        url = f"https://{domain}{path}"
-        text = get_text(url, timeout=timeout, cache=cache, ttl_ns="dataset")
-        if not text:
-            continue
-        for e in extract_emails(text, domain):
-            if e not in seen:
-                seen.add(e)
-                found.append(e)
-        if len(found) >= 5:
-            break
+    seen: set[str] = set()
+    with ThreadPoolExecutor(max_workers=len(_SITE_PATHS)) as ex:
+        for text in ex.map(fetch, _SITE_PATHS):
+            if not text:
+                continue
+            for e in extract_emails(text, domain):
+                if e not in seen:
+                    seen.add(e)
+                    found.append(e)
     return found
 
 
