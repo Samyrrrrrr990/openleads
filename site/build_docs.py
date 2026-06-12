@@ -28,6 +28,7 @@ NAV = [
     ("Guides", [
         ("deliverability", "Deliverability"),
         ("sending", "Sending"),
+        ("automation", "Automation & assistant"),
         ("web", "Web dashboard"),
         ("sources", "Add a source"),
     ]),

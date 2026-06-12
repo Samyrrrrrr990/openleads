@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Automation &amp; the assistant · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Automation &amp; the assistant." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link is-active" href="automation.html">Automation & assistant</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Automation &amp; the assistant</div>
+      <h1 id="automation-the-assistant">Automation &amp; the assistant</h1>
+<p>OpenLeads v3.5 can run your outreach for you: describe a campaign in one line, and let your own machine find, draft, and send it at the right time — with every message landing in your <strong>Sent</strong> folder like you typed it yourself.</p>
+<h2 id="the-assistant" class="anchored"><a class="hlink" href="#the-assistant">#</a>The assistant (natural language → a configured campaign)</h2>
+<p>Tell OpenLeads what you want in plain English:</p>
+<pre class="code" data-lang="bash"><code>openleads assistant &quot;send 50 emails to fintech founders for my SaaS at 9am&quot;</code></pre>
+<p>It parses the <strong>audience</strong> ("fintech founders"), the <strong>count</strong> (50), what you're <strong>pitching</strong> ("my SaaS"), and the <strong>send time</strong> (9am), then finds the leads, drafts a personalized email for each, and previews everything as a dry run. Nothing is sent until you say so.</p>
+<p>You can do the same conversationally inside <code>openleads chat</code> — just type the request. When you ask to <em>send</em> or <em>schedule</em>, it routes to the assistant; when you ask to <em>find</em>, it searches.</p>
+<p>It works <strong>fully offline</strong> with a rule-based interpreter (no key required). If you set <code>OPENROUTER_API_KEY</code> (a free model is fine), messier phrasing is understood by the LLM, which fills the same validated action schema.</p>
+<h3 id="what-reach-means-for-a-campaign" class="anchored"><a class="hlink" href="#what-reach-means-for-a-campaign">#</a>What "reach" means for a campaign</h3>
+<p>A campaign drafts every <code>safe</code> (deliverable) lead <strong>plus</strong> high-confidence <code>risky</code> ones — those scoring <strong>≥ 55%</strong> on the calibrated likelihood. On the common case where outbound port 25 is blocked, a healthy authenticated corporate domain with a common pattern scores ~62%, so you still get a real, sendable batch instead of an empty list. Catch-all guesses are deliberately kept below that line.</p>
+<h2 id="on-device-scheduling" class="anchored"><a class="hlink" href="#on-device-scheduling">#</a>On-device scheduling</h2>
+<p>Install a daily drip that runs unattended on your own machine:</p>
+<pre class="code" data-lang="bash"><code>openleads schedule --at 09:00      # install (launchd on macOS, crontab on Linux)
+openleads schedule status          # is it installed?
+openleads schedule off             # remove it</code></pre>
+<p>Each day at the chosen time, OpenLeads runs any <strong>due scheduled campaigns</strong> and sends any <strong>sequence follow-ups</strong> that have come due — always within your warmup/daily cap. Run a cycle by hand anytime with:</p>
+<pre class="code" data-lang="bash"><code>openleads drip            # dry-run preview
+openleads drip --live     # actually send</code></pre>
+<h3 id="send-time-intelligence" class="anchored"><a class="hlink" href="#send-time-intelligence">#</a>Send-time intelligence</h3>
+<p>Sends are paced like a human, not blasted: weekdays only, inside business-hour windows (08:00–11:00 and 13:00–16:00 by default), spaced apart with jitter, capped per day. Recipient time zones are inferred offline from country/city so your email lands in <em>their</em> morning, wherever they are.</p>
+<h2 id="emails-show-up-in-your-sent-folder" class="anchored"><a class="hlink" href="#emails-show-up-in-your-sent-folder">#</a>Emails show up in your Sent folder</h2>
+<p>Mail sent over raw SMTP normally never appears in your provider's Sent folder (Gmail and Workspace are the exception — they journal it for you). OpenLeads fixes this for everyone else by saving each real send to your mailbox's IMAP <strong>Sent</strong> folder.</p>
+<p>Control it with the <code>save_to_sent</code> setting:</p>
+<div class="tablewrap"><table><thead><tr><th>Value</th><th>Behavior</th></tr></thead><tbody><tr><td><code>auto</code> <em>(default)</em></td><td>Save to Sent for every provider <strong>except</strong> Gmail/Workspace (which already do).</td></tr><tr><td><code>always</code></td><td>Always save (use if your Gmail setup doesn't journal sends).</td></tr><tr><td><code>never</code></td><td>Don't touch IMAP.</td></tr></tbody></table></div>
+<pre class="code" data-lang="bash"><code>openleads config set save_to_sent always</code></pre>
+<p>This needs IMAP configured (it falls back to your SMTP credentials). It's best-effort and fully isolated — a Sent-folder hiccup can never fail an actual send.</p>
+<h2 id="safety-rails" class="anchored"><a class="hlink" href="#safety-rails">#</a>Safety rails (unchanged)</h2>
+<ul><li><strong>Dry-run by default</strong> everywhere — add <code>--live</code> to send for real.</li><li><strong>Suppression-aware</strong>: never emails anyone who bounced, unsubscribed, or was already</li></ul>
+<p>contacted.</p>
+<ul><li><strong>Warmup-capped</strong>: a fresh mailbox ramps up gradually instead of blasting day one.</li><li>Plain text, a real <code>List-Unsubscribe</code> header, and a polite opt-out footer.</li></ul>
+<p>See <a href="deliverability.html">Deliverability</a> for the sender-side reputation checks, and <a href="sending.html">Sending</a> for mailbox setup.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="sending.html"><span>← Previous</span><b>Sending</b></a>
+<a class="pn pn--next" href="web.html"><span>Next →</span><b>Web dashboard</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#the-assistant">The assistant (natural language → a configured campaign)</a><a class="toc__l3" href="#what-reach-means-for-a-campaign">What &quot;reach&quot; means for a campaign</a><a class="toc__l2" href="#on-device-scheduling">On-device scheduling</a><a class="toc__l3" href="#send-time-intelligence">Send-time intelligence</a><a class="toc__l2" href="#emails-show-up-in-your-sent-folder">Emails show up in your Sent folder</a><a class="toc__l2" href="#safety-rails">Safety rails (unchanged)</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>
