@@ -146,8 +146,9 @@ class YCSource(Source):
 
         # Fetch founder pages concurrently, but in bounded chunks so an early stop
         # (engine has enough leads) doesn't fetch the entire 400-company tail. The
-        # old sequential 30 s-timeout fetch per company was why YC felt so slow.
-        chunk = 12
+        # chunk scales with the request so a small ``count`` doesn't over-fetch a
+        # big tail. The old sequential 30 s-timeout fetch per company was the stall.
+        chunk = min(12, max(4, query.count * 2))
         for start in range(0, len(usable), chunk):
             window = usable[start:start + chunk]
             with ThreadPoolExecutor(max_workers=8) as ex:

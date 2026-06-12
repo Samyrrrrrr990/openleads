@@ -130,10 +130,10 @@ def test_sendable_leads_threshold():
         Lead(email="", tier="safe", confidence_pct=99),   # no address
     ]
     # Default: only safe.
-    assert [l.email for l in sendable_leads(leads)] == ["a@x.com"]
+    assert [ld.email for ld in sendable_leads(leads)] == ["a@x.com"]
     # Reach: safe + risky ≥55%.
     reach = sendable_leads(leads, include_risky=True, min_pct=55)
-    assert [l.email for l in reach] == ["a@x.com", "b@x.com"]
+    assert [ld.email for ld in reach] == ["a@x.com", "b@x.com"]
 
 
 # --- structured-personal guard --------------------------------------------- #
@@ -145,6 +145,17 @@ def test_sendable_leads_threshold():
     ("sales@acme.io", False),
     ("ada@acme.io", False),       # single token — ambiguous, skipped
     ("team42@acme.io", False),    # digits — not a clean name shape
+    ("sales.eu@acme.io", False),  # role token in a structured local → skipped
+    ("press.team@acme.io", False),
 ])
 def test_is_structured_personal(email, ok):
     assert resolve._is_structured_personal(email) is ok
+
+
+def test_catch_all_pct_below_reach_threshold():
+    """Catch-all guesses must not auto-qualify for campaign reach (min 55%)."""
+    from openleads.emails.score import assess
+    out = assess({"mx_exists": True, "catch_all": True, "smtp_reachable": True,
+                  "common_pattern": True, "gravatar": True})
+    assert out["tier"] == "risky"
+    assert out["confidence_pct"] <= 50

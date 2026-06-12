@@ -15,6 +15,10 @@ from openleads.assistant import Action, action_from_dict, parse_goal, parse_time
     ("in the morning", (9, 0)),
     ("this afternoon", (13, 0)),
     ("no time here", None),
+    # bare am/pm with no "at" must not crash (regression: int('am')).
+    ("email founders 9am", (9, 0)),
+    ("blast 50 emails 5pm", (17, 0)),
+    ("send 30 emails to devs", None),   # '30' / '50' are counts, not times
 ])
 def test_parse_time(text, expected):
     assert parse_time(text) == expected

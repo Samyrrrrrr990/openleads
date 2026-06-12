@@ -152,7 +152,10 @@ def assess(s: dict) -> dict:
     if s.get("catch_all"):
         reasons.append("catch-all domain — accepts anything, can't confirm a person")
         score = 48 + (4 if common else 0) + (4 if gravatar else 0)
-        return _verdict(score, "risky", "catch_all_guess", reasons, role, pct=score)
+        # Cap the calibrated likelihood below the campaign reach threshold (55): a
+        # catch-all accepts all mail, so we can't confirm the *person* exists and it
+        # must not auto-qualify for sending without the user opting in.
+        return _verdict(score, "risky", "catch_all_guess", reasons, role, pct=min(score, 50))
 
     if s.get("smtp_reachable"):
         reasons.append("server reachable but didn't confirm this address")

@@ -43,11 +43,6 @@ def cron_line(hour: int = 9, minute: int = 0, command: str | None = None) -> str
     return f"{minute} {hour} * * *  {command or _openleads_cmd()}  # OpenLeads daily drip"
 
 
-# Back-compat alias (v3.1 name).
-def cron_snippet(hour: int = 9, command: str = "openleads run --drip --live") -> str:
-    return cron_line(hour, 0, command)
-
-
 def launchd_plist(hour: int = 9, minute: int = 0, command: str | None = None,
                   label: str = LABEL) -> str:
     """Generate a launchd agent plist that runs the drip daily at ``hour:minute``."""
@@ -72,11 +67,6 @@ def launchd_plist(hour: int = 9, minute: int = 0, command: str | None = None,
         '    <key>RunAtLoad</key>\n    <false/>\n'
         '</dict>\n</plist>\n'
     )
-
-
-def launchd_snippet(hour: int = 9, command: str = "openleads drip --live") -> str:
-    return (f"# macOS: install a launchd agent with `openleads schedule --at {hour:02d}:00`,\n"
-            f"# or add this crontab line:\n{cron_line(hour, 0, command)}")
 
 
 def _plist_path(label: str = LABEL) -> Path:
@@ -209,8 +199,12 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
         for item in due_campaigns(db):
             spec = item["spec"]
             on_progress("campaign", item["name"])
+            # Match the reach the assistant previewed (safe + high-confidence risky)
+            # so an unattended send doesn't silently deliver fewer emails than the
+            # user saw. send_drafts still enforces the warmup/daily cap downstream.
             out = pipeline.quick(spec.get("query", ""), count=int(spec.get("count", 25)),
-                                 send=True, dry_run=dry_run,
+                                 send=True, dry_run=dry_run, verified_only=False,
+                                 include_risky=True, min_confidence=55,
                                  overrides={"sender_context": spec.get("context")} if
                                  spec.get("context") else None)
             summary["campaigns_run"] += 1

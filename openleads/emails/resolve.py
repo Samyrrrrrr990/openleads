@@ -23,11 +23,13 @@ import re
 from openleads.emails import gravatar, groundtruth, netcheck, patterns, smtp_verify
 from openleads.emails import mx as mxmod
 from openleads.emails.permute import (
+    ROLE_LOCALS,
     candidate_emails,
     is_common_pattern,
     is_disposable,
     is_free_provider,
     is_role_account,
+    local_tokens,
 )
 from openleads.emails.score import assess, score_signals  # noqa: F401 (re-export)
 from openleads.models import EmailResult
@@ -228,16 +230,19 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
 
 
 def _is_structured_personal(email: str) -> bool:
-    """True if a local-part looks like first/last (has a separator, alpha parts).
+    """True if a local-part looks like a real first/last name (separator, alpha parts).
 
     ``ada.lovelace`` / ``a_lovelace`` → yes; ``info`` / ``sales`` / ``team42`` → no.
-    Guards pattern-learning against role/generic mailboxes teaching a wrong shape.
+    Also rejects locals whose tokens are role/generic words (``press.team``,
+    ``sales.eu``) so a shared alias never teaches a bogus per-person pattern.
     """
     if is_role_account(email):
         return False
     local = email.split("@", 1)[0]
     parts = [p for p in re.split(r"[._-]+", local) if p]
-    return len(parts) >= 2 and all(p.isalpha() for p in parts)
+    if len(parts) < 2 or not all(p.isalpha() for p in parts):
+        return False
+    return not any(p.lower() in ROLE_LOCALS for p in parts)
 
 
 def _name_for_address(email: str) -> str:
@@ -246,9 +251,7 @@ def _name_for_address(email: str) -> str:
     ``first.last@`` / ``first_last@`` → "first last" so ``derive_pattern`` can
     recognise the shape. Only called for locals that passed ``_is_structured_personal``.
     """
-    local = email.split("@", 1)[0]
-    parts = [p for p in re.split(r"[._-]+", local) if p.isalpha()]
-    return " ".join(parts[:2])
+    return " ".join(local_tokens(email.split("@", 1)[0])[:2])
 
 
 def verify_address(email: str, cache=None, db=None, deep: bool = False) -> EmailResult:

@@ -21,6 +21,7 @@ import re
 import urllib.request
 
 from openleads.config import openrouter_key
+from openleads.emails.permute import is_probable_domain
 from openleads.models import Query
 
 # Vertical keyword → source name. First match wins (order matters).
@@ -75,20 +76,18 @@ def _extract_location(text: str) -> str | None:
 # A bare domain / "emails at acme.com" → the Hunter-style `domains` source.
 _DOMAIN_RE = re.compile(
     r"\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b", re.I)
-# Common English words ending in a TLD-looking suffix would false-positive; we
-# only treat a token as a domain when it has no spaces and a real dot structure.
-_NOT_DOMAIN_WORDS = {"etc.", "e.g.", "i.e.", "vs.", "no.", "inc.", "co."}
 
 
 def detect_domains(text: str) -> list[str]:
-    """Return domain-looking tokens in ``text`` ('email at acme.com' → ['acme.com'])."""
+    """Return real company-domain tokens in ``text`` ('email at acme.com' → ['acme.com']).
+
+    Code/file tokens (node.js, config.yaml) and abbreviations (inc., e.g.) are
+    rejected via :func:`~openleads.emails.permute.is_probable_domain`, so a request
+    like 'node.js engineers' is NOT hijacked to the domains source."""
     out: list[str] = []
     for m in _DOMAIN_RE.finditer(text or ""):
         tok = m.group(1).lower().rstrip(".")
-        if tok in _NOT_DOMAIN_WORDS or "@" in tok:
-            continue
-        # Require a plausible TLD (>=2 alpha) and at least one dot-separated label.
-        if tok not in out:
+        if is_probable_domain(tok) and tok not in out:
             out.append(tok)
     return out
 

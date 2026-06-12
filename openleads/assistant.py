@@ -74,16 +74,30 @@ _NAMED_TIMES = {"morning": (9, 0), "noon": (12, 0), "midday": (12, 0),
                 "afternoon": (13, 0), "evening": (17, 0)}
 
 
+# (pattern, has_minute_group) — each handled with explicit group indices so we
+# never int() an am/pm token. A time must be anchored by "at", a ":MM", or am/pm,
+# so a bare count like "50 emails" is not mistaken for a time.
+_TIME_PATTERNS = (
+    (r"\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", True),   # at 9 / at 9:30 / at 9am
+    (r"\b(\d{1,2}):(\d{2})\s*(am|pm)?\b", True),             # 9:30 / 9:30pm
+    (r"\b(\d{1,2})\s*(am|pm)\b", False),                     # 9am / 2 pm
+)
+
+
 def parse_time(text: str) -> tuple[int, int] | None:
     """Extract a send time → (hour, minute), or None. Handles 9am, 2:30pm, 14:00, morning."""
     low = text.lower()
-    m = re.search(r"\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", low) \
-        or re.search(r"\b(\d{1,2})(?::(\d{2}))\s*(am|pm)?\b", low) \
-        or re.search(r"\b(\d{1,2})\s*(am|pm)\b", low)
-    if m:
+    for pat, has_minute in _TIME_PATTERNS:
+        m = re.search(pat, low)
+        if not m:
+            continue
         hour = int(m.group(1))
-        minute = int(m.group(2)) if (m.lastindex and m.group(2)) else 0
-        ampm = m.group(m.lastindex) if m.lastindex else None
+        if has_minute:
+            minute = int(m.group(2)) if m.group(2) else 0
+            ampm = m.group(3)
+        else:
+            minute = 0
+            ampm = m.group(2)
         if ampm == "pm" and hour < 12:
             hour += 12
         elif ampm == "am" and hour == 12:

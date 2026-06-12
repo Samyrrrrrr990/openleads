@@ -22,8 +22,6 @@ import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-HOUR = 3600
-
 
 @dataclass
 class SendPolicy:

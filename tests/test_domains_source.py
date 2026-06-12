@@ -49,3 +49,20 @@ def test_intent_plain_request_is_not_a_domain():
 def test_detect_domains_ignores_abbreviations():
     assert intent.detect_domains("we, inc. are hiring") == []
     assert intent.detect_domains("see acme.io and beta.ai") == ["acme.io", "beta.ai"]
+
+
+def test_detect_domains_ignores_code_tokens():
+    # Tech-stack queries must NOT be hijacked to the domains source (regression).
+    assert intent.detect_domains("find node.js engineers") == []
+    assert intent.detect_domains("react.js and next.js devs") == []
+    assert intent.detect_domains("parse config.yaml and app.py") == []
+
+
+def test_intent_nodejs_query_routes_to_github_not_domains():
+    q = intent.rule_parse("find node.js engineers in berlin")
+    assert q.source == "github"   # 'engineers' → github, not the domains source
+
+
+def test_parse_domains_rejects_code_tokens():
+    assert dom.parse_domains("react.js config.yaml app.py") == []
+    assert dom.parse_domains("acme.com react.js") == ["acme.com"]

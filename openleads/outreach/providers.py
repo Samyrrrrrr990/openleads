@@ -208,8 +208,10 @@ def append_to_sent(raw_message: bytes, when: float | None = None,
         if not mailbox:
             return False, "couldn't locate a Sent mailbox"
         date_time = imaplib.Time2Internaldate(when or time.time())
-        # Quote the mailbox name for APPEND (handles spaces, e.g. "[Gmail]/Sent Mail").
-        typ, _ = server.append(f'"{mailbox}"', r"(\Seen)", date_time, raw_message)
+        # Quote the mailbox name for APPEND (handles spaces, e.g. "[Gmail]/Sent Mail"),
+        # escaping any embedded backslash/quote so an exotic name can't malform it.
+        escaped = mailbox.replace("\\", "\\\\").replace('"', '\\"')
+        typ, _ = server.append(f'"{escaped}"', r"(\Seen)", date_time, raw_message)
         if typ == "OK":
             return True, f"saved to {mailbox}"
         return False, f"APPEND rejected ({typ})"

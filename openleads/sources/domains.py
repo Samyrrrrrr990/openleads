@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
 from openleads.emails import groundtruth
-from openleads.emails.permute import domain_of, is_role_account
+from openleads.emails.permute import domain_of, is_probable_domain, is_role_account, local_tokens
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
 
@@ -31,7 +31,7 @@ _TOKEN_SPLIT = re.compile(r"[,\s]+")
 
 
 def parse_domains(text: str) -> list[str]:
-    """Extract bare domains from a free-text list of domains / URLs (pure)."""
+    """Extract real company domains from a free-text list of domains / URLs (pure)."""
     out: list[str] = []
     seen: set[str] = set()
     for tok in _TOKEN_SPLIT.split(text or ""):
@@ -39,18 +39,16 @@ def parse_domains(text: str) -> list[str]:
         if not tok:
             continue
         dom = domain_of(tok) if "/" in tok or tok.startswith("http") else tok.lower()
-        # Keep only things that look like a registrable domain (has a dot, no @).
-        if dom and "." in dom and "@" not in dom and " " not in dom:
-            if dom not in seen:
-                seen.add(dom)
-                out.append(dom)
+        # Keep only real registrable domains (rejects react.js, config.yaml, …).
+        if dom and is_probable_domain(dom) and dom not in seen:
+            seen.add(dom)
+            out.append(dom)
     return out
 
 
 def _name_from_local(local: str) -> str:
     """Reconstruct a display name from a structured local-part ('ada.lovelace')."""
-    parts = [p for p in re.split(r"[._-]+", local) if p.isalpha()]
-    return " ".join(p.capitalize() for p in parts[:2])
+    return " ".join(p.capitalize() for p in local_tokens(local)[:2])
 
 
 def address_to_entity(email: str, domain: str) -> Entity:
