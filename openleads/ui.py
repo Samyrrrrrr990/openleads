@@ -88,7 +88,10 @@ def lead_line(lead: Lead, idx: int, total: int) -> str:
     n = c(f"{idx:>3}", FAINT) if total else c("  +", FAINT)
     if lead.email:
         email = c(lead.email[:38].ljust(38), WHITE)
-        score = f"  {_score_bar(lead.score)} {c(f'{lead.score:>3}', GREY)}"
+        # Show the calibrated deliverability likelihood (Hunter-style %), not the
+        # internal additive score — it's what tells the user "how good is this?".
+        pct = lead.confidence_pct or lead.score
+        score = f"  {_score_bar(pct)} {c(f'{pct:>3}%', GREY)}"
     else:
         email = c("—  public record, no email".ljust(38), FAINT)
         score = ""

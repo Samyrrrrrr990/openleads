@@ -67,6 +67,10 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
     cfg = providers.smtp_config(overrides)
     delay_min = int(settings.get("send_delay_min"))
     delay_max = max(delay_min, int(settings.get("send_delay_max")))
+    # Save real sends to the IMAP Sent folder so they show in the user's mail
+    # client (Gmail already journals SMTP sends, so 'auto' skips it).
+    save_sent = (not dry_run) and providers.should_save_to_sent(cfg.get("provider"))
+    imap_cfg = providers.imap_config(overrides) if save_sent else None
 
     # Warmup budget (real sends only).
     from openleads.outreach.deliverability import warmup_status
@@ -103,6 +107,9 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
                     res = SendResult(email, "sent", message_id=msg["Message-ID"])
                     sent_count += 1
                     last_real_index = i
+                    if save_sent:
+                        ok, detail = providers.append_to_sent(msg.as_bytes(), cfg=imap_cfg)
+                        res.detail = "saved to Sent" if ok else f"not saved to Sent: {detail}"
                 except Exception as e:  # noqa: BLE001 — one failure must not abort the batch
                     res = SendResult(email, "error", error=str(e))
 

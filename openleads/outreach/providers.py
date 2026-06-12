@@ -12,7 +12,9 @@ Everything is stdlib ``smtplib``/``imaplib`` — no dependencies.
 from __future__ import annotations
 
 import imaplib
+import re
 import smtplib
+import time
 
 from openleads import settings
 
@@ -129,3 +131,93 @@ def connect_imap(cfg: dict | None = None, timeout: int = 30):
     server = imaplib.IMAP4_SSL(cfg["host"], 993, timeout=timeout)
     server.login(cfg["user"], cfg["password"])
     return server
+
+
+# --- Sent-folder visibility (so sent mail shows in the user's mail client) ---- #
+# Common Sent-mailbox names across providers, tried after special-use detection.
+_SENT_FALLBACKS = (
+    "[Gmail]/Sent Mail", "Sent", "Sent Items", "Sent Messages",
+    "INBOX.Sent", "INBOX.Sent Items",
+)
+
+
+def _decode_mailbox_line(line) -> str:
+    return line.decode("utf-8", "ignore") if isinstance(line, (bytes, bytearray)) else str(line)
+
+
+def find_sent_mailbox(server) -> str | None:
+    """Locate the mailbox's Sent folder: prefer the IMAP ``\\Sent`` special-use flag.
+
+    Returns the mailbox name (quoted form ready for APPEND) or None if not found.
+    """
+    try:
+        typ, data = server.list()
+    except Exception:
+        return None
+    if typ != "OK" or not data:
+        return None
+    names: list[str] = []
+    for raw in data:
+        line = _decode_mailbox_line(raw)
+        # e.g.  (\HasNoChildren \Sent) "/" "[Gmail]/Sent Mail"
+        m = re.match(r"\((?P<flags>[^)]*)\)\s+\S+\s+(?P<name>.+)$", line)
+        if not m:
+            continue
+        name = m.group("name").strip().strip('"')
+        if "\\sent" in m.group("flags").lower():
+            return name
+        names.append(name)
+    # No special-use flag → match a conventional name case-insensitively.
+    lower = {n.lower(): n for n in names}
+    for cand in _SENT_FALLBACKS:
+        if cand.lower() in lower:
+            return lower[cand.lower()]
+    return None
+
+
+def should_save_to_sent(provider: str | None = None) -> bool:
+    """Whether to APPEND sent mail to the Sent folder, honoring ``save_to_sent``.
+
+    ``auto`` (default) appends for every provider EXCEPT Gmail/Workspace, which
+    already journal SMTP-sent mail to Sent (appending would duplicate it).
+    """
+    mode = (settings.get("save_to_sent") or "auto").lower()
+    if mode == "never":
+        return False
+    if mode == "always":
+        return True
+    provider = (provider or settings.get("smtp_provider") or "").lower()
+    return provider not in ("gmail", "workspace")
+
+
+def append_to_sent(raw_message: bytes, when: float | None = None,
+                   cfg: dict | None = None) -> tuple[bool, str]:
+    """APPEND a raw RFC822 message to the mailbox's Sent folder over IMAP.
+
+    Best-effort and fully isolated: returns ``(ok, detail)`` and never raises, so a
+    Sent-folder hiccup can't fail a real send. Requires IMAP creds (falls back to
+    the SMTP creds via :func:`imap_config`).
+    """
+    cfg = cfg or imap_config()
+    if not cfg.get("host") or not cfg.get("user") or not cfg.get("password"):
+        return False, "no IMAP credentials (set imap_host/imap_user/imap_pass)"
+    server = None
+    try:
+        server = connect_imap(cfg)
+        mailbox = find_sent_mailbox(server)
+        if not mailbox:
+            return False, "couldn't locate a Sent mailbox"
+        date_time = imaplib.Time2Internaldate(when or time.time())
+        # Quote the mailbox name for APPEND (handles spaces, e.g. "[Gmail]/Sent Mail").
+        typ, _ = server.append(f'"{mailbox}"', r"(\Seen)", date_time, raw_message)
+        if typ == "OK":
+            return True, f"saved to {mailbox}"
+        return False, f"APPEND rejected ({typ})"
+    except Exception as e:  # noqa: BLE001 — Sent-folder save must never break a send
+        return False, str(e)
+    finally:
+        if server is not None:
+            try:
+                server.logout()
+            except Exception:
+                pass
