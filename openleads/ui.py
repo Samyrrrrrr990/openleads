@@ -11,6 +11,7 @@ colors (a deliverability tool needs safe/risky/bad to be scannable at a glance).
 from __future__ import annotations
 
 import os
+import re
 import sys
 from collections import Counter
 
@@ -59,6 +60,75 @@ def banner() -> str:
     out.append(c(f"  v{__version__}", RED, BOLD) + c("   free · keyless · local-first", FAINT))
     out.append("")
     return "\n".join(out)
+
+
+# --- Claude-Code-style boxes, status line, palette (brand red accent) -------- #
+# Rounded box-drawing characters (degrade fine in any modern terminal).
+_TL, _TR, _BL, _BR, _H, _V = "╭", "╮", "╰", "╯", "─", "│"
+
+
+def _visible_len(s: str) -> int:
+    """Length of ``s`` ignoring ANSI escape sequences (for box padding)."""
+    return len(re.sub(r"\033\[[0-9;]*m", "", s))
+
+
+def box(body_lines: list[str], title: str = "", width: int = 60,
+        accent: str = RED) -> str:
+    """Render a rounded, brand-accented box around ``body_lines`` (Claude-Code feel)."""
+    inner = width - 2
+    top = c(_TL, accent)
+    if title:
+        label = f" {title} "
+        pad = inner - _visible_len(label)
+        top += c(_H, accent) + c(label, accent, BOLD) + c(_H * max(0, pad - 1), accent)
+    else:
+        top += c(_H * inner, accent)
+    top += c(_TR, accent)
+    rows = [top]
+    avail = inner - 2   # one space of padding on each side
+    for ln in body_lines:
+        ln = _truncate_visible(ln, avail)
+        pad = avail - _visible_len(ln)
+        rows.append(c(_V, accent) + " " + ln + " " * max(0, pad) + " " + c(_V, accent))
+    rows.append(c(_BL, accent) + c(_H * inner, accent) + c(_BR, accent))
+    return "\n".join(rows)
+
+
+def _truncate_visible(s: str, limit: int) -> str:
+    """Trim ``s`` to ``limit`` visible chars, keeping ANSI codes balanced with RESET."""
+    if _visible_len(s) <= limit:
+        return s
+    out, vis, i = [], 0, 0
+    while i < len(s) and vis < limit - 1:
+        m = re.match(r"\033\[[0-9;]*m", s[i:])
+        if m:
+            out.append(m.group(0))
+            i += m.end()
+            continue
+        out.append(s[i])
+        vis += 1
+        i += 1
+    return "".join(out) + "…" + RESET
+
+
+def status_line(items: list[tuple[str, str]]) -> str:
+    """A compact ``key value · key value`` status strip (dim keys, white values)."""
+    parts = [c(f"{k} ", FAINT) + c(str(v), WHITE) for k, v in items]
+    return "  " + c(" · ", FAINT).join(parts)
+
+
+def command_palette(commands: list[tuple[str, str]], accent: str = RED) -> str:
+    """A two-column slash-command list, Claude-Code style."""
+    out = []
+    wcmd = max((len(name) for name, _ in commands), default=0)
+    for name, desc in commands:
+        out.append("  " + c(name.ljust(wcmd + 2), accent, BOLD) + c(desc, GREY))
+    return "\n".join(out)
+
+
+def kbd(label: str) -> str:
+    """Render a keycap-ish hint, e.g. ``/help``."""
+    return c(label, AMBER)
 
 
 # --- tiers ------------------------------------------------------------------ #

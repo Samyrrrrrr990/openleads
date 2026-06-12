@@ -66,7 +66,7 @@ class Action:
                 if self.send_hour is not None else "on demand")
         pitch = f' pitching "{self.context}"' if self.context else ""
         return (f"{self.intent}: {self.count} → {self.query or 'auto'}{pitch}; "
-                f"send {when}" + (" (verified only)" if self.verified_only else ""))
+                f"send {when}")
 
 
 # --- time parsing ------------------------------------------------------------- #
@@ -258,8 +258,12 @@ def execute(action: Action, db=None, dry_run: bool = True, install_schedule: boo
         if action.intent == "schedule" and install_schedule:
             installed = scheduler.install(spec["send_hour"], spec["send_minute"])
         # Always preview (dry-run) so the user sees the emails before they go out.
-        out = pipeline.quick(action.query, count=action.count, send=True,
-                             dry_run=True, overrides=overrides, on_progress=on_progress)
+        # A campaign wants reach: draft safe leads plus high-confidence (≥55%)
+        # risky ones, so port-25-blocked networks still get a sendable batch.
+        out = pipeline.quick(action.query, count=action.count, send=True, dry_run=True,
+                             overrides=overrides, verified_only=False,
+                             include_risky=True, min_confidence=55,
+                             on_progress=on_progress)
         return {"ok": True, "intent": action.intent, "action": action,
                 "spec": spec, "installed": installed,
                 "leads": out.get("leads", []), "drafts": out.get("drafts", []),

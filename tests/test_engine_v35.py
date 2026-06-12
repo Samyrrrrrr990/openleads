@@ -117,6 +117,25 @@ def test_site_harvest_ignores_role_mailbox(monkeypatch, tmp_path):
     db.close()
 
 
+# --- campaign reach: sendable_leads threshold ------------------------------- #
+def test_sendable_leads_threshold():
+    from openleads.automate.pipeline import sendable_leads
+    from openleads.models import Lead
+
+    leads = [
+        Lead(email="a@x.com", tier="safe", confidence_pct=90),
+        Lead(email="b@x.com", tier="risky", confidence_pct=62),
+        Lead(email="c@x.com", tier="risky", confidence_pct=35),
+        Lead(email="d@x.com", tier="bad", confidence_pct=0),
+        Lead(email="", tier="safe", confidence_pct=99),   # no address
+    ]
+    # Default: only safe.
+    assert [l.email for l in sendable_leads(leads)] == ["a@x.com"]
+    # Reach: safe + risky ≥55%.
+    reach = sendable_leads(leads, include_risky=True, min_pct=55)
+    assert [l.email for l in reach] == ["a@x.com", "b@x.com"]
+
+
 # --- structured-personal guard --------------------------------------------- #
 @pytest.mark.parametrize("email,ok", [
     ("ada.lovelace@acme.io", True),

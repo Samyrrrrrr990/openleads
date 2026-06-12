@@ -23,9 +23,8 @@ import time
 from datetime import date
 from pathlib import Path
 
-from openleads import config
+from openleads import config, settings
 from openleads import db as dbmod
-from openleads import settings
 from openleads.outreach import sequences as seqmod
 from openleads.outreach.sender import send_drafts
 
