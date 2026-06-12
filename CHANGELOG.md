@@ -4,6 +4,62 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [3.5.0] - 2026-06-12
+
+**The leads actually work now — and the machine sends them for you.** v3.1 made the
+engine honest; v3.5 makes it *good*. On a normal network (outbound port 25 blocked,
+as it is almost everywhere) a `verified_only` YC search used to take ~26 s to yield a
+single lead and otherwise returned a wall of identical score-40 guesses. It now
+returns a batch of real, clearly-rated leads in a fraction of the time, plus
+end-to-end automation to send them at the right time and have them show up in your
+Sent folder.
+
+### Added
+- **Ground-truth email harvesting is on by default.** The single biggest accuracy
+  lever — scraping a company's own published addresses (homepage, `/contact`,
+  `/about`, `/team`, `security.txt`) — used to be gated behind `--deep`. It now runs
+  for every corporate-domain lead, in parallel with a short timeout. This is the free
+  analogue of Hunter's domain search: one real on-domain address teaches the
+  company's email pattern, promoting every other person there to an evidence-backed
+  `safe`.
+- **New source: `domains` — Hunter-style company search.** `openleads find "emails at
+  stripe.com"` (or `-s domains "acme.com, foo.com"`) returns the real, published
+  addresses for any domain you name. Bare domains in chat are auto-detected and
+  routed here.
+- **Calibrated confidence (Hunter/Apollo-style %).** Every lead now carries a
+  `Confidence %` (a 0–100 deliverability likelihood), surfaced in the CLI, chat table,
+  and CSV/JSON. A common pattern on a professionally-hosted, authenticated domain
+  shows as ~62% instead of being buried at score 40.
+- **Emails show up in your Sent folder.** After a real SMTP send, OpenLeads APPENDs
+  the message to your mailbox's IMAP Sent folder (discovered via the `\Sent`
+  special-use flag with fallbacks). New `save_to_sent` setting (`auto`/`always`/
+  `never`); `auto` skips Gmail/Workspace, which already journal SMTP sends.
+- **On-device send-time automation.** New `openleads schedule --at 09:00` installs a
+  real launchd agent (macOS) or crontab line (Linux) that runs a daily drip. A pure
+  send-time planner places each message in the recipient's local business-hour window
+  (weekdays, per-day cap, human gaps + jitter) with offline timezone inference, so
+  mail lands in *their* morning. `openleads drip` runs one cycle on demand.
+- **Free natural-language campaign assistant.** `openleads assistant "send 50 emails
+  to fintech founders for my SaaS at 9am"` — or just type it in chat — parses the
+  audience, count, pitch, and send time, finds + drafts the emails, and schedules the
+  send, previewing everything first. Works at $0 with a rule-based interpreter; a free
+  OpenRouter model handles messier phrasing when a key is set.
+
+### Changed
+- **Port 25 is probed once, not per lead.** A blocked outbound port 25 (the norm) used
+  to cost a full connect-timeout on two dead hosts for *every* lead — the reason
+  verified searches crawled. The engine now checks once per process and skips live
+  SMTP entirely when it's blocked, leaning on the free, port-25-independent signals.
+- **Claude-Code-inspired CLI.** A branded rounded welcome/header box, a status strip
+  (brain · mailbox · port 25), a two-column slash-command palette, and a confidence-%
+  column — all in the existing red-accent palette, with the stdlib fallback intact.
+- **YC founder pages are fetched concurrently** in bounded chunks (was sequential with
+  a 30 s timeout each), and **HN company names are cleaned** so a hiring post's
+  sentence no longer ends up as the organization name.
+- **Campaigns reach further, honestly.** A campaign drafts `safe` leads plus
+  high-confidence (≥55%) `risky` ones, so port-25-blocked networks still produce a
+  sendable batch; catch-all guesses are capped below that threshold.
+
 ## [3.1.0] - 2026-06-11
 
 **Better leads, and they actually show up.** v3.0 shipped the engine; v3.1 fixes

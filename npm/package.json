@@ -1,7 +1,7 @@
 {
   "name": "openleads",
-  "version": "3.1.0",
-  "description": "Free, open-source Apollo alternative — find anyone, verify deliverably, write & send cold email. Local-first, keyless, $0. npx wrapper around the Python CLI.",
+  "version": "3.5.0",
+  "description": "Free, open-source Apollo/Hunter alternative — find anyone, verify deliverably, write & send cold email that lands. Ground-truth harvesting, on-device send-time automation, IMAP Sent visibility, a free NL campaign assistant. Local-first, keyless, $0. npx wrapper around the Python CLI.",
   "bin": {
     "openleads": "bin/openleads.js"
   },

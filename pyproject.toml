@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openleads"
-version = "3.1.0"
-description = "Free, open-source Apollo alternative: find anyone, verify deliverably (7-signal engine), write and send cold email — local-first, keyless, $0. Pluggable public-data sources, a chat CLI, and a local web dashboard."
+version = "3.5.0"
+description = "Free, open-source Apollo/Hunter alternative: find anyone, verify deliverably, write and send cold email that lands — local-first, keyless, $0. Ground-truth email harvesting, on-device send-time automation, IMAP Sent-folder visibility, a free natural-language campaign assistant, and a Claude-Code-style CLI."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "PolyForm-Noncommercial-1.0.0" }
