@@ -25,16 +25,34 @@ def _noop(kind, payload):
     pass
 
 
-def sendable_leads(leads, include_risky: bool = False):
-    """Filter to leads we're willing to email: safe by default, +risky if opted in."""
-    tiers = {"safe", "risky"} if include_risky else {"safe"}
-    return [ld for ld in leads if ld.email and ld.tier in tiers]
+def sendable_leads(leads, include_risky: bool = False, min_pct: int = 0):
+    """Filter to leads we're willing to email.
+
+    ``safe`` leads are always eligible. ``risky`` leads are eligible only when
+    ``include_risky`` is on AND their calibrated confidence is at least ``min_pct``
+    — that lets a campaign reach high-probability guesses (e.g. a common pattern on
+    an authenticated corporate domain) without dragging in pure shots in the dark.
+    """
+    out = []
+    for ld in leads:
+        if not ld.email:
+            continue
+        if ld.tier == "safe":
+            out.append(ld)
+        elif ld.tier == "risky" and include_risky and (ld.confidence_pct or 0) >= min_pct:
+            out.append(ld)
+    return out
 
 
 def run(query: Query, send: bool = False, dry_run: bool = True,
         overrides: dict | None = None, cache=None, db=None,
+        include_risky: bool | None = None, min_confidence: int = 0,
         on_progress=_noop) -> dict:
-    """Execute the full pipeline for ``query``. ``send=False`` stops after drafting."""
+    """Execute the full pipeline for ``query``. ``send=False`` stops after drafting.
+
+    ``include_risky`` overrides the stored setting when given; ``min_confidence``
+    gates which risky leads are sendable by their calibrated 0–100 likelihood.
+    """
     own_cache = own_db = False
     if cache is None:
         cache = Cache()
@@ -45,7 +63,8 @@ def run(query: Query, send: bool = False, dry_run: bool = True,
 
     # The engine already drops 'bad' tiers; include_risky decides whether 'risky'
     # leads are eligible to be drafted/sent (off by default — safer).
-    include_risky = bool(settings.get("include_risky"))
+    if include_risky is None:
+        include_risky = bool(settings.get("include_risky"))
 
     result = {"leads": [], "drafts": [], "results": [], "campaign": query.keyword or "default"}
     try:
@@ -57,7 +76,7 @@ def run(query: Query, send: bool = False, dry_run: bool = True,
         result["leads"] = leads
 
         # 2) write
-        targets = sendable_leads(leads, include_risky=include_risky)
+        targets = sendable_leads(leads, include_risky=include_risky, min_pct=min_confidence)
         on_progress("phase", f"writing {len(targets)} personalized emails…")
         drafts = []
         for ld in targets:
@@ -87,10 +106,20 @@ def run(query: Query, send: bool = False, dry_run: bool = True,
 
 
 def quick(text: str, count: int = 25, send: bool = False, dry_run: bool = True,
-          deep: bool = False, overrides: dict | None = None, on_progress=_noop) -> dict:
-    """Convenience: parse free text into a Query and run the pipeline."""
+          deep: bool = False, overrides: dict | None = None, verified_only: bool = True,
+          include_risky: bool | None = None, min_confidence: int = 0,
+          on_progress=_noop) -> dict:
+    """Convenience: parse free text into a Query and run the pipeline.
+
+    ``verified_only`` (default True) keeps the engine to deliverable ``safe`` leads.
+    A campaign that wants reach can pass ``verified_only=False`` with
+    ``include_risky=True`` + a ``min_confidence`` floor to also draft high-
+    probability guesses.
+    """
     q, _ = intent.parse(text)
     q.count = count
     q.deep = deep
-    q.verified_only = True  # the pipeline targets deliverable leads
-    return run(q, send=send, dry_run=dry_run, overrides=overrides, on_progress=on_progress)
+    q.verified_only = verified_only
+    return run(q, send=send, dry_run=dry_run, overrides=overrides,
+               include_risky=include_risky, min_confidence=min_confidence,
+               on_progress=on_progress)

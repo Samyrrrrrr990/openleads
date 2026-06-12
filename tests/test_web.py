@@ -86,8 +86,9 @@ def test_path_traversal_blocked(server):
 def test_state(server):
     status, _, body = _get(server, "/api/state")
     d = json.loads(body)
+    import openleads
     assert status == 200
-    assert d["version"] == "3.1.0"
+    assert d["version"] == openleads.__version__
     assert isinstance(d["sources"], list) and len(d["sources"]) >= 5
     assert "crm" in d and "settings" in d
 

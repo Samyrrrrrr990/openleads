@@ -79,9 +79,9 @@ def test_template_save_render_and_ab(db, tmp_path, monkeypatch):
 
 
 # --- scheduler -------------------------------------------------------------
-def test_cron_snippet():
+def test_cron_line():
     from openleads.automate import scheduler
-    line = scheduler.cron_snippet(hour=8)
+    line = scheduler.cron_line(hour=8)
     assert line.startswith("0 8 * * *")
     assert "openleads" in line
 

@@ -64,6 +64,35 @@ def domain_of(website: str) -> str | None:
     return d or None
 
 
+# File/code suffixes that look like a TLD but never are — so "node.js",
+# "config.yaml", "app.py" aren't mistaken for company domains.
+_NON_TLD_SUFFIXES = {
+    "js", "ts", "jsx", "tsx", "mjs", "cjs", "py", "rb", "go", "rs", "php", "java",
+    "md", "txt", "json", "yaml", "yml", "toml", "ini", "cfg", "env", "lock",
+    "sh", "bash", "zsh", "css", "scss", "html", "htm", "xml", "sql", "csv", "log",
+    "png", "jpg", "jpeg", "gif", "svg", "pdf", "zip", "exe", "dll",
+}
+
+
+def is_probable_domain(token: str) -> bool:
+    """True if ``token`` looks like a real registrable domain (acme.com), not a
+    code/file token (react.js) or a sentence fragment."""
+    token = (token or "").strip().strip(".,;:").lower()
+    if not token or "@" in token or " " in token or "/" in token or "." not in token:
+        return False
+    tld = token.rsplit(".", 1)[1]
+    return tld.isalpha() and 2 <= len(tld) <= 24 and tld not in _NON_TLD_SUFFIXES
+
+
+def local_tokens(local_part: str) -> list[str]:
+    """Split a structured local-part into its alphabetic name tokens.
+
+    ``"ada.lovelace"`` → ``["ada", "lovelace"]``; the single source of truth for
+    turning a harvested address back into name tokens (used by both name display
+    and pattern learning so they never diverge)."""
+    return [p for p in re.split(r"[._-]+", local_part or "") if p.isalpha()]
+
+
 def name_parts(full_name: str) -> tuple[str | None, str | None]:
     """Split a display name into ASCII-folded (first, last) local-part tokens."""
     toks = [re.sub(r"[^a-z]", "", t.lower()) for t in (full_name or "").split()]

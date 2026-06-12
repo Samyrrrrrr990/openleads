@@ -50,6 +50,7 @@ class EmailResult:
     signals: dict = field(default_factory=dict)
     tier: str = "bad"         # safe | risky | bad
     reasons: list = field(default_factory=list)
+    confidence_pct: int = 0   # calibrated 0–100 deliverability likelihood (Hunter-style)
 
 
 # v1 CSV schema, preserved exactly so automation.py / campaign keeps working.
@@ -62,6 +63,8 @@ CSV_FIELDS = [
     "Email Score", "Source", "Vertical",
     # v3 addition: the send-decision tier (safe | risky | bad).
     "Email Tier",
+    # v3.5 addition: calibrated deliverability likelihood (0–100), Hunter-style.
+    "Confidence %",
 ]
 
 
@@ -87,6 +90,7 @@ class Lead:
     signals: dict = field(default_factory=dict)
     tier: str = "bad"                       # safe | risky | bad (the send-decision)
     reasons: list = field(default_factory=list)
+    confidence_pct: int = 0                 # calibrated 0–100 deliverability likelihood
 
     @property
     def domain(self) -> str:
@@ -111,6 +115,7 @@ class Lead:
             "Source": self.source,
             "Vertical": self.vertical,
             "Email Tier": self.tier,
+            "Confidence %": self.confidence_pct,
         }
 
     def to_dict(self) -> dict:
@@ -134,6 +139,7 @@ class Lead:
             "tier": self.tier,
             "reasons": self.reasons,
             "signals": self.signals,
+            "confidence_pct": self.confidence_pct,
         }
 
 

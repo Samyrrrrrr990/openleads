@@ -20,14 +20,16 @@ from __future__ import annotations
 
 import re
 
-from openleads.emails import gravatar, groundtruth, patterns, smtp_verify
+from openleads.emails import gravatar, groundtruth, netcheck, patterns, smtp_verify
 from openleads.emails import mx as mxmod
 from openleads.emails.permute import (
+    ROLE_LOCALS,
     candidate_emails,
     is_common_pattern,
     is_disposable,
     is_free_provider,
     is_role_account,
+    local_tokens,
 )
 from openleads.emails.score import assess, score_signals  # noqa: F401 (re-export)
 from openleads.models import EmailResult
@@ -38,7 +40,8 @@ __all__ = ["find_email", "verify_address", "score_signals", "assess"]
 def _emit(email: str, signals: dict) -> EmailResult:
     v = assess(signals)
     return EmailResult(email=email, confidence=v["confidence"], score=v["score"],
-                       tier=v["tier"], reasons=v["reasons"], signals=signals)
+                       tier=v["tier"], reasons=v["reasons"], signals=signals,
+                       confidence_pct=v.get("confidence_pct", v["score"]))
 
 
 def _verify_key(full_name: str, domain: str) -> str:
@@ -138,11 +141,17 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
         gt_exact = known
         patterns.learn_from_email(db, gt_exact, full_name)
 
-    # --- ground truth (deep): real addresses beat any guess ----------------- #
-    if not gt_exact and deep:
+    # --- ground-truth harvest (default-on): real addresses beat any guess --- #
+    # Site scraping is cheap, cached, and the single biggest accuracy lever (the
+    # free analogue of Hunter's domain search), so it runs for every corporate
+    # domain — not just under --deep. The heavier GitHub commit-email harvest
+    # stays gated behind ``deep`` because it spends API rate-limit budget.
+    if not gt_exact:
         site = groundtruth.harvest_from_site(domain, cache=cache)
-        gh_login = _github_login(links)
-        gh = groundtruth.harvest_from_github(gh_login, cache=cache) if gh_login else []
+        gh = []
+        if deep:
+            gh_login = _github_login(links)
+            gh = groundtruth.harvest_from_github(gh_login, cache=cache) if gh_login else []
         # GitHub emails belong to *this* person; on-domain site emails matching a
         # candidate are name-consistent → also this person.
         person_on_domain = [e for e in gh if e.endswith("@" + domain)]
@@ -150,6 +159,14 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
         for e in person_on_domain + site_match:
             gt_exact = e
             break
+        # Even a non-matching on-domain address teaches the domain's pattern, so
+        # every *other* person at this domain is built from an observed shape. We
+        # only learn from *structured* personal locals (first.last / f.last / …) —
+        # a separator-free local could be a role mailbox (info@) and would teach a
+        # bogus "{first}" shape, so those are skipped.
+        for e in site:
+            if e.endswith("@" + domain) and _is_structured_personal(e):
+                patterns.learn_from_email(db, e, _name_for_address(e))
         if gt_exact:
             patterns.learn_from_email(db, gt_exact, full_name)
 
@@ -160,28 +177,37 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
         signals["role_account"] = is_role_account(best)
         return _emit(best, signals)
 
-    # --- live SMTP (skipped if port 25 blocked; cached by name+domain) ------ #
-    vkey = _verify_key(full_name, domain)
-    probe = cache.get("verify", vkey) if cache else None
-    if probe is None:
-        probe = {"verified": None, "catch_all": False, "reachable": False}
-        for host in hosts[:2]:
-            probe = smtp_verify.probe(host, domain, ordered)
-            if probe["reachable"]:
-                break
-        if cache:
-            cache.set("verify", vkey, probe)
+    # Re-derive candidates now that a sibling's address may have taught a pattern,
+    # so ``best`` reflects the freshly-observed shape for this person.
+    ordered = _ordered_candidates(full_name, domain, db) or ordered
+    best = ordered[0]
 
-    verified = probe.get("verified")
-    signals["smtp_verified"] = bool(verified)
-    signals["catch_all"] = probe.get("catch_all", False)
-    signals["smtp_reachable"] = probe.get("reachable", False)
-    if verified:
-        best = verified
-        patterns.learn_from_email(db, verified, full_name)
+    # --- live SMTP (only when port 25 is actually open here) ----------------- #
+    port25 = netcheck.port25_open()
+    if not port25:
+        signals["port25_blocked"] = True
+    else:
+        vkey = _verify_key(full_name, domain)
+        probe = cache.get("verify", vkey) if cache else None
+        if probe is None:
+            probe = {"verified": None, "catch_all": False, "reachable": False}
+            for host in hosts[:2]:
+                probe = smtp_verify.probe(host, domain, ordered)
+                if probe["reachable"]:
+                    break
+            if cache:
+                cache.set("verify", vkey, probe)
+
+        verified = probe.get("verified")
+        signals["smtp_verified"] = bool(verified)
+        signals["catch_all"] = probe.get("catch_all", False)
+        signals["smtp_reachable"] = probe.get("reachable", False)
+        if verified:
+            best = verified
+            patterns.learn_from_email(db, verified, full_name)
 
     # --- Gravatar existence (free, no port 25) ------------------------------ #
-    if not verified:
+    if not signals.get("smtp_verified"):
         check = ordered[:3] if deep else ordered[:1]
         for cand in check:
             if gravatar.has_gravatar(cand, cache=cache):
@@ -194,8 +220,38 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
 
     signals["common_pattern"] = is_common_pattern(best, full_name)
     signals["role_account"] = is_role_account(best)
-    signals["learned_pattern_match"] = patterns.matches_learned(db, best, full_name)
+    learned = patterns.matches_learned(db, best, full_name)
+    signals["learned_pattern_match"] = learned
+    # A DB-learned pattern only ever comes from a *real observed* address (ground
+    # truth, site scrape, SMTP-verified, Gravatar-confirmed), so a candidate built
+    # from it is evidence-backed, not a blind guess — the scorer can trust it.
+    signals["observed_pattern"] = learned
     return _emit(best, signals)
+
+
+def _is_structured_personal(email: str) -> bool:
+    """True if a local-part looks like a real first/last name (separator, alpha parts).
+
+    ``ada.lovelace`` / ``a_lovelace`` → yes; ``info`` / ``sales`` / ``team42`` → no.
+    Also rejects locals whose tokens are role/generic words (``press.team``,
+    ``sales.eu``) so a shared alias never teaches a bogus per-person pattern.
+    """
+    if is_role_account(email):
+        return False
+    local = email.split("@", 1)[0]
+    parts = [p for p in re.split(r"[._-]+", local) if p]
+    if len(parts) < 2 or not all(p.isalpha() for p in parts):
+        return False
+    return not any(p.lower() in ROLE_LOCALS for p in parts)
+
+
+def _name_for_address(email: str) -> str:
+    """Reconstruct "first last" from a structured local-part, for pattern learning.
+
+    ``first.last@`` / ``first_last@`` → "first last" so ``derive_pattern`` can
+    recognise the shape. Only called for locals that passed ``_is_structured_personal``.
+    """
+    return " ".join(local_tokens(email.split("@", 1)[0])[:2])
 
 
 def verify_address(email: str, cache=None, db=None, deep: bool = False) -> EmailResult:
@@ -223,13 +279,16 @@ def verify_address(email: str, cache=None, db=None, deep: bool = False) -> Email
     signals.update(mxmod.dns_health(domain, cache=cache))
     signals["mx_provider"] = mxmod.classify_provider(hosts)
 
-    probe = {"verified": None, "catch_all": False, "reachable": False}
-    for host in hosts[:2]:
-        probe = smtp_verify.probe(host, domain, [email])
-        if probe["reachable"]:
-            break
-    signals["smtp_verified"] = bool(probe.get("verified"))
-    signals["catch_all"] = probe.get("catch_all", False)
-    signals["smtp_reachable"] = probe.get("reachable", False)
+    if netcheck.port25_open():
+        probe = {"verified": None, "catch_all": False, "reachable": False}
+        for host in hosts[:2]:
+            probe = smtp_verify.probe(host, domain, [email])
+            if probe["reachable"]:
+                break
+        signals["smtp_verified"] = bool(probe.get("verified"))
+        signals["catch_all"] = probe.get("catch_all", False)
+        signals["smtp_reachable"] = probe.get("reachable", False)
+    else:
+        signals["port25_blocked"] = True
     signals["gravatar"] = bool(gravatar.has_gravatar(email, cache=cache))
     return _emit(email, signals)

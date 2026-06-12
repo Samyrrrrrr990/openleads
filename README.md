@@ -119,18 +119,26 @@ openleads web        # launch the local dashboard
 openleads            # the interactive chat — just type what you want
 ```
 
-`openleads --version` should print `openleads 3.0.0`. Full walkthrough: [`docs/quickstart.md`](./docs/quickstart.md).
+`openleads --version` should print `openleads 3.5.0`. Full walkthrough: [`docs/quickstart.md`](./docs/quickstart.md).
 
 ## ⚡ Commands
 
 ```bash
-# find + verify (deliverable only)
+# find + verify — every lead carries a calibrated Confidence %
 openleads find "50 fintech founders, verified only" --out leads.csv
+openleads find "emails at stripe.com"             # Hunter-style domain search
 openleads find --source npi --keyword pediatric --location CA --format json
 
 # the whole pipeline: find → write → send (dry-run unless --live)
 openleads run "rust developers in Berlin"
 openleads run "20 SaaS founders" --live
+
+# one-line natural-language campaign (free, no key needed)
+openleads assistant "send 50 emails to fintech founders for my SaaS at 9am"
+
+# automation — your machine sends for you
+openleads schedule --at 09:00   # install a daily on-device drip (launchd/cron)
+openleads drip --live           # run one cycle now (due campaigns + follow-ups)
 
 # pieces of it
 openleads write "10 AI founders" -o drafts.json   # just draft
@@ -145,26 +153,27 @@ openleads doctor           # health-check finding + sending
 openleads inbox            # scan IMAP for replies & bounces (optional)
 ```
 
-Sending is **dry-run by default** everywhere — add `--live` to actually send. The finder never touches your mailbox.
+Sending is **dry-run by default** everywhere — add `--live` to actually send. The finder never touches your mailbox. Real sends are also saved to your **IMAP Sent folder** so they show up in your mail client (configurable via `save_to_sent`).
 
 ## 💬 The chat CLI
 
-`openleads chat` (or just `openleads`) opens a Claude-Code-style REPL. Type in plain English and refine conversationally — now with `/write` and `/send` too:
+`openleads chat` (or just `openleads`) opens a Claude-Code-style REPL. Type in plain English — it finds, or, when you ask to *send/schedule*, configures the whole campaign:
 
 ```text
-openleads> pediatricians in California, verified only
-openleads> /source github
-openleads> machine learning researchers as ndjson
-openleads> /write          # draft emails for the safe leads
-openleads> /send --live    # send them (with a confirm)
+openleads ❯ pediatricians in California, verified only
+openleads ❯ emails at stripe.com
+openleads ❯ send 30 emails to rust developers in Berlin for my dev tool at 9am
+openleads ❯ /schedule 09:00     # run it unattended, daily
+openleads ❯ /send live          # …or deliver the previewed batch now
 ```
 
-Works **fully offline** via a rule-based parser (no key needed). Set `OPENROUTER_API_KEY` (a free model works) to upgrade free-form parsing and AI drafting.
+Works **fully offline** via a rule-based parser (no key needed). Set `OPENROUTER_API_KEY` (a free model works) to upgrade free-form understanding and AI drafting.
 
 ## 🧩 Sources (and adding your own)
 
 ```text
 $ openleads sources
+  domains      [company] any company domain (Hunter-style email search)
   github       [people ] developers & open-source orgs
   hn           [company] companies hiring now (Hacker News)
   npi          [people ] U.S. doctors & healthcare providers
@@ -173,12 +182,14 @@ $ openleads sources
   yc           [company] startup founders (Y Combinator)
 ```
 
-> **New in v3.1 — better leads, faster.** `hn` mines Hacker News' monthly "Who is
-> hiring?" thread for companies hiring *right now* — real domains and, very often,
-> **direct apply emails** that land as `safe` instantly. The `github` source was
-> rebuilt to return real, contactable developers (no more topic/org junk), and the
-> engine now resolves emails **concurrently** and **fails fast** with a clear
-> message instead of grinding for minutes. Try: `openleads find --source hn -n 25`.
+> **New in v3.5 — the leads actually work.** Ground-truth harvesting now runs by
+> default: OpenLeads reads a company's own published addresses to learn its email
+> pattern, so a real sibling address promotes every coworker to an evidence-backed
+> `safe` — the free analogue of Hunter's domain search, also exposed directly as the
+> new `domains` source (`openleads find "emails at stripe.com"`). Every lead carries a
+> calibrated **Confidence %**, port 25 is probed once (not per lead, so searches are
+> fast even when it's blocked), and a free **assistant** turns "send 50 emails to X at
+> 9am" into a scheduled, on-device campaign.
 
 All **keyless and free**. Want a vertical we don't ship — recruiters, lawyers, real-estate agents, your CRM export? Drop a `*.py` file in `~/.openleads/sources/`:
 

@@ -17,10 +17,11 @@ from __future__ import annotations
 import re
 import sys
 
-from openleads import __version__, intent, ui, writers
+from openleads import __version__, assistant, intent, settings, ui, writers
 from openleads.cache.store import Cache
 from openleads.config import openrouter_key
 from openleads.db import DB
+from openleads.emails import netcheck
 from openleads.engine import build_leads
 from openleads.models import Query
 from openleads.sources import get_source, list_sources
@@ -41,26 +42,37 @@ except Exception:  # pragma: no cover
     _HAS_PTK = False
 
 
-HELP = """\
-Just type what you want, e.g.:
-  find 50 fintech founders, verified only
-  pediatricians in California
-  rust developers in Berlin as ndjson
+_COMMANDS = [
+    ("/sources", "list available data sources"),
+    ("/source NAME", "pin a source (yc · hn · github · domains · npi · …)"),
+    ("/count N", "how many leads to fetch"),
+    ("/verified", "toggle deliverable-only (safe tier)"),
+    ("/deep", "toggle deep ground-truth harvesting (slower, more accurate)"),
+    ("/write", "draft personalized emails for the current results"),
+    ("/send [live]", "preview sends (or actually send with /send live)"),
+    ("/schedule HH:MM", "install on-device daily sending at this time"),
+    ("/format FMT", "csv · json · ndjson"),
+    ("/export FILE", "write the last results to FILE"),
+    ("/cache", "cache info (/cache clear to empty it)"),
+    ("/help", "show this help"),
+    ("/quit", "exit"),
+]
 
-Slash commands:
-  /sources            list available data sources
-  /source NAME        pin the source (yc, github, npi, openalex, producthunt)
-  /count N            set how many leads
-  /verified           toggle deliverable-only (safe tier)
-  /deep               toggle deep ground-truth harvesting (slower, more accurate)
-  /write              draft personalized emails for the current results
-  /send [live]        preview sends (or actually send with: /send live)
-  /format FMT         csv | json | ndjson
-  /export FILE        write the last results to FILE
-  /cache              cache info  (/cache clear to empty it)
-  /help               this help
-  /quit               exit
-"""
+_EXAMPLES = [
+    "find 50 fintech founders, verified only",
+    "emails at stripe.com",
+    "send 30 emails to rust developers in Berlin for my dev tool at 9am",
+]
+
+
+def _help_text() -> str:
+    lines = [ui.c("  Just type what you want — examples:", ui.WHITE, ui.BOLD)]
+    for ex in _EXAMPLES:
+        lines.append(ui.c(f"    › {ex}", ui.GREY))
+    lines.append("")
+    lines.append(ui.c("  Commands", ui.WHITE, ui.BOLD))
+    lines.append(ui.command_palette(_COMMANDS))
+    return "\n".join(lines)
 
 EXPORT_RE = re.compile(r"^\s*(?:/export|export|save)\s+(?:to\s+|as\s+)?(\S+)\s*$", re.I)
 
@@ -87,21 +99,25 @@ class Session:
 # --------------------------------------------------------------------------- #
 # Rendering (rich or plain)                                                    #
 # --------------------------------------------------------------------------- #
+_TIER_TAG = {"safe": "[green]safe[/]", "risky": "[yellow]risky[/]", "bad": "[red]bad[/]"}
+
+
 def _render_table(leads, console):
     if _HAS_RICH and console is not None:
         from rich.markup import escape
-        table = Table(show_header=True, header_style="bold cyan", expand=False)
-        for col in ("#", "✓", "Email", "Name", "Title", "Org", "Score"):
+        table = Table(show_header=True, header_style="bold red", expand=False,
+                      border_style="grey37")
+        for col in ("#", "tier", "Email", "Name", "Org", "conf"):
             table.add_column(col, overflow="fold")
         for i, ld in enumerate(leads, 1):
-            tag = {"verified": "[green]OK[/]", "catch_all_guess": "[yellow]~CA[/]",
-                   "pattern_guess": "[yellow]~PG[/]", "none": "[dim]-[/]"}.get(ld.confidence, "?")
+            tag = _TIER_TAG.get(ld.tier, "[dim]-[/]")
             name = f"{ld.first_name} {ld.last_name}".strip() or ld.organization
+            pct = ld.confidence_pct or ld.score
             table.add_row(str(i), tag,
                           escape(ld.email) if ld.email else "[dim](public record)[/]",
-                          escape(name), escape((ld.title or "")[:28]),
-                          escape((ld.organization or "")[:24]),
-                          str(ld.score) if ld.email else "")
+                          escape(name[:24]),
+                          escape((ld.organization or "")[:22]),
+                          f"{pct}%" if ld.email else "")
         console.print(table)
     else:
         for i, ld in enumerate(leads, 1):
@@ -128,7 +144,9 @@ def _handle_slash(cmd: str, sess: Session, console) -> bool:
     if name in ("/quit", "/exit", "/q"):
         return False
     if name in ("/help", "/h", "/?"):
-        _say(console, HELP)
+        _say(console, _help_text())
+    elif name == "/schedule":
+        _do_schedule(arg, console)
     elif name == "/sources":
         for info in list_sources():
             _say(console, f"  [cyan]{info.name:<12}[/] [{info.kind}] {info.vertical}")
@@ -175,6 +193,29 @@ def _handle_slash(cmd: str, sess: Session, console) -> bool:
     else:
         _say(console, f"  [red]unknown command:[/] {name} (try /help)")
     return True
+
+
+def _do_schedule(arg: str, console):
+    """Install/remove on-device daily sending (/schedule 09:00 · /schedule off)."""
+    from openleads.automate import scheduler
+    arg = (arg or "").strip().lower()
+    if arg in ("off", "stop", "remove", "disable"):
+        res = scheduler.uninstall()
+        _say(console, f"  {'[green]✓[/]' if res.get('ok') else '[red]✗[/]'} {res.get('detail')}")
+        return
+    if arg in ("", "status"):
+        st = scheduler.status()
+        state = "[green]installed[/]" if st["installed"] else "[dim]not installed[/]"
+        _say(console, f"  on-device automation: {state} ({st['kind']})")
+        _say(console, "  /schedule 09:00 to install · /schedule off to remove")
+        return
+    m = re.match(r"^(\d{1,2})(?::(\d{2}))?$", arg)
+    if not m:
+        _say(console, "  usage: /schedule HH:MM  (or /schedule off)")
+        return
+    hour, minute = int(m.group(1)), int(m.group(2) or 0)
+    res = scheduler.install(hour, minute)
+    _say(console, f"  {'[green]✓[/]' if res.get('ok') else '[red]✗[/]'} {res.get('detail')}")
 
 
 def _do_export(path: str, sess: Session, console):
@@ -252,6 +293,40 @@ def _maybe_refine(text: str, sess: Session, console) -> bool:
     return False
 
 
+def _looks_like_action(text: str) -> bool:
+    """True if the user is asking to *send/schedule*, not just search."""
+    return assistant.rule_interpret(text).intent in ("campaign", "schedule")
+
+
+def _run_assistant(text: str, sess: Session, console):
+    """Configure a campaign/schedule from one line of natural language."""
+    act, mode = assistant.interpret(text)
+    _say(console, f"  [dim]assistant ({mode})[/] — {act.summary()}")
+
+    def on_progress(kind, payload):
+        if kind == "lead":
+            sess.last_leads.append(payload)
+
+    sess.last_leads = []
+    result = assistant.execute(act, db=sess.db, dry_run=True, install_schedule=False,
+                               on_progress=on_progress)
+    if not result.get("ok"):
+        _say(console, f"  [red]{result.get('message')}[/]")
+        return
+    leads = result.get("leads", [])
+    drafts = result.get("drafts", [])
+    sess.last_leads = leads
+    sess.last_drafts = drafts
+    if leads and _HAS_RICH:
+        _render_table(leads, console)
+    _say(console, f"  [green]✓[/] {result.get('message')}")
+    if act.send_hour is not None:
+        _say(console, f"  to make it run unattended: [yellow]/schedule "
+                      f"{act.send_hour:02d}:{act.send_minute:02d}[/]")
+    if drafts:
+        _say(console, f"  drafted {len(drafts)} emails · [yellow]/send live[/] to deliver now")
+
+
 def _run_search(text: str, sess: Session, console):
     base = sess.base_query()
     parsed, mode = intent.parse(text)
@@ -293,20 +368,28 @@ def _run_search(text: str, sess: Session, console):
 # --------------------------------------------------------------------------- #
 # Entry point                                                                 #
 # --------------------------------------------------------------------------- #
+def _status_items() -> list:
+    """The state strip shown under the welcome (source/mailbox/port-25/LLM/AI)."""
+    mailbox = settings.get("smtp_user") or "not set"
+    port25 = "open" if netcheck.port25_open() else "blocked (engine compensates)"
+    ai = "OpenRouter" if openrouter_key() else "rules only"
+    return [("brain", ai), ("mailbox", mailbox), ("port 25", port25)]
+
+
 def _intro(console):
-    mode = "LLM+rules" if openrouter_key() else "rules only (set OPENROUTER_API_KEY for NL)"
     tui = "rich" if _HAS_RICH else "plain"
-    if _HAS_RICH and console is not None:
-        from rich.panel import Panel
-        console.print(Panel.fit(
-            f"[bold]🧲 OpenLeads v{__version__}[/] — Apollo for everyone, free\n"
-            f"[dim]parser: {mode} · ui: {tui}[/]\n"
-            "type a request · /sources · /help · /quit",
-            border_style="cyan"))
-    else:
-        print(ui.banner())
-        print(f"  parser: {mode} · ui: {tui}")
-        print("  type a request · /sources · /help · /quit\n")
+    body = [
+        ui.c("OpenLeads", ui.WHITE, ui.BOLD) + ui.c(f"  v{__version__}", ui.RED, ui.BOLD)
+        + ui.c("   the free Apollo", ui.FAINT),
+        ui.c("find anyone · verify deliverably · write · send — local-first, $0", ui.GREY),
+        "",
+        ui.c("Type a request, or ", ui.GREY) + ui.kbd("/help") + ui.c(" for commands.", ui.GREY),
+    ]
+    print(ui.box(body, title="✦ welcome", width=64))
+    print(ui.status_line(_status_items() + [("ui", tui)]))
+    print(ui.c("  e.g. ", ui.FAINT) + ui.c("“send 30 emails to fintech founders for my SaaS at 9am”",
+                                            ui.GREY))
+    print()
 
 
 def run() -> int:
@@ -321,9 +404,9 @@ def run() -> int:
         while True:
             try:
                 if ptk is not None:
-                    text = ptk.prompt("openleads> ")
+                    text = ptk.prompt("openleads ❯ ")
                 else:
-                    text = input("openleads> ")
+                    text = input("openleads ❯ ")
             except (EOFError, KeyboardInterrupt):
                 print()
                 break
@@ -336,7 +419,10 @@ def run() -> int:
                 continue
             if _maybe_refine(text, session, console):
                 continue
-            _run_search(text, session, console)
+            if _looks_like_action(text):
+                _run_assistant(text, session, console)
+            else:
+                _run_search(text, session, console)
     finally:
         session.cache.close()
         session.db.close()

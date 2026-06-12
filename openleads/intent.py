@@ -21,6 +21,7 @@ import re
 import urllib.request
 
 from openleads.config import openrouter_key
+from openleads.emails.permute import is_probable_domain
 from openleads.models import Query
 
 # Vertical keyword → source name. First match wins (order matters).
@@ -72,6 +73,25 @@ def _extract_location(text: str) -> str | None:
     return place or None
 
 
+# A bare domain / "emails at acme.com" → the Hunter-style `domains` source.
+_DOMAIN_RE = re.compile(
+    r"\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b", re.I)
+
+
+def detect_domains(text: str) -> list[str]:
+    """Return real company-domain tokens in ``text`` ('email at acme.com' → ['acme.com']).
+
+    Code/file tokens (node.js, config.yaml) and abbreviations (inc., e.g.) are
+    rejected via :func:`~openleads.emails.permute.is_probable_domain`, so a request
+    like 'node.js engineers' is NOT hijacked to the domains source."""
+    out: list[str] = []
+    for m in _DOMAIN_RE.finditer(text or ""):
+        tok = m.group(1).lower().rstrip(".")
+        if is_probable_domain(tok) and tok not in out:
+            out.append(tok)
+    return out
+
+
 def _detect_source(text: str) -> str | None:
     low = f" {text.lower()} "
     for name, kws in SOURCE_KEYWORDS:
@@ -121,6 +141,15 @@ def rule_parse(text: str) -> Query:
     if count:
         q.count = max(1, min(count, 1000))
     q.fmt = _detect_format(text)
+
+    # A named domain ("emails at acme.com") wins: route to the Hunter-style
+    # `domains` source and carry the domain list as the keyword.
+    domains = detect_domains(text)
+    if domains:
+        q.source = "domains"
+        q.keyword = ", ".join(domains)
+        return q
+
     q.source = _detect_source(text)
     q.location = _extract_location(text)
     kw = _distill_keyword(text, q.location)

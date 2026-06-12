@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sys
 
 from openleads import __version__, intent, ui, writers
@@ -75,13 +76,20 @@ def cmd_find(args) -> int:
     q = _query_from_args(args)
     cache = Cache() if q.use_cache else None
     db = DB()
-    print(ui.banner())
-    print(ui.field("target", f"{q.count} leads"))
-    print(ui.field("source", q.source or "auto"))
-    print(ui.field("deliver", "safe only" if q.verified_only else "all tiers")
-          + (ui.c("  · deep", ui.FAINT) if q.deep else ""))
-    print(ui.field("format", q.fmt))
-    print(ui.rule())
+    from openleads.emails import netcheck
+    body = [
+        ui.c("find", ui.WHITE, ui.BOLD) + ui.c(f"  {q.count} leads", ui.GREY),
+        ui.status_line([
+            ("source", q.source or "auto"),
+            ("deliver", "safe only" if q.verified_only else "all tiers"),
+            ("format", q.fmt),
+        ]).strip(),
+        ui.status_line([
+            ("port 25", "open" if netcheck.port25_open() else "blocked → infra/ground-truth"),
+            ("mode", "deep" if q.deep else "fast"),
+        ]).strip(),
+    ]
+    print(ui.box(body, title="✦ openleads", width=64))
     progress = {"n": 0}
 
     def on_progress(kind, payload):
@@ -336,6 +344,86 @@ def cmd_chat(args) -> int:
     return run()
 
 
+def cmd_drip(args) -> int:
+    """Run one drip cycle: fire due scheduled campaigns + sequence follow-ups."""
+    from openleads.automate import scheduler
+    live = bool(getattr(args, "live", False))
+    print(ui.c(f"  drip — {'LIVE' if live else 'dry-run'}", ui.WHITE, ui.BOLD))
+
+    def on_progress(kind, payload):
+        if kind == "campaign":
+            print(ui.c(f"  ◆ running campaign: {payload}", ui.FAINT))
+        elif kind == "send":
+            print(f"  {payload.status:>7} → {payload.email}")
+
+    summary = scheduler.tick(dry_run=not live, on_progress=on_progress)
+    print(ui.rule())
+    print(f"  campaigns: {summary['campaigns_run']} · campaign sends: {summary['campaign_sent']}"
+          f" · follow-ups due: {summary['due']} · sent: {summary['sent']}")
+    if not live:
+        print(ui.c("  dry-run — add --live to actually send", ui.FAINT))
+    return 0
+
+
+def cmd_schedule(args) -> int:
+    """Install / remove / inspect on-device daily sending."""
+    from openleads.automate import scheduler
+    action = (args.action or "status").lower()
+    if action in ("off", "remove", "uninstall", "stop"):
+        res = scheduler.uninstall()
+        print(("  ✓ " if res.get("ok") else "  ✗ ") + str(res.get("detail")))
+        return 0 if res.get("ok") else 1
+    if action == "status":
+        st = scheduler.status()
+        state = "installed" if st["installed"] else "not installed"
+        print(f"  on-device automation: {state} ({st['kind']})")
+        print(ui.c("  openleads schedule --at 09:00   to install", ui.FAINT))
+        print(ui.c("  openleads schedule off          to remove", ui.FAINT))
+        return 0
+    # default: install at --at HH:MM (or the bare action if it's a time)
+    at = args.at or (action if re.match(r"^\d{1,2}(:\d{2})?$", action) else "09:00")
+    m = re.match(r"^(\d{1,2})(?::(\d{2}))?$", at)
+    if not m:
+        print("  usage: openleads schedule --at HH:MM   (or: openleads schedule off)",
+              file=sys.stderr)
+        return 2
+    hour, minute = int(m.group(1)), int(m.group(2) or 0)
+    res = scheduler.install(hour, minute)
+    print(("  ✓ " if res.get("ok") else "  ✗ ") + str(res.get("detail")))
+    from openleads.automate.sendtime import SendPolicy, describe
+    print(ui.c("  " + describe(SendPolicy()), ui.FAINT))
+    return 0 if res.get("ok") else 1
+
+
+def cmd_assistant(args) -> int:
+    """One-shot natural-language campaign setup: 'send 50 emails to … at 9am'."""
+    from openleads import assistant
+    text = " ".join(args.text or []).strip()
+    if not text:
+        print("  usage: openleads assistant \"send 50 emails to fintech founders at 9am\"",
+              file=sys.stderr)
+        return 2
+    act, mode = assistant.interpret(text)
+    print(ui.c(f"  assistant ({mode}) — {act.summary()}", ui.WHITE))
+    print(ui.rule())
+
+    def on_progress(kind, payload):
+        if kind == "lead":
+            print("  " + ui.lead_line(payload, 0, act.count))
+
+    result = assistant.execute(act, dry_run=True,
+                               install_schedule=bool(getattr(args, "install", False)),
+                               on_progress=on_progress)
+    print(ui.rule())
+    print("  " + str(result.get("message")))
+    if result.get("drafts"):
+        print(ui.c(f"  drafted {len(result['drafts'])} emails — previewed (dry-run).", ui.GREY))
+    if act.send_hour is not None and not getattr(args, "install", False):
+        print(ui.c(f"  add --install to schedule on-device daily at "
+                   f"{act.send_hour:02d}:{act.send_minute:02d}", ui.FAINT))
+    return 0 if result.get("ok") else 1
+
+
 def cmd_campaign(args) -> int:
     try:
         from openleads import campaign
@@ -436,6 +524,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     ch = sub.add_parser("chat", help="launch the interactive chat REPL")
     ch.set_defaults(func=cmd_chat)
+
+    asst = sub.add_parser("assistant", help='one-shot NL setup ("send 50 emails to … at 9am")')
+    asst.add_argument("text", nargs="*", help="what to do, in plain English")
+    asst.add_argument("--install", action="store_true",
+                      help="also install the on-device daily schedule")
+    asst.set_defaults(func=cmd_assistant)
+
+    sc = sub.add_parser("schedule", help="install/remove on-device daily sending")
+    sc.add_argument("action", nargs="?", help="HH:MM to install · 'off' · 'status' (default)")
+    sc.add_argument("--at", help="time to send daily, HH:MM (default 09:00)")
+    sc.set_defaults(func=cmd_schedule)
+
+    dp = sub.add_parser("drip", help="run one drip cycle (due campaigns + follow-ups)")
+    dp.add_argument("--live", action="store_true", help="actually send (default: dry-run)")
+    dp.set_defaults(func=cmd_drip)
 
     cp = sub.add_parser("campaign", help="(v2) cold-email companion")
     cp.add_argument("rest", nargs=argparse.REMAINDER)

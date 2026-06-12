@@ -11,6 +11,7 @@ import html as ihtml
 import json
 import random
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
 from openleads._http import get_json, get_text
@@ -129,32 +130,46 @@ class YCSource(Source):
         companies = get_json(YC_ALL, cache=self.cache, ttl_ns="dataset") or []
         companies = filter_companies(companies, query)
 
-        scanned = 0
-        for c in companies:
-            if scanned >= query.max_companies:
-                break
-            scanned += 1
+        # Only companies we can actually turn into a lead (slug + real domain).
+        usable = []
+        for c in companies[:query.max_companies]:
             slug = c.get("slug")
             domain = domain_of(c.get("website", ""))
-            if not slug or not domain:
-                continue
-            page = get_text(YC_PAGE.format(slug=slug), timeout=30)
-            exec_ = pick_exec(parse_founders(page or ""))
-            if not exec_:
-                continue
-            city, country = split_location(c.get("all_locations", ""))
-            yield Entity(
-                full_name=exec_["full_name"],
-                title=exec_["title"],
-                organization=c.get("name", ""),
-                domain=domain,
-                website=c.get("website", ""),
-                location=f"{city}, {country}".strip(", "),
-                links={"linkedin": exec_.get("linkedin_url", "")},
-                extra={
-                    "industry": c.get("industry", ""),
-                    "employees": str(c.get("team_size", "")),
-                    "city": city, "country": country,
-                },
-                source=self.name,
-            )
+            if slug and domain:
+                usable.append((c, slug, domain))
+
+        def fetch_page(item):
+            c, slug, domain = item
+            page = get_text(YC_PAGE.format(slug=slug), timeout=12,
+                            cache=self.cache, ttl_ns="dataset")
+            return c, domain, page
+
+        # Fetch founder pages concurrently, but in bounded chunks so an early stop
+        # (engine has enough leads) doesn't fetch the entire 400-company tail. The
+        # chunk scales with the request so a small ``count`` doesn't over-fetch a
+        # big tail. The old sequential 30 s-timeout fetch per company was the stall.
+        chunk = min(12, max(4, query.count * 2))
+        for start in range(0, len(usable), chunk):
+            window = usable[start:start + chunk]
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                pages = list(ex.map(fetch_page, window))
+            for c, domain, page in pages:
+                exec_ = pick_exec(parse_founders(page or ""))
+                if not exec_:
+                    continue
+                city, country = split_location(c.get("all_locations", ""))
+                yield Entity(
+                    full_name=exec_["full_name"],
+                    title=exec_["title"],
+                    organization=c.get("name", ""),
+                    domain=domain,
+                    website=c.get("website", ""),
+                    location=f"{city}, {country}".strip(", "),
+                    links={"linkedin": exec_.get("linkedin_url", "")},
+                    extra={
+                        "industry": c.get("industry", ""),
+                        "employees": str(c.get("team_size", "")),
+                        "city": city, "country": country,
+                    },
+                    source=self.name,
+                )

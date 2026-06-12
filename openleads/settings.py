@@ -83,6 +83,10 @@ SCHEMA: tuple[Setting, ...] = (
             "mailbox", "IMAP login (defaults to smtp_user)."),
     Setting("imap_pass", ("IMAP_PASS",), True, "str", "",
             "mailbox", "IMAP password (defaults to smtp_pass)."),
+    Setting("save_to_sent", (), False, "str", "auto",
+            "mailbox", "Save sent mail to your IMAP Sent folder so it shows in your "
+            "mail client. auto = on for all providers except Gmail (which already does it).",
+            choices=("auto", "always", "never")),
     # Sending policy (deliverability guardrails)
     Setting("daily_cap", ("CAMPAIGN_MAX",), False, "int", 40,
             "sending", "Max emails to send per day (deliverability cap)."),
