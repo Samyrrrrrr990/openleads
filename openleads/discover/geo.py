@@ -14,6 +14,8 @@ from typing import NamedTuple
 from openleads._http import get_json
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
+# Nominatim's usage policy asks for an identifying User-Agent with contact info.
+_UA = {"User-Agent": "openleads/4.0 (+https://github.com/Samyrrrrrr990/openleads)"}
 
 
 class BBox(NamedTuple):
@@ -56,7 +58,7 @@ def resolve_place(place: str, cache=None) -> BBox | None:
     params = urllib.parse.urlencode(
         {"q": place, "format": "jsonv2", "limit": "1", "addressdetails": "0"}
     )
-    data = get_json(f"{NOMINATIM}?{params}", cache=cache, ttl_ns="dataset")
+    data = get_json(f"{NOMINATIM}?{params}", headers=_UA, cache=cache, ttl_ns="dataset")
     if not isinstance(data, list) or not data:
         return None
     return bbox_from_result(data[0])

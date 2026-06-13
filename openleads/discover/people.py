@@ -48,6 +48,14 @@ _NON_PERSON = {
     "cookie", "login", "sign", "search", "follow", "subscribe", "copyright", "rights",
     "reserved", "all", "view", "read", "more", "learn", "get", "started", "demo",
     "inc", "llc", "ltd", "group", "agency", "studio", "labs", "ventures", "capital",
+    # section / service phrases that show up title-cased and look name-shaped
+    "web", "copy", "content", "design", "digital", "social", "media", "seo", "ppc",
+    "email", "brand", "branding", "creative", "strategy", "work", "case", "studies",
+    "portfolio", "pricing", "faq", "support", "marketing", "sales", "development",
+    "consulting", "management", "client", "clients", "partners", "partner", "career",
+    "join", "us", "we", "your", "free", "book", "call", "quote", "service", "product",
+    "solution", "resources", "resource", "events", "event", "webinar", "ebook",
+    "newsletter", "testimonials", "reviews", "gallery", "shop", "store", "cart",
 }
 
 _NAME_RE = re.compile(r"[A-Z][a-zA-Z'’.-]+(?:\s+[A-Z][a-zA-Z'’.-]+){1,3}")

@@ -28,6 +28,8 @@ from openleads.models import Entity, Query
 from openleads.sources.base import Source
 
 OVERPASS = "https://overpass-api.de/api/interpreter"
+# Overpass rejects browser-like User-Agents (HTTP 406); send an identifying app UA.
+_UA = {"User-Agent": "openleads/4.0 (+https://github.com/Samyrrrrrr990/openleads)"}
 
 # Keyword → OSM tag selectors. First matching keyword wins; each maps to one or
 # more (key, value) tag filters OR'd together in the Overpass query. Ordered so
@@ -217,7 +219,7 @@ class LocalSource(Source):
         limit = max(query.count * 3, 30)
         ql = build_overpass_query(selectors, bbox.as_overpass(), name_filter, limit)
         url = f"{OVERPASS}?{urllib.parse.urlencode({'data': ql})}"
-        data = get_json(url, cache=self.cache, ttl_ns="dataset", timeout=40)
+        data = get_json(url, headers=_UA, cache=self.cache, ttl_ns="dataset", timeout=40)
         for ent in extract_businesses(data or {}):
             if not ent.extra.get("city") and place:
                 ent.extra["city"] = place.split(",")[0].strip()
