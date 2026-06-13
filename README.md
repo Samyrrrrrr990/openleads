@@ -4,7 +4,7 @@
 
 ### Apollo for everyone. For **$0**.
 
-**Find founders, developers, doctors, researchers — anyone — verify their email *deliverably*, write the cold email, and send it. Free, open source, keyless, and entirely on your machine.**
+**One search box. Describe your ideal customer — _"marketing agencies in Miami"_, _"fintech founders"_, _"dentists in Austin"_ — and OpenLeads federates across free public sources, finds the real people, verifies their email, and automates the outreach. Open source, keyless, entirely on your machine.**
 
 [![License: PolyForm NC](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue.svg)](./LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
@@ -22,35 +22,53 @@ Apollo, Hunter, RocketReach, and ZoomInfo sell the same two things: **a contact 
 
 > A universal **`entity → verified email → cold email → sent`** machine, fed by a registry of **pluggable, keyless, public data sources** — running **entirely on your laptop**.
 
-**v3 is the ultimate update.** v2 found and verified leads. v3 closes the loop: it **writes** the email and **sends** it, behind a deliverability engine that **beats Hunter & Apollo's free tier** — all for **$0**, with a **zero-dependency core**, and **no data ever leaving your machine.**
+**v4 makes the lead-gen great.** Earlier versions found and sent; the weak link was *discovery* — you had to pick a source, and most were narrow. v4 rebuilds discovery as a **federated waterfall**: one query fans out across the public sources that fit it, **finds the people behind each company**, verifies their email, and dedupes — the way Apollo and Clay actually work, free and local. The headline new source is **local businesses via OpenStreetMap** — the long tail (agencies, clinics, firms, shops) that paid tools charge the most for.
 
 ```text
-$ openleads run "50 AI founders in SF, verified only" --live
-  [engine] source=yc — searching…
-   safe   ada@acme.ai        Ada Lovelace · Founder · 96
-   safe   grace@cobol.dev    Grace Hopper · CEO     · 91
-   risky  j.doe@stealth.io   J. Doe       · —       · 58   (held back)
-  [engine] done — 41 safe · 9 risky
-  [write]  drafting 41 personalized emails…
-  [outbox] sender grade A · warmup day 6 · 40/day
-   sent   → ada@acme.ai   «quick idea re: your launch»
+$ openleads find "marketing agencies in Miami"
+  [engine] federated search · local …
+   safe   hello@brightspark.com    Bright Spark Marketing   · 98%
+   risky  jane.lee@brightspark.com Jane Lee · Founder & CEO · 62%
+   safe   crystalei@marketkarma.com Crystalei Daniels · Head of Growth · 98%
+  [engine] done — real businesses, their people, verified emails
+
+$ openleads run "50 fintech founders, verified only" --live
+  [engine] federated search · yc · hn …
+   safe   ada@acme.ai      Ada Lovelace · Founder · 96%
+  [write]  drafting 41 personalized emails… · [outbox] grade A · warmup day 6
   → 40 sent · 1 held (cap) · 0 bounced
 ```
 
 ---
 
-## ✨ The four clicks
+## ✨ How it works
 
 The painful multi-tool workflow — scrape in A, verify in B, enrich in C, load into sender D, warm up in E — collapses into **one local app + CLI**:
 
 | | | |
 |---|---|---|
-| **1 · Find** | Describe who you want in plain English. | Keyless public sources → resolved emails. |
+| **1 · Find** | Describe your ICP in plain English. | **Federates** across local businesses (OpenStreetMap), startups, companies, and developers — finds the people, resolves emails. |
 | **2 · Write** | Personalized, spam-linted, plain-text drafts. | Free LLM or sharp template — edit anything. |
 | **3 · Connect** | One-time mailbox setup with provider presets. | A preflight grades your SPF/DKIM/DMARC. |
 | **4 · Send** | Throttled, warmup-capped, suppression-aware. | One-click unsubscribe headers. No tracking pixels. |
 
-Do it in the terminal (`openleads run …`), in the chat REPL (`openleads`), or in the **local web dashboard** (`openleads web`).
+Already have a list? **Enrich it** — `openleads enrich list.csv` runs the same waterfall over your own names/companies/domains. Want it hands-free? Save a **recipe** (`openleads recipe add …`) and the on-device scheduler runs find → write → send → export daily, pausing anyone who replies.
+
+Do it in the terminal (`openleads find …`), in the chat REPL (`openleads`), or in the **local web dashboard** (`openleads web`).
+
+### 🛰️ Where leads come from — the federation
+
+One query, many sources, merged and de-duplicated. You never pick a source (but `-s name` still pins one):
+
+| Source | Vertical | Keyless |
+|---|---|---|
+| `local` | **Local businesses by category + city** (OpenStreetMap/Overpass) — agencies, clinics, firms, gyms, shops | ✅ |
+| `yc` · `hn` | Startup founders (Y Combinator) · companies hiring now (Hacker News) | ✅ |
+| `companies` · `edgar` | Companies by industry/country (Wikidata) · US public companies (SEC EDGAR) | ✅ |
+| `github` · `openalex` · `npi` | Developers · researchers · US healthcare providers | ✅ |
+| `domains` | Hunter-style: real published emails for any domain you name | ✅ |
+
+Each company is expanded into **real decision-makers** via team-page discovery, then every address goes through the email waterfall (ground-truth harvest → learned pattern → permutation → MX/SMTP/Gravatar consensus → calibrated 0–100 confidence).
 
 ## 🖥️ The local dashboard
 

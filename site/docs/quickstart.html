@@ -34,6 +34,7 @@
 <p class="dsb__sec">Getting started</p>
 <a class="dsb__link is-active" href="quickstart.html">Quickstart</a>
 <p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="finding.html">Finding & the federation</a>
 <a class="dsb__link" href="deliverability.html">Deliverability</a>
 <a class="dsb__link" href="sending.html">Sending</a>
 <a class="dsb__link" href="automation.html">Automation & assistant</a>
@@ -53,7 +54,8 @@
 <hr/>
 <h2 id="1-install" class="anchored"><a class="hlink" href="#1-install">#</a>1. Install</h2>
 <pre class="code" data-lang="bash"><code>pip install &quot;openleads[all]&quot;     # engine + chat TUI + sending niceties
-openleads --version              # → openleads 3.0.0</code></pre>
+openleads --version              # → openleads 4.0.0
+openleads init                   # friendly first-run setup (optional)</code></pre>
 <p>Node user? <code>npx openleads</code> works too (it installs the Python package on first run).</p>
 <h2 id="2-sanity-check-your-setup" class="anchored"><a class="hlink" href="#2-sanity-check-your-setup">#</a>2. Sanity-check your setup</h2>
 <pre class="code" data-lang="bash"><code>openleads doctor</code></pre>
@@ -62,10 +64,15 @@ openleads --version              # → openleads 3.0.0</code></pre>
 <p>compensates with Gravatar + ground-truth + learned patterns.</p>
 <ul><li><strong>OpenRouter key</strong> set? Optional; unlocks AI drafting + smarter NL parsing.</li><li><strong>Mailbox</strong> configured + logs in? Needed only for <em>sending</em>.</li><li>Your <strong>sending domain's</strong> SPF/DKIM/DMARC grade.</li></ul>
 <h2 id="3-find-leads" class="anchored"><a class="hlink" href="#3-find-leads">#</a>3. Find leads</h2>
-<pre class="code" data-lang="bash"><code>openleads find &quot;50 AI founders in SF, verified only&quot; --out leads.csv</code></pre>
+<p>Just describe who you want — OpenLeads <strong>federates</strong> across the sources that fit (you don't pick one):</p>
+<pre class="code" data-lang="bash"><code>openleads find &quot;marketing agencies in Miami&quot;          # local businesses + their people
+openleads find &quot;50 fintech founders, verified only&quot;   # YC + Hacker News
+openleads find &quot;dentists in Austin&quot;                   # clinics + registry records</code></pre>
 <p>You'll see each lead stream in with a tier and a 0–100 score:</p>
 <ul><li><strong><code>safe</code></strong> — deliverable; sent by default.</li><li><strong><code>risky</code></strong> — kept, but held back unless you opt in.</li><li><strong><code>bad</code></strong> — dropped (no MX, disposable, unguessable).</li></ul>
-<p>Pick a source explicitly with <code>--source</code> (<code>openleads sources</code> lists them), narrow with <code>--location</code> / <code>--keyword</code>, and add <code>--deep</code> for heavier ground-truth harvesting (slower, more <code>safe</code> hits).</p>
+<p>Company results are expanded into <strong>real people</strong> (founder/owner/exec) via team-page discovery. Pin a single source with <code>--source</code> (<code>openleads sources</code> lists them), add <code>--deep</code> for heavier ground-truth harvesting, or <code>--no-people</code> to keep company-level results only. See <a href="finding.html">Finding &amp; the federation</a>.</p>
+<p><strong>Already have a list?</strong> Enrich it instead of searching:</p>
+<pre class="code" data-lang="bash"><code>openleads enrich my_list.csv -o enriched.csv   # name/company/domain/email → verified</code></pre>
 <h2 id="4-connect-your-mailbox" class="anchored"><a class="hlink" href="#4-connect-your-mailbox">#</a>4. Connect your mailbox (once)</h2>
 <pre class="code" data-lang="bash"><code>openleads config</code></pre>
 <p>Interactive setup for your provider (Gmail/Workspace, Outlook/M365, Zoho, or custom), your <strong>app password</strong> (not your normal password — see your provider's docs), and your sender identity (name, org, a few lines about what you're reaching out about).</p>
@@ -93,7 +100,7 @@ openleads inbox               # optional: scan IMAP for replies &amp; bounces</c
 <p>Next: <a href="deliverability.html">Deliverability deep-dive</a> · <a href="sending.html">Sending guide</a> · <a href="web.html">Web dashboard</a> · <a href="sources.html">Write a source</a>.</p>
       <nav class="prevnext">
 <span></span>
-<a class="pn pn--next" href="deliverability.html"><span>Next →</span><b>Deliverability</b></a>
+<a class="pn pn--next" href="finding.html"><span>Next →</span><b>Finding & the federation</b></a>
 </nav>
     </article>
   </main>

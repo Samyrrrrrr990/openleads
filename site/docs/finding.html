@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Finding leads — the federated engine · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Finding leads — the federated engine." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link is-active" href="finding.html">Finding & the federation</a>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="automation.html">Automation & assistant</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Finding leads — the federated engine</div>
+      <h1 id="finding-leads-the-federated-engine">Finding leads — the federated engine</h1>
+<p>In v4, you don't pick a data source. You describe who you want, and OpenLeads <strong>federates</strong> the query across the public sources that fit it, finds the people behind each company, verifies their email, and merges the results. This is how the big tools feel like "one box that just works" — done free, keyless, and locally.</p>
+<pre class="code" data-lang="bash"><code>openleads find &quot;marketing agencies in Miami&quot;
+openleads find &quot;fintech founders, verified only&quot;
+openleads find &quot;dentists in Austin&quot;
+openleads find &quot;rust developers in Berlin&quot;</code></pre>
+<h2 id="how-a-query-is-routed" class="anchored"><a class="hlink" href="#how-a-query-is-routed">#</a>How a query is routed</h2>
+<p>The planner reads the <em>shape</em> of your request:</p>
+<div class="tablewrap"><table><thead><tr><th>Your query looks like…</th><th>Federates across</th></tr></thead><tbody><tr><td>a place + a business category ("agencies in Miami", "law firms in London")</td><td><code>local</code> (OpenStreetMap)</td></tr><tr><td>founders / startups ("fintech founders", "YC companies")</td><td><code>yc</code> + <code>hn</code></td></tr><tr><td>an industry / companies ("video game companies in Japan")</td><td><code>companies</code> (Wikidata) + <code>edgar</code></td></tr><tr><td>developers ("rust developers")</td><td><code>github</code></td></tr><tr><td>researchers ("ML researchers")</td><td><code>openalex</code></td></tr><tr><td>doctors / clinics ("dentists in Austin")</td><td><code>npi</code> + <code>local</code></td></tr><tr><td>a typed domain ("emails at stripe.com")</td><td><code>domains</code></td></tr></tbody></table></div>
+<p>Streams are interleaved so results stay diverse, then de-duplicated by <code>(domain, person)</code>. You can always pin one source with <code>--source &lt;name&gt;</code> (or <code>/source</code> in chat), which skips federation entirely.</p>
+<h2 id="from-companies-to-people" class="anchored"><a class="hlink" href="#from-companies-to-people">#</a>From companies to people</h2>
+<p>Many sources return <em>companies</em> (a name + a domain) rather than people. OpenLeads turns those into contactable humans by reading the company's own <code>/team</code>, <code>/about</code>, and <code>/leadership</code> pages and extracting <code>(name, title)</code> pairs — JSON-LD <code>Person</code> objects plus conservative name/role heuristics. Each discovered person then goes through the <a href="how-it-works.html">email waterfall</a>. Disable this with <code>--no-people</code> to keep company-level results (and any published role addresses).</p>
+<h2 id="the-sources" class="anchored"><a class="hlink" href="#the-sources">#</a>The sources</h2>
+<p>Every source is keyless. A token (e.g. <code>GITHUB_TOKEN</code>) only raises a rate limit.</p>
+<div class="tablewrap"><table><thead><tr><th>Source</th><th>Vertical</th></tr></thead><tbody><tr><td><code>local</code></td><td>Local businesses by category + city, via OpenStreetMap/Overpass — agencies, clinics, firms, gyms, salons, restaurants, shops. Global.</td></tr><tr><td><code>yc</code></td><td>Startup founders from the open Y Combinator dataset.</td></tr><tr><td><code>hn</code></td><td>Companies hiring now, from Hacker News "Who is hiring" (often with apply emails).</td></tr><tr><td><code>companies</code></td><td>Companies by industry + country with real websites, via Wikidata SPARQL.</td></tr><tr><td><code>edgar</code></td><td>US public companies by keyword, from SEC EDGAR.</td></tr><tr><td><code>github</code></td><td>Contactable developers via the keyless GitHub API.</td></tr><tr><td><code>openalex</code></td><td>Researchers &amp; academics, via OpenAlex.</td></tr><tr><td><code>npi</code></td><td>US doctors &amp; healthcare providers, via the NPI registry.</td></tr><tr><td><code>domains</code></td><td>Hunter-style: real published emails for any domain you name.</td></tr></tbody></table></div>
+<p><code>openleads sources</code> lists them; <code>openleads sources info &lt;name&gt;</code> shows one. You can add your own by dropping a <code>*.py</code> file in <code>~/.openleads/sources/</code> — see <a href="sources.html">Add a source</a>.</p>
+<h2 id="bring-your-own-list-enrichment" class="anchored"><a class="hlink" href="#bring-your-own-list-enrichment">#</a>Bring your own list — enrichment</h2>
+<p>Already have names, companies, or domains? Run the same waterfall over your list:</p>
+<pre class="code" data-lang="bash"><code>openleads enrich my_list.csv -o enriched.csv</code></pre>
+<p>Headers are matched forgivingly (<code>First Name</code>, <code>company</code>, <code>Domain</code>, <code>Email</code>, …). A row with an email is verified; a row with a name + domain is resolved and verified; a row with only a domain is harvested + expanded into people. Every row comes back tiered (<code>safe</code>/<code>risky</code>/<code>bad</code>) and is saved to your local CRM.</p>
+<h2 id="make-it-hands-free-recipes-watchers" class="anchored"><a class="hlink" href="#make-it-hands-free-recipes-watchers">#</a>Make it hands-free — recipes &amp; watchers</h2>
+<p>A <strong>recipe</strong> saves an ICP + message + schedule + export and runs itself:</p>
+<pre class="code" data-lang="bash"><code>openleads recipe add growth &quot;marketing agencies in Miami&quot; \
+  --at 09:00 --send --context &quot;our local-SEO service&quot; --export sheets
+openleads recipe run growth          # dry-run now
+openleads schedule --at 09:00        # arm the on-device daily drip</code></pre>
+<p>The daily drip syncs your inbox (replies/bounces stop sequences), runs due recipes, fires watchers, then sends follow-ups. A <strong>watcher</strong> delivers only <em>new</em> matches each run:</p>
+<pre class="code" data-lang="bash"><code>openleads watch add new-miami &quot;marketing agencies in Miami&quot; --sink webhook</code></pre>
+<h2 id="export-anywhere" class="anchored"><a class="hlink" href="#export-anywhere">#</a>Export anywhere</h2>
+<pre class="code" data-lang="bash"><code>openleads export csv --target leads.csv
+openleads export sheets                       # a Google-Sheets-ready CSV + import hint
+openleads export webhook --target https://hooks.example.com/leads
+openleads export notion                       # needs notion_token + notion_database_id
+openleads export airtable                     # needs airtable_token + airtable_base</code></pre>
+<p><code>csv</code> · <code>json</code> · <code>ndjson</code> · <code>sheets</code> · <code>webhook</code> are keyless; <code>notion</code> and <code>airtable</code> light up once you set their token in <code>openleads config</code>.</p>
+<hr/>
+<p>Next: <a href="how-it-works.html">Email engine</a> · <a href="deliverability.html">Deliverability</a> · <a href="automation.html">Automation &amp; assistant</a> · <a href="web.html">Web dashboard</a>.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="quickstart.html"><span>← Previous</span><b>Quickstart</b></a>
+<a class="pn pn--next" href="deliverability.html"><span>Next →</span><b>Deliverability</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#how-a-query-is-routed">How a query is routed</a><a class="toc__l2" href="#from-companies-to-people">From companies to people</a><a class="toc__l2" href="#the-sources">The sources</a><a class="toc__l2" href="#bring-your-own-list-enrichment">Bring your own list — enrichment</a><a class="toc__l2" href="#make-it-hands-free-recipes-watchers">Make it hands-free — recipes &amp; watchers</a><a class="toc__l2" href="#export-anywhere">Export anywhere</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

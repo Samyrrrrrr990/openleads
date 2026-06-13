@@ -66,22 +66,20 @@ if (flowLine) {
 /* ---- animated terminal demo ---- */
 const term = document.getElementById("term-body");
 const SCRIPT = [
-  { t: "cmd", s: 'openleads run "50 AI founders in SF, verified only" --live' },
+  { t: "cmd", s: 'openleads find "marketing agencies in Miami"' },
   { t: "gap" },
-  { t: "dim", s: "[engine] source=yc (startup founders) — searching…" },
-  { t: "lead", tier: "safe", email: "ada@anthropic-founders.ai", who: "Ada N.", sc: 96 },
-  { t: "lead", tier: "safe", email: "grace@hopperlabs.dev", who: "Grace H.", sc: 91 },
-  { t: "lead", tier: "risky", email: "j.doe@stealth.io", who: "J. Doe", sc: 58 },
-  { t: "lead", tier: "safe", email: "lin@tensor.so", who: "Lin K.", sc: 89 },
-  { t: "dim", s: "[engine] done — 41 safe · 9 risky" },
+  { t: "dim", s: "[engine] federated search · local …" },
+  { t: "lead", tier: "safe", email: "hello@brightspark.com", who: "Bright Spark Marketing", sc: 98 },
+  { t: "lead", tier: "risky", email: "jane.lee@brightspark.com", who: "Jane Lee · Founder & CEO", sc: 62 },
+  { t: "lead", tier: "safe", email: "crystalei@marketkarma.com", who: "Crystalei D. · Head of Growth", sc: 98 },
+  { t: "lead", tier: "safe", email: "team@pixelnorth.co", who: "PixelNorth", sc: 95 },
+  { t: "dim", s: "[engine] done — real businesses, their people, verified emails" },
   { t: "gap" },
-  { t: "dim", s: "[write] drafting 41 personalized emails…" },
-  { t: "ok", s: "  drafted → ada@anthropic-founders.ai  «quick idea re: your launch»" },
-  { t: "gap" },
+  { t: "cmd", s: 'openleads run "50 fintech founders, verified only" --live' },
+  { t: "dim", s: "[engine] federated search · yc · hn …" },
+  { t: "lead", tier: "safe", email: "ada@acme.ai", who: "Ada N. · Founder", sc: 96 },
   { t: "dim", s: "[outbox] sender grade A · warmup day 6 · 40/day" },
-  { t: "send", email: "ada@anthropic-founders.ai" },
-  { t: "send", email: "grace@hopperlabs.dev" },
-  { t: "send", email: "lin@tensor.so" },
+  { t: "send", email: "ada@acme.ai" },
   { t: "done", s: "→ 40 sent · 1 held (cap) · 0 bounced" },
 ];
 

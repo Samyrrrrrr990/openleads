@@ -4,13 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>OpenLeads — the free, local cold-email machine</title>
-<meta name="description" content="Find anyone's verified email from free public data, write the cold email, and send it — locally, for $0. The open-source Apollo alternative with a deliverability engine that beats the free tiers." />
+<meta name="description" content="Describe your ideal customer and OpenLeads federates across free public sources (local businesses via OpenStreetMap, startups, companies, developers), finds the people, verifies emails, and automates outreach — locally, for $0. The open-source Apollo alternative." />
 <meta name="theme-color" content="#08080a" />
 
 <!-- social -->
 <meta property="og:type" content="website" />
 <meta property="og:title" content="OpenLeads — Apollo-grade leads + cold email. Free. Local." />
-<meta property="og:description" content="Find anyone → verify deliverably → write → send. Open source, keyless, $0, and nothing leaves your machine." />
+<meta property="og:description" content="One box, federated across free public sources → find the people → verify → write → send. Open source, keyless, $0, and nothing leaves your machine." />
 <meta property="og:image" content="og.svg" />
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -50,13 +50,14 @@
   <div class="container hero__inner">
     <p class="eyebrow reveal">open source · keyless · runs on your machine</p>
     <h1 class="hero__title reveal">
-      Find anyone's email.<br/>
-      <span class="redline">Then land in their inbox.</span>
+      Describe your customer.<br/>
+      <span class="redline">Get verified people to email.</span>
     </h1>
     <p class="hero__sub reveal">
-      OpenLeads pulls founders, developers, doctors &amp; researchers from <b>free public data</b>,
-      verifies deliverability with an engine that beats Hunter &amp; Apollo's free tier, writes the
-      cold email, and sends it — <b>all locally, for $0</b>. No API keys. No seat fees. No cloud.
+      One search box — <i>"marketing agencies in Miami"</i>, <i>"fintech founders"</i> — and OpenLeads
+      <b>federates across free public sources</b> (local businesses via OpenStreetMap, startups,
+      companies, developers), finds the <b>people</b> behind each, verifies their email, and automates
+      the outreach — <b>all locally, for $0</b>. No API keys. No seat fees. No cloud.
     </p>
 
     <div class="install-row reveal">
@@ -75,8 +76,8 @@
     <div class="hero__stats reveal">
       <span><b>0</b> API keys</span><i></i>
       <span><b>$0</b> forever</span><i></i>
-      <span><b>7</b> deliverability signals</span><i></i>
-      <span><b>148</b> tests</span>
+      <span><b>10</b> federated sources</span><i></i>
+      <span><b>340+</b> tests</span>
     </div>
   </div>
 
@@ -105,7 +106,7 @@
     <div class="flow">
       <div class="flow__line" aria-hidden="true"><span id="flow-line"></span></div>
       <article class="step reveal"><span class="step__n">01</span><h3>Find</h3>
-        <p>Describe who you want in plain English. The engine searches free, keyless public sources and resolves emails.</p></article>
+        <p>Describe your ICP. One box federates across local businesses, startups, companies &amp; devs — finds the people, resolves emails. Or enrich a list you already have.</p></article>
       <article class="step reveal"><span class="step__n">02</span><h3>Write</h3>
         <p>Personalized, spam-linted, plain-text drafts — from a free LLM or a sharp template. Edit anything.</p></article>
       <article class="step reveal"><span class="step__n">03</span><h3>Connect</h3>
@@ -158,7 +159,9 @@
         <tbody>
           <tr><td>Cost</td><td class="us">$0, forever</td><td>credit-limited, then paid</td></tr>
           <tr><td>API key required</td><td class="us">none</td><td>required</td></tr>
-          <tr><td>Who you can find</td><td class="us">founders, devs, doctors, researchers + any vertical you plug in</td><td>their database only</td></tr>
+          <tr><td>Who you can find</td><td class="us">local businesses by city, founders, companies, devs, doctors + any vertical you plug in</td><td>their database only</td></tr>
+          <tr><td>How you search</td><td class="us">one box, federated across sources — finds the people too</td><td>filters on their DB</td></tr>
+          <tr><td>Enrich your own list</td><td class="us">yes — paste a CSV, get verified emails</td><td>paid feature</td></tr>
           <tr><td>Email verification</td><td class="us">7-signal consensus + 0–100 score</td><td>paid feature</td></tr>
           <tr><td>Writes the email</td><td class="us">yes — free LLM or template</td><td>no / upsell</td></tr>
           <tr><td>Sends it for you</td><td class="us">yes — warmup, throttle, suppression</td><td>upsell</td></tr>
@@ -175,15 +178,16 @@
   <div class="container">
     <div class="section__head reveal">
       <p class="eyebrow">coverage grows by code, not by invoice</p>
-      <h2>Pluggable, keyless sources.</h2>
-      <p class="lead">The email engine doesn't care <i>who</i> you're looking for. Add a vertical by dropping a single <code>.py</code> file.</p>
+      <h2>One query, federated across keyless sources.</h2>
+      <p class="lead">You don't pick a source — OpenLeads routes your query across the ones that fit, then merges &amp; de-duplicates. Add your own by dropping a single <code>.py</code> file.</p>
     </div>
     <div class="sources reveal">
-      <div class="src"><b>yc</b><span>startup founders</span><i>company</i></div>
+      <div class="src"><b>local</b><span>businesses by city (OpenStreetMap)</span><i>company</i></div>
+      <div class="src"><b>yc · hn</b><span>startups · hiring now</span><i>company</i></div>
+      <div class="src"><b>companies · edgar</b><span>Wikidata · SEC public cos</span><i>company</i></div>
       <div class="src"><b>github</b><span>developers &amp; OSS orgs</span><i>people</i></div>
-      <div class="src"><b>npi</b><span>U.S. doctors</span><i>people</i></div>
-      <div class="src"><b>openalex</b><span>researchers &amp; academics</span><i>people</i></div>
-      <div class="src"><b>producthunt</b><span>trending products</span><i>company</i></div>
+      <div class="src"><b>npi · openalex</b><span>U.S. doctors · researchers</span><i>people</i></div>
+      <div class="src"><b>domains</b><span>any company domain</span><i>company</i></div>
       <div class="src src--add"><b>+ yours</b><span>lawyers, podcasters, agents…</span><i>drop a .py</i></div>
     </div>
   </div>
@@ -216,8 +220,8 @@
 <span class="c-com"># launch the local console (the 4 clicks, in your browser)</span>
 <span class="c-cmd">openleads web</span>
 
-<span class="c-com"># or one-shot the whole pipeline from the terminal</span>
-<span class="c-cmd">openleads run "50 fintech founders, verified only"</span></code></pre>
+<span class="c-com"># or just describe who you want — federated, local-first</span>
+<span class="c-cmd">openleads find "marketing agencies in Miami"</span></code></pre>
       </div>
       <div class="code-card reveal">
         <div class="code-card__head"><span>Node / npx</span></div>
