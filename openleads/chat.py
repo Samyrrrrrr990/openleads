@@ -59,9 +59,11 @@ _COMMANDS = [
 ]
 
 _EXAMPLES = [
+    "marketing agencies in Miami",
     "find 50 fintech founders, verified only",
+    "dentists in Austin, deliverable only",
     "emails at stripe.com",
-    "send 30 emails to rust developers in Berlin for my dev tool at 9am",
+    "send 30 emails to law firms in London for my SaaS at 9am",
 ]
 
 
@@ -284,10 +286,19 @@ def _maybe_refine(text: str, sess: Session, console) -> bool:
         return True
     if not sess.last_leads:
         return False
-    if low in ("only verified", "verified only", "just verified", "keep verified"):
-        kept = [ld for ld in sess.last_leads if ld.confidence == "verified"]
+    if low in ("only verified", "verified only", "just verified", "keep verified",
+               "only safe", "deliverable only"):
+        # v4: "verified" means deliverable — the 'safe' send-tier, not the legacy
+        # confidence label (which is rarely set on pattern guesses).
+        kept = [ld for ld in sess.last_leads if ld.tier == "safe"]
         sess.last_leads = kept
-        _say(console, f"  filtered → {len(kept)} verified")
+        _say(console, f"  filtered → {len(kept)} deliverable (safe)")
+        _render_table(kept, console)
+        return True
+    if low in ("only people", "people only", "drop companies"):
+        kept = [ld for ld in sess.last_leads if (ld.first_name or ld.last_name)]
+        sess.last_leads = kept
+        _say(console, f"  filtered → {len(kept)} with a named person")
         _render_table(kept, console)
         return True
     return False
@@ -381,7 +392,7 @@ def _intro(console):
     body = [
         ui.c("OpenLeads", ui.WHITE, ui.BOLD) + ui.c(f"  v{__version__}", ui.RED, ui.BOLD)
         + ui.c("   the free Apollo", ui.FAINT),
-        ui.c("find anyone · verify deliverably · write · send — local-first, $0", ui.GREY),
+        ui.c("one box · federated search · find people · verify · write · send — local, $0", ui.GREY),
         "",
         ui.c("Type a request, or ", ui.GREY) + ui.kbd("/help") + ui.c(" for commands.", ui.GREY),
     ]
