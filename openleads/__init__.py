@@ -15,7 +15,7 @@ Public API:
     from openleads.sources import get_registry
 """
 
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 
 from openleads.models import EmailResult, Entity, Lead, Query, SourceInfo
 

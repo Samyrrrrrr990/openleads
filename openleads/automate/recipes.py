@@ -72,7 +72,9 @@ def get(name: str, db=None) -> dict | None:
     db = db or dbmod.DB()
     try:
         row = db.get_campaign(name)
-        return normalize_spec(row["data"]) | {"name": name} if row else None
+        if not row:
+            return None
+        return {**normalize_spec(row["data"]), "name": name}
     finally:
         if own:
             db.close()

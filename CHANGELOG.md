@@ -4,6 +4,13 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [4.0.1] - 2026-06-12
+
+### Fixed
+- **Python 3.8 compatibility.** `recipes.get()` used the dict-union operator (`|`),
+  which is 3.9+, raising `TypeError` on Python 3.8 (the project's minimum). Replaced
+  with a 3.8-safe merge. No behavior change on 3.9+.
+
 ## [4.0.0] - 2026-06-12
 
 **The lead generation is finally great — one box, every source, real people.** Through
