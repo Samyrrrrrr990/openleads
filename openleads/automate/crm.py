@@ -61,6 +61,33 @@ def export_csv(db, path: str, status: str | None = None) -> int:
     return len(data)
 
 
+def analytics(db) -> dict:
+    """Funnel + breakdowns for the dashboard Analytics tab."""
+    leads = db.list_leads(limit=100000)
+    by_source: dict = {}
+    by_tier: dict = {}
+    for ld in leads:
+        by_source[ld.get("source") or "?"] = by_source.get(ld.get("source") or "?", 0) + 1
+        by_tier[ld.get("tier") or "?"] = by_tier.get(ld.get("tier") or "?", 0) + 1
+    counts = db.lead_counts()
+    sent = db.sent_total()
+    replied = counts.get(dbmod.STATUS_REPLIED, 0)
+    bounced = counts.get(dbmod.STATUS_BOUNCED, 0)
+    return {
+        "total_leads": len(leads),
+        "deliverable": by_tier.get("safe", 0),
+        "sent": sent,
+        "sent_today": db.sent_today(),
+        "replied": replied,
+        "bounced": bounced,
+        "reply_rate": round(100 * replied / sent, 1) if sent else 0.0,
+        "bounce_rate": round(100 * bounced / sent, 1) if sent else 0.0,
+        "by_source": by_source,
+        "by_tier": by_tier,
+        "by_status": counts,
+    }
+
+
 STATUSES = (dbmod.STATUS_NEW, dbmod.STATUS_QUEUED, dbmod.STATUS_SENT,
             dbmod.STATUS_REPLIED, dbmod.STATUS_BOUNCED, dbmod.STATUS_UNSUB,
             dbmod.STATUS_DNC)

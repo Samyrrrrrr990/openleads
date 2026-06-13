@@ -44,6 +44,9 @@ _GET_API = {
     "/api/doctor": api.doctor,
     "/api/providers": api.providers_presets,
     "/api/crm": api.crm,
+    "/api/recipes": api.recipes_list,
+    "/api/watchers": api.watchers,
+    "/api/analytics": api.analytics,
 }
 
 # POST endpoints that return a single JSON document.
@@ -52,6 +55,11 @@ _POST_JSON = {
     "/api/write": api.write,
     "/api/settings": api.update_settings,
     "/api/crm": api.crm,
+    "/api/recipes/save": api.recipes_save,
+    "/api/recipes/delete": api.recipes_delete,
+    "/api/watch/save": api.watch_save,
+    "/api/watch/delete": api.watch_delete,
+    "/api/export": api.export_leads,
 }
 
 # POST endpoints that stream NDJSON events via an ``emit`` callback.
@@ -59,6 +67,8 @@ _POST_STREAM = {
     "/api/find": api.find,
     "/api/send": api.send,
     "/api/run": api.run_pipeline,
+    "/api/enrich": api.enrich,
+    "/api/recipes/run": api.recipes_run,
 }
 
 

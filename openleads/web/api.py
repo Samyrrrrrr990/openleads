@@ -275,6 +275,149 @@ def send(payload: dict, emit: Emit) -> None:
         db.close()
 
 
+def enrich(payload: dict, emit: Emit) -> None:
+    """Enrich an uploaded list (rows of name/company/domain/email) → verified emails."""
+    from openleads import enrich as enrichmod
+    rows = payload.get("rows") or []
+    if isinstance(rows, str):
+        # Accept pasted CSV text too.
+        import csv
+        import io
+        rows = list(csv.DictReader(io.StringIO(rows)))
+    cache = Cache()
+    db = DB()
+    out: list[dict] = []
+
+    def on_progress(kind, ld):
+        if kind == "lead":
+            d = ld.to_dict()
+            out.append(d)
+            emit({"type": "lead", "lead": d, "n": len(out)})
+    try:
+        emit({"type": "phase", "message": f"enriching {len(rows)} rows…"})
+        enrichmod.enrich_rows(rows, cache=cache, db=db, deep=bool(payload.get("deep")),
+                              on_progress=on_progress)
+        safe = sum(1 for d in out if d.get("tier") == "safe")
+        emit({"type": "done", "count": len(out), "safe": safe, "leads": out})
+    except Exception as e:  # noqa: BLE001
+        emit({"type": "error", "message": str(e)})
+    finally:
+        cache.close()
+        db.close()
+
+
+def recipes_list() -> dict:
+    from openleads.automate import recipes
+    db = DB()
+    try:
+        return {"recipes": recipes.list_recipes(db)}
+    finally:
+        db.close()
+
+
+def recipes_save(payload: dict) -> dict:
+    from openleads.automate import recipes
+    name = (payload.get("name") or "").strip()
+    if not name:
+        return {"ok": False, "error": "recipe needs a name"}
+    db = DB()
+    try:
+        spec = recipes.save(name, payload, db=db)
+        return {"ok": True, "recipe": spec}
+    finally:
+        db.close()
+
+
+def recipes_delete(payload: dict) -> dict:
+    from openleads.automate import recipes
+    db = DB()
+    try:
+        return {"ok": recipes.delete((payload.get("name") or "").strip(), db=db)}
+    finally:
+        db.close()
+
+
+def recipes_run(payload: dict, emit: Emit) -> None:
+    from openleads.automate import recipes
+    db = DB()
+    cache = Cache()
+    try:
+        spec = recipes.get((payload.get("name") or "").strip(), db=db)
+        if not spec:
+            emit({"type": "error", "message": "no such recipe"})
+            return
+
+        def on_progress(kind, p):
+            if kind == "phase":
+                emit({"type": "phase", "message": str(p)})
+            elif kind == "lead":
+                emit({"type": "lead", "lead": p.to_dict()})
+        res = recipes.run(spec, db=db, cache=cache,
+                          dry_run=not bool(payload.get("live")), on_progress=on_progress)
+        emit({"type": "done", **res})
+    finally:
+        cache.close()
+        db.close()
+
+
+def watchers(payload: dict | None = None) -> dict:
+    from openleads.automate import watch
+    db = DB()
+    try:
+        return {"watchers": watch.list_watchers(db)}
+    finally:
+        db.close()
+
+
+def watch_save(payload: dict) -> dict:
+    from openleads.automate import watch
+    name = (payload.get("name") or "").strip()
+    if not name:
+        return {"ok": False, "error": "watcher needs a name"}
+    db = DB()
+    try:
+        spec = watch.save_watcher(db, name, payload.get("query", ""),
+                                  sink=payload.get("sink", "csv"),
+                                  target=payload.get("target", ""),
+                                  count=int(payload.get("count") or 25))
+        return {"ok": True, "watcher": spec}
+    finally:
+        db.close()
+
+
+def watch_delete(payload: dict) -> dict:
+    from openleads.automate import watch
+    db = DB()
+    try:
+        return {"ok": watch.delete_watcher(db, (payload.get("name") or "").strip())}
+    finally:
+        db.close()
+
+
+def export_leads(payload: dict) -> dict:
+    """Export the supplied leads (or the CRM) to a sink."""
+    from openleads.automate import crm as crmmod
+    from openleads.automate import exporters
+    leads = payload.get("leads")
+    if not leads:
+        db = DB()
+        try:
+            leads = crmmod.rows(db, status=payload.get("status") or None, limit=100000)
+        finally:
+            db.close()
+    return exporters.export(leads, sink=payload.get("sink", "csv"),
+                            target=payload.get("target") or None)
+
+
+def analytics() -> dict:
+    from openleads.automate import crm as crmmod
+    db = DB()
+    try:
+        return crmmod.analytics(db)
+    finally:
+        db.close()
+
+
 def run_pipeline(payload: dict, emit: Emit) -> None:
     """The full 4-click pipeline in one shot: find → write → send (dry-run/live)."""
     from openleads.automate import pipeline

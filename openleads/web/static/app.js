@@ -57,10 +57,11 @@ function toast(msg, kind = "ok") {
 const S = {
   route: "find",
   sources: [], settings: [], groups: [], identity: {}, presets: {},
-  crm: null, version: "v3",
+  crm: null, version: "v4",
   query: "", opts: { source: "", count: 25, verified_only: true, deep: false },
   leads: [], selected: new Set(), drafts: [], doctor: null,
   running: false,
+  enrichLeads: [], recipes: [], watchers: {}, analytics: null,
 };
 
 /* ---------------------------- shared bits ------------------------------ */
@@ -91,17 +92,25 @@ function viewFind() {
   return `
   <section class="page">
     <div class="page-head">
-      <div class="eyebrow">click 1 — find</div>
-      <h1>Find anyone. Verify deliverably.</h1>
-      <p>Describe who you want in plain English. The engine searches free public sources,
-         resolves emails, and grades each one — <b>safe</b>, <b>risky</b>, or dropped.</p>
+      <div class="eyebrow">find — one box, federated</div>
+      <h1>Describe your ICP. Get verified people.</h1>
+      <p>One box fans out across free public sources — <b>local businesses</b> (OpenStreetMap),
+         startups, companies, developers — finds the <b>people</b> behind each, resolves their
+         email, and grades it <b>safe</b> / <b>risky</b>. Leave the source on <b>auto</b> to federate.</p>
     </div>
 
     <div class="command">
       <span class="command__prompt">›</span>
       <input id="q" type="text" autocomplete="off" spellcheck="false"
-        placeholder="50 AI founders in SF, verified only" value="${esc(S.query)}" />
+        placeholder="marketing agencies in Miami   ·   50 fintech founders   ·   dentists in Austin"
+        value="${esc(S.query)}" />
       <button class="btn btn--primary" data-action="find">${ico("bolt")} Run</button>
+    </div>
+
+    <div class="row mt" style="gap:8px;flex-wrap:wrap">
+      ${["marketing agencies in Miami","law firms in London","fintech founders, verified only",
+         "dentists in Austin","rust developers in Berlin"].map((ex) =>
+        `<button class="chip" data-action="ex" data-ex="${esc(ex)}">${esc(ex)}</button>`).join("")}
     </div>
 
     <div class="row mt-lg" style="gap:18px">
@@ -380,12 +389,132 @@ function viewDoctor() {
   </section>`;
 }
 
+function viewEnrich() {
+  return `
+  <section class="page page--wide">
+    <div class="page-head"><div class="eyebrow">enrich — bring your own list</div>
+      <h1>Paste a list. Get verified emails.</h1>
+      <p>Have names, companies, or domains already? Paste CSV (with a header row) or just
+         <code class="mono">name,company,domain,email</code> lines. OpenLeads runs the same
+         waterfall — find, harvest, pattern, verify — and tiers every row. Clay-style, $0.</p></div>
+
+    <div class="field"><label>Your list (CSV with header, e.g. name,company,domain,email)</label>
+      <textarea class="input input--mono" id="enrich-csv" rows="8"
+        placeholder="name,company,domain&#10;Jane Smith,Acme,acme.com&#10;John Doe,,beta.io"></textarea></div>
+    <div class="row mt" style="gap:10px">
+      <button class="btn btn--primary" data-action="enrich-run">${ico("enrich")} Enrich list</button>
+      <label class="toggle" style="margin-top:6px"><input type="checkbox" id="enrich-deep" />
+        <span class="toggle__track"></span><span class="toggle__label">deep harvest</span></label>
+    </div>
+    <div id="enrich-out" class="mt-lg"></div>
+  </section>`;
+}
+
+function renderEnrichResults() {
+  const host = $("#enrich-out"); if (!host) return;
+  const safe = S.enrichLeads.filter((l) => l.tier === "safe").length;
+  host.innerHTML = `
+    <div class="card"><div class="card__head"><h3>Enrichment console</h3>
+      <span class="count-pill">${S.running ? "running…" : `${S.enrichLeads.length} rows`}</span></div>
+      <div class="card__body" style="display:grid;gap:14px">
+        ${S.running ? '<div class="sweep"></div>' : ""}<div class="console" id="enrich-console"></div></div></div>
+    ${S.enrichLeads.length ? `
+    <div class="row row--between mt-lg"><div class="row" style="gap:10px">
+      <strong>${S.enrichLeads.length} enriched</strong><span class="muted">· ${safe} deliverable</span></div>
+      <button class="btn btn--ghost btn--sm" data-action="enrich-export">${ico("download")} Export CSV</button></div>
+    <div class="table-wrap mt">${leadsTable(S.enrichLeads)}</div>` : ""}`;
+}
+
+function viewAutomations() {
+  const recipes = S.recipes || [];
+  const watchers = Object.values(S.watchers || {});
+  return `
+  <section class="page page--wide">
+    <div class="page-head"><div class="eyebrow">automate — set &amp; forget</div>
+      <h1>Recipes &amp; watchers</h1>
+      <p>A <b>recipe</b> saves an ICP + message + schedule and runs itself (find → write → send → export).
+         A <b>watcher</b> pings you only when <i>new</i> leads match. The on-device scheduler fires them
+         daily — <a data-action="go" data-route="settings">set a send time in Connect</a>.</p></div>
+
+    <div class="card"><div class="card__head"><h3>${ico("robot")} Recipes</h3></div>
+      <div class="card__body" style="display:grid;gap:12px">
+        <div class="grid grid--2" style="gap:10px;align-items:end">
+          <div class="field"><label>Name</label><input class="input" id="rc-name" placeholder="miami-agencies"/></div>
+          <div class="field"><label>Audience (ICP)</label><input class="input" id="rc-query" placeholder="marketing agencies in Miami"/></div>
+          <div class="field" style="max-width:120px"><label>Count</label><input class="input input--mono" id="rc-count" type="number" value="25"/></div>
+          <div class="field" style="max-width:120px"><label>Send at</label><input class="input input--mono" id="rc-at" placeholder="09:00"/></div>
+          <div class="field"><label>Pitch (optional)</label><input class="input" id="rc-context" placeholder="our local SEO service"/></div>
+          <div class="field"><label>Export to</label><select class="select" id="rc-export">
+            <option value="">— none —</option>${["csv","json","ndjson","sheets","webhook","notion","airtable"]
+              .map((s)=>`<option>${s}</option>`).join("")}</select></div>
+          <label class="toggle"><input type="checkbox" id="rc-send" checked/><span class="toggle__track"></span><span class="toggle__label">sends email</span></label>
+          <button class="btn btn--primary" data-action="recipe-save">${ico("check")} Save recipe</button>
+        </div>
+        ${recipes.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Audience</th><th>When</th><th>Mode</th><th>Export</th><th></th></tr></thead>
+          <tbody>${recipes.map((r)=>`<tr><td class="t-name">${esc(r.name)}</td><td class="t-mut">${esc(r.query)}</td>
+          <td class="mono">${r.enabled?`${String(r.send_hour).padStart(2,"0")}:${String(r.send_minute).padStart(2,"0")}`:"manual"}</td>
+          <td>${r.send?'<span class="tier tier--safe">send</span>':'<span class="tier tier--risky">find</span>'}</td>
+          <td class="t-mut">${r.export?esc(r.export.sink):"—"}</td>
+          <td class="row" style="gap:6px"><button class="btn btn--ghost btn--sm" data-action="recipe-run" data-name="${esc(r.name)}">${ico("bolt")} Run</button>
+          <button class="btn btn--ghost btn--sm" data-action="recipe-del" data-name="${esc(r.name)}">${ico("x")}</button></td></tr>`).join("")}</tbody></table></div>`
+          : `<div class="empty">${ico("robot")}<h3>No recipes yet</h3><p>Save one above to automate an outreach play.</p></div>`}
+        <div id="recipe-out"></div>
+      </div></div>
+
+    <div class="card mt-lg"><div class="card__head"><h3>${ico("pin")} Watchers</h3></div>
+      <div class="card__body" style="display:grid;gap:12px">
+        <div class="grid grid--2" style="gap:10px;align-items:end">
+          <div class="field"><label>Name</label><input class="input" id="wt-name" placeholder="new-miami-agencies"/></div>
+          <div class="field"><label>Watch for</label><input class="input" id="wt-query" placeholder="marketing agencies in Miami"/></div>
+          <div class="field"><label>Deliver new to</label><select class="select" id="wt-sink">${["csv","json","ndjson","webhook"]
+            .map((s)=>`<option>${s}</option>`).join("")}</select></div>
+          <button class="btn btn--primary" data-action="watch-save">${ico("check")} Save watcher</button>
+        </div>
+        ${watchers.length ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Query</th><th>Sink</th><th>Seen</th><th></th></tr></thead>
+          <tbody>${watchers.map((w)=>`<tr><td class="t-name">${esc(w.name)}</td><td class="t-mut">${esc(w.query)}</td>
+          <td class="t-mut">${esc(w.sink||"csv")}</td><td class="t-num">${(w.seen||[]).length}</td>
+          <td><button class="btn btn--ghost btn--sm" data-action="watch-del" data-name="${esc(w.name)}">${ico("x")}</button></td></tr>`).join("")}</tbody></table></div>`
+          : `<div class="empty">${ico("pin")}<h3>No watchers</h3><p>Get alerted when fresh leads match your niche.</p></div>`}
+      </div></div>
+  </section>`;
+}
+
+function viewAnalytics() {
+  const a = S.analytics || { total_leads:0, deliverable:0, sent:0, replied:0, bounced:0,
+    reply_rate:0, bounce_rate:0, by_source:{}, by_tier:{}, by_status:{} };
+  const bars = (obj) => {
+    const max = Math.max(1, ...Object.values(obj));
+    return Object.entries(obj).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`
+      <div class="abar"><span class="abar__k">${esc(k)}</span>
+        <span class="abar__track"><span class="abar__fill" style="width:${Math.round(100*v/max)}%"></span></span>
+        <span class="abar__v">${v}</span></div>`).join("") || '<p class="muted">No data yet.</p>';
+  };
+  return `
+  <section class="page page--wide">
+    <div class="page-head"><div class="eyebrow">analytics</div><h1>Your funnel</h1>
+      <p>Everything computed locally from your CRM + send log.</p></div>
+    <div class="grid grid--3">
+      <div class="stat stat--accent"><div class="stat__k">total leads</div><div class="stat__v">${a.total_leads}</div></div>
+      <div class="stat"><div class="stat__k">deliverable</div><div class="stat__v">${a.deliverable}</div></div>
+      <div class="stat"><div class="stat__k">sent</div><div class="stat__v">${a.sent} <small>· ${a.sent_today||0} today</small></div></div>
+      <div class="stat"><div class="stat__k">reply rate</div><div class="stat__v">${a.reply_rate}%</div></div>
+      <div class="stat"><div class="stat__k">replied</div><div class="stat__v">${a.replied}</div></div>
+      <div class="stat"><div class="stat__k">bounce rate</div><div class="stat__v">${a.bounce_rate}%</div></div>
+    </div>
+    <div class="grid grid--2 mt-lg">
+      <div class="card"><div class="card__head"><h3>By source</h3></div><div class="card__body">${bars(a.by_source)}</div></div>
+      <div class="card"><div class="card__head"><h3>By tier</h3></div><div class="card__body">${bars(a.by_tier)}</div></div>
+    </div>
+  </section>`;
+}
+
 /* =======================================================================
    ROUTING + RENDER
    ===================================================================== */
 const VIEWS = {
   find: viewFind, leads: viewLeads, compose: viewCompose, send: viewSend,
   crm: viewCrm, settings: viewSettings, doctor: viewDoctor,
+  enrich: viewEnrich, automations: viewAutomations, analytics: viewAnalytics,
 };
 
 function setRoute(route) {
@@ -401,8 +530,21 @@ function setRoute(route) {
 
 async function afterRender(route) {
   if (route === "find" && S.leads.length) renderFindResults();
+  if (route === "enrich" && S.enrichLeads.length) renderEnrichResults();
   if (route === "crm") { await refreshCrm(); $("#main").innerHTML = viewCrm(); }
   if (route === "doctor" && !S.doctor) { await loadDoctor(); $("#main").innerHTML = viewDoctor(); }
+  if (route === "automations") { await loadAutomations(); $("#main").innerHTML = viewAutomations(); }
+  if (route === "analytics") { await loadAnalytics(); $("#main").innerHTML = viewAnalytics(); }
+}
+
+async function loadAutomations() {
+  try {
+    const [r, w] = await Promise.all([getJSON("/api/recipes"), getJSON("/api/watchers")]);
+    S.recipes = r.recipes || []; S.watchers = w.watchers || {};
+  } catch (_) {}
+}
+async function loadAnalytics() {
+  try { S.analytics = await getJSON("/api/analytics"); } catch (_) {}
 }
 
 /* =======================================================================
@@ -543,6 +685,79 @@ function updateReadiness() {
   if (el) { el.textContent = g || "—"; el.className = "readiness__grade grade-" + (g || ""); }
 }
 
+async function runEnrich() {
+  const csv = $("#enrich-csv")?.value.trim();
+  if (!csv) { toast("Paste a list first.", "err"); return; }
+  S.enrichLeads = []; S.running = true; renderEnrichResults();
+  const con = $("#enrich-console");
+  const log = (h) => { if (!con) return; const l = document.createElement("div");
+    l.className = "console__line"; l.innerHTML = h; con.appendChild(l); con.scrollTop = con.scrollHeight; };
+  log(`<span class="c-mut">$</span> openleads enrich (pasted list)<span class="console__caret"></span>`);
+  try {
+    await stream("/api/enrich", { rows: csv, deep: $("#enrich-deep")?.checked }, (ev) => {
+      if (ev.type === "phase") log(`<span class="c-mut">[engine]</span> ${esc(ev.message)}`);
+      else if (ev.type === "lead") { S.enrichLeads.push(ev.lead);
+        const t = ev.lead.tier, tag = t==="safe"?'<span class="c-ok">safe</span>':t==="risky"?"risky":'<span class="c-red">bad</span>';
+        log(`  ${tag}  <span class="c-ok">${esc(ev.lead.email||"—")}</span> <span class="c-mut">· ${esc(fullName(ev.lead))}</span>`); }
+      else if (ev.type === "done") { S.enrichLeads = ev.leads || S.enrichLeads;
+        log(`<span class="c-mut">→</span> done — <span class="c-ok">${ev.safe} deliverable</span> of ${ev.count}`); }
+      else if (ev.type === "error") { log(`<span class="c-red">[!] ${esc(ev.message)}</span>`); toast(ev.message, "err"); }
+    });
+  } catch (e) { toast("Enrich failed: " + e.message, "err"); }
+  S.running = false; renderEnrichResults();
+}
+
+async function exportEnrich() {
+  const res = await postJSON("/api/export", { leads: S.enrichLeads, sink: "csv" });
+  toast(res.ok ? `Exported ${res.count} → ${res.target}` : "Export failed", res.ok ? "ok" : "err");
+}
+
+async function saveRecipe() {
+  const body = {
+    name: $("#rc-name")?.value.trim(), query: $("#rc-query")?.value.trim(),
+    count: parseInt($("#rc-count")?.value, 10) || 25, context: $("#rc-context")?.value.trim(),
+    send: $("#rc-send")?.checked, enabled: !!$("#rc-at")?.value.trim(),
+  };
+  const at = ($("#rc-at")?.value || "").trim().match(/^(\d{1,2}):?(\d{2})?$/);
+  if (at) { body.send_hour = +at[1]; body.send_minute = +(at[2] || 0); }
+  const sink = $("#rc-export")?.value;
+  if (sink) body.export = { sink, target: "" };
+  if (!body.name || !body.query) { toast("Recipe needs a name + audience.", "err"); return; }
+  const res = await postJSON("/api/recipes/save", body);
+  if (res.ok) { toast(`Saved recipe '${body.name}'.`); await loadAutomations(); setRoute("automations"); }
+  else toast(res.error || "Save failed", "err");
+}
+
+async function runRecipe(name) {
+  toast(`Running '${name}' (dry-run)…`);
+  const out = $("#recipe-out");
+  if (out) out.innerHTML = '<div class="sweep"></div>';
+  try {
+    await stream("/api/recipes/run", { name, live: false }, (ev) => {
+      if (ev.type === "done") { toast(`'${name}': found ${ev.found}, drafted ${ev.drafted}, sent ${ev.sent}.`);
+        if (out) out.innerHTML = `<p class="muted mono">found ${ev.found} · drafted ${ev.drafted} · sent ${ev.sent}</p>`; }
+      else if (ev.type === "error") toast(ev.message, "err");
+    });
+  } catch (e) { toast("Run failed: " + e.message, "err"); }
+}
+
+async function deleteRecipe(name) {
+  if (!confirm(`Delete recipe '${name}'?`)) return;
+  await postJSON("/api/recipes/delete", { name }); await loadAutomations(); setRoute("automations");
+}
+
+async function saveWatcher() {
+  const body = { name: $("#wt-name")?.value.trim(), query: $("#wt-query")?.value.trim(),
+    sink: $("#wt-sink")?.value || "csv" };
+  if (!body.name || !body.query) { toast("Watcher needs a name + query.", "err"); return; }
+  const res = await postJSON("/api/watch/save", body);
+  if (res.ok) { toast(`Watching '${body.name}'.`); await loadAutomations(); setRoute("automations"); }
+  else toast(res.error || "Save failed", "err");
+}
+async function deleteWatcher(name) {
+  await postJSON("/api/watch/delete", { name }); await loadAutomations(); setRoute("automations");
+}
+
 /* =======================================================================
    EVENT DELEGATION
    ===================================================================== */
@@ -560,6 +775,14 @@ document.addEventListener("click", (e) => {
   else if (act === "send") { e.preventDefault(); runSend(); }
   else if (act === "save-settings") { e.preventDefault(); saveSettings(); }
   else if (act === "recheck") { S.doctor = null; setRoute("doctor"); }
+  else if (act === "ex") { S.query = a.dataset.ex; const q = $("#q"); if (q) q.value = a.dataset.ex; runFind(); }
+  else if (act === "enrich-run") { e.preventDefault(); runEnrich(); }
+  else if (act === "enrich-export") { e.preventDefault(); exportEnrich(); }
+  else if (act === "recipe-save") { e.preventDefault(); saveRecipe(); }
+  else if (act === "recipe-run") { e.preventDefault(); runRecipe(a.dataset.name); }
+  else if (act === "recipe-del") { e.preventDefault(); deleteRecipe(a.dataset.name); }
+  else if (act === "watch-save") { e.preventDefault(); saveWatcher(); }
+  else if (act === "watch-del") { e.preventDefault(); deleteWatcher(a.dataset.name); }
   else if (act === "go") { e.preventDefault(); setRoute(a.dataset.route); }
   else if (act === "lf") {
     $$('[data-action="lf"]').forEach((c) => c.classList.toggle("is-on", c === a));

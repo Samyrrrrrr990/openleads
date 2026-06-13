@@ -168,3 +168,56 @@ def test_verify_resolver_used(server, monkeypatch):
     status, body = _post(server, "/api/verify", {"emails": ["ada@acme.io"]})
     r = json.loads(body)
     assert status == 200 and r["results"][0]["tier"] == "safe"
+
+
+# --- v4: recipes, watchers, analytics, export, enrich -------------------- #
+def test_recipes_crud(server):
+    status, body = _post(server, "/api/recipes/save",
+                         {"name": "webtest", "query": "agencies in Miami", "count": 5})
+    assert status == 200 and json.loads(body)["ok"]
+    _, body = _get(server, "/api/recipes")[1:]  # (status, ctype, body)
+    names = [r["name"] for r in json.loads(body)["recipes"]]
+    assert "webtest" in names
+    status, body = _post(server, "/api/recipes/delete", {"name": "webtest"})
+    assert json.loads(body)["ok"] is True
+
+
+def test_watchers_crud(server):
+    _post(server, "/api/watch/save", {"name": "w1", "query": "new agencies", "sink": "csv"})
+    _, _, body = _get(server, "/api/watchers")
+    assert "w1" in json.loads(body)["watchers"]
+    status, body = _post(server, "/api/watch/delete", {"name": "w1"})
+    assert json.loads(body)["ok"] is True
+
+
+def test_analytics_shape(server):
+    _, _, body = _get(server, "/api/analytics")
+    a = json.loads(body)
+    for k in ("total_leads", "sent", "reply_rate", "by_source", "by_tier"):
+        assert k in a
+
+
+def test_export_csv_endpoint(server, tmp_path):
+    leads = [{"first_name": "Ada", "email": "ada@ae.com", "tier": "safe",
+              "organization": "AE", "source": "local"}]
+    target = str(tmp_path / "web_export.csv")
+    status, body = _post(server, "/api/export",
+                         {"leads": leads, "sink": "csv", "target": target})
+    r = json.loads(body)
+    assert status == 200 and r["ok"] and r["count"] == 1
+
+
+def test_enrich_streams(server, monkeypatch):
+    def fake_enrich_rows(rows, cache=None, db=None, deep=False, on_progress=None):
+        from openleads.models import Lead
+        out = []
+        for row in rows:
+            ld = Lead(first_name="Ada", email="ada@ae.com", tier="safe", source="enrich")
+            out.append(ld)
+            if on_progress:
+                on_progress("lead", ld)
+        return out
+    monkeypatch.setattr("openleads.enrich.enrich_rows", fake_enrich_rows)
+    events = _stream(server, "/api/enrich",
+                     {"rows": [{"name": "Ada Lovelace", "domain": "ae.com"}]})
+    assert events[-1]["type"] == "done" and events[-1]["count"] == 1
