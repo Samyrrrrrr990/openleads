@@ -16,10 +16,10 @@ import itertools
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
-from openleads import _http
+from openleads import _http, federation
 from openleads.emails.resolve import find_email
 from openleads.models import EmailResult, Entity, Lead, Query
-from openleads.sources import default_source, get_source
+from openleads.sources import get_source
 
 # Progress callback: (kind, payload). kinds:
 #   "phase" (str msg) · "lead" (Lead) · "scan" ({scanned, found, with_domain})
@@ -74,15 +74,9 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     Email resolution runs concurrently in ordered windows; the scan stops early
     when a source clearly can't satisfy the request, and HTTP failures surface.
     """
-    name = query.source or default_source()
-    source = get_source(name)
-    if source is None:
-        raise ValueError(f"unknown source: {name!r}. Try `openleads sources`.")
-    source.cache = cache if query.use_cache else None
     use_cache = cache if query.use_cache else None
     _http.clear_errors()
-
-    on_progress("phase", f"source={source.name} ({source.vertical}) — searching…")
+    gen, label = _entity_stream(query, use_cache, db, on_progress)
 
     def resolve(entity: Entity) -> EmailResult:
         if entity.domain:
@@ -96,7 +90,7 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     scanned = with_domain = 0
     futility = max(25, query.count * 4)   # give up if nothing usable after this many
     workers = max(1, min(8, query.count))
-    gen = iter(source.search(query))
+    gen = iter(gen)
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         while len(leads) < query.count and scanned < query.max_companies:
@@ -122,16 +116,37 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
                                   "with_domain": with_domain})
             if not leads and scanned >= futility:
                 if with_domain == 0:
-                    on_progress("phase", f"{source.name}: these records carry no email "
-                                "domain — try a source with emails (hn · yc · github).")
+                    on_progress("phase", f"{label}: these records carry no email "
+                                "domain — try a source with emails (local · hn · yc).")
                 else:
-                    on_progress("phase", f"{source.name}: no deliverable matches — try "
+                    on_progress("phase", f"{label}: no deliverable matches — try "
                                 "without 'verified only' or a broader query.")
                 break
 
-    _surface_errors(source.name, leads, on_progress)
+    _surface_errors(label, leads, on_progress)
     on_progress("phase", f"done — {len(leads)} lead(s)")
     return leads
+
+
+def _entity_stream(query: Query, cache, db, on_progress: ProgressFn):
+    """Resolve a ``(entity_iterator, label)`` for ``query``.
+
+    A pinned ``query.source`` runs that one source (back-compat). Otherwise the
+    federation layer fans the query out across the sources that fit its shape and
+    expands companies into real people — the "one box that just works" path.
+    """
+    if query.source and query.source != "auto":
+        source = get_source(query.source)
+        if source is None:
+            raise ValueError(f"unknown source: {query.source!r}. Try `openleads sources`.")
+        source.cache = cache
+        on_progress("phase", f"source={source.name} ({source.vertical}) — searching…")
+        return source.search(query), source.name
+
+    names = federation.plan(query)
+    on_progress("phase", "federated search · " + " · ".join(names) + " …")
+    gen = federation.search(query, cache=cache, db=db, on_progress=on_progress)
+    return gen, "federated"
 
 
 def _surface_errors(source_name: str, leads: list, on_progress: ProgressFn) -> None:

@@ -131,6 +131,7 @@ def rule_parse(text: str) -> Query:
     """Deterministically parse free text into a :class:`Query`. Never raises."""
     text = (text or "").strip()
     q = Query()
+    q.text = text                      # preserved so the federation planner can route
     if not text:
         return q
 
@@ -150,14 +151,14 @@ def rule_parse(text: str) -> Query:
         q.keyword = ", ".join(domains)
         return q
 
-    q.source = _detect_source(text)
+    # v4: the federation layer routes across the sources that fit a query, so we no
+    # longer hard-pin a single vertical source here — we extract the signals
+    # (location, keyword) the planner needs. A typed domain (handled above) stays
+    # the one unambiguous pin; an explicit `-s`/`/source` still overrides downstream.
     q.location = _extract_location(text)
     kw = _distill_keyword(text, q.location)
     if kw:
         q.keyword = kw
-        # For YC, the keyword doubles as an industry filter.
-        if q.source in (None, "yc"):
-            q.industry = kw
     return q
 
 

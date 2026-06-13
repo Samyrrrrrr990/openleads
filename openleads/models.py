@@ -148,7 +148,8 @@ class Query:
     """Parsed user intent that drives the engine."""
 
     action: str = "find"            # find | verify | export
-    source: str | None = None       # source name; None = engine default
+    source: str | None = None       # source name; None = federated routing
+    text: str = ""                  # original free-text query (federation routes on it)
     count: int = 20
     industry: str | None = None
     location: str | None = None
@@ -156,6 +157,7 @@ class Query:
     keyword: str | None = None
     verified_only: bool = False     # keep only 'safe'-tier (deliverable) leads
     deep: bool = False              # turn on heavier ground-truth harvesting
+    discover: bool = True           # expand companies into people via team-page discovery
     fmt: str = "csv"                # csv | json | ndjson
     out: str | None = None
     max_companies: int = 400

@@ -59,8 +59,10 @@ def test_detect_domains_ignores_code_tokens():
 
 
 def test_intent_nodejs_query_routes_to_github_not_domains():
+    from openleads import federation
     q = intent.rule_parse("find node.js engineers in berlin")
-    assert q.source == "github"   # 'engineers' → github, not the domains source
+    assert q.source != "domains"          # node.js must not be treated as a domain
+    assert "github" in federation.plan(q)  # 'engineers' → github via the planner
 
 
 def test_parse_domains_rejects_code_tokens():
