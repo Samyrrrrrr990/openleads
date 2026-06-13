@@ -103,6 +103,19 @@ SCHEMA: tuple[Setting, ...] = (
     # Web dashboard
     Setting("web_port", ("OPENLEADS_WEB_PORT",), False, "int", 8787,
             "web", "Port for the local web dashboard (openleads web)."),
+    # Integrations / exports (all optional; CSV/JSON/webhook need no token)
+    Setting("webhook_url", ("OPENLEADS_WEBHOOK_URL",), False, "str", "",
+            "integrations", "POST new leads/replies here as NDJSON (Zapier/Make/n8n)."),
+    Setting("notion_token", ("NOTION_TOKEN",), True, "str", "",
+            "integrations", "Notion integration token — enables export to a Notion database."),
+    Setting("notion_database_id", ("NOTION_DATABASE_ID",), False, "str", "",
+            "integrations", "Notion database id leads are exported to."),
+    Setting("airtable_token", ("AIRTABLE_TOKEN",), True, "str", "",
+            "integrations", "Airtable personal access token — enables export to a base."),
+    Setting("airtable_base", ("AIRTABLE_BASE",), False, "str", "",
+            "integrations", "Airtable base id (appXXXX) leads are exported to."),
+    Setting("airtable_table", ("AIRTABLE_TABLE",), False, "str", "Leads",
+            "integrations", "Airtable table name leads are exported to."),
 )
 
 _BY_KEY = {s.key: s for s in SCHEMA}
