@@ -290,6 +290,24 @@ class DB:
             out.append(d)
         return out
 
+    def get_campaign(self, name: str) -> dict | None:
+        row = self._conn.execute(
+            "SELECT name, data FROM campaigns WHERE name=?", (name,)
+        ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        try:
+            d["data"] = json.loads(d["data"])
+        except (ValueError, TypeError):
+            d["data"] = {}
+        return d
+
+    def delete_campaign(self, name: str) -> bool:
+        cur = self._conn.execute("DELETE FROM campaigns WHERE name=?", (name,))
+        self._conn.commit()
+        return cur.rowcount > 0
+
     def close(self) -> None:
         try:
             self._conn.close()

@@ -41,7 +41,7 @@ def test_rule_interpret_full_campaign():
     assert act.send_hour == 9 and act.send_minute == 0
     assert act.context == "my SaaS"
     assert "founder" in act.query.lower()
-    assert act.source == "yc"   # 'founders' routes to the YC source
+    assert act.source is None   # v4: federation routes (yc/hn); no hard pin
 
 
 def test_rule_interpret_schedule_intent():
@@ -55,7 +55,7 @@ def test_rule_interpret_plain_search_is_search():
     act = rule_interpret("find 20 rust developers in Berlin")
     assert act.intent == "search"
     assert act.count == 20
-    assert act.source == "github"
+    assert act.source is None   # v4: federation routes (github); no hard pin
 
 
 def test_rule_interpret_empty_is_unknown():

@@ -4,6 +4,75 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [4.0.0] - 2026-06-12
+
+**The lead generation is finally great — one box, every source, real people.** Through
+v3.5 only one source (YC) reliably produced contactable people; you had to guess which
+source to use, and most were narrow or domain-less. v4 rebuilds discovery around a
+**federated waterfall engine** that works the way Apollo/Clay actually work — fan out
+across the public sources that fit your query, find the people behind each company,
+verify their email, dedupe, and rank — except free, keyless, and entirely on your
+machine. It also turns the existing automation primitives into a cohesive, set-and-forget
+workflow.
+
+> Type `marketing agencies in Miami` and get real businesses, their decision-makers, and
+> verified emails. No source picking. No keys. $0.
+
+### Added — make lead-gen actually work
+- **Federated search (the new default).** Leave the source on `auto` and one query fans
+  out across the sources that fit its shape (a place + a category → local businesses;
+  founders → YC + HN; an industry → companies; developers → GitHub), then merges and
+  de-duplicates by `(domain, person)`. You stop guessing sources; you just describe who
+  you want. (`openleads/federation.py`)
+- **Local-business source (`local`) via OpenStreetMap/Overpass.** The capability paid
+  tools charge the most for — agencies, clinics, law/accounting firms, gyms, salons,
+  restaurants, shops — by **category + city**, globally, keyless. Businesses with a
+  website or `contact:email` flow straight into the waterfall.
+- **Team-page people discovery.** A bare company domain is expanded into real
+  decision-makers by reading its `/team`, `/about`, `/leadership` pages (JSON-LD +
+  name/title heuristics), so "companies in X" becomes "the people to email at companies
+  in X". (`openleads/discover/people.py`)
+- **Companies source (`companies`) via Wikidata.** Companies by industry + country with
+  real official-website domains, via SPARQL. Keyless.
+- **Public-companies source (`edgar`) via SEC EDGAR.** US public companies by keyword;
+  the domain is confirmed by the waterfall.
+- **List enrichment (`enrich`) — bring your own list.** Paste or pass a CSV of
+  names/companies/domains/emails and get verified, tiered emails back (Clay-style),
+  reusing the whole engine. `openleads enrich list.csv`.
+
+### Added — seamless automation
+- **Recipes.** Save an ICP + message + schedule + export as a named recipe that runs
+  itself (find → write → send → export). `openleads recipe add growth "agencies in
+  Miami" --at 09:00 --send`.
+- **Watchers.** Standing alerts that deliver only *newly*-matching leads on each run.
+- **Export sinks.** `csv` · `json` · `ndjson` · `sheets` · `webhook` · `notion` ·
+  `airtable` (the last two light up when their token is set; everything else is keyless).
+  `openleads export webhook --target https://…`.
+- **Reply-aware daily drip.** The on-device scheduler now syncs your inbox first
+  (replies/bounces self-stop sequences), runs due recipes, fires watchers, then sends
+  follow-ups — in that order.
+
+### Added — interfaces
+- **Dashboard v4.** New tabs: **Enrich** (paste a list), **Automations** (recipes +
+  watchers), and **Analytics** (funnel + by-source/tier breakdowns). The Find tab is now
+  federated and local-first, with example chips.
+- **CLI.** New verbs `enrich`, `export`, `recipe`, `watch`, and an `init` onboarding
+  wizard; `--no-people` to skip team-page expansion. All prior verbs unchanged.
+
+### Changed
+- **Intent no longer hard-pins a single vertical source** — the federation planner routes
+  across sources from the query's shape (a typed domain still pins `domains`; an explicit
+  `-s` still overrides). The chat's "only verified" refinement now filters the deliverable
+  `safe` tier (it previously filtered a rarely-set confidence label).
+- Outbound requests to OpenStreetMap/Overpass/Nominatim/Wikidata send an identifying
+  User-Agent (Overpass rejects browser-like UAs).
+
+### Notes
+- Still **zero hard dependencies**, **keyless by default**, **local-first**. No API key
+  is required for any source; tokens only raise limits or enable optional export sinks.
+- Backward compatible: the CSV schema is unchanged, every prior CLI verb still works, and
+  the 247 prior tests stay green (340+ total with the new suites).
+
 ## [3.5.0] - 2026-06-12
 
 **The leads actually work now — and the machine sends them for you.** v3.1 made the

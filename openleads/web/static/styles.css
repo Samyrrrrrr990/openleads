@@ -463,3 +463,12 @@ tbody tr:last-child td { border-bottom: 0; }
     transition-duration: .001ms !important; scroll-behavior: auto !important; }
   .local-pill__dot, .sweep::after, .boot__mark { animation: none !important; }
 }
+
+/* ----- analytics bars (v4) ----- */
+.abar { display: grid; grid-template-columns: 120px 1fr 40px; align-items: center;
+  gap: 12px; padding: 5px 0; font-size: 13px; }
+.abar__k { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.abar__track { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.abar__fill { display: block; height: 100%; background: var(--red);
+  border-radius: 99px; min-width: 2px; }
+.abar__v { font-family: var(--font-mono); color: var(--text); text-align: right; }

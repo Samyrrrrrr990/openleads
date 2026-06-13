@@ -12,7 +12,8 @@ mailbox, and send — safely. Every sending step is **dry-run by default**.
 
 ```bash
 pip install "openleads[all]"     # engine + chat TUI + sending niceties
-openleads --version              # → openleads 3.0.0
+openleads --version              # → openleads 4.0.0
+openleads init                   # friendly first-run setup (optional)
 ```
 
 Node user? `npx openleads` works too (it installs the Python package on first run).
@@ -34,8 +35,13 @@ openleads doctor
 
 ## 3. Find leads
 
+Just describe who you want — OpenLeads **federates** across the sources that fit
+(you don't pick one):
+
 ```bash
-openleads find "50 AI founders in SF, verified only" --out leads.csv
+openleads find "marketing agencies in Miami"          # local businesses + their people
+openleads find "50 fintech founders, verified only"   # YC + Hacker News
+openleads find "dentists in Austin"                   # clinics + registry records
 ```
 
 You'll see each lead stream in with a tier and a 0–100 score:
@@ -44,9 +50,16 @@ You'll see each lead stream in with a tier and a 0–100 score:
 - **`risky`** — kept, but held back unless you opt in.
 - **`bad`** — dropped (no MX, disposable, unguessable).
 
-Pick a source explicitly with `--source` (`openleads sources` lists them), narrow
-with `--location` / `--keyword`, and add `--deep` for heavier ground-truth
-harvesting (slower, more `safe` hits).
+Company results are expanded into **real people** (founder/owner/exec) via
+team-page discovery. Pin a single source with `--source` (`openleads sources`
+lists them), add `--deep` for heavier ground-truth harvesting, or `--no-people`
+to keep company-level results only. See [Finding & the federation](./finding.md).
+
+**Already have a list?** Enrich it instead of searching:
+
+```bash
+openleads enrich my_list.csv -o enriched.csv   # name/company/domain/email → verified
+```
 
 ## 4. Connect your mailbox (once)
 

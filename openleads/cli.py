@@ -40,6 +40,8 @@ def _query_from_args(args) -> Query:
         q.verified_only = True
     if getattr(args, "deep", False):
         q.deep = True
+    if getattr(args, "no_people", False):
+        q.discover = False
     if getattr(args, "max_companies", None) is not None:
         q.max_companies = args.max_companies
     q.use_cache = not getattr(args, "no_cache", False)
@@ -344,6 +346,205 @@ def cmd_chat(args) -> int:
     return run()
 
 
+def cmd_enrich(args) -> int:
+    """Enrich a CSV of people/companies into verified emails (Clay-style)."""
+    from openleads import enrich
+    cache, db = Cache(), DB()
+    print(ui.c(f"  enrich  {args.file}", ui.WHITE, ui.BOLD))
+    n = {"i": 0}
+
+    def on_progress(kind, ld):
+        if kind == "lead":
+            n["i"] += 1
+            print("  " + ui.lead_line(ld, n["i"], 0))
+    try:
+        leads = enrich.enrich_file(args.file, cache=cache, db=db, deep=args.deep,
+                                   on_progress=on_progress)
+    except FileNotFoundError:
+        print(f"[!] no such file: {args.file}", file=sys.stderr)
+        return 2
+    finally:
+        cache.close()
+        db.close()
+    safe = sum(1 for ld in leads if ld.tier == "safe")
+    print(ui.rule())
+    print(f"  enriched {len(leads)} rows · {safe} deliverable")
+    out = args.out or "enriched.csv"
+    writers.write(leads, fmt=("json" if out.endswith(".json") else "csv"), path=out)
+    print(ui.c(f"  ↳ wrote {len(leads)} → {out}", ui.GREY))
+    return 0
+
+
+def cmd_export(args) -> int:
+    """Export your CRM (or a leads CSV) to a sink: csv/json/ndjson/sheets/webhook/notion/airtable."""
+    from openleads.automate import crm, exporters
+    db = DB()
+    try:
+        if args.from_file:
+            leads = _read_leads_csv(args.from_file)
+        else:
+            leads = crm.rows(db, status=args.status, limit=args.limit)
+    finally:
+        db.close()
+    if not leads:
+        print("[!] nothing to export (empty CRM — run a search first, or pass --from FILE)")
+        return 1
+    res = exporters.export(leads, sink=args.sink, target=args.target)
+    if res.get("ok"):
+        print(ui.c(f"  ✓ exported {res.get('count', len(leads))} leads → {args.sink}"
+                   f" {res.get('target','')}", ui.GREY))
+        if res.get("hint"):
+            print(ui.c("  " + res["hint"], ui.FAINT))
+        return 0
+    print(f"[!] export failed: {res.get('error')}", file=sys.stderr)
+    return 2
+
+
+def cmd_recipe(args) -> int:
+    """Manage saved automation recipes (ICP + message + schedule + export)."""
+    from openleads.automate import recipes
+    db = DB()
+    try:
+        action = (args.action or "list").lower()
+        if action == "list":
+            rows = recipes.list_recipes(db)
+            if not rows:
+                print("  no recipes yet — add one: openleads recipe add NAME \"agencies in Miami\"")
+                return 0
+            for r in rows:
+                sched = (f"{r['send_hour']:02d}:{r['send_minute']:02d}"
+                         if r.get("enabled") else "off")
+                exp = f" → {r['export']['sink']}" if r.get("export") else ""
+                print(f"  {r['name']:<16} {r['count']:>4}  {r['query'][:40]:<42} "
+                      f"{'send' if r['send'] else 'find'} @ {sched}{exp}")
+            return 0
+        if action == "add":
+            if not args.name or not args.query:
+                print("  usage: openleads recipe add NAME \"audience query\" [--at HH:MM] "
+                      "[--send] [--export SINK] [--context PITCH]", file=sys.stderr)
+                return 2
+            hour, minute = _parse_hhmm(args.at) if args.at else (9, 0)
+            spec = {"query": " ".join(args.query), "count": args.count or 25,
+                    "context": args.context or "", "send": bool(args.send),
+                    "verified_only": not args.include_risky, "enabled": bool(args.at),
+                    "send_hour": hour, "send_minute": minute,
+                    "export": {"sink": args.export, "target": args.target or ""}
+                    if args.export else None}
+            recipes.save(args.name, spec, db=db)
+            print(ui.c(f"  ✓ saved recipe '{args.name}'", ui.GREY))
+            if args.at:
+                print(ui.c(f"  scheduled {hour:02d}:{minute:02d} daily — run "
+                           f"`openleads schedule --at {hour:02d}:{minute:02d}` to arm the device",
+                           ui.FAINT))
+            return 0
+        if action in ("rm", "remove", "delete"):
+            ok = recipes.delete(args.name, db=db)
+            print(("  ✓ removed " if ok else "  ✗ no such recipe: ") + str(args.name))
+            return 0 if ok else 1
+        if action == "run":
+            spec = recipes.get(args.name, db=db)
+            if not spec:
+                print(f"[!] no such recipe: {args.name}", file=sys.stderr)
+                return 2
+            live = bool(args.live)
+            print(ui.c(f"  running recipe '{args.name}' — {'LIVE' if live else 'dry-run'}",
+                       ui.WHITE, ui.BOLD))
+            res = recipes.run(spec, db=db, dry_run=not live,
+                              on_progress=lambda k, p: print(f"  ◆ {p}", file=sys.stderr)
+                              if k == "phase" else None)
+            print(ui.rule())
+            print(f"  found {res['found']} · drafted {res['drafted']} · sent {res['sent']}")
+            return 0
+        print(f"[!] unknown recipe action: {action}", file=sys.stderr)
+        return 2
+    finally:
+        db.close()
+
+
+def cmd_watch(args) -> int:
+    """Standing alerts: deliver only newly-matching leads on each run."""
+    from openleads.automate import watch
+    db = DB()
+    try:
+        action = (args.action or "list").lower()
+        if action == "list":
+            ws = watch.list_watchers(db)
+            if not ws:
+                print("  no watchers — add one: openleads watch add NAME \"new agencies in Miami\"")
+                return 0
+            for name, spec in ws.items():
+                print(f"  {name:<16} {spec.get('query','')[:42]:<44} "
+                      f"→ {spec.get('sink','csv')}  ({len(spec.get('seen', []))} seen)")
+            return 0
+        if action == "add":
+            watch.save_watcher(db, args.name, " ".join(args.query or []),
+                               sink=args.sink or "csv", target=args.target or "",
+                               count=args.count or 25)
+            print(ui.c(f"  ✓ watching '{args.name}'", ui.GREY))
+            return 0
+        if action in ("rm", "remove", "delete"):
+            ok = watch.delete_watcher(db, args.name)
+            print(("  ✓ removed " if ok else "  ✗ no such watcher: ") + str(args.name))
+            return 0 if ok else 1
+        if action == "run":
+            live = bool(args.live)
+            summary = watch.tick(db, dry_run=not live)
+            print(f"  watchers: {summary['watchers_run']} · new leads: {summary['new_total']}"
+                  + ("" if live else "  (dry-run — add --live to deliver)"))
+            return 0
+        print(f"[!] unknown watch action: {action}", file=sys.stderr)
+        return 2
+    finally:
+        db.close()
+
+
+def cmd_init(args) -> int:
+    """Friendly first-run onboarding: identity, mailbox, a first search."""
+    from openleads import settings
+    from openleads.emails import netcheck
+    print(ui.banner())
+    print(ui.c("  Welcome to OpenLeads — let's get you set up. Press Enter to skip any step.\n",
+               ui.GREY))
+
+    def ask(prompt, key, secret=False):
+        cur = settings.get(key)
+        shown = settings.mask(cur) if (secret and cur) else (cur or "")
+        suffix = f" [{shown}]" if shown else ""
+        try:
+            val = input(ui.c(f"  {prompt}{suffix}: ", ui.WHITE)).strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return
+        if val:
+            try:
+                settings.set(key, val)
+            except (KeyError, ValueError) as e:
+                print(ui.c(f"    (skipped: {e})", ui.FAINT))
+
+    ask("Your name (for the From header)", "sender_name")
+    ask("What you're reaching out about (one line)", "sender_context")
+    print(ui.c("\n  Mailbox (optional — needed only to send). App password, not your login.",
+               ui.FAINT))
+    ask("SMTP user (email)", "smtp_user")
+    ask("SMTP app password", "smtp_pass", secret=True)
+    print()
+    port25 = "open" if netcheck.port25_open() else "blocked (engine compensates)"
+    print(ui.status_line([("port 25", port25),
+                          ("mailbox", settings.get("smtp_user") or "not set")]))
+    print(ui.c("\n  Try it now:", ui.WHITE, ui.BOLD))
+    print(ui.c("    openleads find \"marketing agencies in Miami\"", ui.GREY))
+    print(ui.c("    openleads \"30 fintech founders, verified only\"   (chat)", ui.GREY))
+    print(ui.c("    openleads web                                      (dashboard)\n", ui.GREY))
+    return 0
+
+
+def _parse_hhmm(text: str):
+    m = re.match(r"^(\d{1,2})(?::(\d{2}))?$", (text or "").strip())
+    if not m:
+        return 9, 0
+    return int(m.group(1)), int(m.group(2) or 0)
+
+
 def cmd_drip(args) -> int:
     """Run one drip cycle: fire due scheduled campaigns + sequence follow-ups."""
     from openleads.automate import scheduler
@@ -449,6 +650,8 @@ def _add_query_flags(p, with_output=True):
                    help="keep only deliverable (safe-tier) leads")
     p.add_argument("--deep", action="store_true",
                    help="deeper ground-truth harvesting (slower, more accurate)")
+    p.add_argument("--no-people", action="store_true",
+                   help="don't expand companies into people via team-page discovery")
     p.add_argument("--no-cache", action="store_true", help="bypass the cache")
     p.add_argument("--max-companies", type=int, help="scan budget")
     if with_output:
@@ -459,7 +662,9 @@ def _add_query_flags(p, with_output=True):
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="openleads",
-        description="Free, open-source Apollo alternative — find anyone, verify deliverably, and send.",
+        description="Free, open-source Apollo alternative — one search box fans out across "
+                    "public sources (local businesses, startups, companies, devs…), finds "
+                    "the people, verifies emails, and automates outreach. Keyless, local, $0.",
     )
     p.add_argument("--version", action="version", version=f"openleads {__version__}")
     sub = p.add_subparsers(dest="command")
@@ -539,6 +744,49 @@ def build_parser() -> argparse.ArgumentParser:
     dp = sub.add_parser("drip", help="run one drip cycle (due campaigns + follow-ups)")
     dp.add_argument("--live", action="store_true", help="actually send (default: dry-run)")
     dp.set_defaults(func=cmd_drip)
+
+    en = sub.add_parser("enrich", help="enrich a CSV of people/companies into verified emails")
+    en.add_argument("file", help="path to a CSV with name/company/domain/email columns")
+    en.add_argument("--deep", action="store_true", help="deeper ground-truth harvesting")
+    en.add_argument("-o", "--out", help="output path (default enriched.csv)")
+    en.set_defaults(func=cmd_enrich)
+
+    ex = sub.add_parser("export", help="export your CRM to a sink")
+    ex.add_argument("sink", choices=["csv", "json", "ndjson", "sheets", "webhook",
+                                     "notion", "airtable"], help="where to send the leads")
+    ex.add_argument("--target", help="file path or URL (sink-dependent)")
+    ex.add_argument("--from", dest="from_file", help="export a leads CSV instead of the CRM")
+    ex.add_argument("--status", help="CRM status filter (new/sent/replied/…)")
+    ex.add_argument("--limit", type=int, default=1000)
+    ex.set_defaults(func=cmd_export)
+
+    rc = sub.add_parser("recipe", help="save/run automation recipes (ICP+message+schedule)")
+    rc.add_argument("action", nargs="?", default="list",
+                    help="list (default) · add · run · rm")
+    rc.add_argument("name", nargs="?", help="recipe name")
+    rc.add_argument("query", nargs="*", help='audience, e.g. "agencies in Miami"')
+    rc.add_argument("--at", help="schedule time HH:MM (also enables the schedule)")
+    rc.add_argument("-n", "--count", type=int, help="how many leads")
+    rc.add_argument("--context", help="what to pitch (frames drafts)")
+    rc.add_argument("--send", action="store_true", help="this recipe sends (not just finds)")
+    rc.add_argument("--include-risky", action="store_true", help="also target risky-tier")
+    rc.add_argument("--export", help="export sink to run after finding")
+    rc.add_argument("--target", help="export target (path/URL)")
+    rc.add_argument("--live", action="store_true", help="for `run`: actually send")
+    rc.set_defaults(func=cmd_recipe)
+
+    wt = sub.add_parser("watch", help="standing alerts: deliver only new matching leads")
+    wt.add_argument("action", nargs="?", default="list", help="list · add · run · rm")
+    wt.add_argument("name", nargs="?", help="watcher name")
+    wt.add_argument("query", nargs="*", help='what to watch for')
+    wt.add_argument("--sink", help="export sink for new matches (default csv)")
+    wt.add_argument("--target", help="export target (path/URL)")
+    wt.add_argument("-n", "--count", type=int, help="how many to check per run")
+    wt.add_argument("--live", action="store_true", help="for `run`: actually deliver")
+    wt.set_defaults(func=cmd_watch)
+
+    it = sub.add_parser("init", help="friendly first-run setup (identity, mailbox, first search)")
+    it.set_defaults(func=cmd_init)
 
     cp = sub.add_parser("campaign", help="(v2) cold-email companion")
     cp.add_argument("rest", nargs=argparse.REMAINDER)

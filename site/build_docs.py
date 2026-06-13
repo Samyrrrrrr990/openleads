@@ -26,6 +26,7 @@ REPO = "https://github.com/Samyrrrrrr990/openleads"
 NAV = [
     ("Getting started", [("quickstart", "Quickstart")]),
     ("Guides", [
+        ("finding", "Finding & the federation"),
         ("deliverability", "Deliverability"),
         ("sending", "Sending"),
         ("automation", "Automation & assistant"),

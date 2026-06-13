@@ -3,9 +3,9 @@ from openleads import chat
 from openleads.models import Lead
 
 
-def _lead(conf="verified", email="ada@acme.io"):
+def _lead(conf="verified", email="ada@acme.io", tier="safe"):
     return Lead(first_name="Ada", last_name="Lovelace", email=email,
-                organization="Acme", confidence=conf, score=90, source="yc")
+                organization="Acme", confidence=conf, score=90, tier=tier, source="yc")
 
 
 def test_handle_slash_quit_returns_false():
@@ -36,11 +36,13 @@ def test_handle_slash_count_and_source_and_format():
 def test_refine_only_verified_filters():
     sess = chat.Session()
     try:
-        sess.last_leads = [_lead("verified"), _lead("pattern_guess", "x@y.com")]
+        # v4: "only verified" keeps the deliverable 'safe' tier (not the legacy label).
+        sess.last_leads = [_lead("verified", tier="safe"),
+                           _lead("pattern_guess", "x@y.com", tier="risky")]
         handled = chat._maybe_refine("only verified", sess, None)
         assert handled is True
         assert len(sess.last_leads) == 1
-        assert sess.last_leads[0].confidence == "verified"
+        assert sess.last_leads[0].tier == "safe"
     finally:
         sess.cache.close()
 

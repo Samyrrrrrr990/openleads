@@ -31,6 +31,10 @@
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+    <symbol id="i-enrich" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></symbol>
+    <symbol id="i-robot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9 16h6"/><circle cx="12" cy="3" r="1"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2 7 4-16 2 9h6"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
   </defs>
 </svg>
 
@@ -52,15 +56,20 @@
   <!-- sidebar -->
   <nav class="sidebar" aria-label="Primary">
     <div class="rail">
-      <p class="rail__group">The four clicks</p>
-      <a class="navlink" data-route="find"><svg class="ico"><use href="#i-find"/></svg><span>Find</span><i class="step">1</i></a>
-      <a class="navlink" data-route="compose"><svg class="ico"><use href="#i-compose"/></svg><span>Write</span><i class="step">2</i></a>
-      <a class="navlink" data-route="settings"><svg class="ico"><use href="#i-settings"/></svg><span>Connect</span><i class="step">3</i></a>
-      <a class="navlink" data-route="send"><svg class="ico"><use href="#i-send"/></svg><span>Send</span><i class="step">4</i></a>
+      <p class="rail__group">Find &amp; reach</p>
+      <a class="navlink" data-route="find"><svg class="ico"><use href="#i-find"/></svg><span>Find</span></a>
+      <a class="navlink" data-route="enrich"><svg class="ico"><use href="#i-enrich"/></svg><span>Enrich a list</span></a>
+      <a class="navlink" data-route="compose"><svg class="ico"><use href="#i-compose"/></svg><span>Write</span></a>
+      <a class="navlink" data-route="send"><svg class="ico"><use href="#i-send"/></svg><span>Send</span></a>
+      <div class="rail__divider"></div>
+      <p class="rail__group">Automate</p>
+      <a class="navlink" data-route="automations"><svg class="ico"><use href="#i-robot"/></svg><span>Automations</span></a>
+      <a class="navlink" data-route="analytics"><svg class="ico"><use href="#i-pulse"/></svg><span>Analytics</span></a>
       <div class="rail__divider"></div>
       <p class="rail__group">Workspace</p>
       <a class="navlink" data-route="leads"><svg class="ico"><use href="#i-leads"/></svg><span>Leads</span></a>
       <a class="navlink" data-route="crm"><svg class="ico"><use href="#i-crm"/></svg><span>CRM</span></a>
+      <a class="navlink" data-route="settings"><svg class="ico"><use href="#i-settings"/></svg><span>Connect</span></a>
       <a class="navlink" data-route="doctor"><svg class="ico"><use href="#i-doctor"/></svg><span>Doctor</span></a>
     </div>
     <div class="rail__foot">
