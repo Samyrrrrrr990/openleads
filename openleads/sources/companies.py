@@ -95,11 +95,21 @@ class CompaniesSource(Source):
     description = ("Companies in any industry/country with real websites, via the free "
                    "Wikidata graph. Keyless; great for B2B company discovery.")
 
+    def _industry_qid(self, term: str) -> str | None:
+        """Resolve an industry term to a QID, biased toward the *industry* entity
+        (P452 values are industries like 'video game industry', not 'video game')."""
+        low = term.lower()
+        if "industry" not in low:
+            qid = resolve_entity(f"{term} industry", cache=self.cache)
+            if qid:
+                return qid
+        return resolve_entity(term, cache=self.cache)
+
     def search(self, query: Query) -> Iterator[Entity]:
         term = (query.industry or query.keyword or "").strip()
         if not term:
             return
-        industry_qid = resolve_entity(term, cache=self.cache)
+        industry_qid = self._industry_qid(term)
         if not industry_qid:
             return
         country_qid = resolve_entity(query.location, cache=self.cache) if query.location else None
