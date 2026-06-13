@@ -186,34 +186,52 @@ def due_campaigns(db, now=None) -> list[dict]:
 
 # --- the daily tick ----------------------------------------------------------- #
 def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=None) -> dict:
-    """One drip cycle: run due scheduled campaigns, then send due follow-ups."""
+    """One drip cycle, in order:
+
+    1. **inbox sync** — mark replies/bounces (so sequences self-stop) if IMAP is set.
+    2. **recipes** — run every due scheduled recipe (find → write → send → export).
+    3. **watchers** — deliver any newly-matching leads to their sinks.
+    4. **follow-ups** — send due sequence steps to leads who haven't replied/bounced.
+    """
     own_db = False
     if db is None:
         db = dbmod.DB()
         own_db = True
     on_progress = on_progress or (lambda *_: None)
-    summary = {"campaigns_run": 0, "campaign_sent": 0, "due": 0, "sent": 0, "results": []}
+    summary = {"inbox": {}, "campaigns_run": 0, "campaign_sent": 0,
+               "watchers_run": 0, "new_total": 0, "due": 0, "sent": 0, "results": []}
     try:
-        # 1) scheduled campaigns (initial outreach)
-        from openleads.automate import pipeline
+        from openleads.automate import recipes, watch
+        from openleads.cache.store import Cache
+        cache = Cache()
+
+        # 1) inbox sync — keep the CRM honest before we follow up (optional/IMAP).
+        if settings.get("imap_host") or settings.get("smtp_user"):
+            try:
+                from openleads.outreach import inbox
+                summary["inbox"] = inbox.scan(db=db)
+            except Exception:  # noqa: BLE001 — optional, never break the drip
+                summary["inbox"] = {"error": "inbox scan skipped"}
+
+        # 2) due recipes / scheduled campaigns (initial outreach + export)
         for item in due_campaigns(db):
-            spec = item["spec"]
+            spec = dict(item["spec"])
+            spec.setdefault("send", True)   # a scheduled recipe's purpose is to send
+            spec["name"] = item["name"]
             on_progress("campaign", item["name"])
-            # Match the reach the assistant previewed (safe + high-confidence risky)
-            # so an unattended send doesn't silently deliver fewer emails than the
-            # user saw. send_drafts still enforces the warmup/daily cap downstream.
-            out = pipeline.quick(spec.get("query", ""), count=int(spec.get("count", 25)),
-                                 send=True, dry_run=dry_run, verified_only=False,
-                                 include_risky=True, min_confidence=55,
-                                 overrides={"sender_context": spec.get("context")} if
-                                 spec.get("context") else None)
+            res = recipes.run(spec, db=db, cache=cache, dry_run=dry_run,
+                              on_progress=on_progress)
             summary["campaigns_run"] += 1
-            summary["campaign_sent"] += sum(1 for r in out.get("results", [])
-                                            if r.status == "sent")
+            summary["campaign_sent"] += res.get("sent", 0)
             spec["last_run"] = date.today().isoformat()
             db.save_campaign(item["name"], spec)
 
-        # 2) sequence follow-ups
+        # 3) watchers — new-match alerts
+        w = watch.tick(db, cache=cache, dry_run=dry_run, on_progress=on_progress)
+        summary["watchers_run"] = w["watchers_run"]
+        summary["new_total"] = w["new_total"]
+
+        # 4) sequence follow-ups
         due = seqmod.due(db, campaign=campaign)
         summary["due"] = len(due)
         drafts = []
@@ -227,6 +245,7 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
             if drafts else []
         summary["sent"] = sum(1 for r in results if r.status == "sent")
         summary["results"] = results
+        cache.close()
         return summary
     finally:
         if own_db:
