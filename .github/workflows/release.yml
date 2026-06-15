@@ -45,7 +45,7 @@ jobs:
           assert not missing, f"missing from wheel: {missing}"
           print("OK — local dashboard is bundled.")
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/*
