@@ -209,7 +209,11 @@ def _do_schedule(arg: str, console):
         st = scheduler.status()
         state = "[green]installed[/]" if st["installed"] else "[dim]not installed[/]"
         _say(console, f"  on-device automation: {state} ({st['kind']})")
-        _say(console, "  /schedule 09:00 to install · /schedule off to remove")
+        _say(console, "  /schedule on to install · /schedule off to remove")
+        return
+    if arg in ("on", "install", "start"):
+        res = scheduler.install()
+        _say(console, f"  {'[green]✓[/]' if res.get('ok') else '[red]✗[/]'} {res.get('detail')}")
         return
     m = re.match(r"^(\d{1,2})(?::(\d{2}))?$", arg)
     if not m:

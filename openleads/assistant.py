@@ -270,7 +270,8 @@ def execute(action: Action, db=None, dry_run: bool = True, install_schedule: boo
         scheduler.save_scheduled_campaign(action.campaign, spec, db=db)
         installed = None
         if action.intent == "schedule" and install_schedule:
-            installed = scheduler.install(spec["send_hour"], spec["send_minute"])
+            # The heartbeat agent runs every recipe at its own time, this one included.
+            installed = scheduler.install()
         # Always preview (dry-run) so the user sees the emails before they go out.
         # A campaign wants reach: draft safe leads plus high-confidence (≥55%)
         # risky ones, so port-25-blocked networks still get a sendable batch.

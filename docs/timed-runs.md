@@ -104,6 +104,10 @@ Sending from CI isn't supported; the action finds leads.
 
 ## Safety
 
+- Recipes that **send**, and follow-ups, only go out inside the send window:
+  weekdays, 08:00–11:00 and 13:00–16:00 local time. A sending recipe due at 7pm
+  waits and runs at the next wake-up inside the window. Recipes that only find
+  or export run at their exact time.
 - `openleads drip` without `--live` is a dry run and doesn't use up a slot.
 - Sends always respect the daily cap, warmup ramp, send-time windows and
   suppression list from [Sending](sending.md).

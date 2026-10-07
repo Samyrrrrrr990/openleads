@@ -72,6 +72,11 @@ relicenses the project as open source.
 - **Scheduled runs failed when Python lived under a path with spaces.** The
   launchd agent split its command on spaces. Commands are now argument lists,
   quoted for cron and Task Scheduler.
+- **Sends now respect the business-hours window** (weekdays, 08–11 and 13–16).
+  The docs always said so, but nothing enforced it. Sending recipes and
+  follow-ups wait for the window; find/export-only recipes run on time. The chat
+  assistant's "send … at 9am" installs the heartbeat agent rather than replacing
+  it with a single daily one.
 - One failing recipe no longer aborts the rest of the scheduled cycle, and
   dry-run cycles no longer mark recipes as already run.
 - **npm:** the wrapper installs the matching OpenLeads version into a private

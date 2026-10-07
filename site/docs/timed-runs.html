@@ -95,6 +95,8 @@ jobs:
         with: { name: leads, path: &quot;${{ steps.leads.outputs.file }}&quot; }</code></pre>
 <p>See <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/examples/github-action/weekly-leads.yml"><code>examples/github-action/weekly-leads.yml</code></a>. Sending from CI isn't supported; the action finds leads.</p>
 <h2 id="safety" class="anchored"><a class="hlink" href="#safety">#</a>Safety</h2>
+<ul><li>Recipes that <strong>send</strong>, and follow-ups, only go out inside the send window:</li></ul>
+<p>weekdays, 08:00–11:00 and 13:00–16:00 local time. A sending recipe due at 7pm   waits and runs at the next wake-up inside the window. Recipes that only find   or export run at their exact time.</p>
 <ul><li><code>openleads drip</code> without <code>--live</code> is a dry run and doesn't use up a slot.</li><li>Sends always respect the daily cap, warmup ramp, send-time windows and</li></ul>
 <p>suppression list from <a href="sending.html">Sending</a>.</p>
 <ul><li>Anyone who replies or bounces is dropped from follow-ups.</li></ul>

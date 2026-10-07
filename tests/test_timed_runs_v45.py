@@ -180,3 +180,30 @@ def test_dry_run_tick_does_not_consume_the_slot(db, monkeypatch):
     monkeypatch.setattr(scheduler.seqmod, "due", lambda db, campaign: [])
     scheduler.tick(db=db, dry_run=True, now=WED_NOON)
     assert recipes.due(db, now=WED_NOON)
+
+
+# --- sends wait for business hours ------------------------------------------------ #
+def test_in_send_window():
+    from openleads.automate.sendtime import in_send_window
+    assert in_send_window(datetime(2026, 10, 7, 9, 30))        # Wed 09:30
+    assert not in_send_window(datetime(2026, 10, 7, 12, 7))    # lunch gap
+    assert not in_send_window(datetime(2026, 10, 7, 3, 0))     # night
+    assert not in_send_window(datetime(2026, 10, 10, 9, 30))   # Saturday
+
+
+def test_sending_recipe_waits_for_the_window_then_runs(db, monkeypatch):
+    from openleads.automate import recipes
+    monkeypatch.setattr(history, "notify", lambda *a: None)
+    recipes.save("s", {"query": "a", "schedule": "every 30m", "send": True}, db=db)
+    ran = []
+    monkeypatch.setattr(recipes, "run", lambda spec, **kw: ran.append(1) or {"sent": 0})
+    followed = []
+    monkeypatch.setattr(scheduler.seqmod, "due", lambda db, campaign: followed.append(1) or [])
+
+    night = datetime(2026, 10, 7, 3, 0)
+    summary = scheduler.tick(db=db, dry_run=False, now=night)
+    assert ran == [] and followed == [] and summary["outside_send_window"]
+    assert recipes.due(db, now=night)                 # still due, not consumed
+
+    scheduler.tick(db=db, dry_run=False, now=datetime(2026, 10, 7, 9, 0))
+    assert ran == [1] and followed == [1]

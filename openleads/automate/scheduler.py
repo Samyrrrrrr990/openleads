@@ -334,10 +334,19 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
             except Exception:  # noqa: BLE001 — optional, never break the drip
                 summary["inbox"] = {"error": "inbox scan skipped"}
 
+        from openleads.automate.sendtime import in_send_window
+        sending_ok = in_send_window(_as_datetime(now))
+        summary["outside_send_window"] = not sending_ok
+
         # 2) due recipes / scheduled campaigns (initial outreach + export)
         for item in due_campaigns(db, now):
             spec = dict(item["spec"])
             spec.setdefault("send", True)   # a scheduled recipe's purpose is to send
+            if spec["send"] and not sending_ok:
+                # Sends wait for business hours; the recipe stays due and runs on the
+                # first heartbeat inside the window.
+                on_progress("phase", f"{item['name']}: waiting for the send window")
+                continue
             spec["name"] = item["name"]
             on_progress("campaign", item["name"])
             res, entry = history.timed("recipe", item["name"], recipes.run, spec, db=db,
@@ -385,8 +394,12 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
             return {"due": len(due), "sent": sum(1 for r in results if r.status == "sent"),
                     "results": results}
 
-        res, _ = (followups(), None) if dry_run else history.timed(
-            "follow-ups", campaign, followups)
+        if not sending_ok:
+            res = {"due": 0, "sent": 0, "results": []}
+        elif dry_run:
+            res = followups()
+        else:
+            res, _ = history.timed("follow-ups", campaign, followups)
         if res is None:
             summary["failed"] += 1
         else:
