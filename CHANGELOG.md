@@ -84,6 +84,8 @@ relicenses the project as open source.
 - **npm:** the wrapper installs the matching OpenLeads version into a private
   virtualenv. `pip install --user` failed on Homebrew and Debian/Ubuntu Pythons
   (PEP 668). The package now includes LICENSE and is published with provenance.
+- **Windows:** the CLI crashed with `UnicodeEncodeError` when its output was piped
+  (cp1252). Output is now UTF-8.
 - The release workflow fails if the tag, pyproject, package and npm versions
   disagree.
 - CI adds an MCP handshake check, plus macOS and Windows smoke tests.

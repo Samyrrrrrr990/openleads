@@ -194,3 +194,16 @@ def test_non_ascii_names_pass_and_fold_into_addresses():
         assert people.looks_like_person_name(name, strict=True), name
     assert candidate_emails("Jan Jakubův", "cvut.cz")[0] == "jan.jakubuv@cvut.cz"
     assert not people.looks_like_person_name("jan kowalski")
+
+
+def test_cli_output_survives_a_cp1252_stream(monkeypatch):
+    import io
+    import sys
+
+    from openleads import cli
+    out = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    monkeypatch.setattr(sys, "stdout", out)
+    cli._utf8_streams()
+    print("▌ ✦ ◆ ●")                       # would raise UnicodeEncodeError on cp1252
+    out.flush()
+    assert "▌".encode() in out.buffer.getvalue()

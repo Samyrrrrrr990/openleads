@@ -909,7 +909,19 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _utf8_streams() -> None:
+    """Windows pipes default to cp1252, which can't print ▌ ✦ ◆; use UTF-8 instead."""
+    for stream in (sys.stdout, sys.stderr):
+        enc = (getattr(stream, "encoding", "") or "").lower().replace("-", "")
+        if enc != "utf8" and hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main(argv=None) -> int:
+    _utf8_streams()
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
     if not argv:
