@@ -152,10 +152,25 @@ def looks_like_person_name(text: str, strict: bool = False) -> bool:
 _ROLE_RE = re.compile(r"\b(?:" + "|".join(re.escape(w) for w in ROLE_WORDS) + r")s?\b", re.I)
 
 
+_DATEISH_RE = re.compile(r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.? \d{1,2}\b"
+                         r"|\b\d{4}\b|[•·|]", re.I)
+
+
 def _is_title(text: str) -> bool:
-    """A short line that names a role as a whole word ("Head of Growth", not "Header")."""
+    """A short line that names a role as a whole word ("Head of Growth", not "Header").
+
+    Sentences ("economic growth ensues when people…"), bylines ("CEO • Apr 29") and
+    long blurbs are not titles, even when they contain a role word.
+    """
     text = (text or "").strip()
-    return 0 < len(text) <= 80 and len(text.split()) <= 10 and bool(_ROLE_RE.search(text))
+    if not (0 < len(text) <= 60 and len(text.split()) <= 8):
+        return False
+    first = next((c for c in text if c.isalpha()), "")
+    if not first or first.islower():
+        return False
+    if _DATEISH_RE.search(text) or text.endswith((".", "!", "?", '"', "”")):
+        return False
+    return bool(_ROLE_RE.search(text))
 
 
 def _clean_title(text: str) -> str:

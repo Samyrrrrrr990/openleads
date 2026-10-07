@@ -147,3 +147,42 @@ def test_engine_stops_at_time_budget(monkeypatch):
     engine.build_leads(q, on_progress=lambda k, p: phases.append(p) if k == "phase" else None)
     assert time.monotonic() - t0 < 5
     assert any("time budget" in str(p) for p in phases)
+
+
+# --- researchers: topic search over works, not author names -------------------- #
+def test_work_authors_are_deduped_and_name_order_fixed():
+    from openleads.sources import openalex
+    data = {"results": [
+        {"title": "Paper A", "authorships": [
+            {"author": {"id": "A1", "display_name": "Jakubův, Jan"},
+             "institutions": [{"id": "I1", "display_name": "CTU", "country_code": "CZ"}]},
+            {"author": {"id": "A2", "display_name": "Ada Lovelace"}, "institutions": []}]},
+        {"title": "Paper B", "authorships": [
+            {"author": {"id": "A1", "display_name": "Jakubův, Jan"}, "institutions": []}]},
+    ]}
+    ents = openalex.parse_work_authors(data)
+    assert [e.full_name for e in ents] == ["Jan Jakubův", "Ada Lovelace"]
+    assert ents[0].extra["institution_id"] == "I1"
+
+
+def test_institution_homepages_use_the_api_not_the_website(monkeypatch):
+    from openleads.sources import openalex
+    urls = []
+
+    def fake(url, **kw):
+        urls.append(url)
+        return {"results": [{"id": "https://openalex.org/I1", "homepage_url": "https://ctu.cz"}]}
+
+    monkeypatch.setattr(openalex, "get_json", fake)
+    src = openalex.OpenAlexSource()
+    homes = src._homepages(["https://openalex.org/I1", "https://openalex.org/I1"])
+    assert homes == {"https://openalex.org/I1": "https://ctu.cz"}
+    assert len(urls) == 1 and urls[0].startswith("https://api.openalex.org/institutions?")
+
+
+def test_sentences_and_bylines_are_not_titles():
+    assert not people._is_title("economic growth ensues when people possess the freedom to")
+    assert not people._is_title("CEO • Apr 29")
+    assert not people._is_title("The best sales tool we have ever used.")
+    assert people._is_title("VP of Sales")
+    assert people._is_title("Co-founder & CEO")

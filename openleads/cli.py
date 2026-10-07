@@ -150,6 +150,12 @@ def cmd_bench(args) -> int:
     return 0
 
 
+def cmd_mcp(args) -> int:
+    """Run the MCP server on stdio (for Claude Desktop, Cursor, …)."""
+    from openleads import mcp
+    return mcp.serve()
+
+
 def cmd_sources(args) -> int:
     if args.subject and args.subject != "list":
         name = args.name or (args.subject if args.subject != "info" else None)
@@ -774,6 +780,9 @@ def build_parser() -> argparse.ArgumentParser:
     _add_query_flags(sd, with_output=False)
     sd.add_argument("--live", action="store_true", help="actually send (default: preview)")
     sd.set_defaults(func=cmd_send)
+
+    mc = sub.add_parser("mcp", help="run as an MCP server (Claude Desktop, Cursor, Claude Code)")
+    mc.set_defaults(func=cmd_mcp)
 
     bn = sub.add_parser("bench", help="run real queries against live sources and score them")
     bn.add_argument("query", nargs="*", help="one query to score (default: the full suite)")
