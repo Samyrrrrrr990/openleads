@@ -27,7 +27,7 @@ Some things I learned building it:
   network. Real queries returned page headings like "Refund Policy" as people, and
   "dentists in Austin" returned chiropractors. Now there's `openleads bench`, which
   runs 12 real queries against the live sources every night and commits the
-  scoreboard to the repo: [BENCH_SUMMARY].
+  scoreboard to the repo: 12/12 queries return results, 84% of requested leads filled, 0% junk names, and a third of emails found or pattern-backed (the rest are labelled as guesses).
 - Telling a name from a heading is surprisingly hard. What finally worked was
   requiring scraped names to start with a known given name (public-domain SSA data
   plus an international list), and rejecting acronyms.

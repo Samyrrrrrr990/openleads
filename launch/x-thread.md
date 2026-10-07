@@ -32,7 +32,7 @@ Where it searches:
 My 300 unit tests all passed while the tool returned "Refund Policy" as a person 🙃
 
 So now it runs 12 real searches against the live sources every night and commits
-the scoreboard to the repo. [BENCH_SUMMARY]
+the scoreboard to the repo. 12/12 queries return results, 84% of requested leads filled, 0% junk names, and a third of emails found or pattern-backed (the rest are labelled as guesses)
 
 5/
 It's also an MCP server, so Claude / Cursor can use it:

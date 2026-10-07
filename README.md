@@ -60,11 +60,16 @@ Those feed a send decision: **safe** (send it), **risky** (held back unless you 
 queries against the live sources and publishes the results:
 
 <!-- BENCH:START -->
-| | v4.0 | **v4.5** |
-|---|---:|---:|
-| Junk "people" (page headings, org names) | ~30% | **0%** |
-| Researcher searches that return anyone | 0 of 1 | **1 of 1** |
-| "dentists in Austin" returns dentists | no | **yes** |
+| Real query | v4.0 | **v4.5** |
+|---|---|---|
+| "marketing agencies in Miami" | 6 of 20 "people" were page headings ("Refund Policy") | **0 junk names** |
+| "dentists in Austin" | chiropractors and transport companies, 0 usable | **10 dentists** |
+| "machine learning researchers" | 0 results | **10 researchers** |
+| "rust developers in Berlin" | still running after 4 min | **10 in 5s** |
+
+Latest full run (12 queries, 10 leads each): **12/12 return results · 84% fill ·
+0% junk names · 32% of emails found or pattern-backed, the rest labelled guessed ·
+54s median.** [Full scoreboard →](./BENCHMARK.md)
 <!-- BENCH:END -->
 
 ## What you can search
