@@ -8,8 +8,8 @@ version = "4.0.1"
 description = "Free, open-source Apollo alternative: one search box federates across free public sources (local businesses via OpenStreetMap, startups, companies, developers), finds the people, verifies emails deliverably, and automates outreach (recipes, sequences, exports) — plus bring-your-own-list enrichment. Local-first, keyless, $0."
 readme = "README.md"
 requires-python = ">=3.8"
-license = { text = "PolyForm-Noncommercial-1.0.0" }
-authors = [{ name = "Samyar Shafiee" }]
+license = { text = "AGPL-3.0-or-later" }
+authors = [{ name = "Samyar Shafiee", email = "samyar.shafiee2009@gmail.com" }]
 keywords = [
   "lead-generation", "email-finder", "apollo-alternative", "sales", "cli",
   "prospecting", "cold-email", "smtp-verification", "deliverability", "yc",
@@ -21,6 +21,7 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
   "Topic :: Office/Business",
   "Topic :: Communications :: Email",
   "Operating System :: OS Independent",

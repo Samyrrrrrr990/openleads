@@ -6,6 +6,6 @@ contact_links:
   - name: 🔒 Security issue
     url: https://github.com/Samyrrrrrr990/openleads/blob/main/SECURITY.md
     about: Please report vulnerabilities privately, not as public issues.
-  - name: 💼 Commercial license
+  - name: 💼 Licensing & commercial use
     url: https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md
-    about: Want to use OpenLeads commercially? Here's how.
+    about: AGPL-3.0 for everyone; a commercial license if you embed it in a closed product.

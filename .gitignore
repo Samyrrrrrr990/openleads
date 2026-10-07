@@ -37,3 +37,4 @@ Thumbs.db
 *.swp
 *.log
 /tmp/
+npm/LICENSE
