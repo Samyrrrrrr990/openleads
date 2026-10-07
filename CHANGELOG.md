@@ -27,6 +27,8 @@ relicenses the project as open source.
   a known given name (public-domain SSA list plus an international supplement).
   Org names with acronyms and heading words are rejected. Role words in titles
   match whole words only, and sentences, bylines and dates aren't titles.
+- **Names in any script.** "Jan Jakubův" and "Łukasz Kowalski" pass the name
+  check, and addresses transliterate (`jan.jakubuv@`, not `jan.jakubv@`).
 - **Honorifics and post-nominals are stripped** before building addresses, so
   you get `paulo.mazini@`, not `dr.mazini@` or `david.kc@`.
 - **Local categories route correctly.** The intent parser stripped "dentists"
