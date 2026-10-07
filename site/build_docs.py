@@ -30,6 +30,8 @@ NAV = [
         ("deliverability", "Deliverability"),
         ("sending", "Sending"),
         ("automation", "Automation & assistant"),
+        ("timed-runs", "Timed runs"),
+        ("mcp", "Claude, Cursor & MCP"),
         ("web", "Web dashboard"),
         ("sources", "Add a source"),
     ]),
@@ -37,6 +39,7 @@ NAV = [
         ("architecture", "Architecture"),
         ("how-it-works", "Email engine"),
         ("responsible-use", "Responsible use"),
+        ("licensing", "Licensing"),
     ]),
 ]
 SLUGS = {slug for _, items in NAV for slug, _ in items}
@@ -324,7 +327,7 @@ PAGE = """<!doctype html>
 
 <footer class="footer">
   <div class="container footer__legal">
-    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span>© 2026 Samyar Shafiee · AGPL-3.0.</span>
     <span><a href="{repo}">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
   </div>
 </footer>
@@ -386,7 +389,7 @@ INDEX = """<!doctype html>
 
 <footer class="footer">
   <div class="container footer__legal">
-    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span>© 2026 Samyar Shafiee · AGPL-3.0.</span>
     <span><a href="{repo}">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
   </div>
 </footer>

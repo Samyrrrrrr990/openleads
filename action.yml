@@ -1,0 +1,77 @@
+name: OpenLeads
+description: Find B2B leads with verified emails from free public sources. No API keys.
+author: Samyar Shafiee
+branding:
+  icon: users
+  color: purple
+
+inputs:
+  query:
+    description: 'Who to find, in plain English, e.g. "dentists in Austin" or "fintech founders"'
+    required: true
+  count:
+    description: How many leads
+    default: "25"
+  output:
+    description: Output file (.csv, .json or .ndjson)
+    default: leads.csv
+  verified-only:
+    description: Keep only deliverable (safe-tier) emails
+    default: "false"
+  budget:
+    description: Stop searching after this many seconds
+    default: "300"
+  version:
+    description: OpenLeads version to install from PyPI (default: the version of this action)
+    default: ""
+
+outputs:
+  file:
+    description: Path to the leads file
+    value: ${{ steps.find.outputs.file }}
+  count:
+    description: Number of leads found
+    value: ${{ steps.find.outputs.count }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install OpenLeads
+      shell: bash
+      env:
+        OL_VERSION: ${{ inputs.version }}
+      run: |
+        if [ -n "$OL_VERSION" ]; then
+          python -m pip install --quiet "openleads==$OL_VERSION"
+        else
+          python -m pip install --quiet "${{ github.action_path }}"
+        fi
+    - name: Find leads
+      id: find
+      shell: bash
+      env:
+        OL_QUERY: ${{ inputs.query }}
+        OL_COUNT: ${{ inputs.count }}
+        OL_OUT: ${{ inputs.output }}
+        OL_BUDGET: ${{ inputs.budget }}
+        OL_VERIFIED: ${{ inputs.verified-only }}
+      run: |
+        case "$OL_OUT" in
+          *.ndjson) fmt=ndjson ;; *.json) fmt=json ;; *) fmt=csv ;;
+        esac
+        extra=()
+        [ "$OL_VERIFIED" = "true" ] && extra+=(--verified-only)
+        openleads find "$OL_QUERY" -n "$OL_COUNT" --budget "$OL_BUDGET" \
+          --format "$fmt" -o "$OL_OUT" "${extra[@]}" || true
+        n=0
+        if [ -f "$OL_OUT" ]; then
+          if [ "$fmt" = csv ]; then n=$(( $(wc -l < "$OL_OUT") - 1 ));
+          elif [ "$fmt" = ndjson ]; then n=$(wc -l < "$OL_OUT");
+          else n=$(python -c "import json,sys;print(len(json.load(open(sys.argv[1]))))" "$OL_OUT"); fi
+        fi
+        echo "file=$OL_OUT" >> "$GITHUB_OUTPUT"
+        echo "count=$n" >> "$GITHUB_OUTPUT"
+        echo "### OpenLeads: $n leads for \"$OL_QUERY\"" >> "$GITHUB_STEP_SUMMARY"

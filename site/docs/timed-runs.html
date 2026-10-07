@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Timed runs · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Timed runs." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="finding.html">Finding & the federation</a>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="automation.html">Automation & assistant</a>
+<a class="dsb__link is-active" href="timed-runs.html">Timed runs</a>
+<a class="dsb__link" href="mcp.html">Claude, Cursor & MCP</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+<a class="dsb__link" href="licensing.html">Licensing</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Timed runs</div>
+      <h1 id="timed-runs">Timed runs</h1>
+<p>Save a search once and let your machine run it on a schedule: find new leads, draft emails, send them inside your daily cap, export the results, and send follow-ups. Nothing runs in the cloud.</p>
+<h2 id="1-give-a-recipe-a-schedule" class="anchored"><a class="hlink" href="#1-give-a-recipe-a-schedule">#</a>1. Give a recipe a schedule</h2>
+<pre class="code" data-lang="bash"><code>openleads recipe add miami &quot;marketing agencies in Miami&quot; --every &quot;weekdays 9am&quot; --send
+openleads recipe add devs  &quot;rust developers in Berlin&quot;   --every &quot;every 6h&quot; --export csv --target devs.csv
+openleads recipe add weekly &quot;fintech founders&quot; -n 50     --every &quot;mon 08:30&quot;</code></pre>
+<p><code>--every</code> understands plain English and cron:</p>
+<div class="tablewrap"><table><thead><tr><th>You write</th><th>It runs</th></tr></thead><tbody><tr><td><code>daily 09:00</code> · <code>9am</code> · <code>every day at 9:30pm</code></td><td>once a day</td></tr><tr><td><code>weekdays 8:30</code> · <code>weekends 10am</code></td><td>Mon–Fri / Sat–Sun</td></tr><tr><td><code>mon,wed,fri 14:00</code> · <code>tuesdays 7pm</code></td><td>on those days</td></tr><tr><td><code>hourly</code> · <code>every 2h</code> · <code>every 30m</code> · <code>every 90 minutes</code></td><td>on an interval</td></tr><tr><td><code>0 9 * * 1-5</code></td><td>standard 5-field cron</td></tr></tbody></table></div>
+<p><code>openleads recipe list</code> shows each recipe's schedule. A bad schedule is rejected when you save it, not when it should have run.</p>
+<p>Watchers ("tell me when new leads match") take the same flag. Without one they run once a day at 09:00:</p>
+<pre class="code" data-lang="bash"><code>openleads watch add new-clinics &quot;dentists in Austin&quot; --every &quot;every 12h&quot; --sink webhook</code></pre>
+<h2 id="2-arm-this-machine-once" class="anchored"><a class="hlink" href="#2-arm-this-machine-once">#</a>2. Arm this machine once</h2>
+<pre class="code" data-lang="bash"><code>openleads schedule on        # install the agent
+openleads schedule status    # is it installed, and when does each recipe run next?
+openleads schedule off       # remove it</code></pre>
+<p><code>schedule on</code> installs one small agent that wakes every 15 minutes and runs <code>openleads drip --live</code>. Each wake-up runs whatever is due, so one agent serves every schedule. It uses what your OS already has:</p>
+<div class="tablewrap"><table><thead><tr><th>OS</th><th>Mechanism</th></tr></thead><tbody><tr><td>macOS</td><td>a launchd agent in <code>~/Library/LaunchAgents/dev.openleads.drip.plist</code></td></tr><tr><td>Linux</td><td>one crontab line, marked <code># OpenLeads drip heartbeat</code></td></tr><tr><td>Windows</td><td>a Task Scheduler task named <code>OpenLeads Drip</code></td></tr></tbody></table></div>
+<p>Change the wake-up interval with <code>--every-minutes 5</code>. The old fixed daily mode (<code>openleads schedule 09:00</code>) still works.</p>
+<p>If the machine is asleep or off when a run was due, the run happens at the next wake-up. It runs once, even if several slots were missed.</p>
+<h2 id="3-see-what-happened" class="anchored"><a class="hlink" href="#3-see-what-happened">#</a>3. See what happened</h2>
+<pre class="code" data-lang="bash"><code>openleads runs          # the last 20 runs
+openleads runs -n 100</code></pre>
+<pre class="code" data-lang="text"><code>  ✓ 2026-10-07T09:00:12  recipe     miami             41.2s  found 18 · sent 12
+  ✗ 2026-10-07T09:00:54  watcher    new-clinics        3.1s  URLError: network unreachable
+  ✓ 2026-10-07T09:15:03  follow-ups default            0.4s  due 0 · sent 0</code></pre>
+<p>History lives in <code>~/.openleads/runs.jsonl</code>. When a run fails, the other jobs still run and you get told about it:</p>
+<ul><li>a desktop notification on macOS and Linux, and</li><li>a JSON <code>POST</code> to <code>notify_webhook</code>, if you set one. Slack, Discord, ntfy and</li></ul>
+<p>Zapier webhooks all accept it:</p>
+<pre class="code" data-lang="bash"><code>openleads config set notify_webhook https://hooks.slack.com/services/…</code></pre>
+<h2 id="run-it-in-github-actions-instead" class="anchored"><a class="hlink" href="#run-it-in-github-actions-instead">#</a>Run it in GitHub Actions instead</h2>
+<p>If you'd rather not keep a laptop awake, the OpenLeads GitHub Action runs a search on GitHub's schedule and attaches the CSV to the run:</p>
+<pre class="code" data-lang="yaml"><code>on:
+  schedule: [{ cron: &quot;0 13 * * 1&quot; }]
+jobs:
+  leads:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Samyrrrrrr990/openleads@v4.5.0
+        id: leads
+        with: { query: &quot;marketing agencies in Miami&quot;, count: 50 }
+      - uses: actions/upload-artifact@v4
+        with: { name: leads, path: &quot;${{ steps.leads.outputs.file }}&quot; }</code></pre>
+<p>See <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/examples/github-action/weekly-leads.yml"><code>examples/github-action/weekly-leads.yml</code></a>. Sending from CI isn't supported; the action finds leads.</p>
+<h2 id="safety" class="anchored"><a class="hlink" href="#safety">#</a>Safety</h2>
+<ul><li><code>openleads drip</code> without <code>--live</code> is a dry run and doesn't use up a slot.</li><li>Sends always respect the daily cap, warmup ramp, send-time windows and</li></ul>
+<p>suppression list from <a href="sending.html">Sending</a>.</p>
+<ul><li>Anyone who replies or bounces is dropped from follow-ups.</li></ul>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="automation.html"><span>← Previous</span><b>Automation & assistant</b></a>
+<a class="pn pn--next" href="mcp.html"><span>Next →</span><b>Claude, Cursor & MCP</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-give-a-recipe-a-schedule">1. Give a recipe a schedule</a><a class="toc__l2" href="#2-arm-this-machine-once">2. Arm this machine once</a><a class="toc__l2" href="#3-see-what-happened">3. See what happened</a><a class="toc__l2" href="#run-it-in-github-actions-instead">Run it in GitHub Actions instead</a><a class="toc__l2" href="#safety">Safety</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 Samyar Shafiee · AGPL-3.0.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

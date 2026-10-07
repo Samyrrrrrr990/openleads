@@ -4,6 +4,83 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [4.5.0] - 2026-10-07
+
+**Make it work, prove it works, and make it clear who can use it.** Running real
+searches against v4.0 showed page headings coming back as people ("Refund
+Policy", "HSBC North America"), "dentists in Austin" returning chiropractors and
+transport companies, researcher searches returning nothing, and some searches
+running for minutes without output. All 302 unit tests passed the whole time,
+because they mock the network. v4.5 fixes those failures, adds a live benchmark
+so they can't come back unnoticed, adds real timed runs and an MCP server, and
+relicenses the project as open source.
+
+### Changed: license
+- **OpenLeads is now AGPL-3.0-or-later**, an OSI-approved open-source license,
+  with a commercial license for closed-source embedding. Running it, including at
+  a company, is free. See [COMMERCIAL-LICENSE.md](./COMMERCIAL-LICENSE.md). The
+  sole copyright holder is Samyar Shafiee; old entity names are gone. Releases up
+  to 4.0.1 stay PolyForm Noncommercial.
+
+### Fixed: lead quality
+- **No more headings as people.** Names scraped from page text must start with
+  a known given name (public-domain SSA list plus an international supplement).
+  Org names with acronyms and heading words are rejected. Role words in titles
+  match whole words only, and sentences, bylines and dates aren't titles.
+- **Honorifics and post-nominals are stripped** before building addresses, so
+  you get `paulo.mazini@`, not `dr.mazini@` or `david.kc@`.
+- **Local categories route correctly.** The intent parser stripped "dentists"
+  from the query, so the local search fell back to "any business". The original
+  text is now used to pick OSM tags. Health searches with a place go to local
+  clinics (which have websites); NPI is used only without a place.
+- **Overpass outages.** The main Overpass server often returns 504. Local search
+  now tries a mirror, then falls back to Nominatim's POI search.
+- **Researcher search works.** OpenAlex author search matched names, not topics,
+  and institution lookups hit the website (HTTP 403). Topics now search recent,
+  well-cited papers and take their authors, with institution domains from one
+  batched API call.
+- **`emails at <domain>`** also returns named people from the team pages, with
+  addresses built from the pattern the published ones reveal.
+- Shared hosts (fosstodon.org, *.vercel.app, …) are no longer treated as a
+  person's own domain.
+
+### Added
+- **Honest evidence on every lead:** `found` (published or server-confirmed),
+  `pattern` (built from a pattern seen at that domain), `guessed`, or `none`.
+  It's shown in the CLI, the summary line, the new `Email Evidence` CSV column
+  and JSON `evidence` field.
+- **Time budget:** `--budget SECONDS` (default 90). A search stops and returns
+  what it has instead of running silently. Companies are expanded into people in
+  parallel, so local searches run about 3x faster.
+- **`openleads bench`:** runs a fixed set of real queries against live sources and
+  scores fill rate, evidence rate, junk names and speed. A nightly workflow
+  publishes the scoreboard to [BENCHMARK.md](./BENCHMARK.md).
+- **Timed runs** ([docs](./docs/timed-runs.md)):
+  - recipes and watchers take `--every "weekdays 9am"`, `"every 2h"`,
+    `"mon,thu 14:00"` or cron
+  - `openleads schedule on` installs one heartbeat agent that runs whatever is due
+    (launchd, cron, and now **Windows Task Scheduler**)
+  - `openleads runs` shows run history
+  - a failed run triggers a desktop notification and an optional `notify_webhook` POST
+- **MCP server:** `openleads mcp` exposes `find_leads`, `find_email`,
+  `verify_email` and `list_sources` to Claude Desktop, Claude Code, Cursor and
+  other MCP clients. Stdlib only. ([docs](./docs/mcp.md))
+- **GitHub Action:** `uses: Samyrrrrrr990/openleads@v4.5.0` finds leads on a
+  schedule in CI and outputs the file. ([example](./examples/github-action/weekly-leads.yml))
+
+### Fixed: automation and packaging
+- **Scheduled runs failed when Python lived under a path with spaces.** The
+  launchd agent split its command on spaces. Commands are now argument lists,
+  quoted for cron and Task Scheduler.
+- One failing recipe no longer aborts the rest of the scheduled cycle, and
+  dry-run cycles no longer mark recipes as already run.
+- **npm:** the wrapper installs the matching OpenLeads version into a private
+  virtualenv. `pip install --user` failed on Homebrew and Debian/Ubuntu Pythons
+  (PEP 668). The package now includes LICENSE and is published with provenance.
+- The release workflow fails if the tag, pyproject, package and npm versions
+  disagree.
+- CI adds an MCP handshake check, plus macOS and Windows smoke tests.
+
 ## [4.0.1] - 2026-06-12
 
 ### Fixed
