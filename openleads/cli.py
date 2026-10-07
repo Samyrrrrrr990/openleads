@@ -123,6 +123,33 @@ def cmd_find(args) -> int:
     return 0
 
 
+def cmd_bench(args) -> int:
+    """Run the live benchmark suite and print a scoreboard."""
+    from openleads import bench
+    queries = [" ".join(args.query)] if args.query else None
+    print(ui.c(f"  live benchmark · {len(queries or bench.SUITE)} queries · "
+               f"{args.count} leads each · {args.budget}s budget each\n", ui.FAINT))
+
+    def on_result(s):
+        flag = ui.c("  ✗ " + s.error, ui.RED) if s.error else ""
+        print(f"  {s.query[:34]:<34} {s.leads:>3} leads  {s.people:>3} people  "
+              f"{s.found + s.pattern:>3} evidence  {s.junk_names:>2} junk  {s.seconds:>5}s{flag}")
+
+    cache = None if args.no_cache else Cache()
+    try:
+        rep = bench.run(queries, count=args.count, budget=args.budget, cache=cache,
+                        on_result=on_result)
+    finally:
+        if cache:
+            cache.close()
+    t = rep["totals"]
+    print(ui.rule())
+    print(f"  fill {t['fill_rate']:.0%} · evidence {t['evidence_rate']:.0%} · "
+          f"junk {t['junk_rate']:.0%} · median {t['median_seconds']}s")
+    bench.save(rep, args.json, args.markdown)
+    return 0
+
+
 def cmd_sources(args) -> int:
     if args.subject and args.subject != "list":
         name = args.name or (args.subject if args.subject != "info" else None)
@@ -414,30 +441,38 @@ def cmd_recipe(args) -> int:
                 print("  no recipes yet — add one: openleads recipe add NAME \"agencies in Miami\"")
                 return 0
             for r in rows:
-                sched = (f"{r['send_hour']:02d}:{r['send_minute']:02d}"
-                         if r.get("enabled") else "off")
+                sched = recipes.describe_schedule(r)
                 exp = f" → {r['export']['sink']}" if r.get("export") else ""
                 print(f"  {r['name']:<16} {r['count']:>4}  {r['query'][:40]:<42} "
-                      f"{'send' if r['send'] else 'find'} @ {sched}{exp}")
+                      f"{'send' if r['send'] else 'find'} · {sched}{exp}")
             return 0
         if action == "add":
             if not args.name or not args.query:
-                print("  usage: openleads recipe add NAME \"audience query\" [--at HH:MM] "
+                print("  usage: openleads recipe add NAME \"audience query\" [--every \"weekdays 9am\"] "
                       "[--send] [--export SINK] [--context PITCH]", file=sys.stderr)
                 return 2
             hour, minute = _parse_hhmm(args.at) if args.at else (9, 0)
+            every = getattr(args, "every", None)
+            if every:
+                from openleads.automate import schedule as schedmod
+                try:
+                    schedmod.parse(every)
+                except schedmod.ScheduleError as e:
+                    print(f"[!] {e}", file=sys.stderr)
+                    return 2
             spec = {"query": " ".join(args.query), "count": args.count or 25,
                     "context": args.context or "", "send": bool(args.send),
-                    "verified_only": not args.include_risky, "enabled": bool(args.at),
-                    "send_hour": hour, "send_minute": minute,
+                    "verified_only": not args.include_risky,
+                    "enabled": bool(args.at or every),
+                    "send_hour": hour, "send_minute": minute, "schedule": every,
                     "export": {"sink": args.export, "target": args.target or ""}
                     if args.export else None}
             recipes.save(args.name, spec, db=db)
             print(ui.c(f"  ✓ saved recipe '{args.name}'", ui.GREY))
-            if args.at:
-                print(ui.c(f"  scheduled {hour:02d}:{minute:02d} daily — run "
-                           f"`openleads schedule --at {hour:02d}:{minute:02d}` to arm the device",
-                           ui.FAINT))
+            if args.at or every:
+                when = recipes.describe_schedule(recipes.get(args.name, db=db) or {})
+                print(ui.c(f"  scheduled {when} — run `openleads schedule on` once to arm "
+                           "this device", ui.FAINT))
             return 0
         if action in ("rm", "remove", "delete"):
             ok = recipes.delete(args.name, db=db)
@@ -479,9 +514,17 @@ def cmd_watch(args) -> int:
                       f"→ {spec.get('sink','csv')}  ({len(spec.get('seen', []))} seen)")
             return 0
         if action == "add":
+            if getattr(args, "every", None):
+                from openleads.automate import schedule as schedmod
+                try:
+                    schedmod.parse(args.every)
+                except schedmod.ScheduleError as e:
+                    print(f"[!] {e}", file=sys.stderr)
+                    return 2
             watch.save_watcher(db, args.name, " ".join(args.query or []),
                                sink=args.sink or "csv", target=args.target or "",
-                               count=args.count or 25)
+                               count=args.count or 25,
+                               schedule=getattr(args, "every", None))
             print(ui.c(f"  ✓ watching '{args.name}'", ui.GREY))
             return 0
         if action in ("rm", "remove", "delete"):
@@ -561,16 +604,20 @@ def cmd_drip(args) -> int:
 
     summary = scheduler.tick(dry_run=not live, on_progress=on_progress)
     print(ui.rule())
-    print(f"  campaigns: {summary['campaigns_run']} · campaign sends: {summary['campaign_sent']}"
-          f" · follow-ups due: {summary['due']} · sent: {summary['sent']}")
+    print(f"  recipes: {summary['campaigns_run']} · recipe sends: {summary['campaign_sent']}"
+          f" · watchers: {summary['watchers_run']} · follow-ups due: {summary['due']}"
+          f" · sent: {summary['sent']}")
+    if summary.get("failed"):
+        print(ui.c(f"  {summary['failed']} job(s) failed — see `openleads runs`", ui.RED))
     if not live:
         print(ui.c("  dry-run — add --live to actually send", ui.FAINT))
     return 0
 
 
 def cmd_schedule(args) -> int:
-    """Install / remove / inspect on-device daily sending."""
-    from openleads.automate import scheduler
+    """Install / remove / inspect the on-device automation agent."""
+    from openleads.automate import recipes, scheduler
+    from openleads.automate import schedule as schedmod
     action = (args.action or "status").lower()
     if action in ("off", "remove", "uninstall", "stop"):
         res = scheduler.uninstall()
@@ -578,24 +625,58 @@ def cmd_schedule(args) -> int:
         return 0 if res.get("ok") else 1
     if action == "status":
         st = scheduler.status()
-        state = "installed" if st["installed"] else "not installed"
-        print(f"  on-device automation: {state} ({st['kind']})")
-        print(ui.c("  openleads schedule --at 09:00   to install", ui.FAINT))
-        print(ui.c("  openleads schedule off          to remove", ui.FAINT))
+        state = f"installed ({st.get('mode') or st['kind']})" if st["installed"] else "not installed"
+        print(f"  on-device automation: {state} · {st['kind']}")
+        db = DB()
+        try:
+            rows = [r for r in recipes.list_recipes(db) if r.get("enabled")]
+        finally:
+            db.close()
+        from datetime import datetime
+        now = datetime.now()
+        for r in rows:
+            try:
+                sched = schedmod.from_spec(r)
+            except schedmod.ScheduleError:
+                sched = None
+            nxt = sched.next(now) if sched else None
+            when = nxt.strftime("%a %d %b %H:%M") if nxt else "—"
+            print(f"  {r['name']:<16} {recipes.describe_schedule(r):<24} next: {when}")
+        if not st["installed"]:
+            print(ui.c("  openleads schedule on         install (wakes every 15 min, runs what's due)",
+                       ui.FAINT))
+        print(ui.c("  openleads schedule off        remove", ui.FAINT))
         return 0
-    # default: install at --at HH:MM (or the bare action if it's a time)
-    at = args.at or (action if re.match(r"^\d{1,2}(:\d{2})?$", action) else "09:00")
-    m = re.match(r"^(\d{1,2})(?::(\d{2}))?$", at)
-    if not m:
-        print("  usage: openleads schedule --at HH:MM   (or: openleads schedule off)",
-              file=sys.stderr)
-        return 2
-    hour, minute = int(m.group(1)), int(m.group(2) or 0)
-    res = scheduler.install(hour, minute)
+    if action in ("on", "install", "start", "enable"):
+        res = scheduler.install(every_minutes=args.every_minutes or scheduler.HEARTBEAT_MINUTES)
+    else:
+        # Legacy: a fixed daily time (`schedule 09:00` or `schedule --at 09:00`).
+        at = args.at or action
+        m = re.match(r"^(\d{1,2})(?::(\d{2}))?$", at)
+        if not m:
+            print("  usage: openleads schedule on | off | status | HH:MM", file=sys.stderr)
+            return 2
+        res = scheduler.install(int(m.group(1)), int(m.group(2) or 0))
     print(("  ✓ " if res.get("ok") else "  ✗ ") + str(res.get("detail")))
     from openleads.automate.sendtime import SendPolicy, describe
     print(ui.c("  " + describe(SendPolicy()), ui.FAINT))
     return 0 if res.get("ok") else 1
+
+
+def cmd_runs(args) -> int:
+    """Show the history of scheduled runs."""
+    from openleads.automate import history
+    rows = history.recent(args.limit)
+    if not rows:
+        print("  no runs yet — scheduled jobs log here once `openleads schedule on` is active")
+        return 0
+    for r in rows:
+        mark = ui.c("✓", ui.GREEN) if r.get("ok") else ui.c("✗", ui.RED)
+        det = r.get("error") or " · ".join(f"{k} {v}" for k, v in (r.get("detail") or {}).items()
+                                           if k in ("found", "sent", "new", "due", "total"))
+        print(f"  {mark} {r.get('at', ''):<19}  {r.get('kind', ''):<10} {r.get('name', ''):<16} "
+              f"{r.get('seconds', 0):>6}s  {det}")
+    return 0
 
 
 def cmd_assistant(args) -> int:
@@ -694,6 +775,15 @@ def build_parser() -> argparse.ArgumentParser:
     sd.add_argument("--live", action="store_true", help="actually send (default: preview)")
     sd.set_defaults(func=cmd_send)
 
+    bn = sub.add_parser("bench", help="run real queries against live sources and score them")
+    bn.add_argument("query", nargs="*", help="one query to score (default: the full suite)")
+    bn.add_argument("-n", "--count", type=int, default=10, help="leads per query (default 10)")
+    bn.add_argument("--budget", type=int, default=60, help="seconds per query (default 60)")
+    bn.add_argument("--json", help="write the full report as JSON")
+    bn.add_argument("--markdown", help="write a Markdown scoreboard")
+    bn.add_argument("--no-cache", action="store_true", help="bypass the cache")
+    bn.set_defaults(func=cmd_bench)
+
     s = sub.add_parser("sources", help="list/inspect available sources")
     s.add_argument("subject", nargs="?", help="'list' (default) or 'info'")
     s.add_argument("name", nargs="?", help="source name for 'info'")
@@ -740,9 +830,15 @@ def build_parser() -> argparse.ArgumentParser:
                       help="also install the on-device daily schedule")
     asst.set_defaults(func=cmd_assistant)
 
-    sc = sub.add_parser("schedule", help="install/remove on-device daily sending")
-    sc.add_argument("action", nargs="?", help="HH:MM to install · 'off' · 'status' (default)")
-    sc.add_argument("--at", help="time to send daily, HH:MM (default 09:00)")
+    sc = sub.add_parser("schedule", help="install/remove the on-device automation agent")
+    sc.add_argument("action", nargs="?",
+                    help="'on' (heartbeat) · 'off' · 'status' (default) · HH:MM (fixed daily)")
+    sc.add_argument("--at", help="legacy: one fixed daily run at HH:MM")
+    sc.add_argument("--every-minutes", type=int, help="heartbeat interval (default 15)")
+
+    rn = sub.add_parser("runs", help="history of scheduled runs (recipes, watchers, follow-ups)")
+    rn.add_argument("-n", "--limit", type=int, default=20)
+    rn.set_defaults(func=cmd_runs)
     sc.set_defaults(func=cmd_schedule)
 
     dp = sub.add_parser("drip", help="run one drip cycle (due campaigns + follow-ups)")
@@ -769,7 +865,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="list (default) · add · run · rm")
     rc.add_argument("name", nargs="?", help="recipe name")
     rc.add_argument("query", nargs="*", help='audience, e.g. "agencies in Miami"')
-    rc.add_argument("--at", help="schedule time HH:MM (also enables the schedule)")
+    rc.add_argument("--at", help="run daily at HH:MM (also enables the schedule)")
+    rc.add_argument("--every", metavar="SCHEDULE",
+                    help='when to run: "weekdays 9am", "every 2h", "mon,thu 14:00", or cron')
     rc.add_argument("-n", "--count", type=int, help="how many leads")
     rc.add_argument("--context", help="what to pitch (frames drafts)")
     rc.add_argument("--send", action="store_true", help="this recipe sends (not just finds)")
@@ -786,6 +884,8 @@ def build_parser() -> argparse.ArgumentParser:
     wt.add_argument("--sink", help="export sink for new matches (default csv)")
     wt.add_argument("--target", help="export target (path/URL)")
     wt.add_argument("-n", "--count", type=int, help="how many to check per run")
+    wt.add_argument("--every", metavar="SCHEDULE",
+                    help='when to check (default "daily 09:00"), e.g. "every 6h"')
     wt.add_argument("--live", action="store_true", help="for `run`: actually deliver")
     wt.set_defaults(func=cmd_watch)
 

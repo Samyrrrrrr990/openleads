@@ -106,6 +106,9 @@ SCHEMA: tuple[Setting, ...] = (
     # Integrations / exports (all optional; CSV/JSON/webhook need no token)
     Setting("webhook_url", ("OPENLEADS_WEBHOOK_URL",), False, "str", "",
             "integrations", "POST new leads/replies here as NDJSON (Zapier/Make/n8n)."),
+    Setting("notify_webhook", ("OPENLEADS_NOTIFY_WEBHOOK",), False, "str", "",
+            "integrations", "POST a JSON alert here when a scheduled run fails "
+            "(Slack/Discord/ntfy webhook)."),
     Setting("notion_token", ("NOTION_TOKEN",), True, "str", "",
             "integrations", "Notion integration token — enables export to a Notion database."),
     Setting("notion_database_id", ("NOTION_DATABASE_ID",), False, "str", "",

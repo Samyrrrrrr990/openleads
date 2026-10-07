@@ -16,7 +16,7 @@ a schedule fires unattended via the on-device drip. The spec is a plain dict:
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime
 
 from openleads import db as dbmod
 from openleads import intent
@@ -46,6 +46,8 @@ def normalize_spec(spec: dict) -> dict:
         s["send_minute"] = max(0, min(int(s.get("send_minute", 0)), 59))
     except (TypeError, ValueError):
         s["send_minute"] = 0
+    sched = (s.get("schedule") or "").strip()
+    s["schedule"] = sched or None
     exp = s.get("export")
     if exp and exp.get("sink"):
         s["export"] = {"sink": exp["sink"], "target": exp.get("target") or ""}
@@ -60,6 +62,12 @@ def save(name: str, spec: dict, db=None) -> dict:
     try:
         s = normalize_spec(spec)
         s["name"] = name
+        prev = db.get_campaign(name)
+        prev_data = (prev or {}).get("data") or {}
+        for keep in ("created_at", "last_run", "last_run_at"):
+            if prev_data.get(keep) and not s.get(keep):
+                s[keep] = prev_data[keep]
+        s.setdefault("created_at", datetime.now().isoformat(timespec="seconds"))
         db.save_campaign(name, s)
         return s
     finally:
@@ -153,19 +161,21 @@ def run(spec: dict, db=None, cache=None, dry_run: bool = True, on_progress=None)
 
 
 def due(db, now=None) -> list[dict]:
-    """Recipes whose scheduled hour has arrived today and that haven't run today."""
-    import time
-    now = now or time.localtime()
-    today = date.today().isoformat()
-    out = []
-    for spec in list_recipes(db):
-        if not spec.get("enabled", True):
-            continue
-        if spec.get("last_run") == today:
-            continue
-        if now.tm_hour >= int(spec.get("send_hour", 9)):
-            out.append(spec)
-    return out
+    """Recipes whose schedule has fired since they last ran."""
+    from openleads.automate.scheduler import job_is_due
+    return [spec for spec in list_recipes(db) if job_is_due(spec, now)]
+
+
+def describe_schedule(spec: dict) -> str:
+    """'weekdays at 09:00', 'every 2 hours', … or 'off' / 'manual'."""
+    from openleads.automate import schedule as schedmod
+    if not spec.get("enabled", True):
+        return "off"
+    try:
+        sched = schedmod.from_spec(spec)
+    except schedmod.ScheduleError:
+        return "invalid schedule"
+    return sched.describe() if sched else "manual"
 
 
 # Re-export so callers have one import for "is this lead done with its sequence".

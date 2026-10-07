@@ -23,12 +23,14 @@ def list_watchers(db) -> dict:
 
 
 def save_watcher(db, name: str, query: str, sink: str = "csv",
-                 target: str = "", count: int = 25) -> dict:
+                 target: str = "", count: int = 25, schedule: str | None = None) -> dict:
     watchers = list_watchers(db)
     spec = watchers.get(name, {})
     spec.update({"name": name, "query": query, "sink": sink, "target": target,
                  "count": max(1, min(int(count), 500)),
                  "seen": spec.get("seen", [])})
+    if schedule:
+        spec["schedule"] = schedule
     watchers[name] = spec
     db.kv_set(KV_KEY, watchers)
     return spec
