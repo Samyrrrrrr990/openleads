@@ -25,6 +25,8 @@ from openleads.cache.store import Cache
 from openleads.outreach import sequences
 
 RECIPE_KIND = "recipe"
+# Seconds a scheduled run may search before returning what it has.
+BACKGROUND_BUDGET = 300
 
 
 def normalize_spec(spec: dict) -> dict:
@@ -119,6 +121,7 @@ def to_query(spec: dict):
     q, _ = intent.parse(spec.get("query", "")) if spec.get("query") else (intent.rule_parse(""), "rule")
     q.count = int(spec.get("count", 25))
     q.verified_only = bool(spec.get("verified_only", True))
+    q.budget = BACKGROUND_BUDGET   # unattended runs can take longer than a live search
     return q
 
 
