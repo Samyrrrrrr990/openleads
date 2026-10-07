@@ -93,7 +93,9 @@ _HEADING_WORDS = {
     "inquiry", "request", "schedule", "appointment", "booking", "reservation",
 }
 
-_NAME_RE = re.compile(r"[A-Z][a-zA-Z'’.-]+(?:\s+[A-Z][a-zA-Z'’.-]+){1,3}")
+# A capitalised word of letters (any script: "Jakubův", "Łukasz", "O'Brien").
+_WORD = r"[^\W\d_][^\W\d_'’.-]*(?:['’.-][^\W\d_]+)*\.?"
+_NAME_RE = re.compile(rf"{_WORD}(?:\s+{_WORD}){{1,3}}")
 # "Jane Smith — CEO" / "Jane Smith, Head of Growth" / "Jane Smith - Founder"
 _INLINE_RE = re.compile(
     r"([A-Z][a-zA-Z'’.-]+(?:\s+[A-Z][a-zA-Z'’.-]+){1,3})\s*[—–\-,|:]\s*([A-Za-z][A-Za-z /&]+)")
@@ -110,13 +112,16 @@ def given_names() -> frozenset:
         lines = path.read_text(encoding="utf-8").splitlines()
     except OSError:
         return frozenset()
-    return frozenset(ln.strip() for ln in lines if ln.strip() and not ln.startswith("#"))
+    from openleads.emails.permute import ascii_fold
+    return frozenset(ascii_fold(ln.strip()) for ln in lines
+                     if ln.strip() and not ln.startswith("#"))
 
 
 def is_given_name(token: str) -> bool:
     """True if ``token`` is a known first name (case-insensitive; "Ji-Hoon" → "ji")."""
+    from openleads.emails.permute import ascii_fold
     names = given_names()
-    tok = (token or "").lower().strip(".'’-")
+    tok = ascii_fold(token).strip(".'’-")
     return tok in names or any(p in names for p in re.split(r"[-’']", tok) if len(p) >= 2)
 
 
@@ -132,6 +137,8 @@ def looks_like_person_name(text: str, strict: bool = False) -> bool:
     if not _NAME_RE.fullmatch(text):
         return False
     toks = text.split()
+    if not all(t[0].isupper() for t in toks):
+        return False
     if toks and toks[0].lower() in _HONORIFICS:
         toks = toks[1:]
     if not (2 <= len(toks) <= 4):

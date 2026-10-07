@@ -186,3 +186,11 @@ def test_sentences_and_bylines_are_not_titles():
     assert not people._is_title("The best sales tool we have ever used.")
     assert people._is_title("VP of Sales")
     assert people._is_title("Co-founder & CEO")
+
+
+def test_non_ascii_names_pass_and_fold_into_addresses():
+    from openleads.emails.permute import candidate_emails
+    for name in ("Jan Jakubův", "Łukasz Kowalski", "José Müller", "François Dupont"):
+        assert people.looks_like_person_name(name, strict=True), name
+    assert candidate_emails("Jan Jakubův", "cvut.cz")[0] == "jan.jakubuv@cvut.cz"
+    assert not people.looks_like_person_name("jan kowalski")
