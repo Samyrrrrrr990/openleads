@@ -13,6 +13,7 @@ underlying HTTP failure is surfaced instead of vanishing.
 from __future__ import annotations
 
 import itertools
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
@@ -91,9 +92,15 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     futility = max(25, query.count * 4)   # give up if nothing usable after this many
     workers = max(1, min(8, query.count))
     gen = iter(gen)
+    budget = getattr(query, "budget", 0) or 0
+    deadline = time.monotonic() + budget if budget > 0 else None
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         while len(leads) < query.count and scanned < query.max_companies:
+            if deadline and time.monotonic() >= deadline:
+                on_progress("phase", f"time budget ({budget}s) reached — returning "
+                            f"{len(leads)} lead(s); raise it with --budget")
+                break
             batch = list(itertools.islice(gen, workers))
             if not batch:
                 break

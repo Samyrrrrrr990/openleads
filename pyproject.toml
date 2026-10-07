@@ -55,6 +55,8 @@ py-modules = ["lead_engine", "automation"]
 [tool.setuptools.package-data]
 # Ship the pre-built local dashboard (no Node/build needed by end users).
 "openleads.web" = ["static/*", "static/**/*"]
+# Given-name list for the person-name quality gate.
+"openleads.discover" = ["given_names.txt"]
 
 [tool.ruff]
 line-length = 110

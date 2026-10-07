@@ -161,7 +161,9 @@ def lead_line(lead: Lead, idx: int, total: int) -> str:
         # Show the calibrated deliverability likelihood (Hunter-style %), not the
         # internal additive score — it's what tells the user "how good is this?".
         pct = lead.confidence_pct or lead.score
-        score = f"  {_score_bar(pct)} {c(f'{pct:>3}%', GREY)}"
+        ev = getattr(lead, "evidence", "")
+        ev_col = {"found": GREEN, "pattern": GREEN, "guessed": AMBER}.get(ev, FAINT)
+        score = f"  {_score_bar(pct)} {c(f'{pct:>3}%', GREY)} {c(ev, ev_col)}"
     else:
         email = c("—  public record, no email".ljust(38), FAINT)
         score = ""
@@ -179,6 +181,7 @@ def scan_line(scanned: int, found: int, with_domain: int) -> str:
 def summary_line(leads: list) -> str:
     tiers = Counter(ld.tier for ld in leads)
     safe, risky = tiers.get("safe", 0), tiers.get("risky", 0)
+    found = sum(1 for ld in leads if getattr(ld, "evidence", "") in ("found", "pattern"))
     bar = ""
     if leads:
         def seg(n, col):
@@ -187,7 +190,9 @@ def summary_line(leads: list) -> str:
     return ("\n" + rule() + "\n"
             + f"  {c(str(len(leads)), WHITE, BOLD)} leads   "
             + c(f"{safe} safe", GREEN, BOLD) + c(" deliverable   ", FAINT)
-            + c(f"{risky} risky", AMBER) + c(" unconfirmed", FAINT) + bar)
+            + c(f"{risky} risky", AMBER) + c(" unconfirmed", FAINT) + bar
+            + "\n" + c(f"  {found} found or built from a seen pattern · "
+                        f"{len(leads) - found} guessed", FAINT))
 
 
 # --- small helpers for command headers -------------------------------------- #

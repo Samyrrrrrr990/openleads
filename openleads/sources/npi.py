@@ -39,6 +39,28 @@ STATES = {
 }
 
 
+# Plain-English provider words → an NPI taxonomy description the API understands.
+TAXONOMY_WORDS = [
+    ("dentist", "Dentist"), ("dental", "Dentist"), ("orthodont", "Orthodontics"),
+    ("pediatric", "Pediatrics"), ("dermatolog", "Dermatology"),
+    ("cardiolog", "Cardiovascular Disease"), ("psychiatr", "Psychiatry"),
+    ("chiropract", "Chiropractor"), ("optometr", "Optometrist"),
+    ("physical therap", "Physical Therapist"), ("nurse practitioner", "Nurse Practitioner"),
+    ("nurse", "Registered Nurse"), ("surgeon", "Surgery"), ("therapist", "Counselor"),
+    ("family", "Family Medicine"), ("doctor", "Internal Medicine"),
+    ("physician", "Internal Medicine"),
+]
+
+
+def taxonomy_for(text: str) -> str:
+    """Map free text ("dentists in Austin") to an NPI taxonomy description, or ''."""
+    low = (text or "").lower()
+    for word, taxonomy in TAXONOMY_WORDS:
+        if word in low:
+            return taxonomy
+    return ""
+
+
 def parse_results(data: dict) -> list[Entity]:
     """Turn an NPI API response into Entity records (pure/testable)."""
     out: list[Entity] = []
@@ -84,7 +106,7 @@ class NPISource(Source):
     def search(self, query: Query) -> Iterator[Entity]:
         params = {"version": "2.1", "limit": str(min(query.count, 200)),
                   "country_code": "US"}
-        term = query.keyword or query.industry
+        term = query.keyword or query.industry or taxonomy_for(query.text or "")
         if term:
             params["taxonomy_description"] = term
         if query.location:

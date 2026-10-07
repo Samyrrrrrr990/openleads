@@ -44,6 +44,8 @@ def _query_from_args(args) -> Query:
         q.discover = False
     if getattr(args, "max_companies", None) is not None:
         q.max_companies = args.max_companies
+    if getattr(args, "budget", None) is not None:
+        q.budget = args.budget
     q.use_cache = not getattr(args, "no_cache", False)
     return q
 
@@ -654,6 +656,8 @@ def _add_query_flags(p, with_output=True):
                    help="don't expand companies into people via team-page discovery")
     p.add_argument("--no-cache", action="store_true", help="bypass the cache")
     p.add_argument("--max-companies", type=int, help="scan budget")
+    p.add_argument("--budget", type=int, metavar="SECONDS",
+                   help="stop searching after this many seconds (default 90; 0 = no limit)")
     if with_output:
         p.add_argument("--format", choices=["csv", "json", "ndjson"], help="output format")
         p.add_argument("-o", "--out", help="output path ('-' for stdout)")

@@ -20,6 +20,9 @@ unchanged; everything downstream (email waterfall, scoring, output) is reused.
 """
 from __future__ import annotations
 
+import re
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace as _dc_replace
 from typing import Iterator
 
@@ -53,6 +56,26 @@ _LOCAL = ("agency", "agencies", "marketing", "advertis", "dentist", "clinic",
 MAX_PEOPLE_PER_COMPANY = 3
 # Cap the fan-out so we stay fast and polite.
 MAX_SOURCES = 4
+# Companies expanded into people at once. Each expansion fetches a handful of team
+# pages, so doing them one at a time made local searches take minutes.
+EXPAND_WORKERS = 6
+
+_HONORIFIC_RE = re.compile(r"^(?:dr|mr|mrs|ms|mx|prof)\.?\s+", re.I)
+# Post-nominals and generational suffixes ("K.C.", "MD", "Jr.", "PhD", "DDS").
+_SUFFIX_RE = re.compile(
+    r"(?:,?\s+(?:k\.?c\.?|q\.?c\.?|m\.?d\.?|d\.?d\.?s\.?|d\.?m\.?d\.?|ph\.?d\.?|"
+    r"esq\.?|cpa|mba|jr\.?|sr\.?|ii|iii|iv))+\s*$", re.I)
+
+
+def clean_person_name(name: str) -> str:
+    """Drop honorifics and post-nominals ("Dr. Jane Doe, DDS" → "Jane Doe").
+
+    Email patterns are built from the name, so "David Josse K.C." must not turn
+    into ``david.kc@``.
+    """
+    name = re.sub(r"\s+", " ", (name or "")).strip()
+    name = _HONORIFIC_RE.sub("", name).strip()
+    return _SUFFIX_RE.sub("", name).strip(" ,")
 
 
 def _has(text: str, words) -> bool:
@@ -84,8 +107,10 @@ def plan(query: Query) -> list[str]:
     # A place + a business-ish category → local businesses (the headline path).
     if loc and (_has(text, _LOCAL) or not _has(text, _DEV + _RESEARCH + _STARTUP)):
         add("local")
+    # Health + a place → local clinics first (they publish websites, so they're
+    # reachable). NPI records carry no email, so they only lead when there's no place.
     if _has(text, _HEALTH):
-        add("npi", "local")
+        add("local" if loc else "npi")
     if _has(text, _DEV):
         add("github")
     if _has(text, _RESEARCH):
@@ -105,6 +130,9 @@ def plan(query: Query) -> list[str]:
 
 def _person_entity(company: Entity, name: str, title: str) -> Entity:
     """Clone a company Entity into a person Entity (keeps org/domain/site/location)."""
+    name = clean_person_name(name)
+    if not title or clean_person_name(title).lower() == name.lower():
+        title = ""
     return _dc_replace(
         company,
         full_name=name,
@@ -188,11 +216,42 @@ def search(query: Query, cache=None, db=None, discover_people: bool | None = Non
     if not streams:
         return
 
+    def expand(ent: Entity) -> list[Entity]:
+        try:
+            return expand_company(ent, cache=cache, discover=discover)
+        except Exception:               # one bad site never sinks the whole search
+            return [ent]
+
     seen: set[tuple] = set()
-    for ent in _roundrobin(streams):
-        for cand in expand_company(ent, cache=cache, discover=discover):
+    for group in _ordered_parallel(expand, _roundrobin(streams), EXPAND_WORKERS):
+        for cand in group:
             key = (cand.domain, (cand.full_name or "").lower().strip())
             if key in seen:
                 continue
             seen.add(key)
             yield cand
+
+
+def _ordered_parallel(fn, items, workers: int) -> Iterator:
+    """``map(fn, items)`` on a thread pool, in order, pulling ``items`` lazily.
+
+    At most ``workers * 2`` calls are in flight, so a consumer that stops early
+    (enough leads, time budget hit) doesn't leave dozens of site crawls running.
+    """
+    it = iter(items)
+    pending: deque = deque()
+    ex = ThreadPoolExecutor(max_workers=max(1, workers))
+    try:
+        for item in it:
+            pending.append(ex.submit(fn, item))
+            if len(pending) >= workers * 2:
+                break
+        while pending:
+            yield pending.popleft().result()
+            nxt = next(it, None)
+            if nxt is not None:
+                pending.append(ex.submit(fn, nxt))
+    finally:
+        for f in pending:
+            f.cancel()
+        ex.shutdown(wait=False)
