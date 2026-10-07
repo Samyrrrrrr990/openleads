@@ -136,12 +136,14 @@ def cmd_bench(args) -> int:
               f"{s.found + s.pattern:>3} evidence  {s.junk_names:>2} junk  {s.seconds:>5}s{flag}")
 
     cache = None if args.no_cache else Cache()
+    db = DB()     # pattern learning on, exactly like `openleads find`
     try:
-        rep = bench.run(queries, count=args.count, budget=args.budget, cache=cache,
+        rep = bench.run(queries, count=args.count, budget=args.budget, cache=cache, db=db,
                         on_result=on_result)
     finally:
         if cache:
             cache.close()
+        db.close()
     t = rep["totals"]
     print(ui.rule())
     print(f"  fill {t['fill_rate']:.0%} · evidence {t['evidence_rate']:.0%} · "
