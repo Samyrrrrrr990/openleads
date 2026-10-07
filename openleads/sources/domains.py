@@ -22,6 +22,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
+from openleads.discover.people import find_people
 from openleads.emails import groundtruth
 from openleads.emails.permute import domain_of, is_probable_domain, is_role_account, local_tokens
 from openleads.models import Entity, Query
@@ -86,14 +87,30 @@ class DomainsSource(Source):
             return
 
         def harvest(domain: str):
-            return domain, groundtruth.harvest_from_site(domain, cache=self.cache)
+            emails = groundtruth.harvest_from_site(domain, cache=self.cache)
+            people = find_people(domain, cache=self.cache) if query.discover else []
+            return domain, emails, people
 
         with ThreadPoolExecutor(max_workers=min(8, len(domains))) as ex:
-            for domain, emails in ex.map(harvest, domains):
+            for domain, emails, people in ex.map(harvest, domains):
                 seen: set[str] = set()
+                names: set[str] = set()
                 # Real people (structured locals) first, then role/contact addresses.
                 for email in sorted(emails, key=lambda e: is_role_account(e)):
                     if email in seen:
                         continue
                     seen.add(email)
-                    yield address_to_entity(email, domain)
+                    ent = address_to_entity(email, domain)
+                    names.add(ent.full_name.lower())
+                    yield ent
+                # Then named people from the team/about pages. The engine builds
+                # their address from the pattern the published ones revealed.
+                for p in people:
+                    if p["name"].lower() in names:
+                        continue
+                    names.add(p["name"].lower())
+                    yield Entity(
+                        full_name=p["name"], title=p["title"], organization=domain,
+                        domain=domain, website=f"https://{domain}", links={},
+                        extra={"vertical": "company contacts", "via": "team-page"},
+                        source="domains")

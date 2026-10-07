@@ -2,280 +2,218 @@
 
 # 🧲 OpenLeads
 
-### Apollo for everyone. For **$0**.
+### Find people and their work emails from free public data. No API keys. $0.
 
-**One search box. Describe your ideal customer — _"marketing agencies in Miami"_, _"fintech founders"_, _"dentists in Austin"_ — and OpenLeads federates across free public sources, finds the real people, verifies their email, and automates the outreach. Open source, keyless, entirely on your machine.**
+**Type who you want — _"dentists in Austin"_, _"fintech founders"_, _"law firms in London"_ — and OpenLeads searches OpenStreetMap, Y Combinator, GitHub, OpenAlex, SEC EDGAR, Wikidata and company websites, finds the real people, and tells you honestly which emails are confirmed and which are guesses. Then it can write and send the emails on a schedule. It runs on your machine.**
 
-[![License: PolyForm NC](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue.svg)](./LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./COMMERCIAL-LICENSE.md)
+[![PyPI](https://img.shields.io/pypi/v/openleads.svg?color=blue)](https://pypi.org/project/openleads/)
+[![npm](https://img.shields.io/npm/v/openleads.svg?color=red)](https://www.npmjs.com/package/openleads)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![Zero-dependency core](https://img.shields.io/badge/core-zero%20dependencies-success.svg)](#-how-it-works)
-[![PyPI](https://img.shields.io/badge/pip-install%20openleads-blue.svg)](https://pypi.org/project/openleads/)
+[![Zero dependencies](https://img.shields.io/badge/core-zero%20dependencies-success.svg)](#how-it-works)
 [![CI](https://github.com/Samyrrrrrr990/openleads/actions/workflows/ci.yml/badge.svg)](https://github.com/Samyrrrrrr990/openleads/actions/workflows/ci.yml)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Live benchmark](https://github.com/Samyrrrrrr990/openleads/actions/workflows/bench.yml/badge.svg)](./BENCHMARK.md)
 [![Stars](https://img.shields.io/github/stars/Samyrrrrrr990/openleads?style=social)](https://github.com/Samyrrrrrr990/openleads/stargazers)
+
+```bash
+pipx install openleads        # or: pip install openleads   ·   npx openleads
+openleads find "dentists in Austin"
+```
 
 </div>
 
 ---
 
-Apollo, Hunter, RocketReach, and ZoomInfo sell the same two things: **a contact database** and **email verification** — then upsell you the sending. **OpenLeads is the whole stack, inverted and free.**
-
-> A universal **`entity → verified email → cold email → sent`** machine, fed by a registry of **pluggable, keyless, public data sources** — running **entirely on your laptop**.
-
-**v4 makes the lead-gen great.** Earlier versions found and sent; the weak link was *discovery* — you had to pick a source, and most were narrow. v4 rebuilds discovery as a **federated waterfall**: one query fans out across the public sources that fit it, **finds the people behind each company**, verifies their email, and dedupes — the way Apollo and Clay actually work, free and local. The headline new source is **local businesses via OpenStreetMap** — the long tail (agencies, clinics, firms, shops) that paid tools charge the most for.
-
 ```text
-$ openleads find "marketing agencies in Miami"
-  [engine] federated search · local …
-   safe   hello@brightspark.com    Bright Spark Marketing   · 98%
-   risky  jane.lee@brightspark.com Jane Lee · Founder & CEO · 62%
-   safe   crystalei@marketkarma.com Crystalei Daniels · Head of Growth · 98%
-  [engine] done — real businesses, their people, verified emails
-
-$ openleads run "50 fintech founders, verified only" --live
-  [engine] federated search · yc · hn …
-   safe   ada@acme.ai      Ada Lovelace · Founder · 96%
-  [write]  drafting 41 personalized emails… · [outbox] grade A · warmup day 6
-  → 40 sent · 1 held (cap) · 0 bounced
+$ openleads find "dentists in Austin" -n 6
+  ◆ federated search · local …
+    1  ▌safe   info@example-dental.com        Example Dental        ▰▰▰▰▰▰▰▰▰▰  98% found
+    2  ▌safe   hello@smile-example.com        Smile Example Co      ▰▰▰▰▰▰▰▰▰▰  98% found
+    3  ▌risky  maria.lopez@smile-example.com  Maria Lopez           ▰▰▰▰▰▰▱▱▱▱  62% guessed
+    4  ▌safe   d.kim@ortho-example.com        Daniel Kim            ▰▰▰▰▰▰▰▰▰▱  88% pattern
+  ──────────────────────────────────────────────────────
+  6 leads   4 safe deliverable   2 risky unconfirmed   ██████████████████░░░░░░
+  4 found or built from a seen pattern · 2 guessed
 ```
+<sub>Output shape from a real run; businesses and people renamed.</sub>
 
----
+## Why it's different
 
-## ✨ How it works
+Apollo, Hunter and ZoomInfo sell a contact database and email verification, then
+charge again for sending. OpenLeads does all three for free, from public data, on
+your laptop. Two things matter most:
 
-The painful multi-tool workflow — scrape in A, verify in B, enrich in C, load into sender D, warm up in E — collapses into **one local app + CLI**:
+**It's honest about every email.** Most free finders label a `first.last@` guess as
+"valid". OpenLeads marks each address:
 
-| | | |
-|---|---|---|
-| **1 · Find** | Describe your ICP in plain English. | **Federates** across local businesses (OpenStreetMap), startups, companies, and developers — finds the people, resolves emails. |
-| **2 · Write** | Personalized, spam-linted, plain-text drafts. | Free LLM or sharp template — edit anything. |
-| **3 · Connect** | One-time mailbox setup with provider presets. | A preflight grades your SPF/DKIM/DMARC. |
-| **4 · Send** | Throttled, warmup-capped, suppression-aware. | One-click unsubscribe headers. No tracking pixels. |
-
-Already have a list? **Enrich it** — `openleads enrich list.csv` runs the same waterfall over your own names/companies/domains. Want it hands-free? Save a **recipe** (`openleads recipe add …`) and the on-device scheduler runs find → write → send → export daily, pausing anyone who replies.
-
-Do it in the terminal (`openleads find …`), in the chat REPL (`openleads`), or in the **local web dashboard** (`openleads web`).
-
-### 🛰️ Where leads come from — the federation
-
-One query, many sources, merged and de-duplicated. You never pick a source (but `-s name` still pins one):
-
-| Source | Vertical | Keyless |
-|---|---|---|
-| `local` | **Local businesses by category + city** (OpenStreetMap/Overpass) — agencies, clinics, firms, gyms, shops | ✅ |
-| `yc` · `hn` | Startup founders (Y Combinator) · companies hiring now (Hacker News) | ✅ |
-| `companies` · `edgar` | Companies by industry/country (Wikidata) · US public companies (SEC EDGAR) | ✅ |
-| `github` · `openalex` · `npi` | Developers · researchers · US healthcare providers | ✅ |
-| `domains` | Hunter-style: real published emails for any domain you name | ✅ |
-
-Each company is expanded into **real decision-makers** via team-page discovery, then every address goes through the email waterfall (ground-truth harvest → learned pattern → permutation → MX/SMTP/Gravatar consensus → calibrated 0–100 confidence).
-
-## 🖥️ The local dashboard
-
-```bash
-openleads web   # opens http://127.0.0.1:8787 — no Node, no build, no cloud
-```
-
-A hand-built single-page app served by a stdlib HTTP server bound to localhost. Find, Leads, Compose, Send, CRM, Settings, and Doctor — with the four-click path front and centre and results **streaming in live**. Black-and-white with hints of red, reduced-motion aware, and **nothing leaves your machine**. See [`docs/web.md`](./docs/web.md).
-
-## 📡 Why the emails actually land
-
-Most free finders verify with a single SMTP `RCPT` probe over outbound **port 25** — which home ISPs and most clouds **block**. When it's blocked, every address silently degrades to a `first.last@domain` guess and your campaign bounces. That was v2's #1 failure.
-
-v3 cross-checks **seven independent signals** — most needing **no port 25 at all** — then gates honestly into three tiers so you only send what's likely to land:
-
-| Signal | Needs port 25? |
+| Evidence | Meaning |
 |---|---|
-| **MX consensus** — two DoH resolvers must agree | no |
-| **SPF · DMARC · provider class** — TXT lookups | no |
-| **Disposable / role / free-provider** — static lists | no |
-| **Gravatar existence** — md5 → 200/404 | no |
-| **Ground-truth harvest** — real emails from GitHub commits, `mailto:`, `security.txt` | no |
-| **Learned domain patterns** — compound across every run | no |
-| **SMTP `RCPT` + catch-all double-probe** | yes (graceful when blocked) |
+| **found** | Published on the web, or confirmed by the mail server |
+| **pattern** | Built from the format a real address at that company uses |
+| **guessed** | A common format, unconfirmed. It's labelled, so you decide |
 
-→ **`safe`** (send it) · **`risky`** (kept, held back by default) · **`bad`** (dropped). Every lead carries an explainable 0–100 score and a `reasons[]` list. Deep dive: [`docs/deliverability.md`](./docs/deliverability.md).
+Those feed a send decision: **safe** (send it), **risky** (held back unless you opt in),
+**bad** (dropped). Read [how the scoring works](./docs/deliverability.md).
 
-## 🆚 vs. the free tiers
+**It's measured against live data every night.** Unit tests can't tell you whether
+"dentists in Austin" returns dentists. [`openleads bench`](./BENCHMARK.md) runs 12 real
+queries against the live sources and publishes the results:
 
-| | OpenLeads | Apollo / Hunter (free) |
-| --- | --- | --- |
-| **Cost** | $0, forever | credit-limited, then paid |
-| **API key required** | ❌ none | ✅ required |
-| **Who you can find** | founders, devs, doctors, researchers **+ any vertical you plug in** | their database only |
-| **Email verification** | ✅ 7-signal consensus + 0–100 score | paid feature |
-| **Writes the email** | ✅ free LLM or template | ❌ / upsell |
-| **Sends it for you** | ✅ warmup, throttle, suppression | upsell |
-| **Where it runs** | 🔒 your machine, no data leaves | their cloud |
-| **You own the code** | ✅ readable, hackable | ❌ black box |
-| **Core dependencies** | **zero** (stdlib only) | — |
+<!-- BENCH:START -->
+| Real query | v4.0 | **v4.5** |
+|---|---|---|
+| "marketing agencies in Miami" | 6 of 20 "people" were page headings ("Refund Policy") | **0 junk names** |
+| "dentists in Austin" | chiropractors and transport companies, 0 usable | **10 dentists** |
+| "machine learning researchers" | 0 results | **10 researchers** |
+| "rust developers in Berlin" | still running after 4 min | **10 in 5s** |
 
-## 🚀 Install
+Latest full run (12 queries, 10 leads each): **12/12 return results · 84% fill ·
+0% junk names · 32% of emails found or pattern-backed, the rest labelled guessed ·
+54s median.** [Full scoreboard →](./BENCHMARK.md)
+<!-- BENCH:END -->
 
-```bash
-# Python (recommended) — zero-dependency engine + the full local app
-pip install "openleads[all]"
+## What you can search
 
-# minimal: just the engine + plain CLI
-pip install openleads
-```
+One query fans out across the sources that fit it. You never pick a source, but
+`-s name` pins one.
 
-Prefer Node? A thin wrapper runs it via **npx** (it installs the Python package on first use):
+| Ask for | Searched | Example |
+|---|---|---|
+| Local businesses, any city | OpenStreetMap (Overpass + Nominatim) | `"accountants in Toronto"` |
+| Startup founders, companies hiring | Y Combinator, Hacker News | `"AI startup founders"` |
+| Companies by industry | Wikidata, SEC EDGAR | `"fintech companies"` |
+| Developers | GitHub | `"rust developers in Berlin"` |
+| Researchers | OpenAlex | `"machine learning researchers"` |
+| Everyone at one company | the company's own site | `"emails at stripe.com"` |
+| US healthcare providers | NPI Registry | `"pediatricians"` |
 
-```bash
-npx openleads find "50 fintech founders verified only"
-# or: npm i -g openleads
-```
+Each company is turned into named people from its team and about pages. Every address
+then goes through the email checks: published-address harvest, learned company
+pattern, MX/SPF/DMARC, Gravatar, and SMTP where port 25 is open.
 
-**Try it in 10 seconds:**
+Need a source we don't have? A source is [one Python file](./docs/sources.md).
 
-```bash
-pip install "openleads[all]"
-openleads doctor     # check your finding + sending setup
-openleads web        # launch the local dashboard
-# …or stay in the terminal:
-openleads            # the interactive chat — just type what you want
-```
+## Use it from Claude, Cursor or Claude Code
 
-`openleads --version` should print `openleads 3.5.0`. Full walkthrough: [`docs/quickstart.md`](./docs/quickstart.md).
-
-## ⚡ Commands
+OpenLeads is an [MCP server](./docs/mcp.md). Your AI assistant can find and verify
+leads mid-conversation:
 
 ```bash
-# find + verify — every lead carries a calibrated Confidence %
-openleads find "50 fintech founders, verified only" --out leads.csv
-openleads find "emails at stripe.com"             # Hunter-style domain search
-openleads find --source npi --keyword pediatric --location CA --format json
-
-# the whole pipeline: find → write → send (dry-run unless --live)
-openleads run "rust developers in Berlin"
-openleads run "20 SaaS founders" --live
-
-# one-line natural-language campaign (free, no key needed)
-openleads assistant "send 50 emails to fintech founders for my SaaS at 9am"
-
-# automation — your machine sends for you
-openleads schedule --at 09:00   # install a daily on-device drip (launchd/cron)
-openleads drip --live           # run one cycle now (due campaigns + follow-ups)
-
-# pieces of it
-openleads write "10 AI founders" -o drafts.json   # just draft
-openleads send  "10 AI founders" --live           # find → write → send
-openleads verify ada@acme.io grace@cobol.dev      # verify concrete addresses
-
-# manage
-openleads sources          # what you can search
-openleads crm              # your local CRM (leads + touches + status)
-openleads config           # set keys, mailbox, sender identity, send limits
-openleads doctor           # health-check finding + sending
-openleads inbox            # scan IMAP for replies & bounces (optional)
+claude mcp add openleads -- openleads mcp
 ```
 
-Sending is **dry-run by default** everywhere — add `--live` to actually send. The finder never touches your mailbox. Real sends are also saved to your **IMAP Sent folder** so they show up in your mail client (configurable via `save_to_sent`).
-
-## 💬 The chat CLI
-
-`openleads chat` (or just `openleads`) opens a Claude-Code-style REPL. Type in plain English — it finds, or, when you ask to *send/schedule*, configures the whole campaign:
-
-```text
-openleads ❯ pediatricians in California, verified only
-openleads ❯ emails at stripe.com
-openleads ❯ send 30 emails to rust developers in Berlin for my dev tool at 9am
-openleads ❯ /schedule 09:00     # run it unattended, daily
-openleads ❯ /send live          # …or deliver the previewed batch now
+```json
+{ "mcpServers": { "openleads": { "command": "openleads", "args": ["mcp"] } } }
 ```
 
-Works **fully offline** via a rule-based parser (no key needed). Set `OPENROUTER_API_KEY` (a free model works) to upgrade free-form understanding and AI drafting.
+> *"Find 10 law firms in London with emails we can actually send to, and draft a two-line intro for each."*
 
-## 🧩 Sources (and adding your own)
+## Put it on a schedule
 
-```text
-$ openleads sources
-  domains      [company] any company domain (Hunter-style email search)
-  github       [people ] developers & open-source orgs
-  hn           [company] companies hiring now (Hacker News)
-  npi          [people ] U.S. doctors & healthcare providers
-  openalex     [people ] researchers & academics
-  producthunt  [company] trending products & startups
-  yc           [company] startup founders (Y Combinator)
+```bash
+openleads recipe add miami "marketing agencies in Miami" --every "weekdays 9am" --send
+openleads schedule on     # one agent: launchd · cron · Windows Task Scheduler
+openleads runs            # what ran, what it found, what failed
 ```
 
-> **New in v3.5 — the leads actually work.** Ground-truth harvesting now runs by
-> default: OpenLeads reads a company's own published addresses to learn its email
-> pattern, so a real sibling address promotes every coworker to an evidence-backed
-> `safe` — the free analogue of Hunter's domain search, also exposed directly as the
-> new `domains` source (`openleads find "emails at stripe.com"`). Every lead carries a
-> calibrated **Confidence %**, port 25 is probed once (not per lead, so searches are
-> fast even when it's blocked), and a free **assistant** turns "send 50 emails to X at
-> 9am" into a scheduled, on-device campaign.
+Schedules can be plain English (`every 2h`, `mon,thu 14:00`) or cron. Sends stay
+inside your daily cap, warmup ramp and business-hour windows, and stop for anyone
+who replies. Failed runs send a desktop alert, plus a webhook if you set one.
+[Timed runs →](./docs/timed-runs.md)
 
-All **keyless and free**. Want a vertical we don't ship — recruiters, lawyers, real-estate agents, your CRM export? Drop a `*.py` file in `~/.openleads/sources/`:
+Rather run it in CI? There's a GitHub Action:
 
-```python
-from openleads.sources.base import Source
-from openleads.models import Entity, Query
-
-class LawyersSource(Source):
-    name, kind, vertical = "lawyers", "people", "attorneys"
-    description = "State bar directory."
-
-    def search(self, query: Query):
-        for row in fetch_from_some_free_directory(query):
-            yield Entity(full_name=row["name"], organization=row["firm"],
-                         domain=row["firm_domain"], source=self.name)
+```yaml
+- uses: Samyrrrrrr990/openleads@v4.5.0
+  with: { query: "marketing agencies in Miami", count: 50 }
 ```
 
-Run `openleads sources` and it's there. The email engine handles the rest. Guide: [`docs/sources.md`](./docs/sources.md).
+## Install
 
-## 🔒 Local-first by design
+```bash
+pipx install "openleads[all]"     # recommended
+pip install openleads             # minimal: stdlib-only engine + CLI
+npx openleads find "…"            # Node: sets up a private Python env on first run
+```
 
-No hosted backend. No accounts. No tracking. Your leads, drafts, mailbox credentials, learned patterns, and CRM all live in a local SQLite file under `~/.openleads`. The engine talks **only** to public data sources and **your** mail server. Secrets are stored `chmod 600` and never sent back to the browser.
+```bash
+openleads doctor    # checks your setup (DNS, port 25, mailbox)
+openleads           # chat: type what you want
+openleads web       # local dashboard at http://127.0.0.1:8787
+```
 
-## 🔍 How it works
+Full walkthrough: [docs/quickstart.md](./docs/quickstart.md).
+
+## Commands
+
+```bash
+openleads find "50 fintech founders, verified only" -o leads.csv
+openleads find "emails at stripe.com"
+openleads enrich my-list.csv                   # your names/companies → verified emails
+openleads verify ada@acme.io                   # check one address
+
+openleads run "rust developers in Berlin"      # find → write → send (dry-run unless --live)
+openleads recipe add NAME "query" --every "…"  # save it, schedule it
+openleads watch add NAME "query"               # alert me only on new matches
+openleads schedule on | off | status
+openleads runs
+
+openleads bench                                # live quality benchmark
+openleads mcp                                  # MCP server for AI tools
+openleads sources · crm · config · doctor · inbox
+```
+
+Sending is a **dry run by default** everywhere. Add `--live` to send.
+
+## How it works
 
 ```mermaid
 flowchart LR
-    Q[Your request<br/>chat · CLI · web] --> I[Intent parser<br/>rule-based ± free LLM]
-    I --> S[Source plugin<br/>yc · github · npi · openalex · …]
-    S --> E[Deliverability engine<br/>7 signals → score → tier]
-    E --> W[Compose<br/>spam-linted draft]
-    W --> P[Preflight<br/>SPF/DKIM/DMARC + warmup]
-    P --> D[Send<br/>throttled · suppression-aware]
-    D --> C[(Local SQLite<br/>CRM · patterns · cache)]
-    E <--> C
+    Q["'dentists in Austin'"] --> P[Intent parser]
+    P --> F[Federation<br/>picks sources]
+    F --> S1[OpenStreetMap]
+    F --> S2[YC · HN · GitHub · OpenAlex · EDGAR · Wikidata]
+    S1 & S2 --> D[Team-page people discovery<br/>+ real-name gate]
+    D --> E[Email checks<br/>harvest · pattern · MX · SMTP · Gravatar]
+    E --> L[Leads with evidence + tier]
+    L --> W[Write → Send → Follow up<br/>on your schedule]
+    E <--> DB[(Local SQLite<br/>learned patterns · CRM)]
 ```
 
-Same path is invoked by the CLI, the chat REPL, and the web dashboard. Architecture: [`docs/architecture.md`](./docs/architecture.md).
+The core is Python standard library only. Everything, including your leads, drafts,
+mailbox credentials, learned patterns and CRM, lives in `~/.openleads`. There's no
+hosted backend, no account and no telemetry. Details: [docs/architecture.md](./docs/architecture.md).
 
-## 🧭 Responsible use
+## Responsible use
 
-OpenLeads is for legitimate outreach, recruiting, research, and prospecting. Some verticals carry extra weight — healthcare providers (NPI), academics — so please read [`docs/responsible-use.md`](./docs/responsible-use.md). **You** are responsible for anti-spam law (CAN-SPAM, GDPR, CASL) and each source's terms. v3 ships the guardrails (suppression, one-click unsubscribe, warmup caps, dry-run defaults); using them well is on you.
+OpenLeads is for legitimate prospecting, recruiting and research. You're responsible
+for anti-spam law (CAN-SPAM, GDPR, CASL) and each source's terms. It ships the
+guardrails: dry-run by default, suppression list, one-click unsubscribe, warmup caps,
+no tracking pixels. Read [docs/responsible-use.md](./docs/responsible-use.md).
 
-## 🗺️ What's new in v3.0
+## License
 
-- ✅ **Multi-signal deliverability engine** — 7 signals, mostly no port 25, honest `safe/risky/bad` tiers
-- ✅ **Writes + sends** — drafting, provider presets, preflight, warmup, suppression, follow-ups
-- ✅ **`openleads run`** — find → verify → write → send in one command
-- ✅ **Local web dashboard** (`openleads web`) — no Node, no cloud
-- ✅ **In-app config + `doctor`** — no dotfile editing
-- ✅ **Local CRM**, dedupe, learned patterns that compound across runs
+**Open source under [AGPL-3.0](./LICENSE).** Using OpenLeads is free, including at
+your company. If you embed it in a closed-source product, or run a modified version
+as a service without publishing your changes, you need a
+[commercial license](./COMMERCIAL-LICENSE.md). Releases up to 4.0.1 were PolyForm
+Noncommercial.
 
-See the full [CHANGELOG](./CHANGELOG.md).
+## Contributing
 
-## 🤝 Contributing
+The highest-impact PR is a new source ([guide](./docs/sources.md)). The second is a
+query that `openleads bench` scores badly, along with the fix.
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-PRs very welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). The highest-impact contribution is **a new source plugin** ([guide](./docs/sources.md)) — that's literally how OpenLeads becomes "Apollo for everyone."
+## Thanks
 
-## 📄 License
-
-[PolyForm Noncommercial 1.0.0](./LICENSE) — free for personal, research, educational, and nonprofit use. Commercial use? See [COMMERCIAL-LICENSE.md](./COMMERCIAL-LICENSE.md).
-
-## 🙏 Acknowledgements
-
-[`yc-oss/api`](https://github.com/yc-oss/api) · [OpenAlex](https://openalex.org) · [NPI Registry](https://npiregistry.cms.hhs.gov/) · GitHub & ProductHunt public data · Gravatar · and everyone who has ever rage-quit a "request a demo" button.
+[OpenStreetMap](https://www.openstreetmap.org/copyright) contributors ·
+[OpenAlex](https://openalex.org) · [`yc-oss/api`](https://github.com/yc-oss/api) ·
+[NPI Registry](https://npiregistry.cms.hhs.gov/) · SEC EDGAR · Wikidata · Gravatar ·
+US Social Security Administration (given-name data).
 
 <div align="center">
 
-**If OpenLeads saved you a subscription, consider leaving a ⭐ — it genuinely helps.**
+**If OpenLeads found you a customer, a ⭐ helps other people find it.**
 
 </div>

@@ -1,0 +1,40 @@
+name: Live benchmark
+
+# Runs the real-query benchmark against live sources every night and commits the
+# scoreboard (BENCHMARK.md + bench/latest.json). Unit tests mock the network; this
+# is the check that searches actually return the right people.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bench
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --quiet .
+      - name: Run benchmark
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p bench
+          openleads bench --no-cache --json bench/latest.json --markdown BENCHMARK.md
+      - name: Commit scoreboard
+        run: |
+          git config user.name "openleads-bench"
+          git config user.email "openleads-bench@users.noreply.github.com"
+          git add BENCHMARK.md bench/latest.json
+          git diff --cached --quiet || git commit -m "bench: nightly live benchmark [skip ci]"
+          git push || echo "::notice::scoreboard not pushed (branch protected?)"

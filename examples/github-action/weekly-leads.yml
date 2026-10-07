@@ -1,0 +1,22 @@
+# Copy to .github/workflows/weekly-leads.yml in your own repo.
+# Every Monday it finds fresh leads and attaches them to the run as a download.
+name: Weekly leads
+on:
+  schedule:
+    - cron: "0 13 * * 1"     # Mondays 13:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  leads:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Samyrrrrrr990/openleads@v4.5.0
+        id: leads
+        with:
+          query: marketing agencies in Miami
+          count: 50
+          output: leads.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: leads
+          path: ${{ steps.leads.outputs.file }}

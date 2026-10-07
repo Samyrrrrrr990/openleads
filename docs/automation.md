@@ -35,16 +35,18 @@ Catch-all guesses are deliberately kept below that line.
 
 ## On-device scheduling
 
-Install a daily drip that runs unattended on your own machine:
+Give a recipe a schedule and arm your machine once:
 
 ```bash
-openleads schedule --at 09:00      # install (launchd on macOS, crontab on Linux)
-openleads schedule status          # is it installed?
-openleads schedule off             # remove it
+openleads recipe add miami "agencies in Miami" --every "weekdays 9am" --send
+openleads schedule on              # launchd (macOS), cron (Linux), Task Scheduler (Windows)
+openleads schedule status          # is it installed, and what runs next?
+openleads runs                     # what ran, how long it took, what failed
 ```
 
-Each day at the chosen time, OpenLeads runs any **due scheduled campaigns** and sends
-any **sequence follow-ups** that have come due — always within your warmup/daily cap.
+The agent wakes every 15 minutes and runs whatever is due: recipes, watchers and
+**sequence follow-ups**, always within your warmup/daily cap. Schedules, run history
+and failure alerts are covered in [Timed runs](timed-runs.md).
 Run a cycle by hand anytime with:
 
 ```bash

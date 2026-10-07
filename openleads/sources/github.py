@@ -31,6 +31,14 @@ SOCIAL_HOSTS = {
     "patreon.com", "medium.com", "substack.com", "wordpress.com", "blogspot.com",
     "dev.to", "hashnode.com", "hashnode.dev", "github.io", "github.com",
     "gitlab.com", "bit.ly", "linktr.ee", "notion.site", "about.me", "gravatar.com",
+    # Shared hosts: the domain belongs to the platform, not the person.
+    "fosstodon.org", "mastodon.social", "hachyderm.io", "mas.to", "bsky.app",
+    "bsky.social", "threads.net", "vercel.app", "netlify.app", "pages.dev",
+    "herokuapp.com", "gitbook.io", "readthedocs.io", "itch.io", "behance.net",
+    "dribbble.com", "codepen.io", "carrd.co", "wixsite.com", "squarespace.com",
+    "keybase.io", "stackoverflow.com", "kaggle.com", "huggingface.co", "orcid.org",
+    "google.com", "sites.google.com", "tumblr.com", "ko-fi.com", "buymeacoffee.com",
+    "polywork.com", "read.cv", "bento.me", "beacons.ai", "calendly.com",
 }
 
 # Words that betray a non-person (topic/list/org) account.

@@ -18,7 +18,7 @@ source or sharpens the email engine. This doc keeps contributions smooth.
 git clone https://github.com/Samyrrrrrr990/openleads.git
 cd openleads
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,campaign]"
+pip install -e ".[dev,all]"
 pytest          # run tests
 ruff check .    # lint
 ```
@@ -26,7 +26,7 @@ ruff check .    # lint
 The lead engine runs with zero install:
 
 ```bash
-python3 lead_engine.py --count 5 --no-write
+openleads find "dentists in Austin" -n 5
 ```
 
 ## Ways to contribute
@@ -49,6 +49,18 @@ python3 lead_engine.py --count 5 --no-write
 ## Commit style
 
 Conventional-ish is appreciated but not enforced: `feat:`, `fix:`, `docs:`, `refactor:`.
+
+## License of contributions
+
+OpenLeads is AGPL-3.0-or-later with a commercial license option (see
+[COMMERCIAL-LICENSE.md](./COMMERCIAL-LICENSE.md)). By opening a pull request you agree
+that:
+
+1. your contribution is licensed under the AGPL-3.0-or-later, and
+2. Samyar Shafiee may also distribute it under the OpenLeads commercial license.
+
+You keep the copyright to your work. If you can't agree to this (for example, your
+employer owns your code), say so in the PR and we'll sort it out.
 
 ## Reporting bugs / ideas
 

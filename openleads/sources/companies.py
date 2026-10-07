@@ -25,7 +25,7 @@ from openleads.sources.base import Source
 WD_SEARCH = "https://www.wikidata.org/w/api.php"
 WD_SPARQL = "https://query.wikidata.org/sparql"
 # Wikidata asks for a descriptive UA with contact/project info.
-_UA = {"User-Agent": "openleads/4.0 (https://github.com/Samyrrrrrr990/openleads)",
+_UA = {"User-Agent": "openleads/4.5 (https://github.com/Samyrrrrrr990/openleads)",
        "Accept": "application/sparql-results+json"}
 
 

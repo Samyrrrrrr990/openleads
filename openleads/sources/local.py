@@ -22,14 +22,21 @@ import urllib.parse
 from typing import Iterator
 
 from openleads._http import get_json
-from openleads.discover.geo import resolve_place
+from openleads.discover.geo import resolve_place, search_pois
 from openleads.emails.permute import domain_of, is_role_account
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
 
 OVERPASS = "https://overpass-api.de/api/interpreter"
+# The main Overpass instance is often overloaded (HTTP 504/429). A public mirror
+# runs the same API, so a failed query falls through to it, then to Nominatim.
+# Two tries keeps the worst case under a minute.
+OVERPASS_MIRRORS = (
+    OVERPASS,
+    "https://overpass.private.coffee/api/interpreter",
+)
 # Overpass rejects browser-like User-Agents (HTTP 406); send an identifying app UA.
-_UA = {"User-Agent": "openleads/4.0 (+https://github.com/Samyrrrrrr990/openleads)"}
+_UA = {"User-Agent": "openleads/4.5 (+https://github.com/Samyrrrrrr990/openleads)"}
 
 # Keyword → OSM tag selectors. First matching keyword wins; each maps to one or
 # more (key, value) tag filters OR'd together in the Overpass query. Ordered so
@@ -43,7 +50,9 @@ CATEGORY_TAGS: list[tuple[tuple[str, ...], list[tuple[str, str]]]] = [
      [("office", "it"), ("office", "company"), ("office", "telecommunication")]),
     (("dentist", "dental", "orthodont"),
      [("amenity", "dentist"), ("healthcare", "dentist")]),
-    (("doctor", "physician", "clinic", "medical", "gp", "family medicine"),
+    (("doctor", "physician", "clinic", "medical", "gp", "family medicine", "pediatric",
+      "dermatolog", "cardiolog", "chiropract", "physiotherap", "physical therap",
+      "optometr", "therapist", "psychiatr", "psycholog", "surgeon"),
      [("amenity", "doctors"), ("healthcare", "doctor"), ("amenity", "clinic"),
       ("healthcare", "clinic")]),
     (("veterinar", "vet "),
@@ -107,6 +116,27 @@ def category_selectors(term: str) -> list[tuple[str, str]]:
     return _FALLBACK_SELECTORS
 
 
+def category_term(query: Query) -> str:
+    """The free text that names the business category for ``query``.
+
+    The intent parser strips vertical trigger words ("dentists") out of
+    ``query.keyword``, so "dentists in Austin" arrives with no keyword at all. Fall
+    back to the original text (minus the place) so the category still maps to the
+    right OSM tags instead of the generic "any business" fallback.
+    """
+    for term in (query.keyword, query.industry):
+        if term and category_selectors(term) is not _FALLBACK_SELECTORS:
+            return term.strip()
+    text = (query.text or "").strip()
+    if text:
+        if query.location:
+            text = re.sub(re.escape(query.location), " ", text, flags=re.I)
+        text = re.sub(r"\b(?:in|near|around)\s*$", " ", text.strip(), flags=re.I).strip()
+        if category_selectors(text) is not _FALLBACK_SELECTORS:
+            return text
+    return (query.keyword or query.industry or "").strip()
+
+
 def _name_filter(term: str) -> str:
     """A leftover free-text term to match against business names, or '' if none."""
     words = [w for w in re.findall(r"[a-z0-9&'-]+", (term or "").lower())
@@ -135,7 +165,7 @@ def build_overpass_query(selectors, bbox_clause: str, name_filter: str = "",
             parts.append(f'  {typ}{tag}{name_clause}["contact:website"]{bbox_clause};')
             parts.append(f'  {typ}{tag}{name_clause}["contact:email"]{bbox_clause};')
     body = "\n".join(parts)
-    return f"[out:json][timeout:25];\n(\n{body}\n);\nout tags center {limit};"
+    return f"[out:json][timeout:20];\n(\n{body}\n);\nout tags center {limit};"
 
 
 def _tag(tags: dict, *keys: str) -> str:
@@ -192,6 +222,18 @@ def extract_businesses(overpass_json: dict) -> list[Entity]:
     return out
 
 
+def run_overpass(ql: str, cache=None, mirrors=OVERPASS_MIRRORS, timeout: int = 25):
+    """Run an Overpass QL query, falling through the public mirrors on failure."""
+    qs = urllib.parse.urlencode({"data": ql})
+    for base in mirrors:
+        data = get_json(f"{base}?{qs}", headers=_UA, cache=cache, ttl_ns="dataset",
+                        timeout=timeout)
+        remark = str((data or {}).get("remark", "")).lower() if isinstance(data, dict) else ""
+        if isinstance(data, dict) and "elements" in data and "error" not in remark:
+            return data
+    return None
+
+
 class LocalSource(Source):
     name = "local"
     kind = "company"
@@ -201,7 +243,7 @@ class LocalSource(Source):
 
     def search(self, query: Query) -> Iterator[Entity]:
         place = (query.location or "").strip()
-        term = (query.keyword or query.industry or "").strip()
+        term = category_term(query)
         # If no explicit location, try to peel a trailing place off the term
         # ("agencies in Miami" → place=Miami, term=agencies).
         if not place and term:
@@ -218,8 +260,15 @@ class LocalSource(Source):
         name_filter = _name_filter(term) if selectors is _FALLBACK_SELECTORS else ""
         limit = max(query.count * 3, 30)
         ql = build_overpass_query(selectors, bbox.as_overpass(), name_filter, limit)
-        url = f"{OVERPASS}?{urllib.parse.urlencode({'data': ql})}"
-        data = get_json(url, headers=_UA, cache=self.cache, ttl_ns="dataset", timeout=40)
+        data = run_overpass(ql, cache=self.cache)
+        if data is None:
+            # Every Overpass instance failed (they're often overloaded). Nominatim
+            # returns fewer businesses, but it answers.
+            elements = []
+            for key, value in selectors:
+                if value != "*":
+                    elements += search_pois(key, value, place, cache=self.cache)
+            data = {"elements": elements}
         for ent in extract_businesses(data or {}):
             if not ent.extra.get("city") and place:
                 ent.extra["city"] = place.split(",")[0].strip()

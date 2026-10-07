@@ -90,6 +90,14 @@ def _is_weekday(dt: datetime) -> bool:
     return dt.weekday() < 5   # Mon-Fri
 
 
+def in_send_window(now: datetime, policy: SendPolicy | None = None) -> bool:
+    """True if ``now`` (sender's local time) is inside the policy's send windows."""
+    policy = policy or SendPolicy()
+    if policy.weekdays_only and not _is_weekday(now):
+        return False
+    return any(start <= now.hour < end for start, end in policy.windows)
+
+
 def next_slot(after: datetime, policy: SendPolicy) -> datetime:
     """The first acceptable local-time instant at/after ``after`` (window + weekday).
 

@@ -1,7 +1,7 @@
 name: Release
 
 # Tag a release to publish everywhere:
-#   git tag v3.0.0 && git push origin v3.0.0
+#   git tag v4.5.0 && git push origin v4.5.0
 #
 # Publishing is gated on secrets/OIDC being configured:
 #   • PyPI  — Trusted Publishing (recommended, no token) OR a PYPI_API_TOKEN secret.
@@ -27,6 +27,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Check versions agree (tag, pyproject, package, npm)
+        run: |
+          python - <<'PY'
+          import json, os, re, sys
+          py = re.search(r'^version = "([^"]+)"', open("pyproject.toml").read(), re.M).group(1)
+          pkg = re.search(r'__version__ = "([^"]+)"', open("openleads/__init__.py").read()).group(1)
+          npm = json.load(open("npm/package.json"))["version"]
+          ref = os.environ.get("GITHUB_REF", "")
+          tag = ref.rsplit("/v", 1)[1] if ref.startswith("refs/tags/v") else py
+          print(f"tag={tag} pyproject={py} package={pkg} npm={npm}")
+          sys.exit(0 if len({tag, py, pkg, npm}) == 1 else "version mismatch")
+          PY
       - name: Build distributions
         run: |
           python -m pip install --upgrade pip build twine
@@ -100,6 +112,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      id-token: write   # npm provenance
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
@@ -108,9 +123,11 @@ jobs:
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
+      - name: Bundle the license with the npm package
+        run: cp LICENSE npm/LICENSE
       - name: Publish npm wrapper
         if: ${{ env.NPM_TOKEN != '' }}
         working-directory: npm
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}

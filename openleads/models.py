@@ -65,7 +65,21 @@ CSV_FIELDS = [
     "Email Tier",
     # v3.5 addition: calibrated deliverability likelihood (0–100), Hunter-style.
     "Confidence %",
+    # v4.5 addition: how we know the address — found | pattern | guessed | none.
+    "Email Evidence",
 ]
+
+
+def evidence_of(email: str, signals: dict | None) -> str:
+    """Classify the evidence behind ``email`` (see :attr:`Lead.evidence`)."""
+    s = signals or {}
+    if not email:
+        return "none"
+    if s.get("groundtruth_exact") or (s.get("smtp_verified") and not s.get("catch_all")):
+        return "found"
+    if s.get("observed_pattern"):
+        return "pattern"
+    return "guessed"
 
 
 @dataclass
@@ -96,6 +110,17 @@ class Lead:
     def domain(self) -> str:
         return self.email.split("@", 1)[1].lower() if "@" in self.email else ""
 
+    @property
+    def evidence(self) -> str:
+        """How the address is known, in plain words.
+
+        ``found``   — seen published, or confirmed by the mail server.
+        ``pattern`` — built from a pattern we saw a real address use at this domain.
+        ``guessed`` — a common pattern with nothing confirming it.
+        ``none``    — no address.
+        """
+        return evidence_of(self.email, self.signals)
+
     def to_csv_row(self) -> dict:
         """Map to the exact CSV header schema (``CSV_FIELDS``)."""
         return {
@@ -116,6 +141,7 @@ class Lead:
             "Vertical": self.vertical,
             "Email Tier": self.tier,
             "Confidence %": self.confidence_pct,
+            "Email Evidence": self.evidence,
         }
 
     def to_dict(self) -> dict:
@@ -140,6 +166,7 @@ class Lead:
             "reasons": self.reasons,
             "signals": self.signals,
             "confidence_pct": self.confidence_pct,
+            "evidence": self.evidence,
         }
 
 
@@ -162,6 +189,7 @@ class Query:
     out: str | None = None
     max_companies: int = 400
     use_cache: bool = True
+    budget: int = 90                # wall-clock seconds before a search stops and returns
 
     def replace(self, **changes) -> "Query":
         """Return a copy with the given fields changed (for chat refinement)."""

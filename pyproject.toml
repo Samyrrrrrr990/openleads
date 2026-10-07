@@ -4,23 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openleads"
-version = "4.0.1"
-description = "Free, open-source Apollo alternative: one search box federates across free public sources (local businesses via OpenStreetMap, startups, companies, developers), finds the people, verifies emails deliverably, and automates outreach (recipes, sequences, exports) — plus bring-your-own-list enrichment. Local-first, keyless, $0."
+version = "4.5.0"
+description = "Find B2B leads with verified emails from free public sources, no API keys: one search box (\"dentists in Austin\", \"fintech founders\") returns real people, honest email evidence, timed outreach automation, and an MCP server for AI tools. Local-first, $0."
 readme = "README.md"
 requires-python = ">=3.8"
-license = { text = "PolyForm-Noncommercial-1.0.0" }
-authors = [{ name = "Samyar Shafiee" }]
+license = { text = "AGPL-3.0-or-later" }
+authors = [{ name = "Samyar Shafiee", email = "samyar.shafiee2009@gmail.com" }]
 keywords = [
   "lead-generation", "email-finder", "apollo-alternative", "sales", "cli",
   "prospecting", "cold-email", "smtp-verification", "deliverability", "yc",
   "founders", "osint", "doctors", "researchers", "developers", "data-enrichment",
-  "email-deliverability", "cold-outreach", "local-first",
+  "email-deliverability", "cold-outreach", "local-first", "mcp", "mcp-server",
+  "hunter-alternative", "openstreetmap",
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
   "Topic :: Office/Business",
   "Topic :: Communications :: Email",
   "Operating System :: OS Independent",
@@ -55,6 +57,8 @@ py-modules = ["lead_engine", "automation"]
 [tool.setuptools.package-data]
 # Ship the pre-built local dashboard (no Node/build needed by end users).
 "openleads.web" = ["static/*", "static/**/*"]
+# Given-name list for the person-name quality gate.
+"openleads.discover" = ["given_names.txt"]
 
 [tool.ruff]
 line-length = 110

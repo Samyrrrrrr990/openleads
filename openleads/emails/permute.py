@@ -9,6 +9,7 @@ so a learned pattern always round-trips to a candidate we can build.
 from __future__ import annotations
 
 import re
+import unicodedata
 
 # Local-part templates, ordered by real-world prevalence at small/mid companies.
 # Tokens: {first} {last} {f}=first initial {l}=last initial
@@ -93,9 +94,20 @@ def local_tokens(local_part: str) -> list[str]:
     return [p for p in re.split(r"[._-]+", local_part or "") if p.isalpha()]
 
 
+_TRANSLIT = str.maketrans({"ß": "ss", "æ": "ae", "ø": "o", "œ": "oe", "đ": "d", "ł": "l",
+                           "þ": "th", "ı": "i"})
+
+
+def ascii_fold(text: str) -> str:
+    """'Jakubův' → 'jakubuv', 'Müller' → 'muller', 'Łukasz' → 'lukasz' (lowercase)."""
+    t = (text or "").lower().translate(_TRANSLIT)
+    t = unicodedata.normalize("NFKD", t)
+    return "".join(c for c in t if not unicodedata.combining(c))
+
+
 def name_parts(full_name: str) -> tuple[str | None, str | None]:
     """Split a display name into ASCII-folded (first, last) local-part tokens."""
-    toks = [re.sub(r"[^a-z]", "", t.lower()) for t in (full_name or "").split()]
+    toks = [re.sub(r"[^a-z]", "", ascii_fold(t)) for t in (full_name or "").split()]
     toks = [t for t in toks if t]
     if not toks:
         return None, None

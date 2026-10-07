@@ -40,3 +40,30 @@ jobs:
           python -c "import openleads; print('openleads', openleads.__version__, 'imports with stdlib only')"
           openleads --version
           openleads sources
+
+      - name: MCP handshake
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+                        '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | openleads mcp | python -c "import sys,json; r=[json.loads(l) for l in sys.stdin]; assert r[1]['result']['tools'], r; print('mcp ok')"
+
+  smoke:
+    name: smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: python -m pip install .
+      - run: openleads --version
+      - run: openleads sources
+      - run: python -c "from openleads.automate import scheduler as s; print(s.schtasks_args(None)); print(s.cron_line(None))"
+      - run: node --check npm/bin/openleads.js

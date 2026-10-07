@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Use it from Claude, Cursor, or any AI tool (MCP) · OpenLeads docs</title>
+<meta name="description" content="OpenLeads documentation — Use it from Claude, Cursor, or any AI tool (MCP)." />
+<meta name="theme-color" content="#08080a" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body class="docs">
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">open<b>leads</b></span></a>
+  <nav class="nav__links">
+    <a href="../index.html#flow">How it works</a>
+    <a href="../index.html#deliver">Deliverability</a>
+    <a href="index.html" class="is-active">Docs</a>
+    <a href="../index.html#compare">Compare</a>
+  </nav>
+  <div class="nav__cta">
+    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
+    <a class="solid-btn" href="../index.html#install">Install</a>
+  </div>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
+</header>
+
+<div class="docs__shell">
+  <nav class="dsb" aria-label="Docs">
+<p class="dsb__sec">Getting started</p>
+<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="finding.html">Finding & the federation</a>
+<a class="dsb__link" href="deliverability.html">Deliverability</a>
+<a class="dsb__link" href="sending.html">Sending</a>
+<a class="dsb__link" href="automation.html">Automation & assistant</a>
+<a class="dsb__link" href="timed-runs.html">Timed runs</a>
+<a class="dsb__link is-active" href="mcp.html">Claude, Cursor & MCP</a>
+<a class="dsb__link" href="web.html">Web dashboard</a>
+<a class="dsb__link" href="sources.html">Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html">Architecture</a>
+<a class="dsb__link" href="how-it-works.html">Email engine</a>
+<a class="dsb__link" href="responsible-use.html">Responsible use</a>
+<a class="dsb__link" href="licensing.html">Licensing</a>
+</nav>
+  <main class="docs__main">
+    <article class="prose">
+      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Use it from Claude, Cursor, or any AI tool (MCP)</div>
+      <h1 id="use-it-from-claude-cursor-or-any-ai-tool">Use it from Claude, Cursor, or any AI tool (MCP)</h1>
+<p>OpenLeads ships a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server, so an AI assistant can find and verify leads for you mid-conversation:</p>
+<blockquote>"Find 10 dentists in Austin with emails we can actually send to, and draft a short intro for each."</blockquote>
+<p>It runs locally over stdio, with no extra dependencies and no keys. Searches go from your machine to the same public sources the CLI uses.</p>
+<h2 id="set-it-up" class="anchored"><a class="hlink" href="#set-it-up">#</a>Set it up</h2>
+<p>Install OpenLeads (<code>pip install openleads</code>, or <code>pipx install openleads</code>), then add it to your client.</p>
+<p><strong>Claude Code</strong></p>
+<pre class="code" data-lang="bash"><code>claude mcp add openleads -- openleads mcp</code></pre>
+<p><strong>Claude Desktop</strong> (<code>claude_desktop_config.json</code>), <strong>Cursor</strong> (<code>~/.cursor/mcp.json</code>), <strong>Windsurf</strong>, <strong>Zed</strong> and others use the same shape:</p>
+<pre class="code" data-lang="json"><code>{
+  &quot;mcpServers&quot;: {
+    &quot;openleads&quot;: { &quot;command&quot;: &quot;openleads&quot;, &quot;args&quot;: [&quot;mcp&quot;] }
+  }
+}</code></pre>
+<p>No Python on the PATH? Use the npm wrapper instead: <code>{&quot;command&quot;: &quot;npx&quot;, &quot;args&quot;: [&quot;-y&quot;, &quot;openleads&quot;, &quot;mcp&quot;]}</code>.</p>
+<h2 id="tools" class="anchored"><a class="hlink" href="#tools">#</a>Tools</h2>
+<div class="tablewrap"><table><thead><tr><th>Tool</th><th>What it does</th></tr></thead><tbody><tr><td><code>find_leads</code></td><td>Plain-English search ("fintech founders", "law firms in London"). Returns people and companies with an email, a deliverability tier (<code>safe</code>/<code>risky</code>) and evidence (<code>found</code>, <code>pattern</code>, <code>guessed</code>). Takes <code>count</code>, <code>verified_only</code> and <code>budget_seconds</code>.</td></tr><tr><td><code>find_email</code></td><td>A name plus a company domain gives the most likely address, with evidence.</td></tr><tr><td><code>verify_email</code></td><td>Checks one address: <code>safe</code>, <code>risky</code> or <code>bad</code>, and why.</td></tr><tr><td><code>list_sources</code></td><td>Lists what OpenLeads can search.</td></tr></tbody></table></div>
+<h2 id="what-the-evidence-means" class="anchored"><a class="hlink" href="#what-the-evidence-means">#</a>What the evidence means</h2>
+<p>The model sees the same honesty labels you do:</p>
+<ul><li><strong>found</strong>: the address was published on the web, or the mail server confirmed it.</li><li><strong>pattern</strong>: built from a pattern we saw a real address use at that domain.</li><li><strong>guessed</strong>: a common pattern with nothing confirming it. Don't send these</li></ul>
+<p>without checking.</p>
+<p>Tell your assistant to prefer <code>tier: safe</code> for anything it will email.</p>
+      <nav class="prevnext">
+<a class="pn pn--prev" href="timed-runs.html"><span>← Previous</span><b>Timed runs</b></a>
+<a class="pn pn--next" href="web.html"><span>Next →</span><b>Web dashboard</b></a>
+</nav>
+    </article>
+  </main>
+  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#set-it-up">Set it up</a><a class="toc__l2" href="#tools">Tools</a><a class="toc__l2" href="#what-the-evidence-means">What the evidence means</a></aside>
+</div>
+
+<footer class="footer">
+  <div class="container footer__legal">
+    <span>© 2026 Samyar Shafiee · AGPL-3.0.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+  </div>
+</footer>
+<script src="docs.js"></script>
+</body>
+</html>

@@ -38,12 +38,15 @@
 <a class="dsb__link" href="deliverability.html">Deliverability</a>
 <a class="dsb__link" href="sending.html">Sending</a>
 <a class="dsb__link is-active" href="automation.html">Automation & assistant</a>
+<a class="dsb__link" href="timed-runs.html">Timed runs</a>
+<a class="dsb__link" href="mcp.html">Claude, Cursor & MCP</a>
 <a class="dsb__link" href="web.html">Web dashboard</a>
 <a class="dsb__link" href="sources.html">Add a source</a>
 <p class="dsb__sec">Reference</p>
 <a class="dsb__link" href="architecture.html">Architecture</a>
 <a class="dsb__link" href="how-it-works.html">Email engine</a>
 <a class="dsb__link" href="responsible-use.html">Responsible use</a>
+<a class="dsb__link" href="licensing.html">Licensing</a>
 </nav>
   <main class="docs__main">
     <article class="prose">
@@ -59,11 +62,12 @@
 <h3 id="what-reach-means-for-a-campaign" class="anchored"><a class="hlink" href="#what-reach-means-for-a-campaign">#</a>What "reach" means for a campaign</h3>
 <p>A campaign drafts every <code>safe</code> (deliverable) lead <strong>plus</strong> high-confidence <code>risky</code> ones — those scoring <strong>≥ 55%</strong> on the calibrated likelihood. On the common case where outbound port 25 is blocked, a healthy authenticated corporate domain with a common pattern scores ~62%, so you still get a real, sendable batch instead of an empty list. Catch-all guesses are deliberately kept below that line.</p>
 <h2 id="on-device-scheduling" class="anchored"><a class="hlink" href="#on-device-scheduling">#</a>On-device scheduling</h2>
-<p>Install a daily drip that runs unattended on your own machine:</p>
-<pre class="code" data-lang="bash"><code>openleads schedule --at 09:00      # install (launchd on macOS, crontab on Linux)
-openleads schedule status          # is it installed?
-openleads schedule off             # remove it</code></pre>
-<p>Each day at the chosen time, OpenLeads runs any <strong>due scheduled campaigns</strong> and sends any <strong>sequence follow-ups</strong> that have come due — always within your warmup/daily cap. Run a cycle by hand anytime with:</p>
+<p>Give a recipe a schedule and arm your machine once:</p>
+<pre class="code" data-lang="bash"><code>openleads recipe add miami &quot;agencies in Miami&quot; --every &quot;weekdays 9am&quot; --send
+openleads schedule on              # launchd (macOS), cron (Linux), Task Scheduler (Windows)
+openleads schedule status          # is it installed, and what runs next?
+openleads runs                     # what ran, how long it took, what failed</code></pre>
+<p>The agent wakes every 15 minutes and runs whatever is due: recipes, watchers and <strong>sequence follow-ups</strong>, always within your warmup/daily cap. Schedules, run history and failure alerts are covered in <a href="timed-runs.html">Timed runs</a>. Run a cycle by hand anytime with:</p>
 <pre class="code" data-lang="bash"><code>openleads drip            # dry-run preview
 openleads drip --live     # actually send</code></pre>
 <h3 id="send-time-intelligence" class="anchored"><a class="hlink" href="#send-time-intelligence">#</a>Send-time intelligence</h3>
@@ -81,7 +85,7 @@ openleads drip --live     # actually send</code></pre>
 <p>See <a href="deliverability.html">Deliverability</a> for the sender-side reputation checks, and <a href="sending.html">Sending</a> for mailbox setup.</p>
       <nav class="prevnext">
 <a class="pn pn--prev" href="sending.html"><span>← Previous</span><b>Sending</b></a>
-<a class="pn pn--next" href="web.html"><span>Next →</span><b>Web dashboard</b></a>
+<a class="pn pn--next" href="timed-runs.html"><span>Next →</span><b>Timed runs</b></a>
 </nav>
     </article>
   </main>
@@ -90,7 +94,7 @@ openleads drip --live     # actually send</code></pre>
 
 <footer class="footer">
   <div class="container footer__legal">
-    <span>© 2026 OpenLeads · PolyForm Noncommercial.</span>
+    <span>© 2026 Samyar Shafiee · AGPL-3.0.</span>
     <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
   </div>
 </footer>

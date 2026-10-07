@@ -23,12 +23,14 @@ def list_watchers(db) -> dict:
 
 
 def save_watcher(db, name: str, query: str, sink: str = "csv",
-                 target: str = "", count: int = 25) -> dict:
+                 target: str = "", count: int = 25, schedule: str | None = None) -> dict:
     watchers = list_watchers(db)
     spec = watchers.get(name, {})
     spec.update({"name": name, "query": query, "sink": sink, "target": target,
                  "count": max(1, min(int(count), 500)),
                  "seen": spec.get("seen", [])})
+    if schedule:
+        spec["schedule"] = schedule
     watchers[name] = spec
     db.kv_set(KV_KEY, watchers)
     return spec
@@ -73,6 +75,8 @@ def run_watcher(spec: dict, db=None, cache=None, dry_run: bool = True,
         q, _ = intent.parse(spec.get("query", ""))
         q = q if isinstance(q, Query) else Query()
         q.count = int(spec.get("count", 25))
+        from openleads.automate.recipes import BACKGROUND_BUDGET
+        q.budget = BACKGROUND_BUDGET
         leads = build_leads(q, cache=cache, db=db, on_progress=on_progress)
         seen = set(spec.get("seen", []))
         new, domains = diff_new(leads, seen)

@@ -9,6 +9,7 @@ as rich records.
 """
 from __future__ import annotations
 
+import time
 import urllib.parse
 from typing import Iterator
 
@@ -75,6 +76,43 @@ def parse_authors(data: dict) -> list[Entity]:
     return out
 
 
+def parse_work_authors(data: dict) -> list[Entity]:
+    """Authors of a works response, deduplicated, in citation order (pure/testable).
+
+    OpenAlex's author search matches *names*, so a topic like "machine learning"
+    finds conference titles, not people. Searching works by topic and taking their
+    authors finds the people actually publishing on it.
+    """
+    out: list[Entity] = []
+    seen: set[str] = set()
+    for w in (data or {}).get("results", []) or []:
+        for au in w.get("authorships", []) or []:
+            a = au.get("author") or {}
+            aid = a.get("id") or ""
+            name = (a.get("display_name") or "").strip()
+            if name.count(",") == 1:                      # "Jakubův, Jan" → "Jan Jakubův"
+                last, first = (p.strip() for p in name.split(","))
+                name = f"{first} {last}".strip()
+            if not name or aid in seen:
+                continue
+            seen.add(aid)
+            insts = au.get("institutions") or []
+            inst = insts[0] if insts else {}
+            out.append(Entity(
+                full_name=name,
+                title="Researcher",
+                organization=(inst.get("display_name") or "").strip(),
+                domain="",
+                website="",
+                location=(inst.get("country_code") or "").strip(),
+                links={"orcid": (a.get("orcid") or "").strip(), "openalex": aid},
+                extra={"institution_id": inst.get("id", ""), "vertical": "researchers",
+                       "paper": (w.get("title") or "")[:140]},
+                source="openalex",
+            ))
+    return out
+
+
 class OpenAlexSource(Source):
     name = "openalex"
     kind = "people"
@@ -82,26 +120,53 @@ class OpenAlexSource(Source):
     description = "Scholarly authors via the free OpenAlex catalog; ORCID + institution."
 
     def _institution_homepage(self, inst_id: str) -> str:
-        if not inst_id:
-            return ""
-        data = get_json(f"{inst_id}?mailto={MAILTO}", cache=self.cache, ttl_ns="dataset")
-        return (data or {}).get("homepage_url", "") or ""
+        return self._homepages([inst_id]).get(inst_id, "")
+
+    def _homepages(self, inst_ids) -> dict:
+        """Institution id → homepage URL, via the API in batches of 50.
+
+        Ids look like ``https://openalex.org/I123``; that URL is the website (HTTP
+        403 for scripts), so we query ``api.openalex.org/institutions`` instead.
+        """
+        ids = [i for i in dict.fromkeys(inst_ids) if i]
+        out: dict = {}
+        for start in range(0, len(ids), 50):
+            chunk = ids[start:start + 50]
+            short = "|".join(i.rsplit("/", 1)[-1] for i in chunk)
+            params = {"filter": f"openalex_id:{short}", "per_page": "50",
+                      "select": "id,homepage_url", "mailto": MAILTO}
+            data = get_json(f"{API}/institutions?" + urllib.parse.urlencode(params),
+                            cache=self.cache, ttl_ns="dataset")
+            for inst in (data or {}).get("results", []) or []:
+                out[inst.get("id", "")] = inst.get("homepage_url") or ""
+        return out
 
     def search(self, query: Query) -> Iterator[Entity]:
         term = query.keyword or query.industry or ""
-        # Pull a wider set, then keep only real people with an institution domain
-        # (something we can actually email at). Quality over quantity.
-        params = {"per_page": str(min(max(query.count * 3, 25), 100)), "mailto": MAILTO}
         if term:
-            params["search"] = term
-        url = f"{API}/authors?" + urllib.parse.urlencode(params)
-        data = get_json(url, cache=self.cache, ttl_ns="dataset")
-        for ent in parse_authors(data or {}):
+            # Topic → the authors of recent, well-cited papers on it.
+            since = f"{time.gmtime().tm_year - 4}-01-01"
+            params = {"search": term, "per_page": "50", "mailto": MAILTO,
+                      "filter": f"from_publication_date:{since}",
+                      "sort": "cited_by_count:desc", "select": "title,authorships"}
+            data = get_json(f"{API}/works?" + urllib.parse.urlencode(params),
+                            cache=self.cache, ttl_ns="dataset")
+            candidates = parse_work_authors(data or {})
+        else:
+            params = {"per_page": str(min(max(query.count * 3, 25), 100)), "mailto": MAILTO}
+            data = get_json(f"{API}/authors?" + urllib.parse.urlencode(params),
+                            cache=self.cache, ttl_ns="dataset")
+            candidates = parse_authors(data or {})
+        candidates = [e for e in candidates if _looks_like_person(e.full_name)]
+        homes = self._homepages(e.extra.get("institution_id") for e in candidates
+                                if not e.domain)
+        for ent in candidates:
             if not _looks_like_person(ent.full_name):
                 continue  # drop concept/topic 'authors' from topic searches
             # Enrich domain from the institution homepage if we don't have one.
-            if not ent.domain and ent.extra.get("institution_id"):
-                home = self._institution_homepage(ent.extra["institution_id"])
+            iid = ent.extra.get("institution_id")
+            if not ent.domain and iid:
+                home = homes.get(iid, "")
                 if home:
                     ent.website = home
                     ent.domain = domain_of(home) or ""

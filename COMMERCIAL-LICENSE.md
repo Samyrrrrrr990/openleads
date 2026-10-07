@@ -1,35 +1,54 @@
-# Commercial Licensing
+# Licensing
 
-OpenLeads is free under the [PolyForm Noncommercial License 1.0.0](./LICENSE) for
-**noncommercial** use: personal projects, research, education, and nonprofit
-organizations.
+OpenLeads is **open source** under the [GNU Affero General Public License v3.0 or
+later](./LICENSE) (AGPL-3.0-or-later), with a **commercial license** available for
+teams that can't meet the AGPL's terms.
 
-If you want to use OpenLeads **commercially** — inside a for-profit company, a paid
-product, a sales/agency service, or any revenue-generating workflow — you need a
-separate commercial license.
+Copyright © 2026 Samyar Shafiee.
 
-Commercial licenses are friendly and cheap (especially for startups). They exist so
-the project can stay maintained and independent.
+## The short version
 
-## How to get one
+| What you're doing | What you need |
+| --- | --- |
+| Running OpenLeads yourself to find leads and send email, personal or business | **Nothing.** The AGPL covers it, free. |
+| Using it at your company, agency, or startup, internally | **Nothing.** Free under the AGPL. |
+| Modifying it for your own use | **Nothing**, as long as you don't distribute it or offer it to others over a network. |
+| Shipping a modified version, or letting other people use it over a network (a hosted tool, SaaS, an API) | Publish your full source under the AGPL, **or** get a commercial license. |
+| Embedding OpenLeads in a closed-source product | **Commercial license.** |
 
-Email **info@joinresearch.ca** with:
+The leads you find and the emails you write are yours. The AGPL applies to the
+OpenLeads code, not to your data or output.
+
+## Why AGPL?
+
+It's a real, OSI-approved open-source license: you can read, run, change, and share
+the code. It also asks that anyone who builds a hosted service on top of OpenLeads
+shares their improvements back. That keeps it free for everyone and stops a closed
+competitor from taking the work without giving anything back.
+
+## Commercial license
+
+If you want to embed OpenLeads in a proprietary product, or run a modified version
+as a service without publishing your source, a commercial license removes the AGPL's
+obligations.
+
+Email **samyar.shafiee2009@gmail.com** with:
 
 - Your company name and website
-- A one-line description of how you plan to use OpenLeads
-- Rough scale (leads/month)
+- A sentence on how you'll use OpenLeads
+- Rough scale (users, or leads per month)
 
-We'll send back simple terms. Most small teams qualify for a nominal or waived fee.
+You'll get simple terms back. Small teams and early startups usually get a nominal fee.
 
-## What counts as commercial?
+## Earlier versions
 
-| Use case | License |
-| --- | --- |
-| Personal side project, learning | Free (Noncommercial) |
-| Academic / research | Free (Noncommercial) |
-| Registered nonprofit or school | Free (Noncommercial) |
-| Internal tool at a for-profit company | Commercial |
-| Part of a paid SaaS / agency offering | Commercial |
-| Reselling leads or the tool itself | Commercial |
+Versions up to and including 4.0.1 were released under the PolyForm Noncommercial
+License 1.0.0. Those releases keep that license. Every version from 4.5.0 on is
+AGPL-3.0-or-later.
 
-When in doubt, just ask. We're reasonable.
+## Contributions
+
+By opening a pull request you agree that your contribution is licensed under the
+AGPL-3.0-or-later and that Samyar Shafiee may also include it in commercially
+licensed versions of OpenLeads. This is what makes the dual license possible. See
+[CONTRIBUTING.md](./CONTRIBUTING.md).
