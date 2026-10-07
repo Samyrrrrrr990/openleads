@@ -1,15 +1,19 @@
-/* OpenLeads marketing site — vanilla, dependency-free. */
+/* OpenLeads marketing site. Vanilla, dependency-free. */
 "use strict";
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/* ---- nav shadow on scroll ---- */
+/* ---- nav hairline once the page has scrolled (sentinel, no scroll listener) ---- */
 const nav = document.getElementById("nav");
-const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 12);
-onScroll();
-window.addEventListener("scroll", onScroll, { passive: true });
+if (nav && "IntersectionObserver" in window) {
+  const sentinel = document.createElement("div");
+  sentinel.style.cssText = "position:absolute;top:0;left:0;width:1px;height:12px;pointer-events:none";
+  document.body.prepend(sentinel);
+  new IntersectionObserver(([e]) => nav.classList.toggle("scrolled", !e.isIntersecting)).observe(sentinel);
+}
 
-/* ---- copy-to-clipboard ---- */
+/* ---- copy to clipboard ---- */
 const toast = document.getElementById("toast");
 let toastTimer;
 function showToast(msg) {
@@ -19,127 +23,214 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
 }
 document.querySelectorAll("[data-copy]").forEach((btn) => {
+  let t;
   btn.addEventListener("click", async () => {
     const text = btn.getAttribute("data-copy");
     try {
       await navigator.clipboard.writeText(text);
-      showToast("copied  ·  " + text);
+      btn.classList.add("copied");
+      clearTimeout(t);
+      t = setTimeout(() => btn.classList.remove("copied"), 1600);
+      showToast("Copied to clipboard");
     } catch (_) {
       showToast(text);
     }
   });
 });
 
-/* ---- scroll reveals ---- */
+/* ---- scroll reveals: things entering together cascade by 60ms ---- */
 const reveals = document.querySelectorAll(".reveal");
 if (reduceMotion || !("IntersectionObserver" in window)) {
   reveals.forEach((r) => r.classList.add("in"));
 } else {
   const io = new IntersectionObserver((entries) => {
-    entries.forEach((e, i) => {
-      if (e.isIntersecting) {
-        const els = Array.from(e.target.parentElement.querySelectorAll(".reveal"));
-        const idx = els.indexOf(e.target);
-        e.target.style.transitionDelay = Math.min(idx, 5) * 70 + "ms";
-        e.target.classList.add("in");
-        io.unobserve(e.target);
-      }
+    let k = 0;
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      e.target.style.transitionDelay = Math.min(k++, 5) * 60 + "ms";
+      e.target.classList.add("in");
+      io.unobserve(e.target);
     });
-  }, { threshold: 0.14, rootMargin: "0px 0px -8% 0px" });
+  }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
   reveals.forEach((r) => io.observe(r));
 }
 
-/* ---- flow line draws when the flow section enters ---- */
-const flowLine = document.getElementById("flow-line");
-if (flowLine) {
-  if (reduceMotion) { flowLine.style.width = "100%"; }
-  else {
-    const fio = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) { flowLine.style.width = "100%"; fio.disconnect(); }
-      });
-    }, { threshold: 0.4 });
-    fio.observe(document.getElementById("flow"));
+/* ---- install segmented control (tabs) ---- */
+const seg = document.querySelector(".seg");
+if (seg) {
+  const tabs = Array.from(seg.querySelectorAll('[role="tab"]'));
+  const select = (i, focus) => {
+    seg.dataset.active = String(i);
+    tabs.forEach((tab, j) => {
+      const on = i === j;
+      tab.setAttribute("aria-selected", String(on));
+      tab.tabIndex = on ? 0 : -1;
+      const panel = document.getElementById(tab.getAttribute("aria-controls"));
+      panel.hidden = !on;
+      if (on) { panel.classList.remove("is-in"); void panel.offsetWidth; panel.classList.add("is-in"); }
+    });
+    if (focus) tabs[i].focus();
+  };
+  tabs.forEach((tab, i) => {
+    tab.addEventListener("click", () => select(i));
+    tab.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        select((i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length, true);
+      }
+    });
+  });
+}
+
+/* ---- benchmark data: live from the repo, with the last snapshot as fallback ---- */
+const BENCH_URL = "https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/bench/latest.json";
+const SNAPSHOT = {
+  date: "2026-10-07",
+  count_per_query: 10,
+  totals: { queries: 12, queries_with_results: 12, fill_rate: 0.842, evidence_rate: 0.317, junk_rate: 0 },
+  queries: [
+    ["dentists in Austin", 10, 6, 4, 0, 6, 67.7],
+    ["software companies in Berlin", 10, 3, 7, 0, 3, 57.0],
+    ["real estate agents in Chicago", 10, 3, 9, 0, 1, 53.6],
+    ["law firms in London", 10, 8, 2, 0, 8, 66.0],
+    ["fintech founders", 10, 9, 1, 0, 9, 8.7],
+    ["marketing agencies in Miami", 4, 3, 2, 0, 2, 38.5],
+    ["accountants in Toronto", 10, 7, 3, 0, 7, 63.0],
+    ["rust developers in Berlin", 10, 10, 0, 0, 10, 5.4],
+    ["gyms in Sydney", 4, 1, 3, 0, 1, 67.3],
+    ["emails at stripe.com", 3, 3, 1, 0, 2, 2.9],
+  ].map(([query, leads, people, found, pattern, guessed, seconds]) =>
+    ({ query, leads, people, found, pattern, guessed, seconds })),
+};
+
+async function loadBench() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(BENCH_URL, { signal: ctrl.signal, cache: "no-cache" });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(res.status);
+    const d = await res.json();
+    const qs = (d.queries || []).filter((q) => !q.error && q.leads > 0);
+    if (!d.totals || !qs.length) throw new Error("empty");
+    // Lead with the searches that show the full range: found, guessed, and gaps.
+    qs.sort((a, b) => (b.found > 0 && b.found < b.leads) - (a.found > 0 && a.found < a.leads));
+    return { ...d, queries: qs };
+  } catch (_) {
+    return SNAPSHOT;
   }
 }
 
-/* ---- animated terminal demo ---- */
-const term = document.getElementById("term-body");
-const SCRIPT = [
-  { t: "cmd", s: 'openleads find "marketing agencies in Miami"' },
-  { t: "gap" },
-  { t: "dim", s: "[engine] federated search · local …" },
-  { t: "lead", tier: "safe", email: "hello@brightspark.com", who: "Bright Spark Marketing", sc: 98 },
-  { t: "lead", tier: "risky", email: "jane.lee@brightspark.com", who: "Jane Lee · Founder & CEO", sc: 62 },
-  { t: "lead", tier: "safe", email: "crystalei@marketkarma.com", who: "Crystalei D. · Head of Growth", sc: 98 },
-  { t: "lead", tier: "safe", email: "team@pixelnorth.co", who: "PixelNorth", sc: 95 },
-  { t: "dim", s: "[engine] done — real businesses, their people, verified emails" },
-  { t: "gap" },
-  { t: "cmd", s: 'openleads run "50 fintech founders, verified only" --live' },
-  { t: "dim", s: "[engine] federated search · yc · hn …" },
-  { t: "lead", tier: "safe", email: "ada@acme.ai", who: "Ada N. · Founder", sc: 96 },
-  { t: "dim", s: "[outbox] sender grade A · warmup day 6 · 40/day" },
-  { t: "send", email: "ada@acme.ai" },
-  { t: "done", s: "→ 40 sent · 1 held (cap) · 0 bounced" },
-];
-
-function lineHTML(step) {
-  if (step.t === "cmd")
-    return `<span class="l"><span class="t-prompt">openleads&gt;</span> <span class="t-cmd">${step.rendered}</span><span class="caret"></span></span>`;
-  if (step.t === "dim") return `<span class="l t-dim">${step.s}</span>`;
-  if (step.t === "ok") return `<span class="l t-ok">${step.s}</span>`;
-  if (step.t === "lead") {
-    const tag = step.tier === "safe" ? `<span class="t-safe">safe</span>`
-      : step.tier === "risky" ? `<span class="t-dim">risky</span>` : `<span class="t-red">bad</span>`;
-    return `<span class="l">  ${tag}  <span class="t-ok">${step.email}</span> <span class="t-dim">· ${step.who} · ${step.sc}</span></span>`;
-  }
-  if (step.t === "send")
-    return `<span class="l">  <span class="t-ok">sent</span> → ${step.email}</span>`;
-  if (step.t === "done") return `<span class="l t-safe">${step.s}</span>`;
-  return `<span class="l"> </span>`;
+function fmtDate(iso) {
+  const d = new Date(iso + "T12:00:00Z");
+  return isNaN(d) ? iso : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }
 
-function renderStatic() {
-  const cmd = SCRIPT[0]; cmd.rendered = cmd.s;
-  term.innerHTML = SCRIPT.map((s) => {
-    if (s.t === "cmd") return `<span class="l"><span class="t-prompt">openleads&gt;</span> <span class="t-cmd">${s.s}</span></span>`;
-    return lineHTML(s);
-  }).join("");
+function fillStats(d) {
+  const t = d.totals;
+  const set = (k, v) => document.querySelectorAll(`[data-bench="${k}"]`).forEach((el) => { el.textContent = v; });
+  set("date", fmtDate(d.date));
+  set("ok", t.queries_with_results);
+  set("queries", t.queries);
+  set("fill", Math.round(t.fill_rate * 100));
+  set("evidence", Math.round(t.evidence_rate * 100));
+  set("junk", Math.round(t.junk_rate * 100));
 }
 
-async function playTerminal() {
-  if (!term) return;
-  term.innerHTML = "";
-  const cmd = SCRIPT[0];
-  // typewriter the command
-  cmd.rendered = "";
-  let html = lineHTML(cmd);
-  term.innerHTML = html;
-  const target = cmd.s;
-  for (let i = 0; i <= target.length; i++) {
-    cmd.rendered = target.slice(0, i);
-    term.innerHTML = lineHTML(cmd);
-    await sleep(22 + Math.random() * 26);
+/* ---- spotlight: types each benchmark search, then fills one tile per requested lead ---- */
+const qEl = document.getElementById("spot-q");
+const tilesEl = document.getElementById("spot-tiles");
+const metaEl = document.getElementById("spot-meta");
+const spotEl = document.querySelector(".spot");
+
+function kinds(q, per) {
+  const out = [];
+  for (let i = 0; i < q.found; i++) out.push("found");
+  for (let i = 0; i < q.pattern; i++) out.push("pattern");
+  for (let i = 0; i < q.guessed; i++) out.push("guessed");
+  while (out.length < per) out.push("none");
+  return out.slice(0, per);
+}
+
+function ensureTiles(per) {
+  while (tilesEl.children.length < per) {
+    const s = document.createElement("span");
+    s.className = "tile";
+    tilesEl.appendChild(s);
   }
-  await sleep(420);
-  // remove caret from command (final state)
-  term.innerHTML = `<span class="l"><span class="t-prompt">openleads&gt;</span> <span class="t-cmd">${target}</span></span>`;
-  for (let i = 1; i < SCRIPT.length; i++) {
-    const step = SCRIPT[i];
-    term.insertAdjacentHTML("beforeend", lineHTML(step));
-    term.scrollTop = term.scrollHeight;
-    await sleep(step.t === "gap" ? 120 : step.t === "send" ? 300 : step.t === "lead" ? 360 : 520);
+  while (tilesEl.children.length > per) tilesEl.lastElementChild.remove();
+  tilesEl.style.gridTemplateColumns = `repeat(${per}, 1fr)`;
+}
+
+function setMeta(q) {
+  const v = { leads: q.leads, people: q.people, found: q.found, seconds: Math.round(q.seconds) + "s" };
+  metaEl.querySelectorAll("dd").forEach((dd) => { dd.textContent = v[dd.dataset.f]; });
+}
+
+function renderStatic(q, per) {
+  qEl.textContent = q.query;
+  ensureTiles(per);
+  kinds(q, per).forEach((k, i) => { const t = tilesEl.children[i]; t.dataset.k = k; t.classList.remove("is-out"); });
+  setMeta(q);
+}
+
+// Pause the loop while the card is off screen or the tab is hidden.
+let onScreen = true;
+let wake = null;
+const waitVisible = () => (onScreen && !document.hidden)
+  ? Promise.resolve()
+  : new Promise((r) => { wake = r; });
+const maybeWake = () => { if (onScreen && !document.hidden && wake) { wake(); wake = null; } };
+document.addEventListener("visibilitychange", maybeWake);
+
+async function typeQuery(text) {
+  for (let i = 1; i <= text.length; i++) {
+    qEl.textContent = text.slice(0, i);
+    await sleep(38 + Math.random() * 34);
   }
 }
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-if (term) {
-  if (reduceMotion) {
-    renderStatic();
-  } else {
-    const tio = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { playTerminal(); tio.disconnect(); } });
-    }, { threshold: 0.3 });
-    tio.observe(term);
+async function eraseQuery() {
+  const text = qEl.textContent;
+  for (let i = text.length - 1; i >= 0; i--) {
+    qEl.textContent = text.slice(0, i);
+    await sleep(14);
   }
+}
+
+async function runSpotlight(d) {
+  const per = d.count_per_query || 10;
+  const qs = d.queries;
+  ensureTiles(per);
+  // First frame: the card already shows a complete result (no layout shift).
+  renderStatic(qs[0], per);
+  if (reduceMotion) return;
+
+  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; maybeWake(); }, { threshold: 0.2 }).observe(spotEl);
+
+  let i = 0;
+  for (;;) {
+    await sleep(3600);
+    await waitVisible();
+    // out
+    Array.from(tilesEl.children).forEach((t) => t.classList.add("is-out"));
+    metaEl.classList.add("is-out");
+    await eraseQuery();
+    // in
+    i = (i + 1) % qs.length;
+    const q = qs[i];
+    await sleep(180);
+    await typeQuery(q.query);
+    await sleep(240);
+    setMeta(q);
+    metaEl.classList.remove("is-out");
+    kinds(q, per).forEach((k, j) => {
+      const t = tilesEl.children[j];
+      t.dataset.k = k;
+      setTimeout(() => t.classList.remove("is-out"), j * 40);
+    });
+  }
+}
+
+if (qEl && tilesEl && metaEl) {
+  loadBench().then((d) => { fillStats(d); runSpotlight(d); });
 }
