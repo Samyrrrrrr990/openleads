@@ -1,36 +1,36 @@
 {
   "version": "4.5.0",
-  "date": "2026-10-10",
+  "date": "2026-10-11",
   "count_per_query": 10,
   "totals": {
-    "leads": 106,
-    "people": 71,
-    "found": 49,
-    "pattern": 4,
-    "guessed": 53,
+    "leads": 89,
+    "people": 64,
+    "found": 42,
+    "pattern": 5,
+    "guessed": 42,
     "junk_names": 0,
     "queries": 12,
     "queries_with_results": 12,
-    "fill_rate": 0.883,
-    "evidence_rate": 0.5,
+    "fill_rate": 0.742,
+    "evidence_rate": 0.528,
     "junk_rate": 0.0,
-    "median_seconds": 43.4
+    "median_seconds": 68.8
   },
   "queries": [
     {
       "query": "dentists in Austin",
       "leads": 10,
-      "people": 5,
-      "found": 6,
+      "people": 7,
+      "found": 4,
       "pattern": 0,
-      "guessed": 4,
+      "guessed": 6,
       "junk_names": 0,
-      "seconds": 42.6,
+      "seconds": 71.0,
       "error": "",
       "sample": [
-        " <info@kcdentalaustin.com> \u00b7 KC Dental",
-        " <ctpd@ctpdkid.com> \u00b7 Central Texas Pediatric Dentistry",
-        " <info@mydentalsmiles.com> \u00b7 Dental Smiles Family and Cosmetic"
+        " <downtown@austincosmetic.com> \u00b7 Austin Cosmetic Dentistry",
+        "Randy Kunik <randy.kunik@kunikorthodontics.com> \u00b7 Kunik Orthodontics",
+        " <riverside@aloha-dental.com> \u00b7 Aloha Dental"
       ]
     },
     {
@@ -41,7 +41,7 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 21.1,
+      "seconds": 23.4,
       "error": "",
       "sample": [
         " <support@kingzcreations.info> \u00b7 Kingz Creations",
@@ -51,13 +51,13 @@
     },
     {
       "query": "law firms in London",
-      "leads": 10,
-      "people": 8,
-      "found": 2,
+      "leads": 5,
+      "people": 5,
+      "found": 0,
       "pattern": 0,
-      "guessed": 8,
+      "guessed": 5,
       "junk_names": 0,
-      "seconds": 60.3,
+      "seconds": 107.3,
       "error": "",
       "sample": [
         "Ian S Baker <ian.baker@streathers.co.uk> \u00b7 Streathers Solicitors",
@@ -67,13 +67,13 @@
     },
     {
       "query": "accountants in Toronto",
-      "leads": 10,
-      "people": 6,
-      "found": 4,
+      "leads": 4,
+      "people": 3,
+      "found": 1,
       "pattern": 0,
-      "guessed": 6,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 57.4,
+      "seconds": 68.8,
       "error": "",
       "sample": [
         "Samantha Marisa <samantha.marisa@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
@@ -89,7 +89,7 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 51.6,
+      "seconds": 73.7,
       "error": "",
       "sample": [
         "Stefan Simon <stefan.simon@berlinwind.com> \u00b7 BerlinWind GmbH",
@@ -99,13 +99,13 @@
     },
     {
       "query": "gyms in Sydney",
-      "leads": 9,
-      "people": 4,
-      "found": 5,
+      "leads": 3,
+      "people": 1,
+      "found": 2,
       "pattern": 0,
-      "guessed": 4,
+      "guessed": 1,
       "junk_names": 0,
-      "seconds": 85.7,
+      "seconds": 81.0,
       "error": "",
       "sample": [
         " <info@forgegym.com.au> \u00b7 Forge Gym",
@@ -117,15 +117,15 @@
       "query": "fintech founders",
       "leads": 10,
       "people": 9,
-      "found": 2,
+      "found": 6,
       "pattern": 0,
-      "guessed": 8,
+      "guessed": 4,
       "junk_names": 0,
-      "seconds": 16.7,
+      "seconds": 31.5,
       "error": "",
       "sample": [
-        "Amer Baroudi <amer.baroudi@nsave.com> \u00b7 nsave",
-        "Edin Citaku <edin@veltha.ai> \u00b7 Veltha",
+        "Greg Schvey <greg@axoni.com> \u00b7 Axoni",
+        "Daniel Kivatinos <daniel@loopfour.com> \u00b7 loopfour",
         "Bobby Mehta <bobby.mehta@sentilink.com> \u00b7 SentiLink"
       ]
     },
@@ -133,16 +133,16 @@
       "query": "AI startup founders",
       "leads": 10,
       "people": 7,
-      "found": 4,
+      "found": 3,
       "pattern": 0,
-      "guessed": 6,
+      "guessed": 7,
       "junk_names": 0,
-      "seconds": 14.2,
+      "seconds": 32.6,
       "error": "",
       "sample": [
-        "Aakash Prasad <aakash@inspectmind.ai> \u00b7 InspectMind AI",
-        "Slava Solonitsyn <slava.solonitsyn@nocap.so> \u00b7 No Cap",
-        " <careers@willowed.org> \u00b7 Willow Education"
+        "John Banner <john.banner@agentcollect.com> \u00b7 AgentCollect",
+        "Cyrus Kelly <cyrus.kelly@tday.com> \u00b7 tday.com",
+        "Luke Igel <luke.igel@kino.ai> \u00b7 Kino AI"
       ]
     },
     {
@@ -153,7 +153,7 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 99.9,
+      "seconds": 88.6,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
@@ -169,7 +169,7 @@
       "pattern": 0,
       "guessed": 10,
       "junk_names": 0,
-      "seconds": 23.8,
+      "seconds": 27.9,
       "error": "",
       "sample": [
         "Jan Jakub\u016fv <jan.jakubuv@cvut.cz> \u00b7 Czech Technical University in Prague",
@@ -185,7 +185,7 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 2.3,
+      "seconds": 3.3,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
@@ -198,10 +198,10 @@
       "leads": 10,
       "people": 3,
       "found": 9,
-      "pattern": 0,
-      "guessed": 1,
+      "pattern": 1,
+      "guessed": 0,
       "junk_names": 0,
-      "seconds": 43.4,
+      "seconds": 57.2,
       "error": "",
       "sample": [
         " <chris@grthomes.com> \u00b7 GRT Homes | eXp Realty Oak Park & River Forest",
