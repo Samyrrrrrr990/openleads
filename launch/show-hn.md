@@ -27,7 +27,9 @@ Some things I learned building it:
   network. Real queries returned page headings like "Refund Policy" as people, and
   "dentists in Austin" returned chiropractors. Now there's `openleads bench`, which
   runs 12 real queries against the live sources every night and commits the
-  scoreboard to the repo: 12/12 queries return results, 84% of requested leads filled, 0% junk names, and a third of emails found or pattern-backed (the rest are labelled as guesses).
+  scoreboard to the repo. Last night: 12/12 queries returned results, 82% of
+  requested leads filled, 0% junk names, and 57% of emails found or
+  pattern-backed (the rest are labelled as guesses).
 - Telling a name from a heading is surprisingly hard. What finally worked was
   requiring scraped names to start with a known given name (public-domain SSA data
   plus an international list), and rejecting acronyms.
@@ -40,7 +42,10 @@ Some things I learned building it:
 It's stdlib-only Python, runs locally (SQLite in ~/.openleads, no telemetry), and
 also works as an MCP server, so Claude or Cursor can call it. You can put searches
 on a schedule ("weekdays 9am") and it'll draft and send within a daily cap, with
-dry-run as the default.
+dry-run as the default. As of 4.6, the local dashboard (`openleads web`) draws each
+scheduled search as an n8n-style node canvas you can edit and test-run.
+
+Site and docs: https://samyrrrrrr990.github.io/openleads/
 
 License is AGPL-3.0. It's free to use, including at work. There's a commercial
 license if you want to embed it in a closed product.

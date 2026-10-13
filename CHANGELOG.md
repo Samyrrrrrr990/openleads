@@ -4,6 +4,13 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [4.6.1] - 2026-10-13
+
+### Added
+- `server.json` for the official MCP Registry, plus the `mcp-name` ownership
+  marker in the README, so OpenLeads can be listed as
+  `io.github.Samyrrrrrr990/openleads`. `glama.json` names the maintainer for Glama.
+
 ## [4.6.0] - 2026-10-13
 
 ### Added

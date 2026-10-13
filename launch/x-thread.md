@@ -1,6 +1,6 @@
 # X / Twitter thread
 
-Attach the GIF to tweet 1.
+Attach docs/assets/workflows.gif to tweet 6.
 
 1/
 I built a free, open-source Apollo/Hunter alternative.
@@ -31,8 +31,7 @@ Where it searches:
 4/
 My 300 unit tests all passed while the tool returned "Refund Policy" as a person 🙃
 
-So now it runs 12 real searches against the live sources every night and commits
-the scoreboard to the repo. 12/12 queries return results, 84% of requested leads filled, 0% junk names, and a third of emails found or pattern-backed (the rest are labelled as guesses)
+So now it runs 12 real searches against the live sources every night and commits the scoreboard: 12/12 return results, 82% fill, 0% junk names.
 
 5/
 It's also an MCP server, so Claude / Cursor can use it:
@@ -49,7 +48,10 @@ openleads schedule on
 
 It drafts, sends inside a daily cap, follows up, and stops for anyone who replies.
 
+New in 4.6: the local dashboard draws it as an n8n-style canvas. Click a node to edit it, hit Test run, watch it fill in. (GIF)
+
 7/
 AGPL-3.0, stdlib-only Python, `pipx install openleads` or `npx openleads`.
 
+Site: samyrrrrrr990.github.io/openleads
 A ⭐ helps other people find it → github.com/Samyrrrrrr990/openleads
