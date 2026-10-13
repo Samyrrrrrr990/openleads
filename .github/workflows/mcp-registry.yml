@@ -21,7 +21,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Wait for the PyPI version in server.json
         run: |
           v=$(python3 -c "import json;print(json.load(open('server.json'))['version'])")
