@@ -13,19 +13,26 @@ Done:
       announcement (#12) and a "show us what you found" thread (#13).
 - [x] Listed in the official MCP Registry as `io.github.Samyrrrrrr990/openleads`
       (republished automatically after every release by `mcp-registry.yml`).
-- [x] List PRs: punkpeye/awesome-mcp-servers#16344, jivoi/awesome-osint#1296.
+- [x] List PRs: punkpeye/awesome-mcp-servers#16344, jivoi/awesome-osint#1296,
+      dariubs/awesome-lead-generation#34, diegoleme/awesome-open-source-alternatives#57.
 - [x] Show HN submitted (item 50075263). It was auto-flagged because the account
-      is new. A moderator email is drafted in Gmail ("Show HN flagged on submission").
+      is new; the moderator email was sent to hn@ycombinator.com.
+- [x] dev.to article published (marked AI-generated in dev.to's disclosure):
+      https://dev.to/samyrrrrrr990/my-300-unit-tests-passed-while-my-lead-finder-returned-refund-policy-as-a-person-35b
+- [x] Six starter issues (#14 to #19) labeled good first issue / help wanted.
+- [x] Social preview set to site/og.png. Dependabot #1, #2, #8, #9 superseded by e1be7de.
 
 Waiting on you:
-- [ ] Send the HN moderator email from Gmail drafts. If they restore it, stay in
-      the thread and answer comments yourself (HN asks for human replies).
+- [ ] If HN restores the post, stay in the thread and answer comments yourself
+      (HN asks for human replies).
 - [ ] npm: set a fresh automation token (`gh secret set NPM_TOKEN`), or publish
       4.6.1 by hand from `npm/` (2FA needs your browser).
-- [ ] Social preview: Settings, Social preview, upload `site/og.png`.
-- [ ] Merge or close the Dependabot PRs (#1, #2, #8, #9, #10).
+- [ ] Dependabot #10 (upload-artifact v7 in release.yml): bump download-artifact to
+      match before merging.
 - [ ] X thread (`x-thread.md`, attach `docs/assets/workflows.gif` to tweet 6).
-- [ ] dev.to or Hashnode: paste `article.md`.
+- [ ] Hashnode / Medium: cross-post `article.md` with the dev.to URL as canonical.
+- [ ] After 50 stars: OpenAlternative (also wants a custom domain, not github.io).
+- [ ] Optional, paid: mcp.so listing ($39).
 - [ ] Reddit, one sub per day (`reddit.md`). Read each sub's rules first.
 - [ ] Product Hunt (`product-hunt.md`).
 - [ ] awesome-selfhosted: they only accept human submissions, and the AGPL release
