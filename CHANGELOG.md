@@ -4,7 +4,7 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [4.6.0] - 2026-10-13
 
 ### Added
 - **Workflows in the dashboard.** Recipes now open as an n8n-style node canvas:

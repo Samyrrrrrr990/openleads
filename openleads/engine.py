@@ -131,7 +131,7 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
                 break
 
     _surface_errors(label, leads, on_progress)
-    on_progress("phase", f"done — {len(leads)} lead(s)")
+    on_progress("phase", f"done: {len(leads)} lead(s)")
     return leads
 
 

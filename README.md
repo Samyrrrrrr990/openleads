@@ -4,7 +4,7 @@
 
 ### Find people and their work emails from free public data. No API keys. $0.
 
-**Type who you want — _"dentists in Austin"_, _"fintech founders"_, _"law firms in London"_ — and OpenLeads searches OpenStreetMap, Y Combinator, GitHub, OpenAlex, SEC EDGAR, Wikidata and company websites, finds the real people, and tells you honestly which emails are confirmed and which are guesses. Then it can write and send the emails on a schedule. It runs on your machine.**
+**Type who you want (_"dentists in Austin"_, _"fintech founders"_, _"law firms in London"_) and OpenLeads searches OpenStreetMap, Y Combinator, GitHub, OpenAlex, SEC EDGAR, Wikidata and company websites, finds the real people, and tells you honestly which emails are confirmed and which are guesses. Then it can write and send the emails on a schedule. It runs on your machine.**
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./COMMERCIAL-LICENSE.md)
 [![PyPI](https://img.shields.io/pypi/v/openleads.svg?color=blue)](https://pypi.org/project/openleads/)
@@ -19,6 +19,12 @@
 pipx install openleads        # or: pip install openleads   ·   npx openleads
 openleads find "dentists in Austin"
 ```
+
+[**Website**](https://samyrrrrrr990.github.io/openleads/) · [**Docs**](https://samyrrrrrr990.github.io/openleads/docs/) · [**Live benchmark**](./BENCHMARK.md) · [**Changelog**](./CHANGELOG.md)
+
+<img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/workflows.gif" alt="A workflow in the OpenLeads dashboard: a schedule triggers Find leads, Verify branches into safe and risky, then Write, Send, Review, and Export. A test run lights each node up with its counts." width="860" />
+
+<sub>A real test run in <code>openleads web</code>: 6 dentists found, 6 safe addresses, 6 drafts, exported to Sheets, nothing sent.</sub>
 
 </div>
 
@@ -108,6 +114,17 @@ claude mcp add openleads -- openleads mcp
 
 > *"Find 10 law firms in London with emails we can actually send to, and draft a two-line intro for each."*
 
+## Build it as a workflow
+
+`openleads web` opens a local dashboard with search, a CRM, analytics, and
+**Workflows**: each saved search is drawn as a node canvas, like n8n. Click a node
+to edit it (who to find, what to offer, when to run, where to export), then hit
+**Test run** and watch every node fill in from the live engine. Test runs never
+send. [Workflows guide →](./docs/workflows.md)
+
+Export nodes push leads to CSV, Google Sheets, Notion, Airtable, or any webhook, so
+the rest of your stack (n8n, Zapier, Make) can take it from there.
+
 ## Put it on a schedule
 
 ```bash
@@ -124,7 +141,7 @@ who replies. Failed runs send a desktop alert, plus a webhook if you set one.
 Rather run it in CI? There's a GitHub Action:
 
 ```yaml
-- uses: Samyrrrrrr990/openleads@v4.5.0
+- uses: Samyrrrrrr990/openleads@v4.6.0
   with: { query: "marketing agencies in Miami", count: 50 }
 ```
 

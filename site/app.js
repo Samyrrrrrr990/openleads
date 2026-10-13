@@ -403,7 +403,7 @@ function runCanvas(d) {
       say(`<b>Write</b> ${c.safe} drafts, 0 spam flags`);
       await Promise.all([flow("write>send"), flow("review>export")]);
 
-      state("send", "running"); state("export", "running");
+      state("send", "running"); state("export", "running"); badge("export", "exporting");
       await countUp("send", c.safe, "queued", 600);
       badge("export", `${c.leads} rows`);
       clock += 1;
