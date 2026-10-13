@@ -1,7 +1,7 @@
-# Quickstart — from zero to a sent campaign
+# Quickstart: from zero to a sent campaign
 
 This is the 10-minute path: install, find leads, write the emails, connect your
-mailbox, and send — safely. Every sending step is **dry-run by default**.
+mailbox, and send it safely. Every sending step is **dry-run by default**.
 
 > TL;DR: `pip install "openleads[all]"` → `openleads web` → click through Find →
 > Write → Connect → Send. Or stay in the terminal with `openleads run`.
@@ -27,7 +27,7 @@ openleads doctor
 `doctor` tells you, in plain language, what works and what to fix:
 
 - **DNS-over-HTTPS** reachable? (needed for MX/SPF/DMARC checks)
-- **SMTP port 25** open? If blocked (most home ISPs), don't worry — the engine
+- **SMTP port 25** open? If blocked (most home ISPs), don't worry: the engine
   compensates with Gravatar + ground-truth + learned patterns.
 - **OpenRouter key** set? Optional; unlocks AI drafting + smarter NL parsing.
 - **Mailbox** configured + logs in? Needed only for *sending*.
@@ -35,7 +35,7 @@ openleads doctor
 
 ## 3. Find leads
 
-Just describe who you want — OpenLeads **federates** across the sources that fit
+Just describe who you want. OpenLeads **federates** across the sources that fit
 (you don't pick one):
 
 ```bash
@@ -46,9 +46,9 @@ openleads find "dentists in Austin"                   # clinics + registry recor
 
 You'll see each lead stream in with a tier and a 0–100 score:
 
-- **`safe`** — deliverable; sent by default.
-- **`risky`** — kept, but held back unless you opt in.
-- **`bad`** — dropped (no MX, disposable, unguessable).
+- **`safe`**: deliverable; sent by default.
+- **`risky`**: kept, but held back unless you opt in.
+- **`bad`**: dropped (no MX, disposable, unguessable).
 
 Company results are expanded into **real people** (founder/owner/exec) via
 team-page discovery. Pin a single source with `--source` (`openleads sources`
@@ -68,7 +68,7 @@ openleads config
 ```
 
 Interactive setup for your provider (Gmail/Workspace, Outlook/M365, Zoho, or custom),
-your **app password** (not your normal password — see your provider's docs), and your
+your **app password** (not your normal password; see your provider's docs), and your
 sender identity (name, org, a few lines about what you're reaching out about).
 
 Secrets are written to `~/.openleads/secrets.json` (`chmod 600`) and never leave your
@@ -76,7 +76,7 @@ machine. Prefer env vars / `.env`? Those still win. See [`sending.md`](./sending
 
 ## 5. Write + send
 
-One command does the whole pipeline (dry-run first — always preview):
+One command does the whole pipeline (dry-run first, and always preview):
 
 ```bash
 openleads run "50 AI founders in SF"          # preview drafts + sends
@@ -100,7 +100,7 @@ headers. No tracking pixels, ever.
 openleads web
 ```
 
-Opens `http://127.0.0.1:8787` — the same engine, in your browser, fully local.
+Opens `http://127.0.0.1:8787`: the same engine, in your browser, fully local.
 See [`web.md`](./web.md).
 
 ## 7. Manage what you've done

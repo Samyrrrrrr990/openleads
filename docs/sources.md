@@ -1,8 +1,8 @@
 # Writing a source plugin
 
 A **source** is the only thing standing between OpenLeads and a new vertical.
-Everything downstream — email finding, SMTP verification, scoring, caching,
-CSV/JSON/NDJSON output, the chat CLI — is already done. You just teach OpenLeads
+Everything downstream (email finding, SMTP verification, scoring, caching,
+CSV/JSON/NDJSON output, the chat CLI) is already done. You just teach OpenLeads
 how to *discover people* from some free, public dataset.
 
 This is the highest-leverage contribution you can make: one small file turns
@@ -47,12 +47,12 @@ Entity(
 
 - **If you set `domain`**, the engine finds and verifies an email automatically.
 - **If you don't** (many public registries have no email/website), the engine
-  still emits the record — the public data itself is valuable. Confidence is
+  still emits the record, since the public data itself is valuable. Confidence is
   honestly labeled `none`. NPI (doctors) works exactly this way.
 - **If your source already exposes a real address** (a GitHub public email, an
   "apply at jobs@…" line), put it in `extra["public_email"]` *and* set `domain` to
   its domain. The engine treats an on-domain known address as **ground truth** and
-  marks the lead `safe` for free — no guessing, no SMTP probe needed. This works
+  marks the lead `safe` for free: no guessing, no SMTP probe needed. This works
   even with no person name (great for company-only leads). The `hn` and `github`
   sources do exactly this; it's the single biggest lever on lead quality.
 
@@ -66,12 +66,12 @@ Entity(
 | `keyword` / `industry` | free-text topic/specialty (e.g. "fintech", "pediatric") |
 | `location` | place filter |
 | `title` | role filter |
-| `verified_only` | the engine applies this for you — you can ignore it |
+| `verified_only` | the engine applies this for you; you can ignore it |
 | `max_companies` | scan budget (for sources that page through many entities) |
 
 ## Two ways to add one
 
-### 1. A user plugin (no reinstall) — fastest
+### 1. A user plugin (no reinstall): fastest
 
 Drop a `*.py` file into `~/.openleads/sources/`. It's auto-discovered on the next
 run. Great for private/company-specific sources you don't want to publish.
@@ -102,7 +102,7 @@ openleads sources            # 'crm' now appears
 openleads find --source crm --count 50 --verified-only
 ```
 
-### 2. A built-in source — contribute it back
+### 2. A built-in source: contribute it back
 
 Add a module under `openleads/sources/` (e.g. `lawyers.py`), implement the class,
 add a fixture-based parse test under `tests/`, and open a PR. The registry finds
@@ -128,7 +128,7 @@ def search(self, query):
   crash) when a service is down or its shape changes.
 - **Stay keyless.** OpenLeads' promise is "no API keys." If a source *can* use an
   optional token for higher limits (like GitHub's `GITHUB_TOKEN`), make it
-  optional — keyless must still work.
+  optional; keyless must still work.
 
 ## Testing your parser
 

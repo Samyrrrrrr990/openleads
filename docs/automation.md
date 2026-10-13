@@ -1,7 +1,7 @@
 # Automation & the assistant
 
 OpenLeads v3.5 can run your outreach for you: describe a campaign in one line, and
-let your own machine find, draft, and send it at the right time — with every message
+let your own machine find, draft, and send it at the right time, with every message
 landing in your **Sent** folder like you typed it yourself.
 
 ## The assistant (natural language → a configured campaign)
@@ -17,7 +17,7 @@ It parses the **audience** ("fintech founders"), the **count** (50), what you're
 personalized email for each, and previews everything as a dry run. Nothing is sent
 until you say so.
 
-You can do the same conversationally inside `openleads chat` — just type the request.
+You can do the same conversationally inside `openleads chat`: just type the request.
 When you ask to *send* or *schedule*, it routes to the assistant; when you ask to
 *find*, it searches.
 
@@ -28,7 +28,7 @@ which fills the same validated action schema.
 ### What "reach" means for a campaign
 
 A campaign drafts every `safe` (deliverable) lead **plus** high-confidence `risky`
-ones — those scoring **≥ 55%** on the calibrated likelihood. On the common case where
+ones, those scoring **≥ 55%** on the calibrated likelihood. On the common case where
 outbound port 25 is blocked, a healthy authenticated corporate domain with a common
 pattern scores ~62%, so you still get a real, sendable batch instead of an empty list.
 Catch-all guesses are deliberately kept below that line.
@@ -64,7 +64,7 @@ Recipient time zones are inferred offline from country/city so your email lands 
 ## Emails show up in your Sent folder
 
 Mail sent over raw SMTP normally never appears in your provider's Sent folder (Gmail
-and Workspace are the exception — they journal it for you). OpenLeads fixes this for
+and Workspace are the exception: they journal it for you). OpenLeads fixes this for
 everyone else by saving each real send to your mailbox's IMAP **Sent** folder.
 
 Control it with the `save_to_sent` setting:
@@ -80,11 +80,11 @@ openleads config set save_to_sent always
 ```
 
 This needs IMAP configured (it falls back to your SMTP credentials). It's best-effort
-and fully isolated — a Sent-folder hiccup can never fail an actual send.
+and fully isolated, so a Sent-folder hiccup can never fail an actual send.
 
 ## Safety rails (unchanged)
 
-- **Dry-run by default** everywhere — add `--live` to send for real.
+- **Dry-run by default** everywhere, add `--live` to send for real.
 - **Suppression-aware**: never emails anyone who bounced, unsubscribed, or was already
   contacted.
 - **Warmup-capped**: a fresh mailbox ramps up gradually instead of blasting day one.

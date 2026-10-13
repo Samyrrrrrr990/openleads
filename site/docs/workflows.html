@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Workflows: recipes as a canvas · OpenLeads docs</title>
+<meta name="description" content="Build recipes as a node canvas, then run them on a schedule. OpenLeads documentation." />
+<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="Workflows: recipes as a canvas · OpenLeads docs" />
+<meta property="og:description" content="Build recipes as a node canvas, then run them on a schedule. OpenLeads documentation." />
+<meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+<link rel="stylesheet" href="../styles.css?v=6" />
+<link rel="stylesheet" href="docs.css?v=6" />
+</head>
+<body class="docs">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
+<header class="nav" id="nav">
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Open the docs menu" aria-expanded="false"><i class="ph ph-list"></i></button>
+  <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+  <span class="nav__docs-tag">Docs</span>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="../index.html#workflow">Workflows</a>
+    <a href="../index.html#workspace">Product</a>
+    <a href="../index.html#pricing">Pricing</a>
+    <a href="index.html" class="is-active">Docs</a>
+  </nav>
+  <div class="nav__cta">
+    <button class="search-btn" type="button" data-search-open aria-label="Search the docs"><i class="ph ph-magnifying-glass"></i><span>Search</span><kbd>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener" aria-label="Star OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>
+      <span class="gh-btn__label">Star</span><span class="gh-btn__count" data-stars hidden></span>
+    </a>
+  </div>
+</header>
+<div class="docs__shell">
+<nav class="dsb" id="dsb" aria-label="Docs">
+<button class="dsb__search" type="button" data-search-open><i class="ph ph-magnifying-glass"></i>Search<kbd>⌘K</kbd></button>
+<a class="dsb__link dsb__home" href="index.html"><i class="ph ph-house"></i>Overview</a>
+<p class="dsb__sec">Get started</p>
+<a class="dsb__link" href="quickstart.html"><i class="ph ph-rocket-launch"></i>Quickstart</a>
+<a class="dsb__link" href="web.html"><i class="ph ph-browser"></i>Web dashboard</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="finding.html"><i class="ph ph-magnifying-glass"></i>Finding leads</a>
+<a class="dsb__link is-active" href="workflows.html" aria-current="page"><i class="ph ph-flow-arrow"></i>Workflows</a>
+<a class="dsb__link" href="deliverability.html"><i class="ph ph-seal-check"></i>Deliverability</a>
+<a class="dsb__link" href="sending.html"><i class="ph ph-paper-plane-tilt"></i>Sending</a>
+<a class="dsb__link" href="timed-runs.html"><i class="ph ph-clock"></i>Timed runs</a>
+<a class="dsb__link" href="automation.html"><i class="ph ph-robot"></i>Automation and assistant</a>
+<a class="dsb__link" href="mcp.html"><i class="ph ph-plugs-connected"></i>Claude, Cursor, and MCP</a>
+<a class="dsb__link" href="sources.html"><i class="ph ph-puzzle-piece"></i>Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html"><i class="ph ph-tree-structure"></i>Architecture</a>
+<a class="dsb__link" href="how-it-works.html"><i class="ph ph-envelope-open"></i>Email engine</a>
+<a class="dsb__link" href="responsible-use.html"><i class="ph ph-scales"></i>Responsible use</a>
+<a class="dsb__link" href="licensing.html"><i class="ph ph-certificate"></i>Licensing</a>
+<div class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" target="_blank" rel="noopener"><i class="ph ph-chats-circle"></i>Ask the community</a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" target="_blank" rel="noopener"><i class="ph ph-bug"></i>Report an issue</a></div>
+</nav>
+<main class="docs__main" id="main"><article class="prose">
+<div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Guides</span><i class="ph ph-caret-right"></i><span>Workflows</span></div>
+<div class="dhead"><span class="dhead__sec"><i class="ph ph-flow-arrow"></i>Guides</span><span class="dhead__meta">2 min read</span></div><h1 id="workflows-recipes-as-a-canvas">Workflows: recipes as a canvas</h1>
+<p class="lede">A <strong>workflow</strong> is a recipe drawn as a row of nodes, the way n8n or Zapier draw an automation. Each node is one step of the pipeline, and clicking a node edits that step. Nothing about the engine changes: a workflow is saved as an ordinary recipe, so <code>openleads recipe run &lt;name&gt;</code> and the scheduler run it exactly the same way.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads web        # then open Workflows in the sidebar</code></pre></div>
+<h2 id="the-nodes" class="anchored"><a class="hlink" href="#the-nodes">#</a>The nodes</h2>
+<div class="tablewrap"><table><thead><tr><th>Node</th><th>What it does</th><th>Settings</th></tr></thead><tbody><tr><td><strong>Trigger</strong></td><td>When the workflow runs</td><td>A schedule in plain English or cron (<code>weekdays 09:00</code>, <code>every 2h</code>, <code>0 9 * * 1-5</code>), or manual only</td></tr><tr><td><strong>Find leads</strong></td><td>Searches the sources that fit your sentence</td><td>Audience (the sentence) and how many leads</td></tr><tr><td><strong>Verify</strong></td><td>Scores every address and branches on the tier</td><td>Safe only, or safe and risky</td></tr><tr><td><strong>Write</strong></td><td>Drafts a plain-text email per safe lead</td><td>What you are offering, in one line</td></tr><tr><td><strong>Send</strong></td><td>Sends inside your warmup cap</td><td>On or off, and whether to start the follow-up sequence</td></tr><tr><td><strong>Review</strong></td><td>Holds risky leads so nothing is sent by accident</td><td>Always on</td></tr><tr><td><strong>Export</strong></td><td>Pushes the leads somewhere else</td><td>CSV, JSON, Google Sheets, a webhook (n8n, Zapier, Make), Notion, or Airtable</td></tr></tbody></table></div>
+<p>Nodes that are switched off are drawn dashed, and the run skips them.</p>
+<h2 id="build-one" class="anchored"><a class="hlink" href="#build-one">#</a>Build one</h2>
+<ol><li>Open <strong>Workflows</strong> and click <strong>New workflow</strong>.</li><li>Click <strong>Find leads</strong> and type who you want, for example <code>marketing agencies in Miami</code>.</li><li>Click <strong>Trigger</strong> and type a schedule, or leave it on manual.</li><li>Click <strong>Write</strong> and describe your offer in one line.</li><li>Leave <strong>Send</strong> off for the first few runs. Turn it on once the drafts look right.</li><li>Click <strong>Save</strong>.</li></ol>
+<h2 id="test-it" class="anchored"><a class="hlink" href="#test-it">#</a>Test it</h2>
+<p><strong>Test run</strong> executes the whole workflow as a dry run. The nodes light up as each step finishes, the counts appear on each node, and the run log shows every phase. No email is sent during a test run, even with <strong>Send</strong> switched on.</p>
+<p>Scheduled runs are real runs. If <strong>Send</strong> is on, the scheduler sends inside your daily cap. Install the scheduler once with:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads schedule on</code></pre></div>
+<p>See <a href="timed-runs.html">Timed runs</a> for how schedules are checked and what happens when your laptop was asleep.</p>
+<h2 id="push-leads-into-n8n-or-zapier" class="anchored"><a class="hlink" href="#push-leads-into-n8n-or-zapier">#</a>Push leads into n8n or Zapier</h2>
+<p>Set <strong>Export</strong> to <code>webhook</code> and paste your n8n or Zapier webhook URL as the target. Every run POSTs the leads as newline-delimited JSON, so the rest of your automation can pick them up from there.</p>
+<div class="callout callout--note"><i class="ph ph-info"></i><div><strong>Note:</strong> the dashboard only listens on <code>127.0.0.1</code>. A webhook export is the one place where lead data leaves your machine, and only to the URL you typed.</div></div>
+<nav class="prevnext" aria-label="Previous and next page">
+<a class="pn pn--prev" href="finding.html"><span><i class="ph ph-arrow-left"></i>Previous</span><b>Finding leads</b></a>
+<a class="pn pn--next" href="deliverability.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Deliverability</b></a>
+</nav>
+</article></main>
+<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#the-nodes">The nodes</a><a class="toc__l2" href="#build-one">Build one</a><a class="toc__l2" href="#test-it">Test it</a><a class="toc__l2" href="#push-leads-into-n8n-or-zapier">Push leads into n8n or Zapier</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/workflows.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
+</div>
+<footer class="footer docs-footer">
+  <div class="container footer__legal">
+    <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a> · <a href="https://www.npmjs.com/package/openleads">npm</a> · <a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></span>
+  </div>
+</footer>
+
+<div class="search" id="search" hidden>
+  <div class="search__backdrop" data-search-close></div>
+  <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
+    <label class="search__field"><i class="ph ph-magnifying-glass"></i>
+      <input id="searchInput" type="search" placeholder="Search the docs" autocomplete="off" spellcheck="false" />
+      <kbd data-search-close>Esc</kbd></label>
+    <ul class="search__results" id="searchResults" role="listbox"></ul>
+    <p class="search__foot"><span><kbd>↑</kbd><kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span></p>
+  </div>
+</div>
+<script src="docs.js?v=6"></script>
+</body>
+</html>

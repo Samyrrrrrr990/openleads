@@ -3,123 +3,134 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sending — cold email that lands, safely · OpenLeads docs</title>
-<meta name="description" content="OpenLeads documentation — Sending — cold email that lands, safely." />
+<title>Sending: cold email that lands, safely · OpenLeads docs</title>
+<meta name="description" content="Connect a mailbox, warm up, and send without burning your domain. OpenLeads documentation." />
 <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="Sending: cold email that lands, safely · OpenLeads docs" />
+<meta property="og:description" content="Connect a mailbox, warm up, and send without burning your domain. OpenLeads documentation." />
+<meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="../styles.css" />
-<link rel="stylesheet" href="docs.css" />
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+<link rel="stylesheet" href="../styles.css?v=6" />
+<link rel="stylesheet" href="docs.css?v=6" />
 </head>
 <body class="docs">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
 <header class="nav" id="nav">
-  <a class="brand" href="../index.html"><span class="brand__mark"></span><span class="brand__name">OpenLeads</span></a>
-  <nav class="nav__links">
-    <a href="../index.html#flow">How it works</a>
-    <a href="../index.html#deliver">Deliverability</a>
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Open the docs menu" aria-expanded="false"><i class="ph ph-list"></i></button>
+  <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+  <span class="nav__docs-tag">Docs</span>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="../index.html#workflow">Workflows</a>
+    <a href="../index.html#workspace">Product</a>
+    <a href="../index.html#pricing">Pricing</a>
     <a href="index.html" class="is-active">Docs</a>
-    <a href="../index.html#compare">Compare</a>
   </nav>
   <div class="nav__cta">
-    <a class="ghost-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener">GitHub</a>
-    <a class="solid-btn" href="../index.html#install">Install</a>
+    <button class="search-btn" type="button" data-search-open aria-label="Search the docs"><i class="ph ph-magnifying-glass"></i><span>Search</span><kbd>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener" aria-label="Star OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>
+      <span class="gh-btn__label">Star</span><span class="gh-btn__count" data-stars hidden></span>
+    </a>
   </div>
-  <button class="dsb-toggle" id="dsbToggle" aria-label="Toggle docs menu">Menu</button>
 </header>
-
 <div class="docs__shell">
-  <nav class="dsb" aria-label="Docs">
-<p class="dsb__sec">Getting started</p>
-<a class="dsb__link" href="quickstart.html">Quickstart</a>
+<nav class="dsb" id="dsb" aria-label="Docs">
+<button class="dsb__search" type="button" data-search-open><i class="ph ph-magnifying-glass"></i>Search<kbd>⌘K</kbd></button>
+<a class="dsb__link dsb__home" href="index.html"><i class="ph ph-house"></i>Overview</a>
+<p class="dsb__sec">Get started</p>
+<a class="dsb__link" href="quickstart.html"><i class="ph ph-rocket-launch"></i>Quickstart</a>
+<a class="dsb__link" href="web.html"><i class="ph ph-browser"></i>Web dashboard</a>
 <p class="dsb__sec">Guides</p>
-<a class="dsb__link" href="finding.html">Finding & the federation</a>
-<a class="dsb__link" href="deliverability.html">Deliverability</a>
-<a class="dsb__link is-active" href="sending.html">Sending</a>
-<a class="dsb__link" href="automation.html">Automation & assistant</a>
-<a class="dsb__link" href="timed-runs.html">Timed runs</a>
-<a class="dsb__link" href="mcp.html">Claude, Cursor & MCP</a>
-<a class="dsb__link" href="web.html">Web dashboard</a>
-<a class="dsb__link" href="sources.html">Add a source</a>
+<a class="dsb__link" href="finding.html"><i class="ph ph-magnifying-glass"></i>Finding leads</a>
+<a class="dsb__link" href="workflows.html"><i class="ph ph-flow-arrow"></i>Workflows</a>
+<a class="dsb__link" href="deliverability.html"><i class="ph ph-seal-check"></i>Deliverability</a>
+<a class="dsb__link is-active" href="sending.html" aria-current="page"><i class="ph ph-paper-plane-tilt"></i>Sending</a>
+<a class="dsb__link" href="timed-runs.html"><i class="ph ph-clock"></i>Timed runs</a>
+<a class="dsb__link" href="automation.html"><i class="ph ph-robot"></i>Automation and assistant</a>
+<a class="dsb__link" href="mcp.html"><i class="ph ph-plugs-connected"></i>Claude, Cursor, and MCP</a>
+<a class="dsb__link" href="sources.html"><i class="ph ph-puzzle-piece"></i>Add a source</a>
 <p class="dsb__sec">Reference</p>
-<a class="dsb__link" href="architecture.html">Architecture</a>
-<a class="dsb__link" href="how-it-works.html">Email engine</a>
-<a class="dsb__link" href="responsible-use.html">Responsible use</a>
-<a class="dsb__link" href="licensing.html">Licensing</a>
+<a class="dsb__link" href="architecture.html"><i class="ph ph-tree-structure"></i>Architecture</a>
+<a class="dsb__link" href="how-it-works.html"><i class="ph ph-envelope-open"></i>Email engine</a>
+<a class="dsb__link" href="responsible-use.html"><i class="ph ph-scales"></i>Responsible use</a>
+<a class="dsb__link" href="licensing.html"><i class="ph ph-certificate"></i>Licensing</a>
+<div class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" target="_blank" rel="noopener"><i class="ph ph-chats-circle"></i>Ask the community</a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" target="_blank" rel="noopener"><i class="ph ph-bug"></i>Report an issue</a></div>
 </nav>
-  <main class="docs__main">
-    <article class="prose">
-      <div class="docs__crumb"><a href="index.html">Docs</a> <span>/</span> Sending — cold email that lands, safely</div>
-      <h1 id="sending-cold-email-that-lands-safely">Sending — cold email that lands, safely</h1>
-<p>OpenLeads sends over <strong>your own</strong> mailbox, with the guardrails that separate "reaches the inbox" from "lands in spam / burns your domain." Everything here is <strong>dry-run by default</strong>; real sends require an explicit <code>--live</code> (CLI) or the live toggle (web), plus a confirmation.</p>
-<blockquote>The finder never touches your mailbox. Only <code>run</code> / <code>send</code> / <code>campaign</code> do.</blockquote>
+<main class="docs__main" id="main"><article class="prose">
+<div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Guides</span><i class="ph ph-caret-right"></i><span>Sending</span></div>
+<div class="dhead"><span class="dhead__sec"><i class="ph ph-paper-plane-tilt"></i>Guides</span><span class="dhead__meta">3 min read</span></div><h1 id="sending-cold-email-that-lands-safely">Sending: cold email that lands, safely</h1>
+<p class="lede">OpenLeads sends over <strong>your own</strong> mailbox, with the guardrails that separate "reaches the inbox" from "lands in spam / burns your domain." Everything here is <strong>dry-run by default</strong>; real sends require an explicit <code>--live</code> (CLI) or the live toggle (web), plus a confirmation.</p>
+<div class="callout callout--note"><i class="ph ph-info"></i><div>The finder never touches your mailbox. Only <code>run</code> / <code>send</code> / <code>campaign</code> do.</div></div>
 <hr/>
 <h2 id="1-connect-a-mailbox" class="anchored"><a class="hlink" href="#1-connect-a-mailbox">#</a>1. Connect a mailbox</h2>
-<pre class="code" data-lang="bash"><code>openleads config</code></pre>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads config</code></pre></div>
 <p>Pick a provider preset and supply an <strong>app password</strong> (not your account password):</p>
 <div class="tablewrap"><table><thead><tr><th>Provider</th><th>Host</th><th>Port</th><th>App-password docs</th></tr></thead><tbody><tr><td><code>gmail</code> / <code>workspace</code></td><td><code>smtp.gmail.com</code></td><td>465 (SSL)</td><td>Google App Passwords (needs 2FA)</td></tr><tr><td><code>outlook</code> / <code>office365</code></td><td><code>smtp.office365.com</code></td><td>587 (STARTTLS)</td><td>Microsoft App Password (Security)</td></tr><tr><td><code>zoho</code></td><td><code>smtp.zoho.com</code></td><td>465 (SSL)</td><td>Zoho app-specific password</td></tr><tr><td><code>custom</code></td><td>you set <code>smtp_host</code></td><td>465 or 587</td><td>your provider</td></tr></tbody></table></div>
 <p>Credentials are stored in <code>~/.openleads/secrets.json</code> (<code>chmod 600</code>). Env vars and a local <code>.env</code> still take precedence (handy for CI), so nothing forces you to put secrets in the store. Verify with <code>openleads doctor</code>, which attempts a real SMTP login and reports the result.</p>
 <h2 id="2-the-sender-preflight" class="anchored"><a class="hlink" href="#2-the-sender-preflight">#</a>2. The sender preflight</h2>
 <p>Before a single email goes out, <code>outreach/deliverability.py</code> audits <strong>your sending domain</strong> and returns a readiness grade:</p>
-<pre class="code"><code>SPF      present        (+30)
+<div class="codeblock"><div class="codeblock__bar"><span>text</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>SPF      present        (+30)
 DKIM     found          (+30)   ← selector probe / advisory
 DMARC    p=quarantine   (+40)
 ─────────────────────────────
-grade A · 100/100 · ready</code></pre>
-<ul><li><strong>SPF</strong> authorizes your provider to send for your domain.</li><li><strong>DKIM</strong> cryptographically signs your mail.</li><li><strong>DMARC</strong> tells receivers what to do with unauthenticated mail (and <code>p=none</code> is</li></ul>
-<p>weak — push toward <code>p=quarantine</code>).</p>
+grade A · 100/100 · ready</code></pre></div>
+<ul><li><strong>SPF</strong> authorizes your provider to send for your domain.</li><li><strong>DKIM</strong> cryptographically signs your mail.</li><li><strong>DMARC</strong> tells receivers what to do with unauthenticated mail (and <code>p=none</code> is weak, push toward <code>p=quarantine</code>).</li></ul>
 <p>Missing pieces are the #1 reason cold email hits spam. <code>doctor</code> and the web Send page both surface the grade + exact fixes.</p>
 <h2 id="3-warmup" class="anchored"><a class="hlink" href="#3-warmup">#</a>3. Warmup</h2>
 <p>Brand-new mailboxes that suddenly blast 200 emails get flagged. The warmup planner (<code>deliverability.warmup_status</code>) computes today's allowance from a ramp:</p>
-<pre class="code"><code>warmup_start = 10     # day 1 allowance
+<div class="codeblock"><div class="codeblock__bar"><span>text</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>warmup_start = 10     # day 1 allowance
 warmup_step  = 5      # +5 each subsequent day
-daily_cap    = 40     # hard ceiling</code></pre>
+daily_cap    = 40     # hard ceiling</code></pre></div>
 <p>Day 1 → 10, day 2 → 15, … capped at <code>daily_cap</code>. The sender refuses to exceed the day's allowance and tells you how many remain. Tune these in <code>openleads config</code> (group <code>sending</code>).</p>
 <h2 id="4-how-a-send-actually-goes-out" class="anchored"><a class="hlink" href="#4-how-a-send-actually-goes-out">#</a>4. How a send actually goes out</h2>
 <p><code>outreach/sender.py</code>, for each recipient:</p>
-<ol><li><strong>Suppression check</strong> — skips anyone bounced / unsubscribed / replied /</li></ol>
-<p>do-not-contact / duplicate. The suppression list is permanent and local.</p>
-<ol><li><strong>Warmup check</strong> — stops at the day's allowance.</li><li><strong>Human pacing</strong> — a randomized delay (<code>send_delay_min</code>–<code>send_delay_max</code> seconds,</li></ol>
-<p>default 25–90) between real sends.</p>
-<ol><li><strong>Proper headers</strong> — <code>Message-ID</code>, <code>Date</code>, threading headers, and</li></ol>
-<p><strong><code>List-Unsubscribe</code> + <code>List-Unsubscribe-Post</code></strong> (one-click). Plain-text default;    <strong>no open-tracking pixels</strong>.</p>
-<ol><li><strong>Logged + resumable</strong> — every attempt is written to the local CRM (<code>touches</code>), so</li></ol>
-<p>a crashed batch resumes cleanly and reporting is exact.</p>
+<ol><li><strong>Suppression check</strong>: skips anyone bounced / unsubscribed / replied / do-not-contact / duplicate. The suppression list is permanent and local.</li><li><strong>Warmup check</strong>: stops at the day's allowance.</li><li><strong>Human pacing</strong>: a randomized delay (<code>send_delay_min</code>–<code>send_delay_max</code> seconds, default 25–90) between real sends.</li><li><strong>Proper headers</strong>: <code>Message-ID</code>, <code>Date</code>, threading headers, and <strong><code>List-Unsubscribe</code> + <code>List-Unsubscribe-Post</code></strong> (one-click). Plain-text default; <strong>no open-tracking pixels</strong>.</li><li><strong>Logged + resumable</strong>: every attempt is written to the local CRM (<code>touches</code>), so a crashed batch resumes cleanly and reporting is exact.</li></ol>
 <p>By default OpenLeads sends <strong>only to <code>safe</code>-tier</strong> addresses. Opt into <code>risky</code> with the <code>include_risky</code> setting (off is safer).</p>
 <h2 id="5-drafting" class="anchored"><a class="hlink" href="#5-drafting">#</a>5. Drafting</h2>
 <p><code>outreach/compose.py</code> writes each email from the lead's facts:</p>
-<ul><li>With <code>OPENROUTER_API_KEY</code> set, a <strong>free LLM</strong> drafts a personalized subject + body</li></ul>
-<p>(retried until placeholder-free).</p>
-<ul><li>Without a key, a <strong>deterministic template</strong> is used.</li></ul>
-<p>Either way the draft is <strong>spam-linted</strong> (spammy-word score, link count, caps ratio, length) and stripped of stray placeholders and em-dash tells. You can edit any draft before sending — in the web Compose page, your edits are exactly what's sent.</p>
+<ul><li>With <code>OPENROUTER_API_KEY</code> set, a <strong>free LLM</strong> drafts a personalized subject + body (retried until placeholder-free).</li><li>Without a key, a <strong>deterministic template</strong> is used.</li></ul>
+<p>Either way the draft is <strong>spam-linted</strong> (spammy-word score, link count, caps ratio, length) and stripped of stray placeholders and em-dash tells. You can edit any draft before sending, in the web Compose page; your edits are exactly what's sent.</p>
 <h2 id="6-follow-ups-reply-detection" class="anchored"><a class="hlink" href="#6-follow-ups-reply-detection">#</a>6. Follow-ups &amp; reply detection</h2>
 <p><code>outreach/sequences.py</code> schedules steps 2..N; <code>outreach/inbox.py</code> (optional IMAP) detects replies and bounces and <strong>stops</strong> the sequence, updating suppression. Run:</p>
-<pre class="code" data-lang="bash"><code>openleads inbox --days 21</code></pre>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads inbox --days 21</code></pre></div>
 <h2 id="7-commands" class="anchored"><a class="hlink" href="#7-commands">#</a>7. Commands</h2>
-<pre class="code" data-lang="bash"><code>openleads run  &quot;&lt;query&gt;&quot;          # find → write → send (dry-run)
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads run  &quot;&lt;query&gt;&quot;          # find → write → send (dry-run)
 openleads run  &quot;&lt;query&gt;&quot; --live   # …for real
 openleads send &quot;&lt;query&gt;&quot; --live   # same pipeline, terse output
-openleads write &quot;&lt;query&gt;&quot; -o drafts.json   # stop after drafting</code></pre>
+openleads write &quot;&lt;query&gt;&quot; -o drafts.json   # stop after drafting</code></pre></div>
 <h2 id="safety-defaults-in-one-place" class="anchored"><a class="hlink" href="#safety-defaults-in-one-place">#</a>Safety defaults, in one place</h2>
-<ul><li>Dry-run everywhere; <code>--live</code> + confirm to send.</li><li><code>safe</code>-tier only unless you opt into <code>risky</code>.</li><li>Hard daily cap + warmup ramp + human pacing.</li><li>Permanent suppression; one-click unsubscribe; no tracking pixels.</li><li>Per-recipient try/except — one failure never aborts the batch.</li></ul>
-<p>You still own compliance (CAN-SPAM, GDPR, CASL) — see <a href="responsible-use.html">responsible-use.md</a>. OpenLeads gives you the guardrails; using them well is on you.</p>
-      <nav class="prevnext">
-<a class="pn pn--prev" href="deliverability.html"><span>← Previous</span><b>Deliverability</b></a>
-<a class="pn pn--next" href="automation.html"><span>Next →</span><b>Automation & assistant</b></a>
+<ul><li>Dry-run everywhere; <code>--live</code> + confirm to send.</li><li><code>safe</code>-tier only unless you opt into <code>risky</code>.</li><li>Hard daily cap + warmup ramp + human pacing.</li><li>Permanent suppression; one-click unsubscribe; no tracking pixels.</li><li>Per-recipient try/except, so one failure never aborts the batch.</li></ul>
+<p>You still own compliance (CAN-SPAM, GDPR, CASL). See <a href="responsible-use.html">responsible-use.md</a>. OpenLeads gives you the guardrails; using them well is on you.</p>
+<nav class="prevnext" aria-label="Previous and next page">
+<a class="pn pn--prev" href="deliverability.html"><span><i class="ph ph-arrow-left"></i>Previous</span><b>Deliverability</b></a>
+<a class="pn pn--next" href="timed-runs.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Timed runs</b></a>
 </nav>
-    </article>
-  </main>
-  <aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-connect-a-mailbox">1. Connect a mailbox</a><a class="toc__l2" href="#2-the-sender-preflight">2. The sender preflight</a><a class="toc__l2" href="#3-warmup">3. Warmup</a><a class="toc__l2" href="#4-how-a-send-actually-goes-out">4. How a send actually goes out</a><a class="toc__l2" href="#5-drafting">5. Drafting</a><a class="toc__l2" href="#6-follow-ups-reply-detection">6. Follow-ups &amp; reply detection</a><a class="toc__l2" href="#7-commands">7. Commands</a><a class="toc__l2" href="#safety-defaults-in-one-place">Safety defaults, in one place</a></aside>
+</article></main>
+<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-connect-a-mailbox">1. Connect a mailbox</a><a class="toc__l2" href="#2-the-sender-preflight">2. The sender preflight</a><a class="toc__l2" href="#3-warmup">3. Warmup</a><a class="toc__l2" href="#4-how-a-send-actually-goes-out">4. How a send actually goes out</a><a class="toc__l2" href="#5-drafting">5. Drafting</a><a class="toc__l2" href="#6-follow-ups-reply-detection">6. Follow-ups &amp; reply detection</a><a class="toc__l2" href="#7-commands">7. Commands</a><a class="toc__l2" href="#safety-defaults-in-one-place">Safety defaults, in one place</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/sending.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
 </div>
-
-<footer class="footer">
+<footer class="footer docs-footer">
   <div class="container footer__legal">
-    <span>© 2026 Samyar Shafiee · AGPL-3.0.</span>
-    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a></span>
+    <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a> · <a href="https://www.npmjs.com/package/openleads">npm</a> · <a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></span>
   </div>
 </footer>
-<script src="docs.js"></script>
+
+<div class="search" id="search" hidden>
+  <div class="search__backdrop" data-search-close></div>
+  <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
+    <label class="search__field"><i class="ph ph-magnifying-glass"></i>
+      <input id="searchInput" type="search" placeholder="Search the docs" autocomplete="off" spellcheck="false" />
+      <kbd data-search-close>Esc</kbd></label>
+    <ul class="search__results" id="searchResults" role="listbox"></ul>
+    <p class="search__foot"><span><kbd>↑</kbd><kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span></p>
+  </div>
+</div>
+<script src="docs.js?v=6"></script>
 </body>
 </html>

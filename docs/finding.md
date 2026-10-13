@@ -1,9 +1,9 @@
-# Finding leads — the federated engine
+# Finding leads: the federated engine
 
 In v4, you don't pick a data source. You describe who you want, and OpenLeads
 **federates** the query across the public sources that fit it, finds the people
 behind each company, verifies their email, and merges the results. This is how the
-big tools feel like "one box that just works" — done free, keyless, and locally.
+big tools feel like "one box that just works", done free, keyless, and locally.
 
 ```bash
 openleads find "marketing agencies in Miami"
@@ -34,7 +34,7 @@ Streams are interleaved so results stay diverse, then de-duplicated by
 
 Many sources return *companies* (a name + a domain) rather than people. OpenLeads
 turns those into contactable humans by reading the company's own
-`/team`, `/about`, and `/leadership` pages and extracting `(name, title)` pairs —
+`/team`, `/about`, and `/leadership` pages and extracting `(name, title)` pairs: 
 JSON-LD `Person` objects plus conservative name/role heuristics. Each discovered
 person then goes through the [email waterfall](./how-it-works.md). Disable this with
 `--no-people` to keep company-level results (and any published role addresses).
@@ -45,7 +45,7 @@ Every source is keyless. A token (e.g. `GITHUB_TOKEN`) only raises a rate limit.
 
 | Source | Vertical |
 |---|---|
-| `local` | Local businesses by category + city, via OpenStreetMap/Overpass — agencies, clinics, firms, gyms, salons, restaurants, shops. Global. |
+| `local` | Local businesses by category + city, via OpenStreetMap/Overpass: agencies, clinics, firms, gyms, salons, restaurants, shops. Global. |
 | `yc` | Startup founders from the open Y Combinator dataset. |
 | `hn` | Companies hiring now, from Hacker News "Who is hiring" (often with apply emails). |
 | `companies` | Companies by industry + country with real websites, via Wikidata SPARQL. |
@@ -56,10 +56,10 @@ Every source is keyless. A token (e.g. `GITHUB_TOKEN`) only raises a rate limit.
 | `domains` | Hunter-style: real published emails for any domain you name. |
 
 `openleads sources` lists them; `openleads sources info <name>` shows one. You can
-add your own by dropping a `*.py` file in `~/.openleads/sources/` — see
+add your own by dropping a `*.py` file in `~/.openleads/sources/`. See
 [Add a source](./sources.md).
 
-## Bring your own list — enrichment
+## Bring your own list: enrichment
 
 Already have names, companies, or domains? Run the same waterfall over your list:
 
@@ -72,7 +72,7 @@ A row with an email is verified; a row with a name + domain is resolved and
 verified; a row with only a domain is harvested + expanded into people. Every row
 comes back tiered (`safe`/`risky`/`bad`) and is saved to your local CRM.
 
-## Make it hands-free — recipes & watchers
+## Make it hands-free: recipes & watchers
 
 A **recipe** saves an ICP + message + schedule + export and runs itself:
 

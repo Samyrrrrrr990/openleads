@@ -1,4 +1,4 @@
-# Sending — cold email that lands, safely
+# Sending: cold email that lands, safely
 
 OpenLeads sends over **your own** mailbox, with the guardrails that separate
 "reaches the inbox" from "lands in spam / burns your domain." Everything here is
@@ -45,7 +45,7 @@ grade A · 100/100 · ready
 - **SPF** authorizes your provider to send for your domain.
 - **DKIM** cryptographically signs your mail.
 - **DMARC** tells receivers what to do with unauthenticated mail (and `p=none` is
-  weak — push toward `p=quarantine`).
+  weak, push toward `p=quarantine`).
 
 Missing pieces are the #1 reason cold email hits spam. `doctor` and the web Send page
 both surface the grade + exact fixes.
@@ -69,15 +69,15 @@ day's allowance and tells you how many remain. Tune these in `openleads config`
 
 `outreach/sender.py`, for each recipient:
 
-1. **Suppression check** — skips anyone bounced / unsubscribed / replied /
+1. **Suppression check**: skips anyone bounced / unsubscribed / replied /
    do-not-contact / duplicate. The suppression list is permanent and local.
-2. **Warmup check** — stops at the day's allowance.
-3. **Human pacing** — a randomized delay (`send_delay_min`–`send_delay_max` seconds,
+2. **Warmup check**: stops at the day's allowance.
+3. **Human pacing**: a randomized delay (`send_delay_min`–`send_delay_max` seconds,
    default 25–90) between real sends.
-4. **Proper headers** — `Message-ID`, `Date`, threading headers, and
+4. **Proper headers**: `Message-ID`, `Date`, threading headers, and
    **`List-Unsubscribe` + `List-Unsubscribe-Post`** (one-click). Plain-text default;
    **no open-tracking pixels**.
-5. **Logged + resumable** — every attempt is written to the local CRM (`touches`), so
+5. **Logged + resumable**: every attempt is written to the local CRM (`touches`), so
    a crashed batch resumes cleanly and reporting is exact.
 
 By default OpenLeads sends **only to `safe`-tier** addresses. Opt into `risky` with
@@ -93,7 +93,7 @@ the `include_risky` setting (off is safer).
 
 Either way the draft is **spam-linted** (spammy-word score, link count, caps ratio,
 length) and stripped of stray placeholders and em-dash tells. You can edit any draft
-before sending — in the web Compose page, your edits are exactly what's sent.
+before sending, in the web Compose page; your edits are exactly what's sent.
 
 ## 6. Follow-ups & reply detection
 
@@ -119,8 +119,8 @@ openleads write "<query>" -o drafts.json   # stop after drafting
 - `safe`-tier only unless you opt into `risky`.
 - Hard daily cap + warmup ramp + human pacing.
 - Permanent suppression; one-click unsubscribe; no tracking pixels.
-- Per-recipient try/except — one failure never aborts the batch.
+- Per-recipient try/except, so one failure never aborts the batch.
 
-You still own compliance (CAN-SPAM, GDPR, CASL) — see
+You still own compliance (CAN-SPAM, GDPR, CASL). See
 [responsible-use.md](./responsible-use.md). OpenLeads gives you the guardrails; using
 them well is on you.
