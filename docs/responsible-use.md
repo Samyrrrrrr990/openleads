@@ -26,7 +26,7 @@ compliance, which may include:
   unsubscribe, and honoring opt-outs promptly.
 - **GDPR / ePrivacy (EU/UK):** have a lawful basis (often "legitimate interest" for B2B),
   honor objections, and disclose how you got the contact.
-- **CASL (Canada):** stricter consent rules — understand them before emailing Canadians.
+- **CASL (Canada):** stricter consent rules, understand them before emailing Canadians.
 
 This is not legal advice. When in doubt, consult a professional.
 
@@ -35,7 +35,7 @@ This is not legal advice. When in doubt, consult a professional.
 - Keep the built-in **rate limits and delays**. They protect mail servers and your
   sending reputation.
 - Verification probes never send mail, but they still touch other people's
-  infrastructure — don't run them at abusive volume.
+  infrastructure, don't run them at abusive volume.
 - Use a **dedicated sending domain/mailbox**, warm it up, and watch your bounce rate.
   High bounces hurt deliverability for everyone on your domain.
 - Send **relevant, personalized, low-volume** outreach. It performs better anyway.
@@ -46,19 +46,19 @@ v2.0 can reach beyond startup founders into verticals that carry extra ethical a
 legal weight. The data is public, but **public ≠ fair game for any use**.
 
 - **Healthcare providers (NPI):** The NPI Registry is public U.S. government data and
-  contains *practice* information, not personal/patient data — HIPAA does not apply to it.
+  contains *practice* information, not personal/patient data, so HIPAA does not apply to it.
   But cold-emailing clinicians is heavily regulated and easily resented. The `npi` source
   deliberately returns rich records **without fabricating emails** (NPI rarely exposes one).
-  Use it for legitimate research, directory building, or genuinely relevant B2B outreach —
+  Use it for legitimate research, directory building, or genuinely relevant B2B outreach. 
   never for medical spam, lead-list resale, or anything touching patients.
 - **Researchers / academics (OpenAlex, ORCID):** Scholarly metadata is open by design for
-  *scholarly* purposes. Respect that intent — relevant collaboration, recruiting, or
+  *scholarly* purposes. Respect that intent: relevant collaboration, recruiting, or
   conference outreach is fine; bulk marketing blasts are not.
 - **Developers (GitHub):** A public profile email is published for project contact, not
   for cold sales sequences. Be relevant and low-volume.
 
 When a vertical feels sensitive, it is. Default to less volume, more relevance, and an
-easy opt-out — or don't send at all.
+easy opt-out, or don't send at all.
 
 ## Data hygiene
 

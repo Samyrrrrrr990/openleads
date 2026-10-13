@@ -51,9 +51,33 @@ if (reduceMotion || !("IntersectionObserver" in window)) {
       e.target.classList.add("in");
       io.unobserve(e.target);
     });
-  }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+  // threshold 0: tall blocks (the bento, the canvas) used to stay blank until 12% of
+  // them was on screen, which left whole viewports empty mid-scroll.
+  }, { threshold: 0, rootMargin: "0px 0px -40px 0px" });
   reveals.forEach((r) => io.observe(r));
 }
+
+/* ---- GitHub stars: one live count for every [data-stars] badge ---- */
+const REPO_API = "https://api.github.com/repos/Samyrrrrrr990/openleads";
+(async () => {
+  const els = document.querySelectorAll("[data-stars]");
+  if (!els.length) return;
+  let n = null;
+  try {
+    const hit = JSON.parse(sessionStorage.getItem("ol-stars") || "null");
+    if (hit && Date.now() - hit.t < 10 * 60 * 1000) n = hit.n;
+  } catch (_) {}
+  if (n == null) {
+    try {
+      const res = await fetch(REPO_API, { headers: { Accept: "application/vnd.github+json" } });
+      if (res.ok) n = (await res.json()).stargazers_count;
+      try { sessionStorage.setItem("ol-stars", JSON.stringify({ n, t: Date.now() })); } catch (_) {}
+    } catch (_) {}
+  }
+  if (typeof n !== "number") return;
+  const label = n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n);
+  els.forEach((el) => { el.textContent = label; el.hidden = false; });
+})();
 
 /* ---- install segmented control (tabs) ---- */
 const seg = document.querySelector(".seg");
@@ -231,6 +255,173 @@ async function runSpotlight(d) {
   }
 }
 
+/* ---- workflow canvas: an n8n-style run that replays the benchmark searches ---- */
+const canvas = document.getElementById("canvas");
+const NODE_W = 160, NODE_H = 72;  // in the 1000x400 stage space
+
+function layoutCanvas() {
+  const nodes = {};
+  canvas.querySelectorAll(".node").forEach((n) => {
+    const x = +n.dataset.x, y = +n.dataset.y;
+    n.style.left = x / 10 + "%";
+    n.style.top = y / 4 + "%";
+    nodes[n.dataset.node] = { el: n, x, y };
+  });
+  const edges = {};
+  canvas.querySelectorAll("[data-edge]").forEach((path) => {
+    const [a, b] = path.dataset.edge.split(">");
+    const A = nodes[a], B = nodes[b];
+    const x1 = A.x + NODE_W, y1 = A.y + NODE_H / 2, x2 = B.x, y2 = B.y + NODE_H / 2;
+    const dx = Math.max(36, (x2 - x1) / 2);
+    path.setAttribute("d", `M${x1} ${y1} C${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`);
+    edges[path.dataset.edge] = path;
+  });
+  return { nodes, edges };
+}
+
+function runCanvas(d) {
+  const { nodes, edges } = layoutCanvas();
+  const svg = canvas.querySelector(".canvas__edges");
+  const log = document.getElementById("canvas-log");
+  const status = document.querySelector("#canvas-status span");
+  const findQ = document.getElementById("node-find-q");
+  const qs = d.queries;
+
+  const badge = (k, txt) => { nodes[k].el.querySelector(".node__badge").textContent = txt; };
+  const state = (k, st) => {
+    nodes[k].el.classList.toggle("is-running", st === "running");
+    nodes[k].el.classList.toggle("is-done", st === "done");
+  };
+  let clock = 0;
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = () => `09:${pad(Math.floor(clock / 60))}:${pad(clock % 60)}`;
+  const say = (html) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<time>${stamp()}</time><span>${html}</span>`;
+    log.appendChild(li);
+    while (log.children.length > 4) log.firstElementChild.remove();
+  };
+  const reset = () => {
+    Object.keys(nodes).forEach((k) => { state(k, ""); badge(k, ""); });
+    Object.values(edges).forEach((e) => e.classList.remove("is-live", "is-done"));
+    log.textContent = "";
+    clock = 0;
+  };
+  const counts = (q) => {
+    const safe = q.found + q.pattern;
+    return { leads: q.leads, safe, held: Math.max(0, q.leads - safe), secs: Math.round(q.seconds) };
+  };
+
+  // A dot that travels along an edge, like n8n's data flowing between nodes.
+  function flow(key, ms = 520) {
+    const path = edges[key];
+    path.classList.add("is-live");
+    if (reduceMotion) { path.classList.replace("is-live", "is-done"); return Promise.resolve(); }
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("r", "5");
+    svg.appendChild(dot);
+    const len = path.getTotalLength();
+    return new Promise((done) => {
+      const t0 = performance.now();
+      const step = (t) => {
+        const k = Math.min(1, (t - t0) / ms);
+        const e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        const pt = path.getPointAtLength(len * e);
+        dot.setAttribute("cx", pt.x); dot.setAttribute("cy", pt.y);
+        if (k < 1) requestAnimationFrame(step);
+        else { dot.remove(); path.classList.replace("is-live", "is-done"); done(); }
+      };
+      requestAnimationFrame(step);
+    });
+  }
+  async function countUp(k, to, suffix, ms) {
+    const steps = Math.max(1, to);
+    for (let i = 0; i <= to; i++) { badge(k, `${i} ${suffix}`); await sleep(ms / steps); }
+  }
+
+  function finalState(q) {
+    const c = counts(q);
+    findQ.textContent = q.query;
+    Object.keys(nodes).forEach((k) => state(k, "done"));
+    Object.values(edges).forEach((e) => e.classList.add("is-done"));
+    badge("trigger", "fired"); badge("find", `${c.leads} items`); badge("verify", `${c.safe} safe`);
+    badge("write", `${c.safe} drafts`); badge("send", `${c.safe} queued`);
+    badge("review", `${c.held} held`); badge("export", `${c.leads} rows`);
+    canvas.dataset.state = "done";
+    status.textContent = `Succeeded in ${c.secs}s`;
+  }
+
+  // First frame is a finished run, so the card never looks empty.
+  finalState(qs[0]);
+  say(`<b>Find leads</b> returned ${counts(qs[0]).leads} leads for “${qs[0].query}”`);
+  if (reduceMotion) return;
+
+  let visible = false, wakeCanvas = null;
+  new IntersectionObserver(([e]) => {
+    visible = e.isIntersecting;
+    if (visible && !document.hidden && wakeCanvas) { wakeCanvas(); wakeCanvas = null; }
+  }, { threshold: 0.25 }).observe(canvas);
+  document.addEventListener("visibilitychange", () => {
+    if (visible && !document.hidden && wakeCanvas) { wakeCanvas(); wakeCanvas = null; }
+  });
+  const ready = () => (visible && !document.hidden) ? Promise.resolve() : new Promise((r) => { wakeCanvas = r; });
+
+  (async () => {
+    for (let i = 0; ; i = (i + 1) % qs.length) {
+      await ready();
+      const q = qs[i], c = counts(q);
+      reset();
+      findQ.textContent = q.query;
+      canvas.dataset.state = "running";
+      status.textContent = "Running";
+
+      state("trigger", "running"); badge("trigger", "fired");
+      say("<b>Schedule</b> fired, weekdays at 09:00");
+      await sleep(500); state("trigger", "done");
+      await flow("trigger>find");
+
+      state("find", "running");
+      say(`<b>Find leads</b> searching “${q.query}”`);
+      await countUp("find", c.leads, "items", 1300);
+      clock += Math.round(c.secs * .8);
+      state("find", "done");
+      say(`<b>Find leads</b> returned ${c.leads} leads, ${q.people} named people`);
+      await flow("find>verify");
+
+      state("verify", "running"); badge("verify", "checking");
+      await sleep(800);
+      clock += Math.max(1, Math.round(c.secs * .15));
+      badge("verify", `${c.safe} safe`); state("verify", "done");
+      say(`<b>Verify</b> ${c.safe} safe, ${c.held} held for review`);
+      await Promise.all([flow("verify>write"), flow("verify>review")]);
+
+      state("write", "running"); state("review", "running");
+      badge("write", "writing"); badge("review", `${c.held} held`);
+      await sleep(700);
+      clock += 2;
+      badge("write", `${c.safe} drafts`); state("write", "done"); state("review", "done");
+      say(`<b>Write</b> ${c.safe} drafts, 0 spam flags`);
+      await Promise.all([flow("write>send"), flow("review>export")]);
+
+      state("send", "running"); state("export", "running");
+      await countUp("send", c.safe, "queued", 600);
+      badge("export", `${c.leads} rows`);
+      clock += 1;
+      state("send", "done"); state("export", "done");
+      say(`<b>Send</b> ${c.safe} queued under the warmup cap. <b>Export</b> ${c.leads} rows`);
+      canvas.dataset.state = "done";
+      status.textContent = `Succeeded in ${c.secs}s`;
+      await sleep(4200);
+    }
+  })();
+}
+
 if (qEl && tilesEl && metaEl) {
-  loadBench().then((d) => { fillStats(d); runSpotlight(d); });
+  loadBench().then((d) => {
+    fillStats(d);
+    runSpotlight(d);
+    if (canvas) runCanvas(d);
+  });
+} else if (canvas) {
+  loadBench().then(runCanvas);
 }

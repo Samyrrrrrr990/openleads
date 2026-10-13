@@ -534,6 +534,10 @@ async function afterRender(route) {
   if (route === "crm") { await refreshCrm(); $("#main").innerHTML = viewCrm(); }
   if (route === "doctor" && !S.doctor) { await loadDoctor(); $("#main").innerHTML = viewDoctor(); }
   if (route === "automations") { await loadAutomations(); $("#main").innerHTML = viewAutomations(); }
+  if (route === "workflows" && typeof wfLoad === "function") {
+    const sel = S.wf.sel; await wfLoad(); S.wf.sel = sel;
+    if (S.route === "workflows") $("#main").innerHTML = VIEWS.workflows();
+  }
   if (route === "analytics") { await loadAnalytics(); $("#main").innerHTML = viewAnalytics(); }
 }
 

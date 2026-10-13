@@ -4,6 +4,27 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Workflows in the dashboard.** Recipes now open as an n8n-style node canvas:
+  Trigger, Find leads, Verify (branching into safe and risky), Write, Send,
+  Review, and Export. Click a node to edit it, then **Test run** to watch the
+  nodes light up from the live event stream. Test runs never send. A workflow is
+  saved as an ordinary recipe, so the CLI and the scheduler run it unchanged.
+- `/api/recipes` now returns a readable `when` for each recipe, and saving a
+  recipe with a schedule the parser can't read is refused with a clear error.
+
+### Changed: site and docs
+- New landing page sections: an animated workflow canvas driven by the nightly
+  benchmark, the workspace (dashboard, CRM, sequences, analytics, MCP), pricing,
+  and an FAQ. Fixed sections that stayed blank until a late scroll trigger fired.
+- One GitHub star button with a live count on every page, including the docs.
+- Redesigned docs: sidebar with icons, Cmd+K search across every section, copy
+  buttons on code blocks, callouts, reading time, and a new docs home. Wrapped
+  list items no longer split into separate paragraphs.
+- A real PNG social preview (`site/og.png`).
+
 ## [4.5.0] - 2026-10-07
 
 **Make it work, prove it works, and make it clear who can use it.** Running real

@@ -21,7 +21,7 @@ last@         lovelace@acme.io
 ## 2. Does the domain even accept mail? (MX lookup, cross-checked)
 
 Before bothering a mail server, OpenLeads asks for the domain's MX (mail exchanger)
-records over **DNS-over-HTTPS** — and it asks **two independent resolvers**
+records over **DNS-over-HTTPS**, and it asks **two independent resolvers**
 (Google *and* Cloudflare):
 
 ```
@@ -31,7 +31,7 @@ GET https://cloudflare-dns.com/dns-query?name=acme.io&type=MX
 ```
 
 Querying two resolvers does two things: it **survives one provider being down**, and it
-lets OpenLeads **reward agreement** — when both resolvers return the same mail exchangers,
+lets OpenLeads **reward agreement**: when both resolvers return the same mail exchangers,
 that's a stronger signal than one. No MX records at all → the domain can't receive email
 → the lead is dropped. This is a free, instant filter that removes dead domains.
 
@@ -51,7 +51,7 @@ S: 250 OK                         <-- mailbox exists ✅
 C: QUIT
 ```
 
-A `250`/`251` on `RCPT TO` means the server will accept mail for that address — i.e. the
+A `250`/`251` on `RCPT TO` means the server will accept mail for that address, i.e. the
 mailbox exists. A `550` means it doesn't. **No `DATA` command is ever sent, so no email
 is delivered.** This is exactly what paid verifiers do; it's just SMTP.
 
@@ -108,7 +108,7 @@ OpenLeads keeps a small **SQLite cache** at `~/.openleads/cache.db`:
 | SMTP verification (per name+domain) | 14 days |
 | Source datasets (e.g. the YC dump) | 1 day |
 
-A cache hit short-circuits the network entirely — re-runs are near-instant and mail servers
+A cache hit short-circuits the network entirely, so re-runs are near-instant and mail servers
 aren't probed twice for the same thing. Manage it with `openleads cache info` /
 `openleads cache clear`, or bypass it with `--no-cache`.
 

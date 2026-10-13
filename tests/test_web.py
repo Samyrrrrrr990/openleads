@@ -182,6 +182,27 @@ def test_recipes_crud(server):
     assert json.loads(body)["ok"] is True
 
 
+def test_workflow_schedule_is_validated_and_described(server):
+    """The Workflows canvas saves recipes with a schedule; bad text is refused."""
+    _, body = _post(server, "/api/recipes/save",
+                    {"name": "wf-bad", "query": "dentists in Austin", "schedule": "whenever"})
+    res = json.loads(body)
+    assert res["ok"] is False and "schedule" in res["error"]
+
+    _, body = _post(server, "/api/recipes/save",
+                    {"name": "wf-ok", "query": "dentists in Austin", "schedule": "weekdays 09:00"})
+    assert json.loads(body)["ok"] is True
+    _, _, body = _get(server, "/api/recipes")
+    wf = next(r for r in json.loads(body)["recipes"] if r["name"] == "wf-ok")
+    assert wf["when"] == "weekdays at 09:00"
+    _post(server, "/api/recipes/delete", {"name": "wf-ok"})
+
+
+def test_workflows_asset_is_served(server):
+    status, ctype, body = _get(server, "/workflows.js")
+    assert status == 200 and "javascript" in ctype and b"viewWorkflows" in body
+
+
 def test_watchers_crud(server):
     _post(server, "/api/watch/save", {"name": "w1", "query": "new agencies", "sink": "csv"})
     _, _, body = _get(server, "/api/watchers")

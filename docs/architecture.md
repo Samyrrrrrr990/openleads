@@ -2,7 +2,7 @@
 
 OpenLeads v3.0 is a small, readable Python package built around one idea:
 **a universal deliverability engine fed by pluggable sources, that also writes and
-sends.** The core library is 100% standard library (zero runtime dependencies) — the
+sends.** The core library is 100% standard library (zero runtime dependencies), the
 verify engine, the SMTP sender, *and* the web server are all stdlib. The pretty chat
 TUI and the LLM-drafting convenience live behind optional extras.
 
@@ -22,7 +22,7 @@ openleads/
 ├── writers.py        csv · json · ndjson output
 ├── ui.py             plain-text rendering (stdlib fallback for chat)
 │
-├── emails/           THE DELIVERABILITY ENGINE (vertical-agnostic) — 7 signals
+├── emails/           THE DELIVERABILITY ENGINE (vertical-agnostic), 7 signals
 │   ├── mx.py            multi-resolver DoH MX + SPF/DMARC/provider class
 │   ├── permute.py      name → candidate local-parts
 │   ├── patterns.py     learned per-domain patterns + global priors
@@ -51,7 +51,7 @@ openleads/
 │   ├── scheduler.py    drip loop + cron/launchd snippet
 │   └── templates.py    template library + A/B subjects
 │
-├── web/              LOCAL-FIRST DASHBOARD (stdlib only — no Node, no build)
+├── web/              LOCAL-FIRST DASHBOARD (stdlib only, no Node, no build)
 │   ├── server.py       ThreadingHTTPServer on 127.0.0.1; static + JSON API; CSP
 │   ├── api.py          handlers bridging to the engine (streaming NDJSON)
 │   └── static/         pre-built SPA: index.html · styles.css · app.js
@@ -92,7 +92,7 @@ sequenceDiagram
 
 ## Design principles
 
-1. **Zero dependencies in the core.** Engine + library are stdlib only — easy to
+1. **Zero dependencies in the core.** Engine + library are stdlib only, easy to
    audit, trivial to run. Pretty TUI and sending are opt-in extras.
 2. **One job per unit.** Sources discover; the email engine verifies; writers
    format; the cache remembers. Each is testable in isolation, mostly without

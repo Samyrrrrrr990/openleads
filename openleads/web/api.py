@@ -310,16 +310,26 @@ def recipes_list() -> dict:
     from openleads.automate import recipes
     db = DB()
     try:
-        return {"recipes": recipes.list_recipes(db)}
+        out = recipes.list_recipes(db)
+        for r in out:
+            r["when"] = recipes.describe_schedule(r)
+        return {"recipes": out}
     finally:
         db.close()
 
 
 def recipes_save(payload: dict) -> dict:
     from openleads.automate import recipes
+    from openleads.automate import schedule as schedmod
     name = (payload.get("name") or "").strip()
     if not name:
         return {"ok": False, "error": "recipe needs a name"}
+    sched = (payload.get("schedule") or "").strip()
+    if sched:
+        try:
+            schedmod.parse(sched)
+        except schedmod.ScheduleError as e:
+            return {"ok": False, "error": f"couldn't read the schedule '{sched}': {e}"}
     db = DB()
     try:
         spec = recipes.save(name, payload, db=db)

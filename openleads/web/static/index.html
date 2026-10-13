@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
-<title>OpenLeads — local console</title>
+<title>OpenLeads: local console</title>
 <meta name="description" content="OpenLeads local console — find anyone, verify deliverably, write and send cold email. Runs entirely on your machine." />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="styles.css" />
@@ -35,6 +35,12 @@
     <symbol id="i-robot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="11" rx="2"/><path d="M12 8V4M9 13h.01M15 13h.01M9 16h6"/><circle cx="12" cy="3" r="1"/></symbol>
     <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2 7 4-16 2 9h6"/></symbol>
     <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5V4a1.5 1.5 0 0 1 3 0v7.5"/><path d="M14 11.5V5.5a1.5 1.5 0 0 1 3 0V14"/><path d="M8 13a1.5 1.5 0 0 0-3 0v1a8 8 0 0 0 8 8h1a5 5 0 0 0 5-5V9.5a1.5 1.5 0 0 0-3 0"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 10v10"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+    <symbol id="i-flow" viewBox="0 0 24 24"><rect x="2.5" y="9" width="6" height="6" rx="1.5"/><rect x="15.5" y="3" width="6" height="6" rx="1.5"/><rect x="15.5" y="15" width="6" height="6" rx="1.5"/><path d="M8.5 12h3a2 2 0 0 0 2-2V8a2 2 0 0 1 2-2M11.5 12a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2"/></symbol>
   </defs>
 </svg>
 
@@ -63,6 +69,7 @@
       <a class="navlink" data-route="send"><svg class="ico"><use href="#i-send"/></svg><span>Send</span></a>
       <div class="rail__divider"></div>
       <p class="rail__group">Automate</p>
+      <a class="navlink" data-route="workflows"><svg class="ico"><use href="#i-flow"/></svg><span>Workflows</span><span class="navlink__new">new</span></a>
       <a class="navlink" data-route="automations"><svg class="ico"><use href="#i-robot"/></svg><span>Automations</span></a>
       <a class="navlink" data-route="analytics"><svg class="ico"><use href="#i-pulse"/></svg><span>Analytics</span></a>
       <div class="rail__divider"></div>
@@ -94,5 +101,6 @@
 </div>
 
 <script src="app.js"></script>
+<script src="workflows.js"></script>
 </body>
 </html>
