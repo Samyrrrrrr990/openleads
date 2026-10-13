@@ -3,20 +3,33 @@
 Everything needed to launch OpenLeads publicly. Nothing here is posted automatically:
 each post goes out from your own accounts, and you edit it first.
 
-## Before launch (blocking)
+## Status (2026-10-13)
 
-- [ ] Tag and publish v4.5.0 (`git tag v4.5.0 && git push origin v4.5.0`). Check PyPI,
-      npm and the GitHub Release all show 4.5.0.
-- [ ] `pipx install openleads && openleads find "dentists in Austin"` on a clean machine.
-- [ ] Record the GIF: `vhs launch/demo.tape`. Put it at the top of the README, replacing
-      the text example.
-- [ ] Run the **Live benchmark** workflow once by hand so BENCHMARK.md is current.
-- [ ] Repo settings: description, website (the GitHub Pages site), and topics:
-      `lead-generation email-finder apollo-alternative hunter-alternative mcp-server
-      cold-email openstreetmap osint python cli`.
-- [ ] Social preview image: Settings → Social preview → `site/og.svg` exported to PNG.
-- [ ] Turn on Discussions and pin a "Show us what you found" thread.
-- [ ] Close or merge the 5 open Dependabot PRs so the repo looks maintained.
+Done:
+- [x] v4.6.1 on PyPI and GitHub Releases, with the Workflows canvas and release notes.
+- [x] README hero GIF (`docs/assets/workflows.gif`), website and docs links.
+- [x] New site and docs live at https://samyrrrrrr990.github.io/openleads/
+- [x] Repo homepage, description, and topics updated. Discussions on, with an
+      announcement (#12) and a "show us what you found" thread (#13).
+- [x] Listed in the official MCP Registry as `io.github.Samyrrrrrr990/openleads`
+      (republished automatically after every release by `mcp-registry.yml`).
+- [x] List PRs: punkpeye/awesome-mcp-servers#16344, jivoi/awesome-osint#1296.
+- [x] Show HN submitted (item 50075263). It was auto-flagged because the account
+      is new. A moderator email is drafted in Gmail ("Show HN flagged on submission").
+
+Waiting on you:
+- [ ] Send the HN moderator email from Gmail drafts. If they restore it, stay in
+      the thread and answer comments yourself (HN asks for human replies).
+- [ ] npm: set a fresh automation token (`gh secret set NPM_TOKEN`), or publish
+      4.6.1 by hand from `npm/` (2FA needs your browser).
+- [ ] Social preview: Settings, Social preview, upload `site/og.png`.
+- [ ] Merge or close the Dependabot PRs (#1, #2, #8, #9, #10).
+- [ ] X thread (`x-thread.md`, attach `docs/assets/workflows.gif` to tweet 6).
+- [ ] dev.to or Hashnode: paste `article.md`.
+- [ ] Reddit, one sub per day (`reddit.md`). Read each sub's rules first.
+- [ ] Product Hunt (`product-hunt.md`).
+- [ ] awesome-selfhosted: they only accept human submissions, and the AGPL release
+      is from 2026-10-07, so submit after 2027-02-07.
 
 ## Launch order
 
