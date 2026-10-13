@@ -1,0 +1,39 @@
+name: MCP Registry
+
+# Publishes server.json to the official MCP Registry after a release is on PyPI.
+# Auth is GitHub OIDC, so no secret is needed. The registry checks that the PyPI
+# README contains "mcp-name: io.github.Samyrrrrrr990/openleads".
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    # Release fails at the npm step while NPM_TOKEN is stale; PyPI still publishes,
+    # so run on any finished Release and let the registry verify the PyPI version.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for the PyPI version in server.json
+        run: |
+          v=$(python3 -c "import json;print(json.load(open('server.json'))['version'])")
+          for i in $(seq 1 30); do
+            curl -sf "https://pypi.org/pypi/openleads/$v/json" >/dev/null && exit 0
+            sleep 20
+          done
+          echo "openleads $v is not on PyPI yet"; exit 1
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: Log in with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+      - name: Publish server.json
+        run: ./mcp-publisher publish
