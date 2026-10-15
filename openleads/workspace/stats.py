@@ -140,8 +140,9 @@ def health(db, now: float | None = None) -> dict:
          count("COALESCE(title, '') IN ('', 'Team member', 'Team / contact address') "
                "AND COALESCE(first_name, '') != ''"), {"seniority": ["(none)"]}, "info"),
         ("no_phone", "No phone number", count("COALESCE(phone, '') = ''"),
-         {"has_phone": False}, "info"),
-        ("no_linkedin", "No LinkedIn", count("COALESCE(linkedin_url, '') = ''"), {}, "info"),
+         {"has_phone": "no"}, "info"),
+        ("no_linkedin", "No LinkedIn", count("COALESCE(linkedin_url, '') = ''"),
+         {"has_linkedin": "no"}, "info"),
         ("company_only", "Company address, no person", count("COALESCE(first_name, '') = ''"),
          {"seniority": ["(none)"]}, "info"),
         ("stale", "Untouched for 90 days",

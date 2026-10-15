@@ -47,6 +47,9 @@ def test_free_text_and_exact_filters(db):
     assert _emails(people.search(db, {"location": "berl"})) == ["ann@beta.example"]
     assert _emails(people.search(db, {"has_phone": True})) == ["jane@acme.example"]
     assert _emails(people.search(db, {"has_linkedin": "1"})) == ["ann@beta.example"]
+    assert "jane@acme.example" not in _emails(people.search(db, {"has_phone": "no"}))
+    assert "ann@beta.example" not in _emails(people.search(db, {"has_linkedin": "no"}))
+    assert people.search(db, {"has_phone": False})["total"] == people.search(db, {})["total"]
     assert people.search(db, {"technologies": ["HubSpot"]})["total"] == 2  # both at acme
     assert people.search(db, {"score_min": 85, "score_max": 90})["total"] == 1
     assert people.search(db, {"domain": "ACME.example"})["total"] == 2

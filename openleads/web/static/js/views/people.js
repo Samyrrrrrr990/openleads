@@ -37,8 +37,10 @@ const CFG = [
   { key: "created_within", label: "Added", icon: "calendar", type: "select",
     options: [["", "Any time"], ["1", "Today"], ["7", "Last 7 days"], ["30", "Last 30 days"]] },
   { key: "source", label: "Source", icon: "radar" },
-  { key: "has_phone", label: "Phone", icon: "phone", type: "bool", option: "Has a phone number" },
-  { key: "has_linkedin", label: "LinkedIn", icon: "linkedin", type: "bool", option: "Has a LinkedIn profile" },
+  { key: "has_phone", label: "Phone", icon: "phone", type: "select",
+    options: [["", "Any"], ["yes", "Has a phone number"], ["no", "No phone number"]] },
+  { key: "has_linkedin", label: "LinkedIn", icon: "linkedin", type: "select",
+    options: [["", "Any"], ["yes", "Has a LinkedIn profile"], ["no", "No LinkedIn profile"]] },
 ];
 
 const COLUMNS = [

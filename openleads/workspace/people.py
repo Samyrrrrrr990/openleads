@@ -13,7 +13,7 @@ found, every row you imported. :func:`search` takes a filter dict (all optional)
     location        substring of city / state / country
     technologies    the company's site runs any of these (from its profile)
     score_min/max   email score;  fit_min  ICP fit score
-    has_phone, has_linkedin           booleans
+    has_phone, has_linkedin           true = has one, "no" = missing
     contacted       "never" | "ever" | "7d" | "30d" | "90d"
     created_within  days
     sequence        "any" | "none" | a sequence id (active enrollment)
@@ -90,6 +90,11 @@ def _truthy(v) -> bool:
     return v is True or str(v).lower() in ("1", "true", "yes", "on")
 
 
+def _says_no(v) -> bool:
+    """An explicit "missing" for a has_* filter ("no"). False/blank means any."""
+    return isinstance(v, str) and v.lower() in ("no", "missing")
+
+
 def build_where(filters: dict | None, skip: str | None = None) -> tuple:
     """``(sql, params)`` for a WHERE clause (always starts with ``WHERE 1=1``)."""
     f = filters or {}
@@ -154,10 +159,11 @@ def build_where(filters: dict | None, skip: str | None = None) -> tuple:
                 where.append(f"l.{col} {op} ?")
             except (TypeError, ValueError):
                 pass
-    if _truthy(f.get("has_phone")):
-        where.append("COALESCE(l.phone, '') != ''")
-    if _truthy(f.get("has_linkedin")):
-        where.append("COALESCE(l.linkedin_url, '') != ''")
+    for key, col in (("has_phone", "phone"), ("has_linkedin", "linkedin_url")):
+        if _truthy(f.get(key)):
+            where.append(f"COALESCE(l.{col}, '') != ''")
+        elif _says_no(f.get(key)):
+            where.append(f"COALESCE(l.{col}, '') = ''")
     contacted = str(f.get("contacted") or "")
     if contacted == "never":
         where.append("l.last_contacted IS NULL")
