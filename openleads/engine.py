@@ -105,6 +105,7 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         department=department,
         phone=found_phones[0] if found_phones else "",
         company_size=companysize.bucket(entity.extra.get("employees", "")),
+        socials=dict(entity.extra.get("socials") or {}),
     )
 
 

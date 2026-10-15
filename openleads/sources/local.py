@@ -196,6 +196,9 @@ def extract_businesses(overpass_json: dict) -> list[Entity]:
         seen.add(domain)
         city = _tag(tags, "addr:city", "addr:town", "addr:suburb")
         country = _tag(tags, "addr:country")
+        state = _tag(tags, "addr:state", "addr:province")
+        street = " ".join(p for p in (_tag(tags, "addr:housenumber"),
+                                      _tag(tags, "addr:street")) if p)
         category = (_tag(tags, "office", "shop", "amenity", "craft", "leisure",
                          "healthcare", "tourism") or "business")
         public_email = email if (email and "@" in email
@@ -216,9 +219,42 @@ def extract_businesses(overpass_json: dict) -> list[Entity]:
                 "category": category,
                 "city": city,
                 "country": country,
+                "state": state,
+                "address": street,
+                "postcode": _tag(tags, "addr:postcode"),
+                "opening_hours": _tag(tags, "opening_hours"),
+                "socials": osm_socials(tags),
             },
             source="local",
         ))
+    return out
+
+
+_OSM_SOCIAL_TAGS = (
+    ("linkedin", ("contact:linkedin", "linkedin")),
+    ("facebook", ("contact:facebook", "facebook")),
+    ("instagram", ("contact:instagram", "instagram")),
+    ("twitter", ("contact:twitter", "twitter", "contact:x")),
+    ("youtube", ("contact:youtube", "youtube")),
+    ("tiktok", ("contact:tiktok", "tiktok")),
+)
+
+
+def osm_socials(tags: dict) -> dict:
+    """Social profile URLs from OSM ``contact:*`` tags (bare handles become URLs)."""
+    from openleads.insights.socials import classify_url
+    base = {"linkedin": "https://www.linkedin.com/company/", "facebook": "https://www.facebook.com/",
+            "instagram": "https://www.instagram.com/", "twitter": "https://x.com/",
+            "youtube": "https://www.youtube.com/@", "tiktok": "https://www.tiktok.com/@"}
+    out = {}
+    for network, keys in _OSM_SOCIAL_TAGS:
+        raw = _tag(tags, *keys)
+        if not raw:
+            continue
+        url = raw if raw.startswith(("http://", "https://")) else base[network] + raw.lstrip("@/")
+        net, canon = classify_url(url)
+        if net == network:
+            out[network] = canon
     return out
 
 

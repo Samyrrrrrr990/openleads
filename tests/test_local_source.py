@@ -67,3 +67,22 @@ def test_extract_businesses_dedupes_by_domain():
 def test_local_search_no_location_yields_nothing():
     # Local search is inherently geographic; without a place it should be empty.
     assert list(local.LocalSource().search(Query(keyword="dentist"))) == []
+
+
+def test_osm_social_address_and_state_tags_are_kept():
+    from openleads.engine import entity_to_lead
+    from openleads.models import EmailResult
+    from openleads.sources.local import extract_businesses
+    data = {"elements": [{"id": 7, "tags": {
+        "name": "Acme Dental", "website": "https://acmedental.example",
+        "addr:city": "Austin", "addr:state": "TX", "addr:street": "Congress Ave",
+        "addr:housenumber": "100", "addr:postcode": "78701", "amenity": "dentist",
+        "contact:facebook": "acmedental", "contact:instagram": "https://instagram.com/acme",
+        "contact:twitter": "@acme_tx", "phone": "+1 512 555 0100"}}]}
+    ent = extract_businesses(data)[0]
+    assert ent.extra["state"] == "TX" and ent.extra["address"] == "100 Congress Ave"
+    assert ent.extra["socials"] == {"facebook": "https://www.facebook.com/acmedental",
+                                    "instagram": "https://www.instagram.com/acme",
+                                    "twitter": "https://x.com/acme_tx"}
+    ld = entity_to_lead(ent, EmailResult(email="info@acmedental.example", tier="safe"))
+    assert ld.socials["facebook"].endswith("/acmedental") and ld.phone == "+15125550100"
