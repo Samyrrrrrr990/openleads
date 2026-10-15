@@ -35,6 +35,10 @@ HEADER_ALIASES = {
     "domain": "domain", "website": "domain", "url": "domain", "site": "domain",
     "title": "title", "job title": "title", "role": "title", "position": "title",
     "linkedin": "linkedin_url", "linkedin url": "linkedin_url",
+    # Apollo / HubSpot / Sales Navigator export spellings
+    "company name for emails": "company", "person linkedin url": "linkedin_url",
+    "work email": "email", "business email": "email", "company website": "domain",
+    "company domain": "domain", "job title": "title",
     "city": "city", "country": "country", "location": "location",
     # identity entries so normalize_row is idempotent (safe to re-normalize)
     "first_name": "first_name", "last_name": "last_name", "linkedin_url": "linkedin_url",

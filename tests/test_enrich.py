@@ -58,3 +58,12 @@ def test_enrich_rows_finds_from_name_and_domain(monkeypatch):
 def test_enrich_rows_no_domain_is_honest(monkeypatch):
     leads = enrich.enrich_rows([{"name": "Nobody Known"}])
     assert leads[0].email == "" and leads[0].tier == "bad"
+
+
+def test_normalize_understands_apollo_export_headers():
+    row = enrich.normalize_row({"First Name": "Jane", "Last Name": "Doe",
+                                "Company Name for Emails": "Acme", "Work Email": "jane@acme.example",
+                                "Person Linkedin Url": "https://linkedin.com/in/jane",
+                                "Company Website": "https://acme.example"})
+    assert row["company"] == "Acme" and row["email"] == "jane@acme.example"
+    assert row["linkedin_url"].endswith("/jane") and row["domain"] == "https://acme.example"
