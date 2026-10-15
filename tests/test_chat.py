@@ -67,3 +67,24 @@ def test_refine_noop_without_results():
         assert chat._maybe_refine("only verified", sess, None) is False
     finally:
         sess.cache.close()
+
+
+def test_save_puts_results_in_the_workspace_and_a_list(capsys):
+    from openleads.workspace import lists
+    sess = chat.Session()
+    try:
+        chat._handle_slash("/save", sess, None)
+        assert "nothing to save" in capsys.readouterr().out
+        sess.last_leads = [_lead(email="ada@acme.example"),
+                           _lead(email="bob@acme.example", tier="risky")]
+        chat._handle_slash("/save Chat finds", sess, None)
+        assert "saved 2 contact(s) in list 'Chat finds'" in capsys.readouterr().out
+        lst = lists.by_name(sess.db, "Chat finds")
+        assert lst["count"] == 2
+        assert sess.db.get_lead("ada@acme.example")["fit_score"] > 0
+        chat._handle_slash("/people acme", sess, None)
+        out = capsys.readouterr().out
+        assert "ada@acme.example" in out and "bob@acme.example" in out
+    finally:
+        sess.cache.close()
+        sess.db.close()

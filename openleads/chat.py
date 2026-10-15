@@ -53,6 +53,11 @@ _COMMANDS = [
     ("/schedule HH:MM", "install on-device daily sending at this time"),
     ("/format FMT", "csv · json · ndjson"),
     ("/export FILE", "write the last results to FILE"),
+    ("/save [LIST]", "save the last results to your workspace (into a list)"),
+    ("/people [words]", "search your saved contacts"),
+    ("/tasks", "today's calls, emails and follow-ups"),
+    ("/deals", "your pipeline"),
+    ("/stats", "the workspace at a glance"),
     ("/cache", "cache info (/cache clear to empty it)"),
     ("/help", "show this help"),
     ("/quit", "exit"),
@@ -189,12 +194,41 @@ def _handle_slash(cmd: str, sess: Session, console) -> bool:
         else:
             info = sess.cache.info()
             _say(console, f"  cache: {info['path']} {info['counts']}")
+    elif name == "/save":
+        _do_save(arg, sess, console)
+    elif name in ("/people", "/tasks", "/deals", "/stats"):
+        from openleads import cli
+        try:
+            cli.main([name[1:]] + arg.split())
+        except SystemExit:          # argparse usage errors
+            pass
     elif name == "/clear":
         sess.last_leads = []
         _say(console, "  cleared session results")
     else:
         _say(console, f"  [red]unknown command:[/] {name} (try /help)")
     return True
+
+
+def _do_save(arg: str, sess: Session, console) -> None:
+    """Upsert the last results into the CRM, optionally into a named list."""
+    from openleads.workspace import lists, scoring
+    leads = [ld for ld in sess.last_leads if getattr(ld, "email", "")]
+    if not leads:
+        _say(console, "  nothing to save — search for something first")
+        return
+    new = 0
+    for ld in leads:
+        new += bool(sess.db.upsert_lead(ld.to_dict()))
+    emails = [ld.email.lower() for ld in leads]
+    scoring.rescore(sess.db, emails)
+    where = ""
+    if arg:
+        lst = lists.ensure(sess.db, arg, "people")
+        lists.add(sess.db, lst["id"], emails)
+        where = f" in list '{lst['name']}'"
+    _say(console, f"  saved {len(leads)} contact(s){where} — {new} new. "
+                  "Open them with /people or `openleads web`.")
 
 
 def _do_schedule(arg: str, console):
