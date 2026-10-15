@@ -9,6 +9,7 @@ import "./js/views/prospect.js";
 import "./js/views/people.js";
 import "./js/views/companies.js";
 import "./js/views/lists.js";
+import "./js/views/sequences.js";
 import "./js/views/compose.js";
 import "./js/views/analytics.js";
 import "./js/views/workflows.js";
