@@ -2,9 +2,9 @@
 
 # 🧲 OpenLeads
 
-### Find people and their work emails from free public data. No API keys. $0.
+### Find people and their work emails from free public data — then work them like you would in Apollo. No API keys. $0.
 
-**Type who you want (_"dentists in Austin"_, _"fintech founders"_, _"law firms in London"_) and OpenLeads searches OpenStreetMap, Y Combinator, GitHub, OpenAlex, SEC EDGAR, Wikidata and company websites, finds the real people, and tells you honestly which emails are confirmed and which are guesses. Then it can write and send the emails on a schedule. It runs on your machine.**
+**Type who you want (_"dentists in Austin"_, _"fintech founders"_, _"law firms in London"_) and OpenLeads searches OpenStreetMap, Y Combinator, GitHub, OpenAlex, SEC EDGAR, Wikidata and company websites, finds the real people, and tells you honestly which emails are confirmed and which are guesses. Then it scores them against your ideal customer, organizes them into lists, and runs multi-step email, call and LinkedIn sequences, tasks and a deal pipeline. It runs on your machine.**
 
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./COMMERCIAL-LICENSE.md)
 [![PyPI](https://img.shields.io/pypi/v/openleads.svg?color=blue)](https://pypi.org/project/openleads/)
@@ -18,13 +18,14 @@
 ```bash
 pipx install openleads        # or: pip install openleads   ·   npx openleads
 openleads find "dentists in Austin"
+openleads web                 # the dashboard · or `openleads demo` to look around first
 ```
 
 [**Website**](https://samyrrrrrr990.github.io/openleads/) · [**Docs**](https://samyrrrrrr990.github.io/openleads/docs/) · [**Live benchmark**](./BENCHMARK.md) · [**Changelog**](./CHANGELOG.md)
 
-<img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/workflows.gif" alt="A workflow in the OpenLeads dashboard: a schedule triggers Find leads, Verify branches into safe and risky, then Write, Send, Review, and Export. A test run lights each node up with its counts." width="860" />
+<img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-home.png" alt="The OpenLeads dashboard home: contacts, emails sent, reply rate and open pipeline with trend lines, a sends-per-day chart, contacts by stage, active sequences, recent activity, a setup checklist and today's tasks." width="860" />
 
-<sub>A real test run in <code>openleads web</code>: 6 dentists found, 6 safe addresses, 6 drafts, exported to Sheets, nothing sent.</sub>
+<sub>The local dashboard (<code>openleads demo</code>, invented data). Light and dark, keyboard-first, nothing leaves your machine.</sub>
 
 </div>
 
@@ -78,6 +79,22 @@ Latest full run (12 queries, 10 leads each): **12/12 return results · 84% fill 
 54s median.** [Full scoreboard →](./BENCHMARK.md)
 <!-- BENCH:END -->
 
+## Apollo, on your laptop
+
+|  | Apollo | **OpenLeads** |
+|---|---|---|
+| Where contacts come from | A licensed database | Public sources, searched on demand for your exact query |
+| Email confidence | A status per address (verified, extrapolated, …) | **found · pattern · guessed** per address, with the reasons |
+| People & company search with filters | ✓ | ✓ seniority, department, industry, size, tech stack, location, stage, fit… |
+| Lists, tags, notes, saved searches | ✓ | ✓ |
+| ICP fit scoring | ✓ | ✓ 0–100 + A–D, with a what-if preview |
+| Multi-step sequences (email, call, LinkedIn, tasks) | ✓ | ✓ A/B variants, threading, AI-written steps, auto-stop on reply |
+| Task queue · deal pipeline | ✓ | ✓ focus mode · drag-and-drop board with weighted forecast |
+| CSV import & export | ✓ | ✓ auto-maps Apollo, HubSpot and LinkedIn exports; exports in Apollo or HubSpot format |
+| Use from Claude, Cursor, Claude Code | | ✓ built-in MCP server with read and write workspace tools |
+| Where your data lives | Their cloud | **A SQLite file on your machine** |
+| Price | Free tier with credit limits; paid per seat | **$0, open source** |
+
 ## What you can search
 
 One query fans out across the sources that fit it. You never pick a source, but
@@ -99,6 +116,40 @@ pattern, MX/SPF/DMARC, Gravatar, and SMTP where port 25 is open.
 
 Need a source we don't have? A source is [one Python file](./docs/sources.md).
 
+## Work your leads
+
+Everything you find lands in a local **workspace** — the same data in the
+dashboard, the terminal and your AI assistant.
+
+<table>
+<tr>
+<td width="50%"><img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-people.png" alt="People: a filter sidebar (stage, email status, evidence, ICP fit, seniority, department, industry, company size, technologies, location, tags, lists, sequences) beside a table of contacts with company, email evidence, stage and fit grade." /></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-sequence.png" alt="A sequence editor: a day-by-day step timeline (automatic email, threaded bump, call, LinkedIn task) with counts per step, and a live preview of the email rendered for a contact with its spam score." /></td>
+</tr>
+<tr>
+<td><b>People & companies.</b> Facets with live counts, saved searches, bulk actions on every matching row, full records with timeline, notes, tasks and deals.</td>
+<td><b>Sequences.</b> Email, call, LinkedIn and task steps; A/B variants; same-thread follow-ups; AI-written steps; people leave when they reply.</td>
+</tr>
+<tr>
+<td><img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-deals.png" alt="A deal pipeline board with Qualify, Meeting, Proposal, Negotiation, Won and Lost columns, each with its count, value and weighted value, above open pipeline, weighted forecast, won and win rate totals." /></td>
+<td><img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-home-dark.png" alt="The dashboard home page in dark mode." /></td>
+</tr>
+<tr>
+<td><b>Deals.</b> A drag-and-drop pipeline with weighted forecast; winning a deal makes the contact a customer.</td>
+<td><b>Everything else.</b> Task queue, templates, ICP scoring, CSV import, data health and duplicate merge, a ⌘K palette.</td>
+</tr>
+</table>
+
+```bash
+openleads people --fit A --never-contacted                 # best untouched leads
+openleads lists add "Q4 dentists" --where dental
+openleads seq enroll "Q4 outbound" --list "Q4 dentists"
+openleads tasks --bucket today
+openleads import apollo-export.csv --list "Imported"
+```
+
+[Workspace guide →](./docs/workspace.md) · [Sequences guide →](./docs/sequences.md)
+
 ## Use it from Claude, Cursor or Claude Code
 
 OpenLeads is an [MCP server](./docs/mcp.md). Your AI assistant can find and verify
@@ -114,13 +165,21 @@ claude mcp add openleads -- openleads mcp
 
 > *"Find 10 law firms in London with emails we can actually send to, and draft a two-line intro for each."*
 
+> *"Save them to a list called London law, add the A-grade ones to my Q4 sequence, and give me a call task for each partner."*
+
+The workspace tools let an assistant search your contacts and companies, read a
+full record, and save leads, set stages, tag, take notes, create tasks and deals
+and enroll people in sequences — never sending anything itself.
+
 ## Build it as a workflow
 
-`openleads web` opens a local dashboard with search, a CRM, analytics, and
-**Workflows**: each saved search is drawn as a node canvas, like n8n. Click a node
-to edit it (who to find, what to offer, when to run, where to export), then hit
+The dashboard's **Workflows** page draws each saved search as a node canvas, like n8n.
+
+Click a node to edit it (who to find, what to offer, when to run, where to export), then hit
 **Test run** and watch every node fill in from the live engine. Test runs never
 send. [Workflows guide →](./docs/workflows.md)
+
+<img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/workflows.gif" alt="A workflow in the OpenLeads dashboard: a schedule triggers Find leads, Verify branches into safe and risky, then Write, Send, Review, and Export. A test run lights each node up with its counts." width="760" />
 
 Export nodes push leads to CSV, Google Sheets, Notion, Airtable, or any webhook, so
 the rest of your stack (n8n, Zapier, Make) can take it from there.
@@ -175,6 +234,10 @@ openleads watch add NAME "query"               # alert me only on new matches
 openleads schedule on | off | status
 openleads runs
 
+openleads people · companies · lists · seq       # your workspace (see above)
+openleads tasks · deals · import · dedupe · stats
+openleads demo                                 # the dashboard on invented data
+
 openleads bench                                # live quality benchmark
 openleads mcp                                  # MCP server for AI tools
 openleads sources · crm · config · doctor · inbox
@@ -198,7 +261,8 @@ flowchart LR
 ```
 
 The core is Python standard library only. Everything, including your leads, drafts,
-mailbox credentials, learned patterns and CRM, lives in `~/.openleads`. There's no
+mailbox credentials, learned patterns and your whole workspace (people, companies,
+lists, sequences, tasks, deals), lives in `~/.openleads`. There's no
 hosted backend, no account and no telemetry. Details: [docs/architecture.md](./docs/architecture.md).
 
 ## Responsible use
