@@ -29,6 +29,32 @@ The lead engine runs with zero install:
 openleads find "dentists in Austin" -n 5
 ```
 
+## Working on the dashboard
+
+The web app in `openleads/web/static/` is plain ES modules and CSS — no framework,
+no bundler, no `npm install`. Edit a file and reload.
+
+```bash
+openleads demo --port 8788        # a seeded, invented workspace to develop against
+```
+
+- `app.js` is the shell (navigation, theme, palette); each page is one module in
+  `js/views/` that calls `router.register(name, {mount, update, unmount})`.
+- `js/core.js` has the shared pieces: `api`, `router`, `modal`, `menu`, `drawer`,
+  `toast`, `fmt`, `ui`. `js/charts.js` draws charts; `js/filters.js` the facet sidebar.
+- Settings and Import & enrich take extra tabs via `registerSettingsTab` /
+  `registerEnrichTab`, so a feature can ship its tab in its own module.
+- The CSP forbids inline scripts and handlers: wire events with
+  `addEventListener` / `onAct`, never `onclick=`.
+- Colors and spacing come from the tokens at the top of `styles.css`; define
+  anything new for both light and dark.
+- `tests/test_web.py` fails if the shell imports a module the server can't serve,
+  and CI syntax-checks every module with `node --check`.
+
+The JSON API behind it is in `openleads/web/api.py` (engine) and
+`openleads/web/workspace_api.py` (workspace); each endpoint is a small function over
+`openleads/workspace/`, which is where the logic and its tests live.
+
 ## Ways to contribute
 
 - **New free sources** — add a company or people source (GitHub orgs, ProductHunt,
@@ -36,6 +62,7 @@ openleads find "dentists in Austin" -n 5
 - **Email engine** — better permutation patterns, multi-MX cross-checks, smarter
   catch-all handling.
 - **Output formats** — JSON/NDJSON, CRM-specific exports.
+- **Workspace** — sequence step types, import mappings for more tools, charts.
 - **Docs & examples** — always welcome.
 
 ## Pull request checklist
