@@ -26,9 +26,13 @@ export function item(a, { showRef = false } = {}) {
   if (a.kind === "search") title = `Searched <b>“${esc(a.ref)}”</b>`;
   else if (who) title += ` · ${href ? `<a class="link" href="${href}"><b>${esc(who)}</b></a>` : `<b>${esc(who)}</b>`}`;
   const extra = a.kind === "email_error" && a.data?.error ? a.data.error : "";
+  // Deal events repeat the deal's name in their summary; don't say it twice.
+  let summary = a.summary || "";
+  if (who && summary === who) summary = "";
+  else if (who && summary.startsWith(who + ": ")) summary = summary.slice(who.length + 2);
   return `<div class="tl-item"><span class="tl-icon ${tone ? "tl-icon--" + tone : ""}">${ico(icon)}</span>
     <div class="tl-body"><div class="tl-title">${title}</div>
-      ${a.summary ? `<div class="tl-sub">${esc(a.summary)}</div>` : ""}${extra ? `<div class="tl-sub" style="color:var(--bad)">${esc(extra)}</div>` : ""}
+      ${summary ? `<div class="tl-sub">${esc(summary)}</div>` : ""}${extra ? `<div class="tl-sub" style="color:var(--bad)">${esc(extra)}</div>` : ""}
       <div class="tl-time" title="${esc(fmt.datetime(a.ts))}">${esc(fmt.rel(a.ts))}</div></div></div>`;
 }
 
