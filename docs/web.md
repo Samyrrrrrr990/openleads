@@ -4,10 +4,12 @@
 openleads web                 # → http://127.0.0.1:8787
 openleads web --port 9000     # custom port
 openleads web --no-open       # don't auto-open a browser
+openleads demo                # the same dashboard on an invented demo workspace
 ```
 
-A full UI for the four clicks, **find, write, connect, send**, plus Leads, CRM,
-Settings, and Doctor. It's the same engine the CLI uses, in your browser.
+A full sales workspace in your browser — prospecting, a people and company
+database, lists, sequences, tasks, deals, templates, analytics and workflows —
+running on the same engine and the same local database as the CLI.
 
 ---
 
@@ -17,43 +19,88 @@ Settings, and Doctor. It's the same engine the CLI uses, in your browser.
   library (`openleads/web/server.py`). No Flask, no Node, no build step.
 - **Bound to localhost.** It listens on `127.0.0.1`, not reachable from your
   network.
-- **Pre-built UI.** The single-page app is committed as plain static files in
-  `openleads/web/static/` (`index.html`, `styles.css`, `app.js`). End users need
-  **no toolchain**: it ships in the wheel.
-- **No external requests from the page.** A strict same-origin Content-Security-Policy
-  blocks third-party scripts, styles, and fonts. The UI uses your system fonts; no
-  CDN, no analytics, nothing phones home. The privacy promise holds end-to-end.
+- **Pre-built UI.** The app is plain ES modules and CSS committed under
+  `openleads/web/static/` and shipped in the wheel. End users need **no
+  toolchain**.
+- **No external requests from the page.** A strict same-origin
+  Content-Security-Policy blocks third-party scripts, styles and fonts. System
+  fonts, no CDN, no analytics: nothing phones home.
 
 ## The pages
 
-| Page | What |
+| Group | Page | What |
+|---|---|---|
+| Workspace | **Home** | KPIs with trends (contacts, sends, reply rate, pipeline), a sends chart, the stage funnel, today's tasks, active sequences, recent activity and a setup checklist |
+| | **Find people** | Plain-English search across every free source; results stream in, already scored and saved |
+| | **People** | The contact database: filter sidebar with live counts, saved searches, configurable columns, bulk actions on a selection or every matching row, and a full contact record |
+| | **Companies** | Accounts with tech stack, size, industry and stage; profile any company from its website |
+| | **Lists** | People and company lists as cards; open, enroll, export |
+| Engage | **Sequences** | Step timeline editor with A/B variants, live preview, contacts and Run now ([guide](./sequences.md)) |
+| | **Tasks** | Overdue / Today / Upcoming queue and a one-at-a-time focus mode |
+| | **Templates** | Reusable emails with variables, spintax and a live preview |
+| | **Compose & send** | One-off drafts for a set of people, edited inline, dry-run or live |
+| Pipeline | **Deals** | Drag-and-drop board with weighted forecast and deal records |
+| | **Analytics** | Sending, replies and conversion over time |
+| | **Activity** | The workspace-wide feed, grouped by day, filterable |
+| Automate | **Workflows** | Recipes drawn as a node canvas ([guide](./workflows.md)) |
+| | **Recipes & watchers** | Scheduled searches, alerts and run history |
+| | **Import & enrich** | Import a CSV with column mapping; find and verify emails for a list |
+| Settings | **Settings** | Sender, mailbox, sending policy, AI, integrations, and **ICP scoring** |
+| | **Data health** | What to fix before sending, and duplicate merge |
+| | **Doctor** | The `openleads doctor` checks |
+
+The [workspace guide](./workspace.md) covers what each of these does with your data.
+
+### Records and deep links
+
+Every record has its own URL, so you can bookmark or share a view on your own
+machine: `#/people/jane@acme.com`, `#/companies/acme.com`, `#/sequences/3`,
+`#/deals/7`, `#/templates/2`. Filters live in the URL too:
+`#/people?stage=interested&tier=safe`, `#/activity?show=replies`.
+
+### Command palette and shortcuts
+
+Press **⌘K** (Ctrl+K) or **/** anywhere to search people and companies, jump to
+a page, or run an action (new task, deal, sequence, template or list; import a
+CSV; start the task queue; find new people for what you typed).
+
+| Keys | Does |
 |---|---|
-| **Find** (1) | A command bar: type plain English, pick a source, set count, toggle deliverable-only / deep. Results **stream in live** into an engine console and a tiered table. |
-| **Write** (2) | Generate personalized, spam-linted drafts for your `safe` leads. Edit subject/body inline; your edits are what gets sent. |
-| **Connect** (3) | Settings & mailbox setup. Provider presets, app password, sender identity, AI key, sending policy. Secrets are masked and never round-trip to the browser in full. |
-| **Send** (4) | Warmup status, deliverability grade, dry-run/live toggle, and a **live send feed**. |
-| **Leads** | Everything found this session; filter by tier; "why safe" reasons. |
-| **CRM** | Local SQLite CRM: totals, sent counts, suppression, and a status table. |
-| **Doctor** | The `openleads doctor` checks, rendered as status dots. |
+| ⌘K · / | Command palette |
+| G then H, F, P, C, L, S, T, M, D, A, V, W, I | Go to Home, Find, People, Companies, Lists, Sequences, Tasks, Templates, Deals, Analytics, Activity, Workflows, Import |
+| N | The page's New button |
+| T | Toggle dark mode |
+| ? | List every shortcut |
+| Enter · S · Z | In the task queue: complete, skip, snooze |
+| [ · ] | On a focused deal card: move it a stage back or forward |
+
+Shortcuts never fire while you're typing or inside a dialog.
+
+### Light and dark
+
+The interface follows your system theme; the moon/sun button (or **T**) pins one.
+It respects `prefers-reduced-motion` and works down to phone width.
 
 ## The JSON API
 
-The server exposes a small JSON API (`openleads/web/api.py`) that bridges to the same
-engine functions the CLI calls. Long-running actions stream **newline-delimited JSON**
-so the browser can render progress live.
+The server exposes a JSON API that the UI uses and you can script against.
+Long-running actions stream **newline-delimited JSON** so progress renders live.
 
-| Endpoint | Method | Notes |
-|---|---|---|
-| `/api/state` | GET | bootstrap: version, sources, settings, CRM snapshot |
-| `/api/sources` | GET | available sources |
-| `/api/find` | POST | **stream**: `phase` / `lead` / `done` events |
-| `/api/verify` | POST | verify concrete addresses |
-| `/api/write` | POST | draft emails for given leads |
-| `/api/send` | POST | **stream**: dry-run or live; `send` / `done` events |
-| `/api/run` | POST | **stream**: the full find→write→send pipeline |
-| `/api/crm` | GET/POST | CRM overview + rows |
-| `/api/settings` | GET/POST | read / update settings (secret-aware) |
-| `/api/doctor` | GET | structured health report |
+| Area | Endpoints |
+|---|---|
+| Engine | `GET /api/state` · `GET /api/sources` · `POST /api/find` (stream) · `/api/verify` · `/api/write` · `/api/send` (stream) · `/api/run` (stream) · `/api/enrich` (stream) |
+| Workspace | `GET /api/meta` · `/api/home` · `/api/health` · `/api/activity` |
+| People | `POST /api/people/search` · `/facets` · `/create` · `/update` · `/tags` · `/bulk` · `/export` · `GET /api/people/get` |
+| Companies | `POST /api/companies/search` · `/create` · `/update` · `/bulk` · `/profile` · `/enrich` (stream) · `GET /api/companies/get` |
+| Lists, tags, notes | `GET /api/lists` · `POST /api/lists/save` · `/add` · `/remove` · `/delete` · `GET /api/tags` · `POST /api/notes/add` · … |
+| Sequences | `GET /api/sequences` · `/get` · `POST /api/sequences/save` · `/status` · `/enroll` · `/unenroll` · `/pause` · `/preview` · `/run` (stream) |
+| Tasks, deals | `GET /api/tasks` · `POST /api/tasks/save` · `/complete` · `/skip` · `/reopen` · `GET /api/deals` · `POST /api/deals/save` · `/move` |
+| Templates | `GET /api/templates` · `POST /api/templates/save` · `/preview` · `/delete` |
+| Data | `POST /api/import/preview` · `/api/import` · `GET /api/duplicates` · `POST /api/duplicates/merge` · `GET /api/scoring` · `POST /api/scoring/save` · `/preview` · `/explain` |
+| Settings | `GET/POST /api/settings` · `GET /api/doctor` |
+
+Errors come back as JSON with an `error` message and a 4xx status;
+the server never sends a traceback to the client.
 
 Stream events look like:
 
@@ -63,21 +110,26 @@ Stream events look like:
 {"type":"done","count":41,"safe":41,"risky":9,"leads":[...]}
 ```
 
-## Design notes
-
-The interface is intentionally **black and white with hints of red**: a precision
-instrument, not a toy. It respects `prefers-reduced-motion`, uses your OS fonts for
-instant, offline, private rendering, and supports hash deep-links
-(`/#crm`, `/#settings`, …) so you can bookmark a view.
-
 ## Security
 
-- localhost-only bind; same-origin CSP; `X-Content-Type-Options: nosniff`.
-- No inline scripts; static assets are path-traversal-guarded.
-- Secrets are stored `chmod 600` on disk and shown masked in the UI.
-- The server never leaks a traceback to the client; every endpoint returns
-  structured JSON errors.
+The dashboard can send email from your mailbox, so it treats every other website
+open in your browser as hostile:
 
-If you want to expose it beyond localhost (e.g. a home server), put it behind your own
-authenticated reverse proxy. OpenLeads deliberately ships no auth because it's built
-to run on the machine you're sitting at.
+- **Localhost only.** It binds `127.0.0.1` and refuses any request whose `Host`
+  header isn't a loopback name, which stops DNS-rebinding attacks. Add names with
+  `OPENLEADS_ALLOWED_HOSTS=myhost.lan` if you put it behind your own proxy.
+- **No cross-site requests.** Requests marked cross-site by the browser
+  (`Sec-Fetch-Site`), or carrying an `Origin` other than the dashboard's own
+  (including `Origin: null` from sandboxed frames and `file://` pages), get `403`.
+- **JSON only.** Every write must be `Content-Type: application/json` (`415`
+  otherwise), which a plain HTML form on another site can't send. Bodies over 25 MB
+  get `413`; malformed JSON gets `400`.
+- **Can't be framed.** `X-Frame-Options: DENY` and `frame-ancestors 'none'`.
+- **Strict headers.** Same-origin CSP with no inline scripts, `nosniff`,
+  `Referrer-Policy: no-referrer`, same-origin opener and resource policies.
+- **Secrets stay put.** Stored `chmod 600` on disk, shown masked in the UI, never
+  sent back to the browser in full. Static files are path-traversal guarded.
+
+If you want it beyond localhost (e.g. a home server), put it behind your own
+authenticated reverse proxy and allow its host name. OpenLeads deliberately ships
+no login because it's built to run on the machine you're sitting at.
