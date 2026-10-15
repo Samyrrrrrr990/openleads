@@ -151,12 +151,45 @@ def recent(db, limit: int = 50, kinds=None, exclude=FEED_EXCLUDE, before: float 
             touch_params += email_kinds
         out += _touch_rows(db, touch_where, touch_params, limit)
     out.sort(key=lambda r: r["ts"], reverse=True)
+    if not ref_type:
+        out = _dedupe(out)
     out = out[:limit]
-    names = _names(db, {r["ref"] for r in out if r["ref_type"] == "contact"})
-    for r in out:
+    _attach_names(db, out)
+    return out
+
+
+# A deal event is logged on the deal and on its contact; the feed shows it once,
+# on the deal.
+def _dedupe(rows: list) -> list:
+    """Drop the contact copy of an event also logged on a deal or company."""
+    owners = {(r["kind"], r["summary"], int(r["ts"])) for r in rows
+              if r["ref_type"] in ("deal", "company") and r["summary"]}
+    return [r for r in rows if r["ref_type"] != "contact"
+            or (r["kind"], r["summary"], int(r["ts"])) not in owners]
+
+
+def _attach_names(db, rows: list) -> None:
+    """Give each feed row a display name: person, company or deal."""
+    names = _names(db, {r["ref"] for r in rows if r["ref_type"] == "contact"})
+    domains = list({r["ref"] for r in rows if r["ref_type"] == "company"})
+    deal_ids = [int(r["ref"]) for r in rows if r["ref_type"] == "deal" and str(r["ref"]).isdigit()]
+    companies = {}
+    if domains:
+        marks = ",".join("?" for _ in domains)
+        companies = {a["domain"]: a["name"] for a in db.query(
+            f"SELECT domain, name FROM accounts WHERE domain IN ({marks})", domains)}
+    deals = {}
+    if deal_ids:
+        marks = ",".join("?" for _ in deal_ids)
+        deals = {str(d["id"]): d["name"] for d in db.query(
+            f"SELECT id, name FROM deals WHERE id IN ({marks})", deal_ids)}
+    for r in rows:
         if r["ref_type"] == "contact":
             r["name"] = names.get(r["ref"], "")
-    return out
+        elif r["ref_type"] == "company":
+            r["name"] = companies.get(r["ref"]) or r["ref"]
+        elif r["ref_type"] == "deal":
+            r["name"] = deals.get(str(r["ref"]), "")
 
 
 def counts_by_kind(db, since: float | None = None) -> dict:

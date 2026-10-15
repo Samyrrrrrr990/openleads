@@ -70,3 +70,15 @@ def test_feed_pages_filters_and_counts(db):
     assert activity.recent(db, kinds=["email_error"]) == []
     counts = activity.counts_by_kind(db)
     assert counts["note"] == 5 and counts["email_sent"] == 1 and counts["created"] == 1
+
+
+def test_feed_shows_deal_events_once_with_names(db):
+    from openleads.workspace import deals
+    db.upsert_lead({"email": "a@acme.example", "first_name": "Ann", "organization": "Acme"})
+    d = deals.create(db, "Acme pilot", contact="a@acme.example", amount=900)
+    feed = [r for r in activity.recent(db) if r["kind"] == "deal_created"]
+    assert len(feed) == 1 and feed[0]["ref_type"] == "deal" and feed[0]["name"] == "Acme pilot"
+    contact_only = activity.recent(db, ref_type="contact", kinds=["deal_created"])
+    assert contact_only[0]["name"] == "Ann" and str(d["id"]) == feed[0]["ref"]
+    activity.log(db, "company", "acme.example", "note", "Big account")
+    assert activity.recent(db, ref_type="company")[0]["name"] == "Acme"
