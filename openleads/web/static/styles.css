@@ -352,7 +352,8 @@ kbd { display: inline-grid; place-items: center; min-width: 18px; height: 18px; 
 .stat__value { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; }
 .stat__value small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
 .stat__meta { font-size: 12px; color: var(--faint); }
-.stat__spark { position: absolute; right: 14px; bottom: 14px; width: 84px; height: 28px; }
+.chart.stat__spark { position: absolute; right: 16px; top: 34px; width: 84px; height: 28px; }
+.stat__meta { position: relative; z-index: 1; }
 .stat--link { cursor: pointer; transition: border-color .15s; }
 .stat--link:hover { border-color: var(--line-strong); }
 .hero-num { font-size: 48px; font-weight: 650; letter-spacing: -0.03em; line-height: 1; }
