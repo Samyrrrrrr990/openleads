@@ -5,12 +5,24 @@
    tasks, deals and notes.
    ========================================================================= */
 import { addToList, enroll } from "../actions.js";
-import { $, api, confirmDialog, drawer, esc, fail, fmt, ico, menu, modal, store, toast, ui } from "../core.js";
+import { $, api, confirmDialog, drawer, esc, fail, fmt, ico, menu, modal, router, store, toast, ui } from "../core.js";
 import { timeline } from "../timeline.js";
 
 const EDIT = [["first_name", "First name"], ["last_name", "Last name"], ["title", "Title"],
   ["organization", "Company"], ["phone", "Phone"], ["linkedin_url", "LinkedIn URL"], ["city", "City"],
   ["state", "State / region"], ["country", "Country"], ["owner", "Owner"]];
+
+/** "VP of Sales" at a dental practice in Austin → "vps of sales at dental companies in Austin". */
+export function lookalikeQuery(c) {
+  const title = (c.title || "").split(/[,|·(&]/)[0].trim();
+  const topRole = ["owner", "founder", "c_suite", "partner"].includes(c.seniority) || c.department === "executive";
+  const role = c.seniority && c.department && !topRole
+    ? `${store.label("seniorities", c.seniority)} of ${store.label("departments", c.department)}`
+    : title || (c.seniority ? store.label("seniorities", c.seniority) : "") || "founders";
+  const where = c.city || c.state || c.country || "";
+  const industry = (c.industry || "").trim();
+  return `${role}${industry ? ` at ${industry.toLowerCase()} companies` : ""}${where ? ` in ${where}` : ""}`.trim();
+}
 
 export function openContact(email, { onClose, onChange } = {}) {
   const d = drawer({ onClose });
@@ -212,7 +224,8 @@ export function openContact(email, { onClose, onChange } = {}) {
 
   function moreMenu(anchor) {
     menu(anchor, [{ label: "Copy email", value: "copy", icon: "copy" },
-      { label: "Find similar people", value: "similar", icon: "find" },
+      { label: "Find similar people in your CRM", value: "similar", icon: "find" },
+      { label: "Find new lookalikes on the web", value: "lookalike", icon: "radar" },
       { sep: true },
       { label: "Mark do not contact", value: "dnc", icon: "flag", danger: true },
       { label: "Delete contact", value: "delete", icon: "trash", danger: true }], async (v) => {
@@ -222,6 +235,7 @@ export function openContact(email, { onClose, onChange } = {}) {
         d.close();
         location.hash = `#/people?seniority=${c.seniority || ""}&department=${c.department || ""}&industry=${encodeURIComponent(c.industry || "")}`;
       }
+      if (v === "lookalike") { d.close(); router.go("prospect", "", { q: lookalikeQuery(data.contact) }); }
       if (v === "dnc" && await confirmDialog(`${email} will be suppressed and never emailed.`, { title: "Do not contact?", ok: "Suppress", danger: true })) {
         act(() => api.post("/api/people/bulk", { emails: [email], action: "do_not_contact" }), "Suppressed");
       }
