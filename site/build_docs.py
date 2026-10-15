@@ -31,6 +31,7 @@ NAV = [
     ("Guides", [
         ("finding", "Finding leads", "magnifying-glass", "How one sentence is routed across ten free sources."),
         ("workspace", "Workspace", "address-book", "People, companies, lists, tasks, deals and data health."),
+        ("sequences", "Sequences", "list-numbers", "Multi-step email, call and LinkedIn cadences that run themselves."),
         ("workflows", "Workflows", "flow-arrow", "Build recipes as a node canvas, then run them on a schedule."),
         ("deliverability", "Deliverability", "seal-check", "The seven-signal engine that decides what is safe to send."),
         ("sending", "Sending", "paper-plane-tilt", "Connect a mailbox, warm up, and send without burning your domain."),
