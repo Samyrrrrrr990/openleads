@@ -201,8 +201,17 @@ class DB:
             return False
         now = time.time()
         existing = self._conn.execute(
-            "SELECT email, status FROM leads WHERE email=?", (email,)
+            "SELECT email, status, data FROM leads WHERE email=?", (email,)
         ).fetchone()
+        # Hand edits (see workspace.people.update) survive a search that refinds them.
+        edited = {}
+        if existing:
+            try:
+                edited = json.loads(existing["data"] or "{}").get("_edited") or {}
+            except (ValueError, AttributeError):
+                edited = {}
+        if edited:
+            lead = {**lead, **edited, "_edited": edited}
         name = (f"{lead.get('first_name','')} {lead.get('last_name','')}").strip() \
             or lead.get("name", "")
         domain = lead.get("domain") or (email.split("@", 1)[1] if "@" in email else "")
