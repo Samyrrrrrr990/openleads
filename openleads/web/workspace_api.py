@@ -102,6 +102,25 @@ def analytics_replies(db, p):
     return stats.reply_breakdown(db, min_contacted=max(1, _int(p.get("min"), 1)))
 
 
+@route(POST, "/api/backup")
+def backup(db, p):
+    """Snapshot the workspace into ~/.openleads/backups/ (never a path from the browser)."""
+    from openleads.config import home
+    folder = home() / "backups"
+    res = db.backup(folder)
+    backups = sorted(folder.glob("openleads-*.db"))
+    return {"ok": True, **res, "count": len(backups)}
+
+
+@route(GET, "/api/backups")
+def backups_list(db, p):
+    from openleads.config import home
+    folder = home() / "backups"
+    rows = [{"name": f.name, "bytes": f.stat().st_size, "ts": f.stat().st_mtime}
+            for f in sorted(folder.glob("openleads-*.db"), reverse=True)] if folder.exists() else []
+    return {"folder": str(folder), "backups": rows[:20], "db": db.path}
+
+
 @route(GET, "/api/health")
 def health(db, p):
     from openleads.workspace import stats

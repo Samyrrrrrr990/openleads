@@ -268,3 +268,12 @@ def test_saved_scoring_import_duplicates_export(base):
     status, _ = post(base, "/api/people/export", {"emails": ["ann@beta.example"],
                                                    "format": "xlsx"})
     assert status == 400
+
+
+def test_backup_endpoints(base):
+    _, before = get(base, "/api/backups")
+    status, r = post(base, "/api/backup", {"path": "/etc/evil.db"})     # path is ignored
+    assert status == 200 and r["ok"] and r["path"].startswith(before["folder"])
+    _, after = get(base, "/api/backups")
+    assert len(after["backups"]) == len(before["backups"]) + 1
+    assert after["backups"][0]["name"].startswith("openleads-")
