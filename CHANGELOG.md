@@ -4,6 +4,14 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Optional `hubspot` export sink: create or update contacts by email using a
+  private app token (`hubspot_token` / `HUBSPOT_TOKEN`). Populated profile fields
+  update existing contacts without clearing blanks; failures report confirmed
+  progress. Available from the CLI, recipes, watchers and workflow export menus.
+
 ## [5.0.0] - 2026-10-15
 
 **From a lead finder to a lead workspace.** 4.x found people and their emails and

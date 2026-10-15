@@ -113,6 +113,8 @@ SCHEMA: tuple[Setting, ...] = (
             "integrations", "Notion integration token — enables export to a Notion database."),
     Setting("notion_database_id", ("NOTION_DATABASE_ID",), False, "str", "",
             "integrations", "Notion database id leads are exported to."),
+    Setting("hubspot_token", ("HUBSPOT_TOKEN",), True, "str", "",
+            "integrations", "HubSpot private app token — enables contact export."),
     Setting("airtable_token", ("AIRTABLE_TOKEN",), True, "str", "",
             "integrations", "Airtable personal access token — enables export to a base."),
     Setting("airtable_base", ("AIRTABLE_BASE",), False, "str", "",

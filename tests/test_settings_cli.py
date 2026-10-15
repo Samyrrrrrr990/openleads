@@ -48,6 +48,23 @@ def test_env_overrides_store(home, monkeypatch):
     assert home.source_of("smtp_user") == "env"
 
 
+def test_hubspot_token_is_a_masked_secret_with_env_override(home, tmp_path, monkeypatch):
+    import json
+    import stat
+
+    monkeypatch.delenv("HUBSPOT_TOKEN", raising=False)
+    home.set("hubspot_token", "fake-private-token")
+    assert home.get("hubspot_token") == "fake-private-token"
+    assert json.loads((tmp_path / "secrets.json").read_text())["hubspot_token"] == "fake-private-token"
+    assert stat.S_IMODE((tmp_path / "secrets.json").stat().st_mode) == 0o600
+    assert not (tmp_path / "config.json").exists()
+    entry = next(item for item in home.all_settings() if item["key"] == "hubspot_token")
+    assert entry["secret"] and "fake-private" not in entry["value"]
+    monkeypatch.setenv("HUBSPOT_TOKEN", "fake-env-token")
+    assert home.get("hubspot_token") == "fake-env-token"
+    assert home.source_of("hubspot_token") == "env"
+
+
 def test_int_and_bool_coercion(home):
     home.set("daily_cap", "55")
     assert home.get("daily_cap") == 55
