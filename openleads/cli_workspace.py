@@ -5,6 +5,8 @@ data as the web dashboard.
 ``people`` · ``companies`` — search and inspect contacts and accounts, change
 stages, tag, take notes. ``lists`` — build lists. ``seq`` — multi-step sequences:
 create, enroll, run. ``tasks`` — the follow-up queue. ``deals`` — the pipeline.
+``import`` · ``dedupe`` · ``stats`` — data in, data clean, numbers out. ``demo`` —
+a throwaway workspace of invented data to try the dashboard on.
 Every listing takes ``--json`` for scripting.
 """
 from __future__ import annotations
@@ -166,8 +168,8 @@ def cmd_people(db, args) -> int:
         print(ui.box([ui.c(name, ui.WHITE, ui.BOLD),
                       ui.c(" at ".join(x for x in (c.get("title"), c.get("organization")) if x) or "—",
                            ui.GREY)], title=f"✦ {c['email']}", width=72))
-        facts = [("stage", c.get("stage")), ("email", f"{c.get('tier') or 'unverified'} · "
-                                                     f"{c.get('evidence') or '—'}"),
+        facts = [("stage", c.get("stage")),
+                 ("email", f"{c.get('tier') or 'unverified'} · {c.get('evidence') or '—'}"),
                  ("fit", f"{_grade(c.get('fit_score'))} ({c.get('fit_score') or 0})"),
                  ("seniority", c.get("seniority")), ("department", c.get("department")),
                  ("phone", c.get("phone")), ("linkedin", c.get("linkedin_url")),
@@ -573,6 +575,176 @@ def cmd_deals(db, args) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# Import, duplicates, stats, demo                                             #
+# --------------------------------------------------------------------------- #
+def _read_text(path: str) -> str:
+    if path == "-":
+        return sys.stdin.read()
+    with open(path, encoding="utf-8-sig", errors="replace", newline="") as f:
+        return f.read()
+
+
+@_with_db
+def cmd_import(db, args) -> int:
+    """Import a CSV export (Apollo, HubSpot, LinkedIn, any spreadsheet) into People."""
+    import csv as _csv
+
+    from openleads.workspace import importer
+    text = _read_text(args.file)
+    headers, _rows = importer.parse_csv(text)
+    if not headers:
+        raise ValueError("no header row found — is this a CSV?")
+    mapping = importer.detect_mapping(headers)
+    for pair in args.map or []:
+        if "=" not in pair:
+            raise ValueError(f"--map takes HEADER=field, got '{pair}'")
+        h, field = (x.strip() for x in pair.split("=", 1))
+        if h not in headers:
+            raise ValueError(f"no column '{h}' (columns: {', '.join(headers)})")
+        if field and field not in importer.FIELDS:
+            raise ValueError(f"unknown field '{field}' (fields: {', '.join(importer.FIELDS)})")
+        if field:
+            mapping[h] = field
+        else:
+            mapping.pop(h, None)
+    pv = importer.preview(text, mapping)
+    if args.preview or not args.json:
+        print(ui.c(f"{args.file}: {pv['total']} rows · {pv['with_email']} with an email · "
+                   f"{len(pv['needs_email'])} can be found · "
+                   f"{pv['without_email'] - len(pv['needs_email'])} skipped", ui.FAINT))
+        for h in headers:
+            field = mapping.get(h)
+            print(f"  {_cut(h, 30):<30} → {field or ui.c('(not imported)', ui.FAINT)}")
+    if args.preview:
+        return 0
+    res = importer.import_rows(db, text, mapping, list_name=args.list or "",
+                               tags=_split(args.tags or []), stage=args.stage or "",
+                               source=args.source or "import")
+    if args.missing_out and pv["needs_email"]:
+        with open(args.missing_out, "w", newline="", encoding="utf-8") as f:
+            w = _csv.DictWriter(f, fieldnames=["name", "company", "domain"])
+            w.writeheader()
+            w.writerows(pv["needs_email"])
+    if args.json:
+        _dump({**res, "needs_email": len(pv["needs_email"])})
+        return 0
+    print(f"[import] {res['created']} new · {res['updated']} updated · "
+          f"{len(res['skipped'])} skipped · {res['no_email']} without email"
+          + (f" · list '{res['list']['name']}'" if res.get("list") else ""))
+    for sk in res["skipped"][:10]:
+        print(f"         row {sk['row']}: {sk['email']} — {sk['reason']}")
+    if pv["needs_email"]:
+        if args.missing_out:
+            print(f"[import] {len(pv['needs_email'])} rows without an email written to "
+                  f"{args.missing_out} — find them with `openleads enrich {args.missing_out}`")
+        else:
+            print(f"[import] {len(pv['needs_email'])} rows have a name and company but no email; "
+                  "re-run with --missing-out missing.csv, then `openleads enrich missing.csv`")
+    return 0
+
+
+@_with_db
+def cmd_dedupe(db, args) -> int:
+    """Find people who appear twice at the same company; --merge folds them together."""
+    from openleads.workspace import duplicates
+    groups = duplicates.find(db, limit=10000)
+    if args.json and not args.merge:
+        _dump(groups)
+        return 0
+    if not groups:
+        print("No duplicates — nobody appears twice at the same company.")
+        return 0
+    if args.merge:
+        res = duplicates.merge_all(db)
+        print(f"[dedupe] merged {res['merged']} record(s) across {res['groups']} group(s)")
+        return 0
+    for g in groups:
+        keep = g[0]
+        print(ui.c(f"{keep.get('name') or keep['email']} ", ui.WHITE, ui.BOLD)
+              + ui.c(f"at {keep.get('organization') or keep['domain']}", ui.FAINT))
+        for i, r in enumerate(g):
+            mark = ui.c("keep ", ui.GREEN) if i == 0 else ui.c("merge", ui.FAINT)
+            print(f"  {mark} {r['email']:<36} {r.get('tier') or 'unverified':<10} "
+                  f"{_cut(r.get('title') or '', 30)}")
+    print(ui.c(f"\n{len(groups)} group(s). Merge them all with `openleads dedupe --merge` "
+               "(or pick per group in the dashboard → Data health).", ui.FAINT))
+    return 0
+
+
+@_with_db
+def cmd_stats(db, args) -> int:
+    """The workspace at a glance: contacts, sends, replies, tasks, pipeline, data health."""
+    from openleads.workspace import stats
+    h = stats.home(db, checklist=False)
+    hl = stats.health(db)
+    if args.json:
+        h.pop("activity", None)
+        _dump({"home": h, "health": hl})
+        return 0
+    c, e, t, d, sq = h["contacts"], h["emails"], h["tasks"], h["deals"], h["sequences"]
+    rows = [
+        ("contacts", f"{c['total']} ({c['safe']} verified safe, +{c['new_7d']} this week)"),
+        ("fit grades", "  ".join(f"{g} {n}" for g, n in h["grades"].items())),
+        ("emails", f"{e['sent_today']} today · {e['sent_7d']} this week · {e['sent_30d']} in 30 days"),
+        ("replies", (f"{e['replied']} of {e['contacted']} contacted ({e['reply_rate']}%) · "
+                     f"bounces {e['bounce_rate']}%")),
+        ("sequences", f"{sq['active']} active · {sq['enrolled']} people in them · {sq['due_now']} due now"),
+        ("tasks", f"{t['overdue']} overdue · {t['today']} today · {t['upcoming']} upcoming"),
+        ("pipeline", (f"{_money(d['open_value'])} open · {_money(d['weighted'])} weighted · "
+                      f"{_money(d['won_value'])} won")),
+        ("duplicates", f"{hl['duplicates']['groups']} group(s)"),
+    ]
+    for k, v in rows:
+        print(f"  {ui.c(k.ljust(11), ui.FAINT)} {v}")
+    issues = [x for x in hl["checks"] if x["count"] and x["tone"] in ("bad", "warn")]
+    if issues:
+        print(ui.c("\n  worth fixing", ui.WHITE, ui.BOLD))
+        for x in issues:
+            print(f"  {x['count']:>5}  {x['label']} ({x['pct']}%)")
+    funnel = [f"{f['label']} {f['count']}" for f in h["funnel"] if f["count"]]
+    if funnel:
+        print(ui.c("\n  stages  ", ui.FAINT) + " · ".join(funnel))
+    return 0
+
+
+def cmd_demo(args) -> int:
+    """Seed a throwaway workspace with invented data and open the dashboard on it."""
+    import os
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    base = Path(args.dir).expanduser() if args.dir else Path(tempfile.gettempdir()) / "openleads-demo"
+    if args.reset and base.exists():
+        shutil.rmtree(base)
+    real = Path(os.environ.get("OPENLEADS_HOME") or Path.home() / ".openleads").expanduser()
+    if base.resolve() == real.resolve():
+        print("[!] refusing to seed demo data into your real workspace; pick another --dir",
+              file=sys.stderr)
+        return 2
+    os.environ["OPENLEADS_HOME"] = str(base)
+    from openleads import demo
+    db = DB()
+    try:
+        fresh = not db.scalar("SELECT COUNT(*) FROM leads", default=0)
+        counts = demo.seed(db) if fresh else None
+    finally:
+        db.close()
+    if counts:
+        print(f"[demo] seeded {counts['contacts']} people at {counts['companies']} companies, "
+              f"{counts['sequences']} sequences, {counts['tasks']} tasks and {counts['deals']} deals")
+    else:
+        print("[demo] reusing the existing demo workspace (add --reset for a fresh one)")
+    print(f"[demo] workspace: {base}  — everything is invented (.example domains); "
+          "your real data is untouched")
+    if args.no_serve:
+        print(f"       try: OPENLEADS_HOME={base} openleads people")
+        return 0
+    from openleads.web.server import serve
+    return serve(port=args.port, open_browser=not args.no_open)
+
+
+# --------------------------------------------------------------------------- #
 # Parser                                                                      #
 # --------------------------------------------------------------------------- #
 def register(sub) -> None:
@@ -701,3 +873,38 @@ def register(sub) -> None:
     dl.add_argument("--all", action="store_true", help="show empty Won/Lost columns too")
     dl.add_argument("--json", action="store_true")
     dl.set_defaults(func=cmd_deals)
+
+    im = sub.add_parser("import", help="import a CSV (Apollo, HubSpot, LinkedIn, any spreadsheet)",
+                        formatter_class=argparse.RawDescriptionHelpFormatter,
+                        epilog="examples:\n"
+                               "  openleads import apollo-export.csv --preview\n"
+                               '  openleads import contacts.csv --list "Conference leads" --tags event,q4\n'
+                               '  openleads import sheet.csv --map "Work Email=email" --map "Notes="')
+    im.add_argument("file", help="CSV file (or - for stdin)")
+    im.add_argument("--preview", action="store_true", help="show the column mapping and stop")
+    im.add_argument("--map", action="append", metavar="HEADER=field",
+                    help="override a column's field (empty field = don't import)")
+    im.add_argument("--list", help="add the imported people to this list (created if new)")
+    im.add_argument("--tags", action="append", help="tags for every imported person")
+    im.add_argument("--stage", help="stage for people whose row has none")
+    im.add_argument("--source", help="source label (default: import)")
+    im.add_argument("--missing-out", metavar="CSV", help="write rows that need an email here")
+    im.add_argument("--json", action="store_true")
+    im.set_defaults(func=cmd_import)
+
+    dd = sub.add_parser("dedupe", help="find (and --merge) people who appear twice")
+    dd.add_argument("--merge", action="store_true", help="merge every group into its best record")
+    dd.add_argument("--json", action="store_true")
+    dd.set_defaults(func=cmd_dedupe)
+
+    st = sub.add_parser("stats", help="the workspace at a glance")
+    st.add_argument("--json", action="store_true")
+    st.set_defaults(func=cmd_stats)
+
+    dm = sub.add_parser("demo", help="try the dashboard on an invented demo workspace")
+    dm.add_argument("--dir", help="where to keep the demo workspace (default: a temp folder)")
+    dm.add_argument("--reset", action="store_true", help="start from a fresh demo")
+    dm.add_argument("--port", type=int, default=8788)
+    dm.add_argument("--no-open", action="store_true", help="don't open a browser")
+    dm.add_argument("--no-serve", action="store_true", help="seed only, don't start the dashboard")
+    dm.set_defaults(func=cmd_demo)

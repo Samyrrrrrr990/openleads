@@ -12,12 +12,13 @@ def home(monkeypatch, tmp_path):
     monkeypatch.setenv("OPENLEADS_HOME", str(tmp_path))
     db = DB()
     for r in [
-        dict(email="jane@acme.example", first_name="Jane", last_name="Doe", title="VP of Sales",
-             organization="Acme", tier="safe", technologies=["HubSpot"], phone="+15125550100"),
-        dict(email="john@acme.example", first_name="John", last_name="Roe", title="Engineer",
-             organization="Acme", tier="risky"),
-        dict(email="ann@beta.example", first_name="Ann", last_name="Poe", title="Head of Growth",
-             organization="Beta", tier="safe"),
+        {"email": "jane@acme.example", "first_name": "Jane", "last_name": "Doe",
+         "title": "VP of Sales", "organization": "Acme", "tier": "safe",
+         "technologies": ["HubSpot"], "phone": "+15125550100"},
+        {"email": "john@acme.example", "first_name": "John", "last_name": "Roe",
+         "title": "Engineer", "organization": "Acme", "tier": "risky"},
+        {"email": "ann@beta.example", "first_name": "Ann", "last_name": "Poe",
+         "title": "Head of Growth", "organization": "Beta", "tier": "safe"},
     ]:
         db.upsert_lead(r)
     from openleads.workspace import scoring
@@ -154,3 +155,75 @@ def test_deals_board_add_move_won(capsys):
     assert json.loads(out)["totals"]["won_value"] == 12000
     code, _, err = run(capsys, "deals", "move", "1")
     assert code == 2 and "which stage" in err
+
+
+CSV = ("First Name,Last Name,Company Name for Emails,Email,Title,Website,Favorite Color\n"
+       "Tara,Nguyen,Quill,tara@quill.example,Head of Ops,quill.example,teal\n"
+       "Jane,Doe,Acme,jane@acme.example,Chief Revenue Officer,acme.example,red\n"
+       "Lee,Park,Parkside,,Founder,parkside.example,green\n"
+       "Bad,Row,Nope,not-an-email,,,\n")
+
+
+def test_import_preview_map_and_run(capsys, tmp_path):
+    f = tmp_path / "apollo.csv"
+    f.write_text(CSV)
+    code, out, _ = run(capsys, "import", str(f), "--preview")
+    assert code == 0 and "4 rows · 2 with an email · 2 can be found" in out
+    assert "Favorite Color" in out and "(not imported)" in out
+    missing = tmp_path / "missing.csv"
+    code, out, _ = run(capsys, "import", str(f), "--list", "Event", "--tags", "event",
+                       "--map", "Title=", "--missing-out", str(missing))
+    assert code == 0 and "1 new · 1 updated · 1 skipped" in out and "list 'Event'" in out
+    assert missing.read_text().splitlines() == ["name,company,domain",
+                                                "Lee Park,Parkside,parkside.example",
+                                                "Bad Row,Nope,"]      # bad address: find one
+    _, out, _ = run(capsys, "people", "show", "jane@acme.example", "--json")
+    contact = json.loads(out)["contact"]
+    assert contact["title"] == "VP of Sales"            # Title unmapped → kept
+    assert "event" in contact["tags"]
+    code, _, err = run(capsys, "import", str(f), "--map", "Nope=email")
+    assert code == 2 and "no column 'Nope'" in err
+    code, _, err = run(capsys, "import", str(f), "--map", "Title=shoe")
+    assert code == 2 and "unknown field" in err
+
+
+def test_dedupe_lists_and_merges(capsys):
+    db = DB()
+    db.upsert_lead({"email": "jdoe@acme.example", "first_name": "Jane", "last_name": "Doe",
+                    "organization": "Acme", "tier": "risky", "phone": "+15125550199"})
+    db.close()
+    _, out, _ = run(capsys, "dedupe")
+    assert "jane@acme.example" in out and "jdoe@acme.example" in out and "1 group" in out
+    _, out, _ = run(capsys, "dedupe", "--merge")
+    assert "merged 1 record" in out
+    _, out, _ = run(capsys, "dedupe")
+    assert "No duplicates" in out
+
+
+def test_stats(capsys):
+    code, out, _ = run(capsys, "stats")
+    assert code == 0 and "contacts" in out and "3 (2 verified safe" in out and "pipeline" in out
+    _, out, _ = run(capsys, "stats", "--json")
+    assert json.loads(out)["home"]["contacts"]["total"] == 3
+
+
+def test_demo_seeds_a_separate_workspace(capsys, tmp_path, home, monkeypatch):
+    d = tmp_path / "demo-ws"
+    code, out, _ = run(capsys, "demo", "--dir", str(d), "--no-serve")
+    assert code == 0 and "seeded" in out and "invented" in out
+    import os
+    assert os.environ["OPENLEADS_HOME"] == str(d)
+    db = DB()
+    emails = [r["email"] for r in db.query("SELECT email FROM leads")]
+    assert len(emails) > 30 and all(e.endswith(".example") for e in emails)
+    assert db.scalar("SELECT COUNT(*) FROM sequences") == 2
+    db.close()
+    monkeypatch.setenv("OPENLEADS_HOME", str(home))     # each CLI run is a fresh process
+    code, out, _ = run(capsys, "demo", "--dir", str(d), "--no-serve")
+    assert "reusing" in out
+    monkeypatch.setenv("OPENLEADS_HOME", str(home))
+    code, out, _ = run(capsys, "demo", "--dir", str(d), "--no-serve", "--reset")
+    assert code == 0 and "seeded" in out
+    monkeypatch.setenv("OPENLEADS_HOME", str(home))
+    code, _, err = run(capsys, "demo", "--dir", str(home), "--no-serve")
+    assert code == 2 and "refusing" in err
