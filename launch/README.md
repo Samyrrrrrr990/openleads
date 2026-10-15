@@ -38,6 +38,28 @@ Waiting on you:
 - [ ] awesome-selfhosted: they only accept human submissions, and the AGPL release
       is from 2026-10-07, so submit after 2027-02-07.
 
+## 5.0 release (the workspace)
+
+Releasing:
+- [ ] Merge the 5.0 PR into `main` once CI is green.
+- [ ] Tag it: `git tag v5.0.0 && git push origin v5.0.0`. The release workflow checks
+      that the tag, `pyproject.toml`, `openleads/__init__.py` and `npm/package.json`
+      agree, builds and checks the wheel (dashboard included), and creates the GitHub
+      Release.
+- [ ] PyPI publishes from that workflow if Trusted Publishing is on (repo variable
+      `PYPI_TRUSTED_PUBLISHING=true`) or a `PYPI_API_TOKEN` secret is set.
+- [ ] npm publishes from it if an `NPM_TOKEN` secret is set; otherwise
+      `cd npm && npm publish --access public` by hand (2FA in the browser).
+- [ ] `mcp-registry.yml` republishes `server.json` (now 5.0.0) after the release.
+
+Announcing (each in its own words, as above):
+- [ ] Discussions: a 5.0 announcement — the workspace, `openleads demo`, the Apollo
+      comparison, and the four new dashboard screenshots in `docs/assets/`.
+- [ ] Reply on the Show HN / dev.to threads only if people ask what changed.
+- [ ] Re-record `demo.tape` against `openleads demo` for a dashboard GIF.
+- [ ] The "Moving from Apollo" guide (`docs/from-apollo.md`) is the natural link
+      for r/sales-style communities; read each sub's rules first.
+
 ## Launch order
 
 1. **Tuesday–Thursday, 8–10am US Eastern:** Show HN (`show-hn.md`). Stay in the
