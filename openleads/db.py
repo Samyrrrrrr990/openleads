@@ -133,6 +133,13 @@ class DB:
             """
         )
         c.commit()
+        from openleads import schema
+        schema.migrate(c)
+
+    @property
+    def schema_version(self) -> int:
+        from openleads import schema
+        return schema.current_version(self._conn)
 
     # --- patterns (deliverability flywheel) -------------------------------- #
     def learn_pattern(self, domain: str, pattern: str) -> None:

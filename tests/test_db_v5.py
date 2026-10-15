@@ -25,3 +25,35 @@ def test_wal_mode_on_file_db(tmp_path):
     mode = db.scalar("PRAGMA journal_mode")
     assert str(mode).lower() in ("wal", "delete")  # delete only where WAL is unsupported
     db.close()
+
+
+def test_migrations_apply_once_and_record_version(tmp_path):
+    from openleads import schema
+    db = _db(tmp_path)
+    assert db.schema_version == schema.latest()
+    db.close()
+    # Re-opening applies nothing new.
+    db = _db(tmp_path)
+    assert schema.migrate(db._conn) == []
+    db.close()
+
+
+def test_failed_migration_rolls_back(tmp_path, monkeypatch):
+    import sqlite3
+
+    from openleads import schema
+    conn = sqlite3.connect(str(tmp_path / "m.db"))
+    conn.execute("CREATE TABLE t (a TEXT)")
+    conn.commit()
+
+    def boom(c):
+        c.execute("ALTER TABLE t ADD COLUMN b TEXT")
+        raise RuntimeError("nope")
+
+    monkeypatch.setattr(schema, "MIGRATIONS", [(999, "boom", boom)])
+    try:
+        schema.migrate(conn)
+    except RuntimeError:
+        pass
+    assert "b" not in schema.column_names(conn, "t")
+    assert schema.current_version(conn) == schema.BASELINE
