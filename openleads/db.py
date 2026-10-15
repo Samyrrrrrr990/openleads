@@ -228,6 +228,9 @@ class DB:
             marks = ",".join("?" for _ in cols)
             self._conn.execute(f"INSERT INTO leads ({', '.join(cols)}) VALUES ({marks})",
                                tuple(cols.values()))
+            src = lead.get("source") or ""
+            self._activity(email, "created", f"via {src}" if src else "",
+                           {"source": src, "tier": lead.get("tier", "")})
             self._conn.commit()
         return True
 
@@ -255,11 +258,29 @@ class DB:
             self.suppress(email, status)
         self._after_status(email, status)
 
+    def _activity(self, email: str, kind: str, summary: str = "", data: dict | None = None) -> None:
+        self._conn.execute(
+            "INSERT INTO activity (ref_type, ref, kind, summary, data, ts) VALUES (?,?,?,?,?,?)",
+            ("contact", email, kind, summary, json.dumps(data or {}), time.time()))
+
     def _log_stage(self, email: str, old: str, new: str, auto: bool = False) -> None:
-        """Hook for the activity timeline (installed once its table exists)."""
+        from openleads.workspace.stages import label
+        self._activity(email, "stage", f"{label(old or 'new')} → {label(new)}",
+                       {"from": old, "to": new, "auto": auto})
 
     def _after_status(self, email: str, status: str) -> None:
-        """Hook for sequences to stop on reply/bounce (installed by later migrations)."""
+        """Replies, bounces and opt-outs land in the timeline and stop every sequence."""
+        stop = {STATUS_REPLIED: "replied", STATUS_BOUNCED: "bounced",
+                STATUS_UNSUB: "unsubscribed", STATUS_DNC: "unsubscribed"}.get(status)
+        if not stop:
+            return
+        if status in (STATUS_REPLIED, STATUS_BOUNCED):
+            self._activity(email, status)
+        now = time.time()
+        self._conn.execute(
+            "UPDATE enrollments SET status=?, finished=?, next_due=NULL "
+            "WHERE email=? AND status IN ('active', 'paused')", (stop, now, email))
+        self._conn.commit()
 
     def list_leads(self, status: str | None = None, limit: int = 1000) -> list[dict]:
         if status:
