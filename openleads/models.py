@@ -217,6 +217,9 @@ class Query:
     max_companies: int = 400
     use_cache: bool = True
     budget: int = 90                # wall-clock seconds before a search stops and returns
+    company_profile: bool = True    # read each company's homepage: tech, socials, phone
+    seniority: list = field(default_factory=list)    # keep only these seniorities
+    department: list = field(default_factory=list)   # keep only these departments
 
     def replace(self, **changes) -> "Query":
         """Return a copy with the given fields changed (for chat refinement)."""

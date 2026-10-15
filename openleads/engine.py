@@ -13,13 +13,16 @@ underlying HTTP failure is surfaced instead of vanishing.
 from __future__ import annotations
 
 import itertools
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 from openleads import _http, federation
+from openleads.emails.permute import is_free_provider
 from openleads.emails.resolve import find_email
 from openleads.insights import companysize, phones, titles
+from openleads.insights.company import fetch_profile
 from openleads.models import EmailResult, Entity, Lead, Query
 from openleads.sources import get_source
 
@@ -105,6 +108,41 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
     )
 
 
+# Leave at least this much of the time budget for finding people, not profiling.
+PROFILE_RESERVE_SECONDS = 15
+PROFILE_TIMEOUT = 5
+
+
+def apply_profile(lead: Lead, profile: dict | None) -> Lead:
+    """Fold a company profile (see ``insights.company``) into ``lead``; never overwrite."""
+    if not profile or profile.get("error"):
+        return lead
+    lead.technologies = list(profile.get("technologies") or lead.technologies or [])
+    lead.socials = {**(profile.get("socials") or {}), **(lead.socials or {})}
+    lead.description = lead.description or profile.get("description", "")
+    lead.phone = lead.phone or profile.get("phone", "")
+    lead.industry = lead.industry or profile.get("industry", "")
+    lead.company_size = lead.company_size or profile.get("size", "")
+    lead.employees = lead.employees or profile.get("employees", "")
+    addr = profile.get("address") or {}
+    lead.city = lead.city or addr.get("city", "")
+    lead.country = lead.country or addr.get("country", "")
+    if not lead.organization and profile.get("name"):
+        lead.organization = profile["name"]
+    if not lead.linkedin_url and not lead.first_name and lead.socials.get("linkedin"):
+        lead.linkedin_url = lead.socials["linkedin"]   # company contact → company page
+    return lead
+
+
+def matches_filters(lead: Lead, query: Query) -> bool:
+    """Seniority/department filters (empty filter = keep everything)."""
+    if query.seniority and lead.seniority not in query.seniority:
+        return False
+    if query.department and lead.department not in query.department:
+        return False
+    return True
+
+
 def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _noop) -> list[Lead]:
     """Run the pipeline for ``query`` and return up to ``query.count`` leads.
 
@@ -120,21 +158,39 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     _http.clear_errors()
     gen, label = _entity_stream(query, use_cache, db, on_progress)
 
-    def resolve(entity: Entity) -> EmailResult:
+    budget = getattr(query, "budget", 0) or 0
+    deadline = time.monotonic() + budget if budget > 0 else None
+    profiles: dict = {}
+    plock = threading.Lock()
+
+    def profile_for(domain: str):
+        if not getattr(query, "company_profile", True) or not domain or is_free_provider(domain):
+            return None
+        with plock:
+            if domain in profiles:
+                return profiles[domain]
+        if deadline and deadline - time.monotonic() < PROFILE_RESERVE_SECONDS:
+            return None
+        prof = fetch_profile(domain, cache=use_cache, timeout=PROFILE_TIMEOUT)
+        with plock:
+            profiles[domain] = prof
+        return prof
+
+    def resolve(entity: Entity):
         if entity.domain:
-            return find_email(entity.full_name, entity.domain, cache=use_cache,
-                              db=db, links=entity.links, deep=query.deep,
-                              known_email=entity.extra.get("public_email"))
+            res = find_email(entity.full_name, entity.domain, cache=use_cache,
+                             db=db, links=entity.links, deep=query.deep,
+                             known_email=entity.extra.get("public_email"))
+            prof = profile_for(entity.domain) if res.tier != "bad" else None
+            return res, prof
         # Domain-less vertical (e.g. NPI): the public record is itself the value.
-        return EmailResult(**_DOMAINLESS)
+        return EmailResult(**_DOMAINLESS), None
 
     leads: list[Lead] = []
     scanned = with_domain = 0
     futility = max(25, query.count * 4)   # give up if nothing usable after this many
     workers = max(1, min(8, query.count))
     gen = iter(gen)
-    budget = getattr(query, "budget", 0) or 0
-    deadline = time.monotonic() + budget if budget > 0 else None
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         while len(leads) < query.count and scanned < query.max_companies:
@@ -149,14 +205,17 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
             # Resolve the whole batch (threads) before touching the DB on this
             # thread → no worker/main-thread SQLite overlap. Order is preserved.
             results = list(pool.map(resolve, batch))
-            for entity, result in zip(batch, results):
+            for entity, (result, profile) in zip(batch, results):
                 if entity.domain:
                     with_domain += 1
                     if result.tier == "bad":   # no MX / disposable / unguessable
                         continue
                 if query.verified_only and result.tier != "safe":
                     continue
-                leads.append(entity_to_lead(entity, result))
+                lead = apply_profile(entity_to_lead(entity, result), profile)
+                if not matches_filters(lead, query):
+                    continue
+                leads.append(lead)
                 on_progress("lead", leads[-1])
                 if len(leads) >= query.count:
                     break
