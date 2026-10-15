@@ -4,7 +4,8 @@ data as the web dashboard.
 
 ``people`` · ``companies`` — search and inspect contacts and accounts, change
 stages, tag, take notes. ``lists`` — build lists. ``seq`` — multi-step sequences:
-create, enroll, run. Every listing takes ``--json`` for scripting.
+create, enroll, run. ``tasks`` — the follow-up queue. ``deals`` — the pipeline.
+Every listing takes ``--json`` for scripting.
 """
 from __future__ import annotations
 
@@ -445,6 +446,133 @@ def cmd_seq(db, args) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# Tasks                                                                       #
+# --------------------------------------------------------------------------- #
+def _due(ts) -> str:
+    if not ts:
+        return "no date"
+    d = datetime.fromtimestamp(float(ts))
+    days = (d.date() - datetime.now().date()).days
+    if days < 0:
+        return f"{-days}d overdue"
+    if days == 0:
+        return "today " + d.strftime("%H:%M")
+    if days == 1:
+        return "tomorrow"
+    return d.strftime("%a %b %d")
+
+
+@_with_db
+def cmd_tasks(db, args) -> int:
+    """The call/email/LinkedIn/to-do queue: list, add, done, skip, snooze."""
+    from openleads.workspace import tasks
+    act, rest = args.action or "ls", list(args.args)
+    if act in ("ls", "list"):
+        bucket = args.bucket
+        rows = tasks.list_tasks(db, bucket, kind=args.kind)
+        if args.json:
+            _dump({"tasks": rows, "counts": tasks.counts(db)})
+            return 0
+        c = tasks.counts(db)
+        print(ui.c(f"{c['overdue']} overdue · {c['today']} today · {c['upcoming']} upcoming · "
+                   f"{c['done_today']} done today", ui.FAINT))
+        if not rows:
+            print("Nothing here." if bucket != "open" else "All caught up.")
+            return 0
+        print(table(rows, [("id", "id", 4), ("kind", "type", 8), ("title", "task", 40),
+                           (lambda r: r.get("contact_name") or r.get("contact") or "", "who", 22),
+                           (lambda r: _due(r["due"]) if r["status"] == "open" else r["status"],
+                            "due", 14),
+                           ("priority", "pri", 6)]))
+        return 0
+    if act == "add":
+        if not rest:
+            raise ValueError('usage: openleads tasks add "Call Jane" --contact jane@acme.com --due tomorrow')
+        t = tasks.create(db, " ".join(rest), kind=args.kind or "todo", contact=args.contact or "",
+                         due=args.due, note=args.note or "", priority=args.priority)
+        print(f"[tasks] #{t['id']} {t['title']} — {_due(t['due'])}")
+        return 0
+    if not rest:
+        raise ValueError(f"usage: openleads tasks {act} ID [ID ...]")
+    fn = {"done": tasks.complete, "skip": tasks.skip, "reopen": tasks.reopen}.get(act)
+    for tid in rest:
+        if act == "snooze":
+            row = tasks.update(db, tid, {"due": args.due or "tomorrow"})
+        elif act in ("delete", "rm"):
+            row = {"id": tid} if tasks.delete(db, tid) else None
+        elif fn:
+            row = fn(db, tid)
+        else:
+            raise ValueError(f"unknown action '{act}'")
+        if row is None:
+            raise ValueError(f"no task #{tid}")
+        verb = {"done": "done", "skip": "skipped", "reopen": "reopened", "snooze": "snoozed",
+                "delete": "deleted", "rm": "deleted"}[act]
+        print(f"[tasks] #{tid} {verb}" + (f" until {_due(row['due'])}" if act == "snooze" else ""))
+    return 0
+
+
+# --------------------------------------------------------------------------- #
+# Deals                                                                       #
+# --------------------------------------------------------------------------- #
+def _money(v, cur: str = "USD") -> str:
+    sym = {"USD": "$", "EUR": "€", "GBP": "£"}.get((cur or "USD").upper(), "")
+    return f"{sym}{float(v or 0):,.0f}" + ("" if sym else f" {cur}")
+
+
+@_with_db
+def cmd_deals(db, args) -> int:
+    """The pipeline: board summary, add, move, won, lost."""
+    from openleads.workspace import deals
+    act, rest = args.action or "ls", list(args.args)
+    if act in ("ls", "list", "board"):
+        b = deals.board(db, q=args.q)
+        if args.json:
+            _dump(b)
+            return 0
+        t = b["totals"]
+        print(ui.c(f"open {_money(t['open_value'])} ({t['open_count']}) · weighted "
+                   f"{_money(t['weighted'])} · won {_money(t['won_value'])} · win rate "
+                   f"{t['win_rate']}%", ui.FAINT))
+        for col in b["columns"]:
+            if not col["deals"] and col["key"] in ("won", "lost") and not args.all:
+                continue
+            print(ui.c(f"\n{col['label']} ", ui.WHITE, ui.BOLD)
+                  + ui.c(f"{col['count']} · {_money(col['total'])}"
+                         + (f" · {col['probability']}%" if col["key"] not in ("won", "lost") else ""),
+                         ui.FAINT))
+            for d in col["deals"]:
+                print(f"  #{d['id']:<4} {_cut(d['name'], 36):<36} {_money(d['amount'], d['currency']):>10}  "
+                      f"{_cut(d.get('account_name') or d.get('account') or '', 20):<20} "
+                      + ui.c(f"closes {d['close_date']}" if d.get("close_date") else "", ui.FAINT))
+        return 0
+    if act == "add":
+        if not rest:
+            raise ValueError('usage: openleads deals add "Acme — pilot" --amount 12k --contact jane@acme.com')
+        d = deals.create(db, " ".join(rest), account=args.company or "", contact=args.contact or "",
+                         stage=args.stage or "qualify", amount=args.amount, close_date=args.close or "")
+        print(f"[deals] #{d['id']} {d['name']} — {_money(d['amount'])} in {d['stage']}")
+        return 0
+    if act in ("move", "won", "lost"):
+        if not rest:
+            raise ValueError(f"usage: openleads deals {act} ID" + (" STAGE" if act == "move" else ""))
+        stage = act if act != "move" else (rest[1] if len(rest) > 1 else args.stage)
+        if not stage:
+            raise ValueError("which stage? e.g. `openleads deals move 3 proposal`")
+        d = deals.move(db, rest[0], stage)
+        if not d:
+            raise ValueError(f"no deal #{rest[0]}")
+        print(f"[deals] #{d['id']} {d['name']} → {d['stage']}")
+        return 0
+    if act in ("delete", "rm"):
+        if not rest or not deals.delete(db, rest[0]):
+            raise ValueError("no such deal")
+        print(f"[deals] #{rest[0]} deleted")
+        return 0
+    raise ValueError(f"unknown action '{act}'")
+
+
+# --------------------------------------------------------------------------- #
 # Parser                                                                      #
 # --------------------------------------------------------------------------- #
 def register(sub) -> None:
@@ -532,3 +660,44 @@ def register(sub) -> None:
     sq.add_argument("--now", action="store_true", help="ignore business hours (run)")
     sq.add_argument("--json", action="store_true")
     sq.set_defaults(func=cmd_seq)
+
+    tk = sub.add_parser("tasks", help="your call / email / LinkedIn / to-do queue",
+                        formatter_class=argparse.RawDescriptionHelpFormatter,
+                        epilog="examples:\n"
+                               "  openleads tasks                       # everything open\n"
+                               "  openleads tasks --bucket today\n"
+                               '  openleads tasks add "Call Jane" --contact jane@acme.com --kind call --due tomorrow\n'
+                               "  openleads tasks done 4 5\n"
+                               "  openleads tasks snooze 6 --due +3d")
+    tk.add_argument("action", nargs="?", choices=["ls", "list", "add", "done", "skip", "reopen",
+                                                  "snooze", "delete", "rm"])
+    tk.add_argument("args", nargs="*", help="task ids, or the title for add")
+    tk.add_argument("--bucket", default="open",
+                    choices=["open", "overdue", "today", "upcoming", "nodate", "done", "all"])
+    tk.add_argument("--kind", choices=["call", "email", "linkedin", "todo"])
+    tk.add_argument("--contact", help="contact email for add")
+    tk.add_argument("--due", help="today, tomorrow, +3d, +2h, fri, 2026-11-02")
+    tk.add_argument("--note")
+    tk.add_argument("--priority", default="normal", choices=["low", "normal", "high"])
+    tk.add_argument("--json", action="store_true")
+    tk.set_defaults(func=cmd_tasks)
+
+    dl = sub.add_parser("deals", help="your pipeline: board, add, move, won, lost",
+                        formatter_class=argparse.RawDescriptionHelpFormatter,
+                        epilog="examples:\n"
+                               "  openleads deals\n"
+                               '  openleads deals add "Acme — annual" --amount 12k --contact jane@acme.com\n'
+                               "  openleads deals move 3 proposal\n"
+                               "  openleads deals won 3")
+    dl.add_argument("action", nargs="?", choices=["ls", "list", "board", "add", "move", "won",
+                                                  "lost", "delete", "rm"])
+    dl.add_argument("args", nargs="*", help="deal id (+ stage), or the name for add")
+    dl.add_argument("--amount", help="12000, 12k, $2.5k")
+    dl.add_argument("--stage", choices=["qualify", "meeting", "proposal", "negotiation", "won", "lost"])
+    dl.add_argument("--contact")
+    dl.add_argument("--company", help="company domain")
+    dl.add_argument("--close", help="expected close date YYYY-MM-DD")
+    dl.add_argument("--q", help="filter by name or company")
+    dl.add_argument("--all", action="store_true", help="show empty Won/Lost columns too")
+    dl.add_argument("--json", action="store_true")
+    dl.set_defaults(func=cmd_deals)

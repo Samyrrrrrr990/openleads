@@ -118,3 +118,39 @@ def test_sequences_create_enroll_show_run(capsys, monkeypatch):
     assert "Q4 outbound" in out
     code, _, err = run(capsys, "seq", "show", "nope")
     assert code == 2 and "no sequence" in err
+
+
+def test_tasks_add_list_done_snooze(capsys):
+    code, out, _ = run(capsys, "tasks", "add", "Call", "Jane", "--contact", "jane@acme.example",
+                       "--kind", "call", "--due", "today", "--priority", "high")
+    assert code == 0 and "#1 Call Jane" in out
+    run(capsys, "tasks", "add", "Prep deck")
+    _, out, _ = run(capsys, "tasks")
+    assert "Call Jane" in out and "Jane Doe" in out and "Prep deck" in out and "1 today" in out
+    _, out, _ = run(capsys, "tasks", "snooze", "2", "--due", "+3d")
+    assert "snoozed until" in out
+    _, out, _ = run(capsys, "tasks", "done", "1")
+    assert "#1 done" in out
+    _, out, _ = run(capsys, "tasks", "--bucket", "done", "--json")
+    assert [t["id"] for t in json.loads(out)["tasks"]] == [1]
+    code, _, err = run(capsys, "tasks", "done", "99")
+    assert code == 2 and "no task #99" in err
+    code, _, err = run(capsys, "tasks", "add", "x", "--due", "someday")
+    assert code == 2 and "due date" in err
+
+
+def test_deals_board_add_move_won(capsys):
+    code, out, _ = run(capsys, "deals", "add", "Acme", "—", "pilot", "--amount", "12k",
+                       "--contact", "jane@acme.example")
+    assert code == 0 and "$12,000 in qualify" in out
+    _, out, _ = run(capsys, "deals", "move", "1", "proposal")
+    assert "→ proposal" in out
+    _, out, _ = run(capsys, "deals")
+    assert "Proposal" in out and "Acme — pilot" in out and "weighted $6,000" in out
+    run(capsys, "deals", "won", "1")
+    _, out, _ = run(capsys, "people", "show", "jane@acme.example")
+    assert "customer" in out
+    _, out, _ = run(capsys, "deals", "--json")
+    assert json.loads(out)["totals"]["won_value"] == 12000
+    code, _, err = run(capsys, "deals", "move", "1")
+    assert code == 2 and "which stage" in err
