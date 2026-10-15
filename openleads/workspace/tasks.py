@@ -167,6 +167,10 @@ def _close(db, task_id, status: str) -> dict | None:
         activity.log(db, "contact", task["contact"], "task_done",
                      ("Skipped: " if status == "skipped" else "") + task["title"],
                      {"task_id": task["id"], "kind": task["kind"], "status": status})
+    if task.get("enrollment_id"):
+        # A sequence step waits on its task; closing it moves the contact along.
+        from openleads.workspace import sequences
+        sequences.task_closed(db, task)
     return get(db, task["id"])
 
 
