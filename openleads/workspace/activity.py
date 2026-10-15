@@ -38,6 +38,7 @@ KINDS = {
     "bounced": ("Bounced", "x"),
     "merged": ("Merged duplicate", "merge"),
     "enriched": ("Enriched", "spark"),
+    "search": ("Search", "find"),
 }
 
 

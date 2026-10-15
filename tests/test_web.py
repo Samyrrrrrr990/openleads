@@ -148,6 +148,21 @@ def test_find_streams_leads(server, monkeypatch):
     assert "lead" in types and types[-1] == "done"
     done = events[-1]
     assert done["count"] == 2 and done["safe"] == 1 and done["risky"] == 1
+    assert done["new"] in (0, 2) and all("fit_score" in ld for ld in done["leads"])
+
+
+def test_find_passes_role_filters(server, monkeypatch):
+    seen = {}
+
+    def fake_build_leads(query, cache=None, db=None, on_progress=None):
+        seen.update(seniority=query.seniority, department=query.department,
+                    profile=query.company_profile, budget=query.budget)
+        return []
+    monkeypatch.setattr("openleads.engine.build_leads", fake_build_leads)
+    _stream(server, "/api/find", {"query": "agencies in Miami", "seniority": "vp,director",
+                                  "department": ["sales"], "no_company": True, "budget": 45})
+    assert seen == {"seniority": ["vp", "director"], "department": ["sales"],
+                    "profile": False, "budget": 45}
 
 
 # --- streaming send dry-run (no SMTP, no network) ------------------------ #

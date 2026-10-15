@@ -50,6 +50,19 @@ def _query_from_payload(payload: dict) -> Query:
         q.verified_only = True
     if payload.get("deep"):
         q.deep = True
+    for attr in ("seniority", "department"):
+        val = payload.get(attr)
+        if isinstance(val, str):
+            val = [v.strip() for v in val.split(",") if v.strip()]
+        if val:
+            setattr(q, attr, list(val))
+    if payload.get("no_company"):
+        q.company_profile = False
+    if payload.get("budget") is not None:
+        try:
+            q.budget = max(10, min(int(payload["budget"]), 600))
+        except (TypeError, ValueError):
+            pass
     q.use_cache = not payload.get("no_cache", False)
     return q
 
@@ -176,26 +189,41 @@ def providers_presets(params: dict | None = None) -> dict:
 def find(payload: dict, emit: Emit) -> None:
     """Find + verify leads, streaming each lead as it lands. Persists to CRM."""
     from openleads.engine import build_leads
+    from openleads.workspace import activity, scoring
     q = _query_from_payload(payload)
     cache = Cache() if q.use_cache else None
     db = DB()
     leads_out: list[dict] = []
+    new = 0
 
     def on_progress(kind, p):
+        nonlocal new
         if kind == "phase":
             emit({"type": "phase", "message": str(p)})
         elif kind == "lead":
             d = p.to_dict()
             leads_out.append(d)
-            db.upsert_lead(d)
+            d["is_new"] = db.upsert_lead(d)
+            new += 1 if d["is_new"] else 0
             emit({"type": "lead", "lead": d, "n": len(leads_out)})
 
     try:
         emit({"type": "phase", "message": f"searching {q.source or 'auto'}…"})
         build_leads(q, cache=cache, db=db, on_progress=on_progress)
+        emails = [d["email"] for d in leads_out if d.get("email")]
+        if emails:
+            scoring.rescore(db, emails)
+            activity.log(db, "search", q.text or q.keyword or "", "search",
+                         f"{len(leads_out)} found · {new} new",
+                         {"query": q.text, "count": len(leads_out), "new": new})
+        fits = {r["email"]: r["fit_score"] for r in db.query(
+            "SELECT email, fit_score FROM leads WHERE email IN "
+            f"({','.join('?' for _ in emails) or 'NULL'})", emails)} if emails else {}
+        for d in leads_out:
+            d["fit_score"] = fits.get(d.get("email"), 0)
         safe = sum(1 for d in leads_out if d.get("tier") == "safe")
         risky = sum(1 for d in leads_out if d.get("tier") == "risky")
-        emit({"type": "done", "count": len(leads_out), "safe": safe,
+        emit({"type": "done", "count": len(leads_out), "safe": safe, "new": new,
               "risky": risky, "leads": leads_out})
     except ValueError as e:
         emit({"type": "error", "message": str(e)})
