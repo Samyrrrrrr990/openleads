@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The workspace: people, companies, lists, tasks and deals · OpenLeads docs</title>
+<meta name="description" content="People, companies, lists, tasks, deals and data health. OpenLeads documentation." />
+<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="The workspace: people, companies, lists, tasks and deals · OpenLeads docs" />
+<meta property="og:description" content="People, companies, lists, tasks, deals and data health. OpenLeads documentation." />
+<meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+<link rel="stylesheet" href="../styles.css?v=6" />
+<link rel="stylesheet" href="docs.css?v=6" />
+</head>
+<body class="docs">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
+<header class="nav" id="nav">
+  <button class="dsb-toggle" id="dsbToggle" aria-label="Open the docs menu" aria-expanded="false"><i class="ph ph-list"></i></button>
+  <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+  <span class="nav__docs-tag">Docs</span>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="../index.html#workflow">Workflows</a>
+    <a href="../index.html#workspace">Product</a>
+    <a href="../index.html#pricing">Pricing</a>
+    <a href="index.html" class="is-active">Docs</a>
+  </nav>
+  <div class="nav__cta">
+    <button class="search-btn" type="button" data-search-open aria-label="Search the docs"><i class="ph ph-magnifying-glass"></i><span>Search</span><kbd>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener" aria-label="Star OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>
+      <span class="gh-btn__label">Star</span><span class="gh-btn__count" data-stars hidden></span>
+    </a>
+  </div>
+</header>
+<div class="docs__shell">
+<nav class="dsb" id="dsb" aria-label="Docs">
+<button class="dsb__search" type="button" data-search-open><i class="ph ph-magnifying-glass"></i>Search<kbd>⌘K</kbd></button>
+<a class="dsb__link dsb__home" href="index.html"><i class="ph ph-house"></i>Overview</a>
+<p class="dsb__sec">Get started</p>
+<a class="dsb__link" href="quickstart.html"><i class="ph ph-rocket-launch"></i>Quickstart</a>
+<a class="dsb__link" href="web.html"><i class="ph ph-browser"></i>Web dashboard</a>
+<p class="dsb__sec">Guides</p>
+<a class="dsb__link" href="finding.html"><i class="ph ph-magnifying-glass"></i>Finding leads</a>
+<a class="dsb__link is-active" href="workspace.html" aria-current="page"><i class="ph ph-address-book"></i>Workspace</a>
+<a class="dsb__link" href="workflows.html"><i class="ph ph-flow-arrow"></i>Workflows</a>
+<a class="dsb__link" href="deliverability.html"><i class="ph ph-seal-check"></i>Deliverability</a>
+<a class="dsb__link" href="sending.html"><i class="ph ph-paper-plane-tilt"></i>Sending</a>
+<a class="dsb__link" href="timed-runs.html"><i class="ph ph-clock"></i>Timed runs</a>
+<a class="dsb__link" href="automation.html"><i class="ph ph-robot"></i>Automation and assistant</a>
+<a class="dsb__link" href="mcp.html"><i class="ph ph-plugs-connected"></i>Claude, Cursor, and MCP</a>
+<a class="dsb__link" href="sources.html"><i class="ph ph-puzzle-piece"></i>Add a source</a>
+<p class="dsb__sec">Reference</p>
+<a class="dsb__link" href="architecture.html"><i class="ph ph-tree-structure"></i>Architecture</a>
+<a class="dsb__link" href="how-it-works.html"><i class="ph ph-envelope-open"></i>Email engine</a>
+<a class="dsb__link" href="responsible-use.html"><i class="ph ph-scales"></i>Responsible use</a>
+<a class="dsb__link" href="licensing.html"><i class="ph ph-certificate"></i>Licensing</a>
+<div class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" target="_blank" rel="noopener"><i class="ph ph-chats-circle"></i>Ask the community</a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" target="_blank" rel="noopener"><i class="ph ph-bug"></i>Report an issue</a></div>
+</nav>
+<main class="docs__main" id="main"><article class="prose">
+<div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Guides</span><i class="ph ph-caret-right"></i><span>Workspace</span></div>
+<div class="dhead"><span class="dhead__sec"><i class="ph ph-address-book"></i>Guides</span><span class="dhead__meta">5 min read</span></div><h1 id="the-workspace-people-companies-lists-tasks-and-deals">The workspace: people, companies, lists, tasks and deals</h1>
+<p class="lede">Everything you find, import or add lands in one local workspace — the CRM side of OpenLeads. It's the same data in the dashboard (<code>openleads web</code>), the terminal (<code>openleads people</code>, <code>openleads tasks</code>, …) and your AI assistant (the <a href="mcp.html">MCP workspace tools</a>). It lives in <code>~/.openleads/openleads.db</code>, a SQLite file on your machine.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads demo          # try it first on an invented workspace (your data is untouched)</code></pre></div>
+<h2 id="people" class="anchored"><a class="hlink" href="#people">#</a>People</h2>
+<p>Every contact has the fields you'd expect from Apollo — name, title, company, email with its <strong>tier</strong> (safe / risky) and <strong>evidence</strong> (found / pattern / guessed), phone, LinkedIn, location — plus what OpenLeads works out for you:</p>
+<ul><li><strong>Seniority</strong> (owner, founder, C-suite, partner, VP, head, director, manager, senior, entry) and <strong>department</strong> (sales, marketing, engineering, …) from the title.</li><li><strong>Fit score</strong>, 0–100 with an <strong>A–D grade</strong>, from your ideal-customer model (see <a href="#icp-scoring">ICP scoring</a>).</li><li><strong>Stage</strong>, <strong>tags</strong>, <strong>lists</strong>, <strong>notes</strong>, <strong>tasks</strong>, <strong>deals</strong>, the <strong>sequence</strong> they're in, and a <strong>timeline</strong> of everything that happened.</li></ul>
+<p>The People page is a filterable table: facets with live counts (stage, email status, evidence, ICP grade, seniority, department, industry, company size, tech stack, location, tags, lists, sequence, email activity, last contacted, phone, LinkedIn), free-text search, sortable and configurable columns, and bulk actions on a selection or on <strong>every row matching the filters</strong> — add to a list, add to a sequence, set stage, tag, assign an owner, export, write emails, mark do-not-contact or delete. Save any filter combination as a <strong>saved search</strong>.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads people                                   # most recently updated
+openleads people dental --fit A --never-contacted
+openleads people --stage interested --json
+openleads people show jane@acme.com                # the full record
+openleads people stage jane@acme.com --to meeting
+openleads people tag jane@acme.com --add vip,q4
+openleads people note jane@acme.com &quot;Wants pricing for 20 seats&quot;</code></pre></div>
+<h3 id="stages" class="anchored"><a class="hlink" href="#stages">#</a>Stages</h3>
+<div class="tablewrap"><table><thead><tr><th>Stage</th><th>Moves here automatically when…</th></tr></thead><tbody><tr><td>New</td><td>the contact is added</td></tr><tr><td>Approaching</td><td>the first email is sent</td></tr><tr><td>Replied</td><td>a reply arrives (with IMAP connected)</td></tr><tr><td>Interested · Meeting booked · Customer</td><td>you set it (or a deal is won → Customer)</td></tr><tr><td>Not interested · Unresponsive</td><td>you set it, or a sequence finishes with no reply (Unresponsive)</td></tr><tr><td>Do not contact</td><td>they unsubscribe, or you mark them</td></tr><tr><td>Bad data</td><td>the email bounces</td></tr></tbody></table></div>
+<p>Automatic moves never drag a contact backwards: a follow-up sent to someone you marked <em>Interested</em> leaves them <em>Interested</em>. A reply, bounce or unsubscribe also takes the person out of any active sequence.</p>
+<h2 id="companies" class="anchored"><a class="hlink" href="#companies">#</a>Companies</h2>
+<p>Companies (accounts) are created from your contacts' domains and filled in from their homepage on demand: name, description, industry, headcount band, founded year, phone, address, social profiles and the <strong>tech stack</strong> their site runs (100+ technologies across 30 categories — HubSpot, Shopify, Stripe, Intercom, WordPress, …). Filter companies by technology, industry, size, location and stage, and open one to see its people, deals, tasks and notes.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads companies --tech HubSpot
+openleads companies show acme.com
+openleads company acme.com            # live lookup of any domain, not just saved ones</code></pre></div>
+<p>Account stages: prospect, engaged, opportunity, customer, churned, disqualified.</p>
+<h2 id="lists-and-tags" class="anchored"><a class="hlink" href="#lists-and-tags">#</a>Lists and tags</h2>
+<p><strong>Lists</strong> are static groups of people (or companies) you build from searches, selections and imports, then work as a unit: open one in the People table, put it in a sequence, export it. <strong>Tags</strong> are free-form labels on people.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads lists create &quot;Q4 dentists&quot;
+openleads lists add &quot;Q4 dentists&quot; --where dental          # everyone matching a search
+openleads lists add &quot;Q4 dentists&quot; jane@acme.com bob@beta.io
+openleads lists show &quot;Q4 dentists&quot;</code></pre></div>
+<h2 id="importing-a-csv" class="anchored"><a class="hlink" href="#importing-a-csv">#</a>Importing a CSV</h2>
+<p><strong>Import &amp; enrich → Import CSV</strong> (or <code>openleads import</code>) takes an export from Apollo, HubSpot, Salesforce, LinkedIn Sales Navigator or any spreadsheet. Columns map themselves from 100+ header spellings; you can change any of them and see real values under each. Existing contacts are matched by email and <strong>updated without blanking anything</strong>. Rows with a name and a company but no email can go straight to the email finder.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads import apollo-export.csv --preview            # just show the mapping
+openleads import apollo-export.csv --list &quot;Apollo import&quot; --tags apollo \
+    --missing-out missing.csv
+openleads enrich missing.csv                             # find the emails it didn&#x27;t have</code></pre></div>
+<h2 id="icp-scoring" class="anchored"><a class="hlink" href="#icp-scoring">#</a>ICP scoring</h2>
+<p>Describe your ideal customer as points in <strong>Settings → ICP scoring</strong>: seniority, department, industry, company size, technologies, title keywords, location and reachability (verified email, phone, LinkedIn). Every contact gets a 0–100 fit score — <strong>A</strong> 75+, <strong>B</strong> 55+, <strong>C</strong> 35+, <strong>D</strong> below — and the editor previews how many grades would change and who the best matches are <em>before</em> you save. Each contact's record explains its score line by line.</p>
+<h2 id="tasks" class="anchored"><a class="hlink" href="#tasks">#</a>Tasks</h2>
+<p>Calls, emails, LinkedIn touches and to-dos. Sequence steps that need a human become tasks on their due date; completing one moves that contact on to their next step. The Tasks page groups work into Overdue, Today, Upcoming and No date, and <strong>Start queue</strong> works through everything due one at a time, with the contact's details, a note box, and keyboard shortcuts (Enter done, S skip, Z snooze).</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads tasks --bucket today
+openleads tasks add &quot;Call Jane about pricing&quot; --contact jane@acme.com --kind call --due tomorrow
+openleads tasks done 12
+openleads tasks snooze 13 --due +3d</code></pre></div>
+<h2 id="deals" class="anchored"><a class="hlink" href="#deals">#</a>Deals</h2>
+<p>A drag-and-drop pipeline: Qualify (10%), Meeting (25%), Proposal (50%), Negotiation (75%), Won, Lost. The board shows each stage's value and probability-weighted value; the header shows open pipeline, weighted forecast, won and win rate. Winning a deal marks its contact and company as customers.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads deals
+openleads deals add &quot;Acme — annual plan&quot; --amount 12k --contact jane@acme.com
+openleads deals move 3 proposal
+openleads deals won 3</code></pre></div>
+<h2 id="activity-and-data-health" class="anchored"><a class="hlink" href="#activity-and-data-health">#</a>Activity and data health</h2>
+<p><strong>Activity</strong> is the workspace-wide feed — sends, replies, stage changes, notes, tasks, deal moves, list and sequence changes, searches and imports — grouped by day and filterable by what happened and by record type.</p>
+<p><strong>Data health</strong> lists what to fix before you send: unverified and guessed emails, bounces, missing titles, phones and LinkedIn, untouched contacts and unprofiled companies, each one click from the matching People filter. It also finds <strong>duplicate people</strong> (the same person at the same company under two addresses) so you can pick the record to keep and merge — tags, lists, notes, tasks, deals, sequences and history move onto it.</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads stats            # the workspace at a glance
+openleads dedupe           # list duplicates
+openleads dedupe --merge   # merge each group into its best record</code></pre></div>
+<h2 id="exporting" class="anchored"><a class="hlink" href="#exporting">#</a>Exporting</h2>
+<p>Export any selection or filter from People as CSV, JSON, or in <strong>Apollo</strong> or <strong>HubSpot</strong> import format, or push it to Google Sheets, Notion, Airtable or a webhook. From the terminal: <code>openleads find … -f apollo</code> / <code>-f hubspot</code>, or <code>openleads export</code>.</p>
+<nav class="prevnext" aria-label="Previous and next page">
+<a class="pn pn--prev" href="finding.html"><span><i class="ph ph-arrow-left"></i>Previous</span><b>Finding leads</b></a>
+<a class="pn pn--next" href="workflows.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Workflows</b></a>
+</nav>
+</article></main>
+<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#people">People</a><a class="toc__l3" href="#stages">Stages</a><a class="toc__l2" href="#companies">Companies</a><a class="toc__l2" href="#lists-and-tags">Lists and tags</a><a class="toc__l2" href="#importing-a-csv">Importing a CSV</a><a class="toc__l2" href="#icp-scoring">ICP scoring</a><a class="toc__l2" href="#tasks">Tasks</a><a class="toc__l2" href="#deals">Deals</a><a class="toc__l2" href="#activity-and-data-health">Activity and data health</a><a class="toc__l2" href="#exporting">Exporting</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/workspace.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
+</div>
+<footer class="footer docs-footer">
+  <div class="container footer__legal">
+    <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a> · <a href="https://www.npmjs.com/package/openleads">npm</a> · <a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></span>
+  </div>
+</footer>
+
+<div class="search" id="search" hidden>
+  <div class="search__backdrop" data-search-close></div>
+  <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
+    <label class="search__field"><i class="ph ph-magnifying-glass"></i>
+      <input id="searchInput" type="search" placeholder="Search the docs" autocomplete="off" spellcheck="false" />
+      <kbd data-search-close>Esc</kbd></label>
+    <ul class="search__results" id="searchResults" role="listbox"></ul>
+    <p class="search__foot"><span><kbd>↑</kbd><kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span></p>
+  </div>
+</div>
+<script src="docs.js?v=6"></script>
+</body>
+</html>
