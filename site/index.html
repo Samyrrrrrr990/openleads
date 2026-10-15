@@ -205,19 +205,19 @@
     <div class="section__head reveal">
       <p class="eyebrow">The workspace</p>
       <h2 class="h2">Everything a sales tool does. On localhost.</h2>
-      <p class="lead">Run <code>openleads web</code> and you get a full dashboard: search, a CRM, sequences, analytics, and visual workflows. No account, no seat pricing, no data leaving your laptop.</p>
+      <p class="lead">Run <code>openleads web</code> and you get a full sales workspace: people and company search with Apollo-style filters, lists, ICP scoring, multi-step sequences, a task queue, a deal pipeline, analytics and visual workflows. No account, no seat pricing, no data leaving your laptop. Just looking? <code>openleads demo</code>.</p>
     </div>
 
     <figure class="app-shot reveal">
       <div class="app-shot__win" aria-hidden="true">
         <div class="app-shot__side">
           <span class="app-shot__brand"><i class="brand__mark"></i>OpenLeads</span>
-          <span class="is-on"><i class="ph ph-magnifying-glass"></i>Find</span>
-          <span><i class="ph ph-upload-simple"></i>Enrich a list</span>
-          <span><i class="ph ph-flow-arrow"></i>Workflows</span>
-          <span><i class="ph ph-pencil-simple-line"></i>Write</span>
-          <span><i class="ph ph-paper-plane-tilt"></i>Send</span>
-          <span><i class="ph ph-kanban"></i>CRM</span>
+          <span class="is-on"><i class="ph ph-magnifying-glass"></i>Find people</span>
+          <span><i class="ph ph-users"></i>People</span>
+          <span><i class="ph ph-buildings"></i>Companies</span>
+          <span><i class="ph ph-list-numbers"></i>Sequences</span>
+          <span><i class="ph ph-check-square"></i>Tasks</span>
+          <span><i class="ph ph-kanban"></i>Deals</span>
           <span><i class="ph ph-chart-line-up"></i>Analytics</span>
         </div>
         <div class="app-shot__main">
@@ -241,11 +241,14 @@
       <article class="feature reveal"><i class="ph ph-magnifying-glass"></i><h3>Natural language search</h3><p>Type "fintech founders" or "accountants in Toronto". Ten free sources, merged and de-duplicated.</p></article>
       <article class="feature reveal"><i class="ph ph-upload-simple"></i><h3>Enrich any CSV</h3><p>Paste a list of companies or names. Every row comes back with an email and a label you can trust.</p></article>
       <article class="feature reveal"><i class="ph ph-flow-arrow"></i><h3>Visual workflows</h3><p>Recipes drawn as a node canvas: trigger, find, verify, write, send, export. Run once or on a schedule.</p></article>
-      <article class="feature reveal"><i class="ph ph-kanban"></i><h3>Built-in CRM</h3><p>Every lead tracked from found to replied, with statuses and suppression lists in one SQLite file.</p></article>
-      <article class="feature reveal"><i class="ph ph-arrows-clockwise"></i><h3>Sequences</h3><p>Follow-ups that stop the moment someone replies, bounces, or unsubscribes.</p></article>
+      <article class="feature reveal"><i class="ph ph-users"></i><h3>People and companies</h3><p>Filter everyone you've found or imported by seniority, department, industry, size, tech stack, stage and fit. Lists, tags, notes, saved searches.</p></article>
+      <article class="feature reveal"><i class="ph ph-arrows-clockwise"></i><h3>Sequences</h3><p>Email, call, LinkedIn and task steps with A/B variants and same-thread follow-ups. People leave the moment they reply, bounce, or unsubscribe.</p></article>
+      <article class="feature reveal"><i class="ph ph-target"></i><h3>ICP scoring</h3><p>Describe your ideal customer as points; every contact gets a 0–100 fit score and an A–D grade, with a preview before you save.</p></article>
+      <article class="feature reveal"><i class="ph ph-kanban"></i><h3>Tasks and deals</h3><p>A focus-mode task queue for calls and follow-ups, and a drag-and-drop pipeline with a weighted forecast.</p></article>
+      <article class="feature reveal"><i class="ph ph-arrow-square-in"></i><h3>Bring your Apollo data</h3><p>Import Apollo, HubSpot or LinkedIn exports with columns mapped for you, and export back in their formats.</p></article>
       <article class="feature reveal"><i class="ph ph-chart-line-up"></i><h3>Analytics</h3><p>Reply rate, bounce rate, and results by source and tier, computed from your own send log.</p></article>
       <article class="feature reveal"><i class="ph ph-bell-ringing"></i><h3>Watchers</h3><p>Hear about it only when new leads match a niche you care about, delivered to a file or a webhook.</p></article>
-      <article class="feature reveal"><i class="ph ph-robot"></i><h3>MCP server</h3><p>Let Claude, Cursor, or any MCP client find and enrich leads for you, with the same labels.</p></article>
+      <article class="feature reveal"><i class="ph ph-robot"></i><h3>MCP server</h3><p>Let Claude, Cursor, or any MCP client find leads, then save them to lists, set stages, create tasks and enroll people in sequences.</p></article>
       <article class="feature reveal"><i class="ph ph-shield-check"></i><h3>Deliverability preflight</h3><p>SPF, DKIM, and DMARC graded before your first send. Warmup caps and throttling are on by default.</p></article>
     </div>
 
@@ -325,6 +328,7 @@
           <tr><td>Labels</td><td class="us">Found, pattern, or guessed on every address</td><td>One confidence score</td></tr>
           <tr><td>Enrich your own list</td><td class="us">Paste a CSV, get each email labeled</td><td>Paid feature</td></tr>
           <tr><td>Writes and sends</td><td class="us">Drafts, warmup, throttling, suppression</td><td>Upsell</td></tr>
+          <tr><td>Sequences, tasks, deals</td><td class="us">Included, unlimited</td><td>Limited, then paid plans</td></tr>
           <tr><td>Workflows</td><td class="us">Visual recipes on a schedule</td><td>Paid plans</td></tr>
           <tr><td>Where it runs</td><td class="us">Your machine</td><td>Their cloud</td></tr>
           <tr><td>Source code</td><td class="us">Open source, AGPL-3.0</td><td>Closed</td></tr>
