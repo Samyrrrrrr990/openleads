@@ -52,7 +52,7 @@ openleads/
 │   └── inbox.py        optional IMAP read-back (replies + bounces)
 │
 ├── automate/         LOCAL AUTOMATIONS
-│   ├── pipeline.py     find → verify → write → send in one call (the four clicks)
+│   ├── pipeline.py     find → verify → write → send in one call
 │   ├── crm.py          local CRM views/exports over db.py
 │   ├── dedupe.py       cross-run dedupe + do-not-contact
 │   ├── scheduler.py    drip loop + cron/launchd snippet

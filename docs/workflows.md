@@ -6,7 +6,7 @@ step. Nothing about the engine changes: a workflow is saved as an ordinary recip
 so `openleads recipe run <name>` and the scheduler run it exactly the same way.
 
 ```bash
-openleads web        # then open Workflows in the sidebar
+openleads web        # then open Workflows (under Automate) in the sidebar
 ```
 
 ## The nodes

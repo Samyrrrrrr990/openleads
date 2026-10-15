@@ -47,8 +47,9 @@ grade A · 100/100 · ready
 - **DMARC** tells receivers what to do with unauthenticated mail (and `p=none` is
   weak, push toward `p=quarantine`).
 
-Missing pieces are the #1 reason cold email hits spam. `doctor` and the web Send page
-both surface the grade + exact fixes.
+Missing pieces are the #1 reason cold email hits spam. `doctor` and the dashboard's
+Doctor page (the **Deliverability** badge in the sidebar) both surface the grade and
+the exact fixes.
 
 ## 3. Warmup
 
@@ -95,10 +96,16 @@ Either way the draft is **spam-linted** (spammy-word score, link count, caps rat
 length) and stripped of stray placeholders and em-dash tells. You can edit any draft
 before sending, in the web Compose page; your edits are exactly what's sent.
 
-## 6. Follow-ups & reply detection
+## 6. Sequences, follow-ups & reply detection
 
-`outreach/sequences.py` schedules steps 2..N; `outreach/inbox.py` (optional IMAP)
-detects replies and bounces and **stops** the sequence, updating suppression. Run:
+For multi-step outreach — emails with A/B variants and threaded follow-ups, plus
+call and LinkedIn steps that become tasks — use **sequences**: the dashboard's
+Sequences page or `openleads seq`. They send through this same sender, so every
+guardrail below applies. See the [sequences guide](./sequences.md).
+
+`outreach/inbox.py` (optional IMAP) detects replies and bounces; a reply **stops**
+every sequence for that person, moves them to *Replied* and puts a "Reply to …"
+task in your queue, and a bounce or unsubscribe updates suppression. Run:
 
 ```bash
 openleads inbox --days 21
