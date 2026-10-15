@@ -9,14 +9,23 @@ let ROOT = null;
 let TAB = "enrich";
 const E = { leads: [], running: false };
 const tabs = [];
+let PREFILL = "";
 export function registerEnrichTab(key, label, render) { tabs.push({ key, label, render }); }
+
+/** Open the Enrich tab with rows already pasted in (from an import). */
+export function openEnrichWith(csv) {
+  PREFILL = csv; TAB = "enrich";
+  if (router.current()?.name === "enrich") { history.replaceState(null, "", "#/enrich/enrich"); render(); }
+  else router.go("enrich", "enrich");
+}
 
 function enrichBody() {
   return `<div class="grid grid-main-side">
     <div class="card"><div class="card__head"><h3>Enrich a list</h3></div>
       <div class="card__body stack">
         <p class="muted">Paste CSV with a header row. Any mix of <code>name</code>, <code>company</code>, <code>domain</code> and <code>email</code> works: rows with an email are verified; rows with a name and domain get their address found; domain-only rows get the company's people.</p>
-        <textarea class="textarea input--mono" id="enrich-csv" rows="9" placeholder="name,company,domain&#10;Jane Smith,Acme,acme.com&#10;John Doe,,beta.io"></textarea>
+        <textarea class="textarea input--mono" id="enrich-csv" rows="9" placeholder="name,company,domain&#10;Jane Smith,Acme,acme.com&#10;John Doe,,beta.io">${esc(PREFILL)}</textarea>
+        ${PREFILL ? `<p class="hint">${fmt.plural(PREFILL.split("\n").length - 1, "row")} from your import that had no email. Press Enrich to find them.</p>` : ""}
         <div class="row">${ui.switch("deep", false, "Deep harvest (slower, more ground truth)")}<span class="spacer"></span>
           <button class="btn btn--primary" data-act="enrich" ${E.running ? "disabled" : ""}>${ico("spark")} Enrich</button></div>
         <div class="console hidden" id="enrich-log"></div>
@@ -52,6 +61,7 @@ function render() {
       `<button type="button" class="${TAB === k ? "is-on" : ""}" data-act="tab" data-k="${k}">${esc(l)}</button>`).join("")}</div>` : ""}
     <div id="tab-body">${ext ? "" : enrichBody()}</div></section>`;
   if (ext) ext.render($("#tab-body", ROOT));
+  PREFILL = "";
 }
 
 async function enrich() {

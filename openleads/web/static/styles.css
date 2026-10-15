@@ -718,6 +718,18 @@ body:has(.drawer) .toasts { bottom: 72px; }
 .ring { flex: none; }
 @media (max-width: 820px) { .health-row { grid-template-columns: 10px minmax(0, 1fr) 48px 16px; } .health-row__bar, .health-row__pct { display: none; } }
 
+/* ----------------------------------------------------------------- import */
+.dropzone { display: grid; justify-items: center; gap: 6px; padding: 44px 20px; border: 1.5px dashed var(--line-strong); border-radius: 12px; text-align: center; cursor: pointer; background: var(--panel-2); transition: border-color .15s, background .15s; }
+.dropzone:hover, .dropzone.is-over { border-color: var(--accent); background: var(--accent-wash); }
+.dropzone__icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--panel); border: 1px solid var(--line); color: var(--muted); margin-bottom: 4px; }
+.map-tbl td { vertical-align: middle; }
+.map-tbl td:nth-child(2) { width: 24px; padding-left: 0; padding-right: 0; }
+.map-tbl td:last-child { width: 46%; }
+.map-tbl tr.is-muted b { color: var(--muted); font-weight: 520; }
+.imp-stat { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.imp-stat span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+details > summary { cursor: pointer; }
+
 /* ------------------------------------------------------------------ tasks */
 .toolbar--bare { padding: 0; border: 0; background: transparent; }
 .task-section { margin-bottom: 18px; }

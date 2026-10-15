@@ -20,6 +20,7 @@ import "./js/views/analytics.js";
 import "./js/views/workflows.js";
 import "./js/views/automations.js";
 import "./js/views/enrich.js";
+import "./js/views/import.js";
 import "./js/views/settings.js";
 import "./js/views/doctor.js";
 
