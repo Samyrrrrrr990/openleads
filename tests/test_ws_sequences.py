@@ -190,3 +190,17 @@ def test_starter_steps_are_valid():
     steps = S.starter_steps()
     assert [s["type"] for s in steps] == ["auto_email", "auto_email", "call", "linkedin",
                                           "auto_email"]
+
+
+def test_scheduler_tick_runs_sequences(db, sent, monkeypatch):
+    from openleads.automate import scheduler
+    monkeypatch.setattr("openleads.automate.sendtime.in_send_window", lambda now=None: True)
+    s = S.create(db, "A", [EMAIL, {"type": "task", "delay_days": 0}],
+                 settings={"skip_weekends": False}, status="active")
+    S.enroll(db, s["id"], ["jane@acme.example"])
+    dry = scheduler.tick(db=db, dry_run=True)
+    assert dry["sequences"]["previewed"] == 1 and dry["sequence_sent"] == 0
+    live = scheduler.tick(db=db, dry_run=False)
+    assert live["sequence_sent"] == 1
+    live = scheduler.tick(db=db, dry_run=False)
+    assert live["sequence_tasks"] == 1

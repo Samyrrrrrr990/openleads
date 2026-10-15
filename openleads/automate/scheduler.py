@@ -310,6 +310,8 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
     2. **recipes** — run every recipe whose schedule is due (find → write → send → export).
     3. **watchers** — run every watcher whose schedule is due; deliver new matches.
     4. **follow-ups** — send due sequence steps to leads who haven't replied/bounced.
+    5. **workspace sequences** — send due automatic emails (inside the send window)
+       and turn due manual steps into tasks.
 
     Every job is timed and written to the run history; a failing job sends an alert
     and the tick carries on.
@@ -404,6 +406,22 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
             summary["failed"] += 1
         else:
             summary.update(due=res["due"], sent=res["sent"], results=res["results"])
+
+        # 5) workspace sequences — due steps send (inside the window) or become tasks.
+        from openleads.workspace import sequences as wseq
+        if dry_run:
+            seq_res = wseq.process(db, dry_run=True, send_window_ok=sending_ok,
+                                   on_progress=on_progress)
+        else:
+            seq_res, _ = history.timed("sequences", "workspace", wseq.process, db,
+                                       dry_run=False, send_window_ok=sending_ok,
+                                       on_progress=on_progress)
+        if seq_res is None:
+            summary["failed"] += 1
+            seq_res = {}
+        summary["sequences"] = {k: v for k, v in seq_res.items() if k != "results"}
+        summary["sequence_sent"] = seq_res.get("sent", 0)
+        summary["sequence_tasks"] = seq_res.get("tasks", 0)
         cache.close()
         return summary
     finally:
