@@ -189,7 +189,13 @@ class DB:
 
     # --- leads (local CRM) ------------------------------------------------- #
     def upsert_lead(self, lead: dict) -> bool:
-        """Insert/update a lead by email. Returns True if newly inserted."""
+        """Insert/update a lead by email. Returns True if newly inserted.
+
+        Source fields (name, title, tier, location, …) are refreshed on every
+        upsert; what a person decided (stage, owner, notes, tags) is never touched.
+        """
+        from openleads.schema import contact_fields
+        from openleads.workspace.stages import STATUS_TO_STAGE
         email = (lead.get("email") or "").lower().strip()
         if not email:
             return False
@@ -200,28 +206,27 @@ class DB:
         name = (f"{lead.get('first_name','')} {lead.get('last_name','')}").strip() \
             or lead.get("name", "")
         domain = lead.get("domain") or (email.split("@", 1)[1] if "@" in email else "")
-        row = (
-            email, name, lead.get("organization", ""), lead.get("title", ""), domain,
-            lead.get("tier", ""), int(lead.get("score", 0) or 0),
-            lead.get("status") or (existing["status"] if existing else STATUS_NEW),
-            lead.get("source", ""), json.dumps(lead),
-        )
-        if existing:
-            self._conn.execute(
-                "UPDATE leads SET name=?, organization=?, title=?, domain=?, tier=?, "
-                "score=?, status=?, source=?, data=?, updated=? WHERE email=?",
-                (row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8],
-                 row[9], now, email),
-            )
+        status = lead.get("status") or (existing["status"] if existing else STATUS_NEW)
+        base = {
+            "name": name, "organization": lead.get("organization", ""),
+            "title": lead.get("title", ""), "domain": domain, "tier": lead.get("tier", ""),
+            "score": int(lead.get("score", 0) or 0), "status": status,
+            "source": lead.get("source", ""), "data": json.dumps(lead),
+        }
+        cols = {**base, **contact_fields(lead)}
+        with self._lock:
+            if existing:
+                sets = ", ".join(f"{k}=?" for k in cols)
+                self._conn.execute(f"UPDATE leads SET {sets}, updated=? WHERE email=?",
+                                   (*cols.values(), now, email))
+                self._conn.commit()
+                return False
+            cols.update(email=email, stage=lead.get("stage") or STATUS_TO_STAGE.get(status, "new"),
+                        created=now, updated=now)
+            marks = ",".join("?" for _ in cols)
+            self._conn.execute(f"INSERT INTO leads ({', '.join(cols)}) VALUES ({marks})",
+                               tuple(cols.values()))
             self._conn.commit()
-            return False
-        self._conn.execute(
-            "INSERT INTO leads (email, name, organization, title, domain, tier, score, "
-            "status, source, data, created, updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-            (email, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8],
-             row[9], now, now),
-        )
-        self._conn.commit()
         return True
 
     def get_lead(self, email: str) -> dict | None:
@@ -231,13 +236,28 @@ class DB:
         return dict(row) if row else None
 
     def set_status(self, email: str, status: str) -> None:
-        self._conn.execute(
-            "UPDATE leads SET status=?, updated=? WHERE email=?",
-            (status, time.time(), (email or "").lower().strip()),
-        )
+        """Record a send-status change and move the contact's stage along with it."""
+        from openleads.workspace.stages import auto_stage
+        email = (email or "").lower().strip()
+        row = self._conn.execute("SELECT stage FROM leads WHERE email=?", (email,)).fetchone()
+        now = time.time()
+        self._conn.execute("UPDATE leads SET status=?, updated=? WHERE email=?",
+                           (status, now, email))
+        if row is not None:
+            new_stage = auto_stage(row["stage"], status)
+            if new_stage and new_stage != row["stage"]:
+                self._conn.execute("UPDATE leads SET stage=? WHERE email=?", (new_stage, email))
+                self._log_stage(email, row["stage"], new_stage, auto=True)
         self._conn.commit()
         if status in SUPPRESSED_STATUSES:
             self.suppress(email, status)
+        self._after_status(email, status)
+
+    def _log_stage(self, email: str, old: str, new: str, auto: bool = False) -> None:
+        """Hook for the activity timeline (installed once its table exists)."""
+
+    def _after_status(self, email: str, status: str) -> None:
+        """Hook for sequences to stop on reply/bounce (installed by later migrations)."""
 
     def list_leads(self, status: str | None = None, limit: int = 1000) -> list[dict]:
         if status:
@@ -261,12 +281,15 @@ class DB:
     def record_touch(self, email: str, status: str, subject: str = "",
                      campaign: str = "", step: int = 1, message_id: str = "",
                      error: str = "") -> None:
+        now = time.time()
+        email = (email or "").lower().strip()
         self._conn.execute(
             "INSERT INTO touches (email, campaign, step, subject, status, message_id, "
             "error, ts) VALUES (?,?,?,?,?,?,?,?)",
-            ((email or "").lower().strip(), campaign, step, subject, status,
-             message_id, error, time.time()),
+            (email, campaign, step, subject, status, message_id, error, now),
         )
+        if status == STATUS_SENT:
+            self._conn.execute("UPDATE leads SET last_contacted=? WHERE email=?", (now, email))
         self._conn.commit()
 
     def touches_for(self, email: str) -> list[dict]:
