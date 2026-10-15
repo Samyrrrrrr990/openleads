@@ -30,7 +30,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from openleads import settings
-from openleads.web import api
+from openleads.web import api, workspace_api
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -108,6 +108,12 @@ _POST_STREAM = {
     "/api/enrich": api.enrich,
     "/api/recipes/run": api.recipes_run,
 }
+
+
+# The workspace (People, Companies, Lists, Sequences, …) registers its own routes.
+_GET_API.update(workspace_api.GET)
+_POST_JSON.update(workspace_api.POST)
+_POST_STREAM.update(workspace_api.STREAM)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -211,6 +217,18 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _json_call(self, handler, payload: dict) -> None:
+        """Run a JSON handler: ValueError → 400 with its message, anything else → 500."""
+        try:
+            result = handler(payload)
+        except ValueError as e:
+            self._send_json({"ok": False, "error": str(e)}, HTTPStatus.BAD_REQUEST)
+            return
+        except Exception as e:  # noqa: BLE001 — never leak a traceback to the client
+            self._send_json({"ok": False, "error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return
+        self._send_json(result)
+
     def _stream(self, handler, payload: dict) -> None:
         """Run a streaming handler, flushing one NDJSON line per event."""
         self.send_response(HTTPStatus.OK)
@@ -244,10 +262,7 @@ class Handler(BaseHTTPRequestHandler):
             if self._cross_site():
                 return
             params = {k: v[-1] for k, v in urllib.parse.parse_qs(qs).items()}
-            try:
-                self._send_json(_GET_API[path](params))
-            except Exception as e:  # noqa: BLE001
-                self._send_json({"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            self._json_call(_GET_API[path], params)
             return
         if path.startswith("/api/"):
             self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
@@ -265,10 +280,7 @@ class Handler(BaseHTTPRequestHandler):
             self._stream(_POST_STREAM[path], payload)
             return
         if path in _POST_JSON:
-            try:
-                self._send_json(_POST_JSON[path](payload))
-            except Exception as e:  # noqa: BLE001
-                self._send_json({"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            self._json_call(_POST_JSON[path], payload)
             return
         self._send_json({"error": "not found"}, HTTPStatus.NOT_FOUND)
 
