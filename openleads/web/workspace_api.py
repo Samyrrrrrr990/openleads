@@ -720,77 +720,14 @@ def duplicates_merge(db, p):
     return {"ok": True, **duplicates.merge(db, p.get("primary") or "", p.get("others") or [])}
 
 
-def _leads_for_export(db, emails: list) -> list:
-    """CRM rows → Lead objects (with company tech/socials) for the writers."""
-    import json
-
-    from openleads.models import Lead
-    out = []
-    for i in range(0, len(emails), 500):
-        chunk = emails[i:i + 500]
-        marks = ",".join("?" for _ in chunk)
-        accounts = {a["domain"]: a for a in db.query(
-            f"SELECT * FROM accounts WHERE domain IN (SELECT domain FROM leads "
-            f"WHERE email IN ({marks}))", chunk)}
-        for r in db.query(f"SELECT * FROM leads WHERE email IN ({marks}) ORDER BY name", chunk):
-            try:
-                data = json.loads(r.get("data") or "{}")
-            except ValueError:
-                data = {}
-            acc = accounts.get(r["domain"]) or {}
-            socials = {k: acc.get(f"{k}_url") for k in ("linkedin", "twitter", "facebook",
-                                                        "instagram") if acc.get(f"{k}_url")}
-            out.append(Lead(
-                first_name=r["first_name"] or "", last_name=r["last_name"] or "",
-                email=r["email"], title=r["title"] or "", organization=r["organization"] or "",
-                industry=r["industry"] or acc.get("industry") or "",
-                employees=r["employees"] or acc.get("employees") or "",
-                linkedin_url=r["linkedin_url"] or "", city=r["city"] or "",
-                country=r["country"] or "", website=r["website"] or acc.get("website") or "",
-                confidence=data.get("confidence", "none"), score=r["score"] or 0,
-                source=r["source"] or "", tier=r["tier"] or "",
-                signals=data.get("signals") or {}, reasons=data.get("reasons") or [],
-                confidence_pct=r["confidence_pct"] or 0, seniority=r["seniority"] or "",
-                department=r["department"] or "", phone=r["phone"] or acc.get("phone") or "",
-                company_size=r["company_size"] or acc.get("company_size") or "",
-                technologies=[t for t in (acc.get("technologies") or "").split("|") if t],
-                socials=socials, description=acc.get("description") or ""))
-    return out
-
-
 @route(POST, "/api/people/export")
 def people_export(db, p):
     """A selection (or everyone matching filters) as CSV / Apollo / HubSpot / JSON text."""
-    import io
-    import json
-
-    from openleads import writers
+    from openleads.workspace import export
     emails = _emails_from(db, p) if (p.get("emails") or p.get("all")) else \
         _emails_from(db, {"all": True, "filters": p.get("filters") or {}})
     fmt = p.get("format") or "csv"
-    leads = _leads_for_export(db, emails)
-    if fmt == "json":
-        body = json.dumps([ld.to_dict() for ld in leads], indent=2, ensure_ascii=False)
-    else:
-        fields, row = {"csv": (None, None),
-                       "apollo": (writers.APOLLO_FIELDS, writers.apollo_row),
-                       "hubspot": (writers.HUBSPOT_FIELDS, writers.hubspot_row)}.get(fmt, (0, 0))
-        if fields == 0:
-            raise ValueError("format must be csv, apollo, hubspot or json")
-        import csv as _csv
-        buf = io.StringIO()
-        if fields is None:
-            from openleads.models import CSV_FIELDS
-            w = _csv.DictWriter(buf, fieldnames=CSV_FIELDS)
-            w.writeheader()
-            for ld in leads:
-                w.writerow(ld.to_csv_row())
-        else:
-            w = _csv.DictWriter(buf, fieldnames=fields)
-            w.writeheader()
-            for ld in leads:
-                w.writerow(row(ld))
-        body = buf.getvalue()
-    ext = "json" if fmt == "json" else "csv"
+    leads = export.leads_for(db, emails)
+    body, ext = export.render(leads, fmt)
     return {"ok": True, "count": len(leads), "format": fmt, "content": body,
             "filename": f"openleads-{fmt}-{len(leads)}.{ext}"}
