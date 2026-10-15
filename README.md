@@ -235,7 +235,7 @@ openleads schedule on | off | status
 openleads runs
 
 openleads people · companies · lists · seq       # your workspace (see above)
-openleads tasks · deals · import · dedupe · stats
+openleads tasks · deals · import · dedupe · stats · backup
 openleads demo                                 # the dashboard on invented data
 
 openleads bench                                # live quality benchmark

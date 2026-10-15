@@ -122,14 +122,18 @@ openleads deals won 3</code></pre></div>
 <div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads stats            # the workspace at a glance
 openleads dedupe           # list duplicates
 openleads dedupe --merge   # merge each group into its best record</code></pre></div>
-<h2 id="exporting" class="anchored"><a class="hlink" href="#exporting">#</a>Exporting</h2>
-<p>Export any selection or filter from People as CSV, JSON, or in <strong>Apollo</strong> or <strong>HubSpot</strong> import format, or push it to Google Sheets, Notion, Airtable or a webhook. From the terminal: <code>openleads find … -f apollo</code> / <code>-f hubspot</code>, or <code>openleads export</code>.</p>
+<h2 id="exporting-and-backups" class="anchored"><a class="hlink" href="#exporting-and-backups">#</a>Exporting and backups</h2>
+<p>Export any selection or filter from People as CSV, JSON, or in <strong>Apollo</strong> or <strong>HubSpot</strong> import format, or push it to Google Sheets, Notion, Airtable or a webhook. From the terminal:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads lists export &quot;Q4 dentists&quot; -f hubspot -o q4.csv
+openleads find &quot;…&quot; -f apollo
+openleads export</code></pre></div>
+<p><strong>Settings → Data &amp; backup</strong> (or <code>openleads backup</code>) takes a consistent snapshot of the whole workspace — safe while sequences are running — into <code>~/.openleads/backups/</code>. To restore, stop OpenLeads and copy a backup over <code>~/.openleads/openleads.db</code>.</p>
 <nav class="prevnext" aria-label="Previous and next page">
 <a class="pn pn--prev" href="finding.html"><span><i class="ph ph-arrow-left"></i>Previous</span><b>Finding leads</b></a>
 <a class="pn pn--next" href="sequences.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Sequences</b></a>
 </nav>
 </article></main>
-<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#people">People</a><a class="toc__l3" href="#stages">Stages</a><a class="toc__l2" href="#companies">Companies</a><a class="toc__l2" href="#lists-and-tags">Lists and tags</a><a class="toc__l2" href="#importing-a-csv">Importing a CSV</a><a class="toc__l2" href="#icp-scoring">ICP scoring</a><a class="toc__l2" href="#tasks">Tasks</a><a class="toc__l2" href="#deals">Deals</a><a class="toc__l2" href="#activity-and-data-health">Activity and data health</a><a class="toc__l2" href="#exporting">Exporting</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/workspace.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
+<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#people">People</a><a class="toc__l3" href="#stages">Stages</a><a class="toc__l2" href="#companies">Companies</a><a class="toc__l2" href="#lists-and-tags">Lists and tags</a><a class="toc__l2" href="#importing-a-csv">Importing a CSV</a><a class="toc__l2" href="#icp-scoring">ICP scoring</a><a class="toc__l2" href="#tasks">Tasks</a><a class="toc__l2" href="#deals">Deals</a><a class="toc__l2" href="#activity-and-data-health">Activity and data health</a><a class="toc__l2" href="#exporting-and-backups">Exporting and backups</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/workspace.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
 </div>
 <footer class="footer docs-footer">
   <div class="container footer__legal">

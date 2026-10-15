@@ -161,9 +161,19 @@ openleads dedupe           # list duplicates
 openleads dedupe --merge   # merge each group into its best record
 ```
 
-## Exporting
+## Exporting and backups
 
 Export any selection or filter from People as CSV, JSON, or in **Apollo** or
 **HubSpot** import format, or push it to Google Sheets, Notion, Airtable or a
-webhook. From the terminal: `openleads find … -f apollo` / `-f hubspot`, or
-`openleads export`.
+webhook. From the terminal:
+
+```bash
+openleads lists export "Q4 dentists" -f hubspot -o q4.csv
+openleads find "…" -f apollo
+openleads export
+```
+
+**Settings → Data & backup** (or `openleads backup`) takes a consistent snapshot
+of the whole workspace — safe while sequences are running — into
+`~/.openleads/backups/`. To restore, stop OpenLeads and copy a backup over
+`~/.openleads/openleads.db`.

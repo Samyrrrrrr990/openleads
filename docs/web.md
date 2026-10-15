@@ -45,7 +45,7 @@ running on the same engine and the same local database as the CLI.
 | Automate | **Workflows** | Recipes drawn as a node canvas ([guide](./workflows.md)) |
 | | **Recipes & watchers** | Scheduled searches, alerts and run history |
 | | **Import & enrich** | Import a CSV with column mapping; find and verify emails for a list |
-| Settings | **Settings** | Sender, mailbox, sending policy, AI, integrations, and **ICP scoring** |
+| Settings | **Settings** | Sender, mailbox, sending policy, AI, integrations, **ICP scoring**, and **Data & backup** |
 | | **Data health** | What to fix before sending, and duplicate merge |
 | | **Doctor** | The `openleads doctor` checks |
 
