@@ -160,3 +160,150 @@ def _m2_contact_columns(conn):
     for col in ("domain", "stage", "seniority", "department", "created", "organization",
                 "tier", "source"):
         conn.execute(f"CREATE INDEX IF NOT EXISTS idx_leads_{col} ON leads ({col})")
+
+
+# --------------------------------------------------------------------------- #
+# v3 — the workspace: accounts, lists, tags, notes, activity, tasks, deals,     #
+#      templates, sequences + enrollments, saved searches                      #
+# --------------------------------------------------------------------------- #
+WORKSPACE_SQL = """
+CREATE TABLE IF NOT EXISTS accounts (
+    domain TEXT PRIMARY KEY, name TEXT DEFAULT '', website TEXT DEFAULT '',
+    industry TEXT DEFAULT '', employees TEXT DEFAULT '', company_size TEXT DEFAULT '',
+    city TEXT DEFAULT '', state TEXT DEFAULT '', country TEXT DEFAULT '',
+    phone TEXT DEFAULT '', description TEXT DEFAULT '', linkedin_url TEXT DEFAULT '',
+    twitter_url TEXT DEFAULT '', facebook_url TEXT DEFAULT '', instagram_url TEXT DEFAULT '',
+    technologies TEXT DEFAULT '', founded TEXT DEFAULT '', stage TEXT DEFAULT 'prospect',
+    owner TEXT DEFAULT '', source TEXT DEFAULT '', profiled REAL, data TEXT DEFAULT '{}',
+    created REAL, updated REAL
+);
+CREATE INDEX IF NOT EXISTS idx_accounts_name ON accounts (name);
+CREATE INDEX IF NOT EXISTS idx_accounts_industry ON accounts (industry);
+CREATE TABLE IF NOT EXISTS lists (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL COLLATE NOCASE,
+    kind TEXT NOT NULL DEFAULT 'people', description TEXT DEFAULT '', color TEXT DEFAULT '',
+    created REAL, updated REAL, UNIQUE (kind, name)
+);
+CREATE TABLE IF NOT EXISTS list_members (
+    list_id INTEGER NOT NULL, ref TEXT NOT NULL, added REAL, PRIMARY KEY (list_id, ref)
+);
+CREATE INDEX IF NOT EXISTS idx_list_members_ref ON list_members (ref);
+CREATE TABLE IF NOT EXISTS contact_tags (
+    email TEXT NOT NULL, tag TEXT NOT NULL COLLATE NOCASE, PRIMARY KEY (email, tag)
+);
+CREATE INDEX IF NOT EXISTS idx_contact_tags_tag ON contact_tags (tag);
+CREATE TABLE IF NOT EXISTS notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, ref_type TEXT NOT NULL, ref TEXT NOT NULL,
+    body TEXT NOT NULL, pinned INTEGER DEFAULT 0, created REAL, updated REAL
+);
+CREATE INDEX IF NOT EXISTS idx_notes_ref ON notes (ref_type, ref);
+CREATE TABLE IF NOT EXISTS activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, ref_type TEXT NOT NULL, ref TEXT NOT NULL,
+    kind TEXT NOT NULL, summary TEXT DEFAULT '', data TEXT DEFAULT '{}', ts REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_activity_ref ON activity (ref_type, ref, ts);
+CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity (ts);
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL DEFAULT 'todo',
+    title TEXT NOT NULL, note TEXT DEFAULT '', contact TEXT DEFAULT '', account TEXT DEFAULT '',
+    deal_id INTEGER, due REAL, priority TEXT DEFAULT 'normal', status TEXT NOT NULL DEFAULT 'open',
+    sequence_id INTEGER, enrollment_id INTEGER, step INTEGER, created REAL, completed REAL
+);
+CREATE INDEX IF NOT EXISTS idx_tasks_status_due ON tasks (status, due);
+CREATE INDEX IF NOT EXISTS idx_tasks_contact ON tasks (contact);
+CREATE TABLE IF NOT EXISTS deals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, account TEXT DEFAULT '',
+    contact TEXT DEFAULT '', stage TEXT NOT NULL DEFAULT 'qualify', amount REAL DEFAULT 0,
+    currency TEXT DEFAULT 'USD', close_date TEXT DEFAULT '', owner TEXT DEFAULT '',
+    note TEXT DEFAULT '', position REAL DEFAULT 0, created REAL, updated REAL, closed REAL
+);
+CREATE INDEX IF NOT EXISTS idx_deals_stage ON deals (stage);
+CREATE TABLE IF NOT EXISTS templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    subject TEXT DEFAULT '', body TEXT DEFAULT '', category TEXT DEFAULT '',
+    used INTEGER DEFAULT 0, created REAL, updated REAL
+);
+CREATE TABLE IF NOT EXISTS sequences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    status TEXT NOT NULL DEFAULT 'paused', steps TEXT NOT NULL DEFAULT '[]',
+    settings TEXT NOT NULL DEFAULT '{}', created REAL, updated REAL
+);
+CREATE TABLE IF NOT EXISTS enrollments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, sequence_id INTEGER NOT NULL, email TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active', step INTEGER NOT NULL DEFAULT 0, next_due REAL,
+    task_id INTEGER, errors INTEGER DEFAULT 0, last_error TEXT DEFAULT '',
+    thread_subject TEXT DEFAULT '', enrolled REAL, last_step_at REAL, finished REAL,
+    UNIQUE (sequence_id, email)
+);
+CREATE INDEX IF NOT EXISTS idx_enrollments_due ON enrollments (status, next_due);
+CREATE INDEX IF NOT EXISTS idx_enrollments_email ON enrollments (email);
+CREATE TABLE IF NOT EXISTS saved_searches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'people',
+    filters TEXT NOT NULL DEFAULT '{}', created REAL, UNIQUE (kind, name)
+);
+"""
+
+
+def tech_column(technologies) -> str:
+    """Technologies as '|A|B|' so a filter can match one exactly with LIKE '%|A|%'."""
+    names = [str(t).strip() for t in (technologies or []) if str(t).strip()]
+    return "|" + "|".join(names) + "|" if names else ""
+
+
+def account_fields(lead: dict) -> dict:
+    """Company columns derivable from one contact/lead dict (empty strings when unknown)."""
+    from openleads.insights import companysize
+    socials = lead.get("socials") or {}
+    return {
+        "name": lead.get("organization", "") or "",
+        "website": lead.get("website", "") or "",
+        "industry": lead.get("industry", "") or "",
+        "employees": str(lead.get("employees", "") or ""),
+        "company_size": lead.get("company_size") or companysize.bucket(lead.get("employees")),
+        "city": lead.get("city", "") or "", "state": lead.get("state", "") or "",
+        "country": lead.get("country", "") or "",
+        "phone": lead.get("phone", "") if not lead.get("first_name") else "",
+        "description": lead.get("description", "") or "",
+        "linkedin_url": socials.get("linkedin", "") or "",
+        "twitter_url": socials.get("twitter", "") or "",
+        "facebook_url": socials.get("facebook", "") or "",
+        "instagram_url": socials.get("instagram", "") or "",
+        "technologies": tech_column(lead.get("technologies")),
+        "source": lead.get("source", "") or "",
+    }
+
+
+def sync_account(conn, domain: str, lead: dict, now: float) -> None:
+    """Create the account for ``domain`` or fill its blank fields from ``lead``."""
+    from openleads.emails.permute import is_free_provider
+    domain = (domain or "").lower().strip()
+    if not domain or is_free_provider(domain):
+        return
+    vals = account_fields(lead)
+    cols = list(vals)
+    fills = ", ".join(f"{c} = CASE WHEN COALESCE({c}, '') = '' THEN excluded.{c} ELSE {c} END"
+                      for c in cols)
+    conn.execute(
+        f"INSERT INTO accounts (domain, {', '.join(cols)}, created, updated) "
+        f"VALUES (?, {', '.join('?' for _ in cols)}, ?, ?) "
+        f"ON CONFLICT(domain) DO UPDATE SET {fills}, updated = excluded.updated",
+        (domain, *vals.values(), now, now))
+
+
+@register(3, "workspace tables + account backfill")
+def _m3_workspace(conn):
+    import json as _json
+    import time as _time
+    for stmt in WORKSPACE_SQL.split(";"):
+        if stmt.strip():
+            conn.execute(stmt)
+    now = _time.time()
+    for domain, data, org in conn.execute(
+            "SELECT domain, data, organization FROM leads WHERE COALESCE(domain,'') != ''"
+            ).fetchall():
+        try:
+            lead = _json.loads(data or "{}")
+        except ValueError:
+            lead = {}
+        lead.setdefault("organization", org or "")
+        sync_account(conn, domain, lead, now)

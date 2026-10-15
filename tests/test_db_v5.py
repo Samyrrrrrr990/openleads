@@ -142,3 +142,44 @@ def test_status_changes_move_stage_forward_only(tmp_path):
     assert db.get_lead("a@x.example")["stage"] == "do_not_contact"
     assert db.is_suppressed("a@x.example") == "unsubscribed"
     db.close()
+
+
+# --- migration 3: workspace tables + accounts ------------------------------ #
+def test_workspace_tables_exist(tmp_path):
+    db = _db(tmp_path)
+    names = {r["name"] for r in db.query("SELECT name FROM sqlite_master WHERE type='table'")}
+    assert {"accounts", "lists", "list_members", "contact_tags", "notes", "activity", "tasks",
+            "deals", "templates", "sequences", "enrollments", "saved_searches"} <= names
+    db.close()
+
+
+def test_migration_backfills_accounts(tmp_path):
+    path = tmp_path / "old.db"
+    _old_db(path)
+    db = DB(path)
+    acc = db.query_one("SELECT * FROM accounts WHERE domain='acme.example'")
+    assert acc["name"] == "Acme" and acc["stage"] == "prospect"
+    assert db.query_one("SELECT company_size FROM accounts WHERE domain='gamma.example'"
+                        )["company_size"] == "11-50"
+    db.close()
+
+
+def test_upsert_syncs_account_without_overwriting(tmp_path):
+    db = _db(tmp_path)
+    db.upsert_lead({"email": "info@acme.example", "organization": "Acme", "industry": "",
+                    "phone": "+15125550100", "technologies": ["Shopify", "Klaviyo"],
+                    "socials": {"linkedin": "https://www.linkedin.com/company/acme"}})
+    acc = db.query_one("SELECT * FROM accounts WHERE domain='acme.example'")
+    assert acc["phone"] == "+15125550100" and acc["technologies"] == "|Shopify|Klaviyo|"
+    assert acc["linkedin_url"].endswith("/company/acme")
+    db.execute("UPDATE accounts SET name='Acme Inc' WHERE domain='acme.example'")
+    db.upsert_lead({"email": "jane@acme.example", "first_name": "Jane", "organization": "ACME",
+                    "industry": "Retail", "phone": "+15125559999"})
+    acc = db.query_one("SELECT * FROM accounts WHERE domain='acme.example'")
+    assert acc["name"] == "Acme Inc"               # kept
+    assert acc["industry"] == "Retail"             # filled the blank
+    assert acc["phone"] == "+15125550100"          # a person's phone isn't the company's
+    # Free-mail domains never become accounts.
+    db.upsert_lead({"email": "someone@gmail.com", "organization": "Freelance"})
+    assert db.query_one("SELECT 1 AS x FROM accounts WHERE domain='gmail.com'") is None
+    db.close()

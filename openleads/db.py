@@ -214,7 +214,9 @@ class DB:
             "source": lead.get("source", ""), "data": json.dumps(lead),
         }
         cols = {**base, **contact_fields(lead)}
+        from openleads.schema import sync_account
         with self._lock:
+            sync_account(self._conn, domain, lead, now)
             if existing:
                 sets = ", ".join(f"{k}=?" for k in cols)
                 self._conn.execute(f"UPDATE leads SET {sets}, updated=? WHERE email=?",
