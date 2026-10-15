@@ -134,7 +134,7 @@ export function openContact(email, { onClose, onChange } = {}) {
 
   function dealsTab() {
     return `<div class="row"><span class="spacer"></span><button class="btn btn--sm btn--primary" data-a="deal">${ico("plus")} New deal</button></div>
-      <div class="mt">${data.deals.length ? data.deals.map((x) => `<a class="list-row" href="#/deals" style="display:flex">
+      <div class="mt">${data.deals.length ? data.deals.map((x) => `<a class="list-row" href="#/deals/${x.id}" style="display:flex">
         <span class="tl-icon tl-icon--good">${ico("deal")}</span><div style="flex:1;min-width:0"><div class="t-strong">${esc(x.name)}</div>
         <div class="hint">${esc(store.label("deal_stages", x.stage))}${x.close_date ? ` · closes ${esc(x.close_date)}` : ""}</div></div>
         <b class="num">${esc(fmt.money(x.amount, x.currency))}</b></a>`).join("") : '<p class="muted">No deals yet.</p>'}</div>`;

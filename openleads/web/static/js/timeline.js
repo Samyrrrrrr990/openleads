@@ -12,7 +12,7 @@ const TONE = {
 export function refHref(a) {
   if (a.ref_type === "contact") return `#/people/${encodeURIComponent(a.ref)}`;
   if (a.ref_type === "company") return `#/companies/${encodeURIComponent(a.ref)}`;
-  if (a.ref_type === "deal") return "#/deals";
+  if (a.ref_type === "deal") return `#/deals/${encodeURIComponent(a.ref)}`;
   if (a.ref_type === "search") return `#/prospect?q=${encodeURIComponent(a.ref)}`;
   return "";
 }

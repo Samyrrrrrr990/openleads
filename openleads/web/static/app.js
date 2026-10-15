@@ -11,6 +11,7 @@ import "./js/views/companies.js";
 import "./js/views/lists.js";
 import "./js/views/sequences.js";
 import "./js/views/tasks.js";
+import "./js/views/deals.js";
 import "./js/views/compose.js";
 import "./js/views/analytics.js";
 import "./js/views/workflows.js";
