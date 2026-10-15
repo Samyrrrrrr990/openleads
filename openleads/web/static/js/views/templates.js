@@ -87,7 +87,7 @@ function render() {
     <div class="tpl-shell">
       <aside class="card tpl-lib" id="tpl-lib">${libraryHtml()}</aside>
       <div class="card card--pad" id="tpl-editor">${editorHtml()}</div>
-      <div id="tpl-side">${S.draft ? previewShell() : ""}</div>
+      <div id="tpl-side" style="align-self:stretch">${S.draft ? previewShell() : ""}</div>
     </div></section>`;
   if (S.draft) refreshPreview();
 }

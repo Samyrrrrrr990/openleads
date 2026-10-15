@@ -22,6 +22,7 @@ import "./js/views/automations.js";
 import "./js/views/enrich.js";
 import "./js/views/import.js";
 import "./js/views/settings.js";
+import "./js/views/scoring.js";
 import "./js/views/doctor.js";
 
 const NAV = [
