@@ -67,6 +67,9 @@ CSV_FIELDS = [
     "Confidence %",
     # v4.5 addition: how we know the address — found | pattern | guessed | none.
     "Email Evidence",
+    # v5 additions: who the person is and what the company looks like.
+    "Seniority", "Department", "Phone", "Company Size", "Company LinkedIn Url",
+    "Twitter Url", "Facebook Url", "Technologies", "Company Description",
 ]
 
 
@@ -105,6 +108,14 @@ class Lead:
     tier: str = "bad"                       # safe | risky | bad (the send-decision)
     reasons: list = field(default_factory=list)
     confidence_pct: int = 0                 # calibrated 0–100 deliverability likelihood
+    # v5: structured person + company fields (see openleads.insights)
+    seniority: str = ""                     # owner | founder | c_suite | ... | entry
+    department: str = ""                    # engineering | sales | marketing | ...
+    phone: str = ""                         # published business number, normalized
+    company_size: str = ""                  # "11-50", "201-500", ...
+    technologies: list = field(default_factory=list)
+    socials: dict = field(default_factory=dict)   # company profiles: linkedin, twitter, ...
+    description: str = ""                   # company one-liner from its homepage
 
     @property
     def domain(self) -> str:
@@ -142,6 +153,15 @@ class Lead:
             "Email Tier": self.tier,
             "Confidence %": self.confidence_pct,
             "Email Evidence": self.evidence,
+            "Seniority": self.seniority,
+            "Department": self.department,
+            "Phone": self.phone,
+            "Company Size": self.company_size,
+            "Company LinkedIn Url": (self.socials or {}).get("linkedin", ""),
+            "Twitter Url": (self.socials or {}).get("twitter", ""),
+            "Facebook Url": (self.socials or {}).get("facebook", ""),
+            "Technologies": ", ".join(self.technologies or []),
+            "Company Description": self.description,
         }
 
     def to_dict(self) -> dict:
@@ -167,6 +187,13 @@ class Lead:
             "signals": self.signals,
             "confidence_pct": self.confidence_pct,
             "evidence": self.evidence,
+            "seniority": self.seniority,
+            "department": self.department,
+            "phone": self.phone,
+            "company_size": self.company_size,
+            "technologies": list(self.technologies or []),
+            "socials": dict(self.socials or {}),
+            "description": self.description,
         }
 
 

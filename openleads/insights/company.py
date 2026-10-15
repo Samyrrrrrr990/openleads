@@ -212,7 +212,8 @@ def fetch_profile(domain: str, cache=None, timeout: int = 8, refresh: bool = Fal
         if hit is not None:
             return hit
     page = None
-    for url in (f"https://{domain}/", f"https://www.{domain}/"):
+    # Same URL the email harvester fetches, so this is usually a cache hit.
+    for url in (f"https://{domain}", f"https://www.{domain}"):
         page = get_text(url, timeout=timeout, cache=cache, ttl_ns="dataset")
         if page:
             break

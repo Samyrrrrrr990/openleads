@@ -19,6 +19,7 @@ from typing import Callable
 
 from openleads import _http, federation
 from openleads.emails.resolve import find_email
+from openleads.insights import companysize, phones, titles
 from openleads.models import EmailResult, Entity, Lead, Query
 from openleads.sources import get_source
 
@@ -36,18 +37,54 @@ _DOMAINLESS = dict(confidence="none", score=0, tier="bad",
                    signals={"reason": "no_domain"})
 
 
+# OpenStreetMap business categories → the industry label a CRM would show.
+_OSM_INDUSTRY = {
+    "advertising_agency": "Marketing & advertising", "marketing": "Marketing & advertising",
+    "it": "Information technology", "company": "Business services",
+    "dentist": "Dental", "doctors": "Medical practice", "doctor": "Medical practice",
+    "clinic": "Medical practice", "veterinary": "Veterinary", "lawyer": "Legal services",
+    "accountant": "Accounting", "tax_advisor": "Accounting", "insurance": "Insurance",
+    "financial": "Financial services", "estate_agent": "Real estate",
+    "architect": "Architecture", "fitness_centre": "Fitness", "sports_centre": "Fitness",
+    "gym": "Fitness", "hairdresser": "Beauty & wellness", "beauty": "Beauty & wellness",
+    "spa": "Beauty & wellness", "massage": "Beauty & wellness", "restaurant": "Food & beverage",
+    "cafe": "Food & beverage", "bakery": "Food & beverage", "bar": "Food & beverage",
+    "pub": "Food & beverage", "hotel": "Hospitality", "motel": "Hospitality",
+    "guest_house": "Hospitality", "car": "Automotive", "car_repair": "Automotive",
+    "plumber": "Construction & trades", "electrician": "Construction & trades",
+    "carpenter": "Construction & trades", "construction_company": "Construction & trades",
+    "hvac": "Construction & trades", "roofer": "Construction & trades",
+    "gardener": "Construction & trades", "consulting": "Consulting",
+    "employment_agency": "Staffing & recruiting", "school": "Education",
+    "educational_institution": "Education", "ngo": "Nonprofit", "association": "Nonprofit",
+    "designer": "Design", "telecommunication": "Telecommunications",
+}
+
+
+def industry_for(entity: Entity) -> str:
+    """The source's industry, else a label for the OSM business category."""
+    if entity.extra.get("industry"):
+        return str(entity.extra["industry"])
+    cat = str(entity.extra.get("category") or "").strip().lower()
+    if not cat or cat in ("business", "yes"):
+        return ""
+    return _OSM_INDUSTRY.get(cat, cat.replace("_", " ").capitalize())
+
+
 def entity_to_lead(entity: Entity, email_result) -> Lead:
     """Flatten an Entity + EmailResult into an output-ready Lead."""
     name = entity.full_name.strip()
     first, *rest = name.split() if name else [""]
     last = " ".join(rest)
+    seniority, department = titles.classify(entity.title) if name else ("", "")
+    found_phones = phones.split_tag(entity.links.get("phone") or entity.extra.get("phone") or "")
     return Lead(
         first_name=first,
         last_name=last,
         email=email_result.email,
         title=entity.title,
         organization=entity.organization,
-        industry=entity.extra.get("industry", ""),
+        industry=industry_for(entity),
         employees=entity.extra.get("employees", ""),
         linkedin_url=entity.links.get("linkedin", ""),
         city=entity.extra.get("city", "") or entity.location,
@@ -61,6 +98,10 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         reasons=email_result.reasons,
         signals=email_result.signals,
         confidence_pct=email_result.confidence_pct,
+        seniority=seniority,
+        department=department,
+        phone=found_phones[0] if found_phones else "",
+        company_size=companysize.bucket(entity.extra.get("employees", "")),
     )
 
 
