@@ -120,3 +120,63 @@ def test_companies_endpoints(base, monkeypatch):
     assert c["company"]["name"] == "Gamma"
     _, b = post(base, "/api/companies/bulk", {"domains": ["gamma.example"], "action": "delete"})
     assert b["count"] == 1
+
+
+def test_lists_tags_notes_activity(base):
+    _, s = post(base, "/api/lists/save", {"name": "Q4", "color": "teal"})
+    lid = s["list"]["id"]
+    _, a = post(base, "/api/lists/add", {"id": lid, "all": True, "filters": {"tier": "safe"}})
+    assert a["added"] == 2 and a["list"]["count"] == 2
+    _, a2 = post(base, "/api/lists/add", {"name": "Fresh", "emails": ["john@acme.example"]})
+    assert a2["list"]["name"] == "Fresh" and a2["added"] == 1
+    _, ls = get(base, "/api/lists")
+    assert {x["name"] for x in ls["lists"]} == {"Q4", "Fresh"}
+    status, err = post(base, "/api/lists/save", {"name": "q4"})
+    assert status == 400
+    _, rm = post(base, "/api/lists/remove", {"id": lid, "refs": ["ann@beta.example"]})
+    assert rm["removed"] == 1
+    post(base, "/api/people/bulk", {"emails": ["jane@acme.example"], "action": "tag",
+                                    "value": "hot"})
+    _, tg = get(base, "/api/tags")
+    assert tg["tags"] == [{"tag": "hot", "count": 1}]
+    _, rn = post(base, "/api/tags/rename", {"old": "hot", "new": "warm"})
+    assert rn["count"] == 1
+    _, n = post(base, "/api/notes/add", {"ref_type": "contact", "ref": "jane@acme.example",
+                                         "body": "Prefers mornings"})
+    _, n2 = post(base, "/api/notes/update", {"id": n["note"]["id"], "pinned": True})
+    assert n2["note"]["pinned"] == 1
+    _, tl = get(base, "/api/activity?ref_type=contact&ref=jane%40acme.example")
+    assert tl["activity"][0]["kind"] == "note"
+    _, feed = get(base, "/api/activity?limit=5")
+    assert len(feed["activity"]) <= 5
+    assert post(base, "/api/notes/delete", {"id": n["note"]["id"]})[1]["ok"]
+    assert post(base, "/api/lists/delete", {"id": lid})[1]["ok"]
+
+
+def test_tasks_and_deals(base):
+    _, t = post(base, "/api/tasks/save", {"title": "Call Jane", "kind": "call",
+                                          "contact": "jane@acme.example", "due": "today"})
+    tid = t["task"]["id"]
+    _, lst = get(base, "/api/tasks?bucket=today")
+    assert lst["tasks"][0]["contact_name"] == "Jane Doe" and lst["counts"]["today"] == 1
+    status, _ = get(base, "/api/tasks?bucket=someday")
+    assert status == 400
+    _, done = post(base, "/api/tasks/complete", {"id": tid})
+    assert done["task"]["status"] == "done" and done["counts"]["done_today"] == 1
+    assert post(base, "/api/tasks/reopen", {"id": tid})[1]["task"]["status"] == "open"
+    _, upd = post(base, "/api/tasks/save", {"id": tid, "title": "Call Jane back"})
+    assert upd["task"]["title"] == "Call Jane back"
+    assert post(base, "/api/tasks/delete", {"id": tid})[1]["ok"]
+    _, d = post(base, "/api/deals/save", {"name": "Acme pilot", "contact": "jane@acme.example",
+                                          "amount": "12k"})
+    did = d["deal"]["id"]
+    assert d["deal"]["amount"] == 12000.0 and d["deal"]["account"] == "acme.example"
+    _, mv = post(base, "/api/deals/move", {"id": did, "stage": "won"})
+    assert mv["deal"]["stage"] == "won"
+    _, board = get(base, "/api/deals")
+    assert board["totals"]["won_value"] == 12000.0
+    _, p = get(base, "/api/people/get?email=jane%40acme.example")
+    assert p["contact"]["stage"] == "customer" and p["deals"][0]["name"] == "Acme pilot"
+    status, _ = post(base, "/api/deals/move", {"id": did, "stage": "partying"})
+    assert status == 400
+    assert post(base, "/api/deals/delete", {"id": did})[1]["ok"]

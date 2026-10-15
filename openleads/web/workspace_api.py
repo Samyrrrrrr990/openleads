@@ -257,3 +257,190 @@ def companies_enrich(db, p, emit):
         cache.close()
     scoring.rescore(db)
     emit({"type": "done", "count": len(domains), "profiled": ok})
+
+
+# --------------------------------------------------------------------------- #
+# Lists, tags, notes, activity                                                #
+# --------------------------------------------------------------------------- #
+@route(GET, "/api/lists")
+def lists_all(db, p):
+    from openleads.workspace import lists
+    return {"lists": lists.all_lists(db, p.get("kind") or None)}
+
+
+@route(POST, "/api/lists/save")
+def lists_save(db, p):
+    from openleads.workspace import lists
+    if p.get("id"):
+        row = lists.update(db, p["id"], name=p.get("name"), description=p.get("description"),
+                           color=p.get("color"))
+        if row is None:
+            raise ValueError("no such list")
+        return {"ok": True, "list": row}
+    return {"ok": True, "list": lists.create(db, p.get("name") or "", p.get("kind") or "people",
+                                             p.get("description") or "", p.get("color") or "")}
+
+
+@route(POST, "/api/lists/delete")
+def lists_delete(db, p):
+    from openleads.workspace import lists
+    return {"ok": lists.delete(db, p.get("id"))}
+
+
+@route(POST, "/api/lists/add")
+def lists_add(db, p):
+    """Add a selection to a list (by id, or by name — created if new)."""
+    from openleads.workspace import lists
+    kind = p.get("kind") or "people"
+    lst = lists.get(db, p.get("id")) if p.get("id") else \
+        lists.ensure(db, p.get("name") or "", kind)
+    if not lst:
+        raise ValueError("no such list")
+    refs = p.get("refs") or (_emails_from(db, p) if lst["kind"] == "people" else [])
+    added = lists.add(db, lst["id"], refs)
+    return {"ok": True, "added": added, "list": lists.get(db, lst["id"])}
+
+
+@route(POST, "/api/lists/remove")
+def lists_remove(db, p):
+    from openleads.workspace import lists
+    return {"ok": True, "removed": lists.remove(db, p.get("id"), p.get("refs") or [])}
+
+
+@route(GET, "/api/tags")
+def tags_all(db, p):
+    from openleads.workspace import tags
+    return {"tags": tags.all_tags(db)}
+
+
+@route(POST, "/api/tags/rename")
+def tags_rename(db, p):
+    from openleads.workspace import tags
+    return {"ok": True, "count": tags.rename(db, p.get("old") or "", p.get("new") or "")}
+
+
+@route(POST, "/api/tags/delete")
+def tags_delete(db, p):
+    from openleads.workspace import tags
+    return {"ok": True, "count": tags.delete(db, p.get("tag") or "")}
+
+
+@route(POST, "/api/notes/add")
+def notes_add(db, p):
+    from openleads.workspace import notes
+    return {"ok": True, "note": notes.add(db, p.get("ref_type") or "contact", p.get("ref"),
+                                          p.get("body") or "", bool(p.get("pinned")))}
+
+
+@route(POST, "/api/notes/update")
+def notes_update(db, p):
+    from openleads.workspace import notes
+    row = notes.update(db, p.get("id"), body=p.get("body"),
+                       pinned=p.get("pinned") if "pinned" in p else None)
+    if row is None:
+        raise ValueError("no such note")
+    return {"ok": True, "note": row}
+
+
+@route(POST, "/api/notes/delete")
+def notes_delete(db, p):
+    from openleads.workspace import notes
+    return {"ok": notes.delete(db, p.get("id"))}
+
+
+@route(GET, "/api/activity")
+def activity_feed(db, p):
+    """A record's timeline (``ref_type`` + ``ref``) or the workspace feed."""
+    from openleads.workspace import activity
+    limit = max(1, min(_int(p.get("limit"), 50), 500))
+    if p.get("ref_type") and p.get("ref"):
+        return {"activity": activity.timeline(db, p["ref_type"], p["ref"], limit=limit)}
+    kinds = [k for k in (p.get("kinds") or "").split(",") if k]
+    return {"activity": activity.recent(db, limit=limit, kinds=kinds or None)}
+
+
+# --------------------------------------------------------------------------- #
+# Tasks + deals                                                               #
+# --------------------------------------------------------------------------- #
+@route(GET, "/api/tasks")
+def tasks_list(db, p):
+    from openleads.workspace import tasks
+    bucket = p.get("bucket") or "open"
+    if bucket not in tasks.BUCKETS:
+        raise ValueError(f"bucket must be one of {tasks.BUCKETS}")
+    return {"tasks": tasks.list_tasks(db, bucket, kind=p.get("kind") or None,
+                                      contact=p.get("contact") or None),
+            "counts": tasks.counts(db)}
+
+
+@route(POST, "/api/tasks/save")
+def tasks_save(db, p):
+    from openleads.workspace import tasks
+    if p.get("id"):
+        row = tasks.update(db, p["id"], p)
+        if row is None:
+            raise ValueError("no such task")
+        return {"ok": True, "task": row}
+    return {"ok": True, "task": tasks.create(
+        db, p.get("title") or "", kind=p.get("kind") or "todo", contact=p.get("contact") or "",
+        account=p.get("account") or "", due=p.get("due"), note=p.get("note") or "",
+        priority=p.get("priority") or "normal", deal_id=p.get("deal_id"))}
+
+
+def _task_action(fn_name: str):
+    def handler(db, p):
+        from openleads.workspace import tasks
+        row = getattr(tasks, fn_name)(db, p.get("id"))
+        if row is None:
+            raise ValueError("no such task")
+        return {"ok": True, "task": row, "counts": tasks.counts(db)}
+    handler.__name__ = f"tasks_{fn_name}"
+    return handler
+
+
+for _name in ("complete", "skip", "reopen"):
+    route(POST, f"/api/tasks/{_name}")(_task_action(_name))
+
+
+@route(POST, "/api/tasks/delete")
+def tasks_delete(db, p):
+    from openleads.workspace import tasks
+    return {"ok": tasks.delete(db, p.get("id"))}
+
+
+@route(GET, "/api/deals")
+def deals_board(db, p):
+    from openleads.workspace import deals
+    return deals.board(db, q=p.get("q") or None, owner=p.get("owner") or None)
+
+
+@route(POST, "/api/deals/save")
+def deals_save(db, p):
+    from openleads.workspace import deals
+    if p.get("id"):
+        row = deals.update(db, p["id"], p)
+        if row is None:
+            raise ValueError("no such deal")
+        return {"ok": True, "deal": row}
+    return {"ok": True, "deal": deals.create(
+        db, p.get("name") or "", account=p.get("account") or "", contact=p.get("contact") or "",
+        stage=p.get("stage") or "qualify", amount=p.get("amount"),
+        currency=p.get("currency") or "USD", close_date=p.get("close_date") or "",
+        owner=p.get("owner") or "", note=p.get("note") or "")}
+
+
+@route(POST, "/api/deals/move")
+def deals_move(db, p):
+    from openleads.workspace import deals
+    pos = p.get("position")
+    row = deals.move(db, p.get("id"), p.get("stage") or "",
+                     float(pos) if pos not in (None, "") else None)
+    if row is None:
+        raise ValueError("no such deal")
+    return {"ok": True, "deal": row}
+
+
+@route(POST, "/api/deals/delete")
+def deals_delete(db, p):
+    from openleads.workspace import deals
+    return {"ok": deals.delete(db, p.get("id"))}
