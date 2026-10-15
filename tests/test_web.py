@@ -214,8 +214,34 @@ def test_workflow_schedule_is_validated_and_described(server):
 
 
 def test_workflows_asset_is_served(server):
-    status, ctype, body = _get(server, "/workflows.js")
-    assert status == 200 and "javascript" in ctype and b"viewWorkflows" in body
+    status, ctype, body = _get(server, "/js/views/workflows.js")
+    assert status == 200 and "javascript" in ctype and b'router.register("workflows"' in body
+
+
+def test_every_module_the_shell_imports_is_served(server):
+    """The SPA is ES modules: every import path must resolve to a real asset."""
+    import re
+    from pathlib import Path
+    static = Path(__file__).resolve().parent.parent / "openleads" / "web" / "static"
+    seen, todo = set(), ["app.js"]
+    while todo:
+        rel = todo.pop()
+        if rel in seen:
+            continue
+        seen.add(rel)
+        status, ctype, body = _get(server, "/" + rel)
+        assert status == 200 and "javascript" in ctype, rel
+        base = rel.rsplit("/", 1)[0] + "/" if "/" in rel else ""
+        for imp in re.findall(rb'(?:import|from)\s+["\'](\.[^"\']+)["\']', body):
+            path = (Path(base) / imp.decode()).as_posix()
+            parts = []
+            for seg in path.split("/"):
+                if seg == "..":
+                    parts.pop()
+                elif seg and seg != ".":
+                    parts.append(seg)
+            todo.append("/".join(parts))
+    assert len(seen) >= 10 and all((static / p).is_file() for p in seen)
 
 
 def test_watchers_crud(server):
