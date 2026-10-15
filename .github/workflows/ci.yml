@@ -47,6 +47,67 @@ jobs:
                         '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
             | openleads mcp | python -c "import sys,json; r=[json.loads(l) for l in sys.stdin]; assert r[1]['result']['tools'], r; print('mcp ok')"
 
+  dashboard:
+    name: dashboard + workspace smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Syntax-check every dashboard ES module
+        run: |
+          tmp=$(mktemp -d)
+          find openleads/web/static -name '*.js' | while read -r f; do
+            out="$tmp/$(echo "$f" | tr '/' '_').mjs"
+            cp "$f" "$out"
+            node --check "$out" || { echo "::error file=$f::syntax error"; exit 1; }
+          done
+          echo "checked $(find openleads/web/static -name '*.js' | wc -l) modules"
+      - run: python -m pip install .
+      - name: Demo workspace and workspace CLI
+        run: |
+          openleads demo --no-serve --dir "$RUNNER_TEMP/demo"
+          export OPENLEADS_HOME="$RUNNER_TEMP/demo"
+          openleads stats
+          openleads people --fit A --limit 5
+          openleads companies --tech HubSpot
+          openleads seq show 1
+          openleads seq run 1
+          openleads tasks
+          openleads deals
+          openleads dedupe
+      - name: Dashboard serves every module the shell imports
+        run: |
+          export OPENLEADS_HOME="$RUNNER_TEMP/demo"
+          (openleads web --no-open --port 8799 &) ; sleep 2
+          python - <<'PY'
+          import json, re, urllib.request
+          base = "http://127.0.0.1:8799/"
+          seen, todo = set(), ["app.js"]
+          while todo:
+              path = todo.pop()
+              if path in seen:
+                  continue
+              seen.add(path)
+              body = urllib.request.urlopen(base + path, timeout=10).read().decode()
+              d = path.rsplit("/", 1)[0] + "/" if "/" in path else ""
+              for m in re.findall(r'(?:import|from)\s*["\'](\.\.?/[^"\']+)["\']', body):
+                  parts = (d + m).split("/")
+                  out = []
+                  for p in parts:
+                      if p == "..": out.pop()
+                      elif p not in (".", ""): out.append(p)
+                  todo.append("/".join(out))
+          print(len(seen), "modules served")
+          for ep in ("api/home", "api/meta", "api/health", "api/tasks", "api/deals", "api/sequences"):
+              json.load(urllib.request.urlopen(base + ep, timeout=10))
+          print("workspace API ok")
+          PY
+
   smoke:
     name: smoke (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
