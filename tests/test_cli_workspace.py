@@ -253,3 +253,14 @@ def test_backup_is_a_consistent_private_copy(capsys, tmp_path):
     assert code == 0 and len(list(folder.glob("openleads-*.db"))) == 1
     code, out, _ = run(capsys, "backup")                         # default location
     assert code == 0 and "backups" in out
+
+
+def test_lists_export(capsys, tmp_path):
+    run(capsys, "lists", "create", "Out")
+    run(capsys, "lists", "add", "Out", "jane@acme.example", "ann@beta.example")
+    out_file = tmp_path / "out.csv"
+    code, out, _ = run(capsys, "lists", "export", "Out", "-f", "apollo", "-o", str(out_file))
+    assert code == 0 and "exported 2" in out
+    assert out_file.read_text().splitlines()[0].startswith("First Name")
+    code, out, _ = run(capsys, "lists", "export", "Out", "-f", "json")
+    assert sorted(x["email"] for x in json.loads(out)) == ["ann@beta.example", "jane@acme.example"]

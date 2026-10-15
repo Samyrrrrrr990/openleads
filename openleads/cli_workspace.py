@@ -328,6 +328,19 @@ def cmd_lists(db, args) -> int:
         n = lists.add(db, lst["id"], refs)
         print(f"[lists] added {n} to '{lst['name']}'")
         return 0
+    if act == "export":
+        from openleads.workspace import export
+        if lst["kind"] != "people":
+            raise ValueError("only people lists can be exported")
+        leads = export.leads_for(db, lists.members(db, lst["id"]))
+        text, ext = export.render(leads, args.format)
+        if args.out:
+            with open(args.out, "w", encoding="utf-8", newline="") as f:
+                f.write(text)
+            print(f"[lists] exported {len(leads)} from '{lst['name']}' → {args.out} ({args.format})")
+        else:
+            sys.stdout.write(text)
+        return 0
     if act in ("remove", "rm-members"):
         n = lists.remove(db, lst["id"], refs)
         print(f"[lists] removed {n} from '{lst['name']}'")
@@ -815,14 +828,18 @@ def register(sub) -> None:
                                '  openleads lists create "Q4 dentists"\n'
                                '  openleads lists add "Q4 dentists" jane@acme.com bob@beta.io\n'
                                '  openleads lists add "Q4 dentists" --where dental\n'
-                               '  openleads lists show "Q4 dentists"')
+                               '  openleads lists show "Q4 dentists"\n'
+                               '  openleads lists export "Q4 dentists" -f hubspot -o q4.csv')
     li.add_argument("action", nargs="?", choices=["ls", "list", "create", "show", "add", "remove",
-                                                  "delete", "rm"])
+                                                  "export", "delete", "rm"])
     li.add_argument("args", nargs="*", help="list name, then emails or domains")
     li.add_argument("--companies", action="store_true", help="company lists instead of people")
     li.add_argument("--all", action="store_true", help="people and company lists")
     li.add_argument("--where", help="add everyone matching these search words")
     li.add_argument("--description")
+    li.add_argument("-f", "--format", default="csv", choices=["csv", "apollo", "hubspot", "json"],
+                    help="export format (apollo / hubspot = ready to import there)")
+    li.add_argument("-o", "--out", help="export to this file (default: stdout)")
     li.add_argument("--limit", type=int, default=50)
     li.add_argument("--json", action="store_true")
     li.set_defaults(func=cmd_lists)
