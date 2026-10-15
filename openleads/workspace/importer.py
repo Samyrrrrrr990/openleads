@@ -153,7 +153,25 @@ def preview(text: str, mapping: dict | None = None, limit: int = 5) -> dict:
     return {"headers": headers, "mapping": mapping, "fields": list(FIELDS),
             "total": len(rows), "with_email": with_email,
             "without_email": len(rows) - with_email, "sample": mapped[:limit],
-            "unmapped": [h for h in headers if h not in mapping]}
+            "raw": rows[:3], "unmapped": [h for h in headers if h not in mapping],
+            "needs_email": needs_email(mapped)}
+
+
+def needs_email(mapped: list, limit: int = 1000) -> list:
+    """Rows without an email but with enough to find one (a name and a company
+    or website) as ``{name, company, domain}`` for the enrich waterfall."""
+    out = []
+    for m in mapped:
+        if _EMAIL_RE.match(m.get("email", "")):
+            continue
+        name = " ".join(p for p in (m.get("first_name"), m.get("last_name")) if p)
+        site = m.get("website", "")
+        domain = site.split("://", 1)[-1].split("/", 1)[0] if site else ""
+        if name and (domain or m.get("organization")):
+            out.append({"name": name, "company": m.get("organization", ""), "domain": domain})
+            if len(out) >= limit:
+                break
+    return out
 
 
 def import_rows(db, rows, mapping: dict | None = None, list_name: str = "", tags=None,

@@ -35,6 +35,7 @@ def test_preview_counts_and_samples():
     assert p["total"] == 2 and p["with_email"] == 1 and p["without_email"] == 1
     assert p["sample"][0]["email"] == "jane@acme.example"
     assert p["sample"][0]["first_name"] == "Jane"
+    assert p["raw"][0]["Email"] == "JANE@acme.example"          # raw = as uploaded
 
 
 @pytest.fixture
@@ -87,3 +88,14 @@ def test_map_row_websites():
                             m)["website"] == "https://web.example"
     assert importer.map_row({"Website": "www.acme.example"}, m)["website"] == "https://acme.example"
     assert importer.map_row({"Website": "n/a"}, m)["website"] == ""
+
+
+def test_preview_lists_rows_that_need_an_email():
+    text = ("Name,Company,Website,Email\n"
+            "Ann Lee,Beta,www.beta.example/about,\n"
+            "Bob Roe,Gamma,,\n"
+            "Cy,,,\n"
+            "Dee Fox,Delta,delta.example,dee@delta.example\n")
+    p = importer.preview(text)
+    assert p["needs_email"] == [{"name": "Ann Lee", "company": "Beta", "domain": "beta.example"},
+                                {"name": "Bob Roe", "company": "Gamma", "domain": ""}]
