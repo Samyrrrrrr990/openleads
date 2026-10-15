@@ -3,7 +3,8 @@ Workspace commands — the CRM side of OpenLeads from the terminal, on the same
 data as the web dashboard.
 
 ``people`` · ``companies`` — search and inspect contacts and accounts, change
-stages, tag, take notes. Every listing takes ``--json`` for scripting.
+stages, tag, take notes. ``lists`` — build lists. ``seq`` — multi-step sequences:
+create, enroll, run. Every listing takes ``--json`` for scripting.
 """
 from __future__ import annotations
 
@@ -274,6 +275,176 @@ def cmd_companies(db, args) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# Lists                                                                       #
+# --------------------------------------------------------------------------- #
+@_with_db
+def cmd_lists(db, args) -> int:
+    """Show lists, create one, add or remove people, delete."""
+    from openleads.workspace import lists, people
+    kind = "companies" if args.companies else "people"
+    act, rest = args.action or "ls", list(args.args)
+    if act in ("ls", "list"):
+        rows = lists.all_lists(db, None if args.all else kind)
+        if args.json:
+            _dump(rows)
+            return 0
+        if not rows:
+            print("No lists yet — `openleads lists create \"Q4 targets\"`.")
+            return 0
+        print(table(rows, [("id", "id", 4), ("name", "list", 32), ("kind", "holds", 9),
+                           ("count", "size", 6), (lambda r: _when(r["updated"]), "updated", 10)]))
+        return 0
+    if not rest:
+        raise ValueError(f"usage: openleads lists {act} NAME ...")
+    name, refs = rest[0], [r.lower() for r in rest[1:]]
+    if act == "create":
+        lst = lists.create(db, name, kind, description=args.description or "")
+        print(f"[lists] created '{lst['name']}' (id {lst['id']})")
+        return 0
+    lst = _resolve_list(db, name, kind)
+    if act == "show":
+        if lst["kind"] == "companies":
+            rows = [{"domain": m} for m in lists.members(db, lst["id"])]
+            print("\n".join(r["domain"] for r in rows) or "(empty)")
+            return 0
+        res = people.search(db, {"list_id": [str(lst["id"])]}, sort="name", direction="asc",
+                            per_page=args.limit)
+        if args.json:
+            _dump(res)
+            return 0
+        print(ui.c(f"{lst['name']} — {res['total']} people", ui.WHITE, ui.BOLD))
+        print(table(res["rows"], PEOPLE_COLS))
+        return 0
+    if act == "add":
+        if args.where:
+            filters = {"q": args.where}
+            refs += people.matching_emails(db, filters)
+        if not refs:
+            raise ValueError("give emails (or domains) to add, or --where 'search words'")
+        n = lists.add(db, lst["id"], refs)
+        print(f"[lists] added {n} to '{lst['name']}'")
+        return 0
+    if act in ("remove", "rm-members"):
+        n = lists.remove(db, lst["id"], refs)
+        print(f"[lists] removed {n} from '{lst['name']}'")
+        return 0
+    if act in ("delete", "rm"):
+        lists.delete(db, lst["id"])
+        print(f"[lists] deleted '{lst['name']}' (its people stay in your CRM)")
+        return 0
+    raise ValueError(f"unknown action '{act}'")
+
+
+# --------------------------------------------------------------------------- #
+# Sequences                                                                   #
+# --------------------------------------------------------------------------- #
+_STEP_LABEL = {"auto_email": "email", "manual_email": "manual email", "call": "call",
+               "linkedin": "LinkedIn", "task": "task"}
+
+
+def _seq(db, ref) -> dict:
+    from openleads.workspace import sequences
+    s = sequences.get(db, ref)
+    if not s:
+        raise ValueError(f"no sequence '{ref}'")
+    return s
+
+
+@_with_db
+def cmd_seq(db, args) -> int:
+    """Multi-step sequences: list, show, create, enroll, run, pause, activate."""
+    from openleads.workspace import sequences
+    act, rest = args.action or "ls", list(args.args)
+    if act in ("ls", "list"):
+        rows = sequences.list_sequences(db)
+        if args.json:
+            _dump(rows)
+            return 0
+        if not rows:
+            print('No sequences yet — `openleads seq create "Q4 outbound"`.')
+            return 0
+        print(table(rows, [("id", "id", 4), ("name", "sequence", 28), ("status", "status", 8),
+                           (lambda r: len(r["steps"]), "steps", 5),
+                           (lambda r: r["stats"]["active"], "active", 6),
+                           (lambda r: r["stats"]["contacted"], "contacted", 9),
+                           (lambda r: f"{r['stats']['reply_rate']}%", "replies", 7),
+                           (lambda r: r["stats"]["due_now"], "due", 4)]))
+        return 0
+    if not rest:
+        raise ValueError(f"usage: openleads seq {act} ID_OR_NAME ...")
+    if act == "create":
+        steps = [] if args.blank else sequences.starter_steps()
+        s = sequences.create(db, rest[0], steps, {"context": args.pitch or ""})
+        print(f"[seq] created '{s['name']}' (id {s['id']}, {len(s['steps'])} steps, paused)")
+        if steps:
+            print("      edit the steps in the dashboard, then `openleads seq activate "
+                  f"{s['id']}`")
+        return 0
+    s = _seq(db, rest[0])
+    if act == "show":
+        st = sequences.stats(db, s["id"])
+        if args.json:
+            _dump({"sequence": s, "stats": st})
+            return 0
+        sm = st["summary"]
+        print(ui.c(f"{s['name']}  ", ui.WHITE, ui.BOLD) + ui.c(f"[{s['status']}]", ui.FAINT))
+        print(f"  {sm['active']} active · {sm['contacted']} contacted · {sm['replied']} replied "
+              f"({sm['reply_rate']}%) · {sm['bounced']} bounced · {sm['due_now']} due now")
+        day = 0
+        for i, (step, row) in enumerate(zip(s["steps"], st["steps"])):
+            day += step["delay_days"]
+            what = _STEP_LABEL.get(step["type"], step["type"])
+            subj = (step.get("variants") or [{}])[0].get("subject") or step.get("note") or ""
+            ab = f" · {len(step['variants'])} variants" if len(step.get("variants") or []) > 1 else ""
+            print(f"  {i + 1}. day {day:<3} {what:<13} {_cut(subj, 40):<40} "
+                  + ui.c(f"{row['waiting']} waiting · {row['sent'] or row['tasks_done']} done{ab}",
+                         ui.FAINT))
+        return 0
+    if act == "enroll":
+        from openleads.workspace import people
+        emails = [e.lower() for e in rest[1:]]
+        if args.list:
+            lst = _resolve_list(db, args.list)
+            emails += people.matching_emails(db, {"list_id": [str(lst["id"])]})
+        if not emails:
+            raise ValueError("give emails or --list NAME")
+        res = sequences.enroll(db, s["id"], emails, force=args.force)
+        print(f"[seq] enrolled {len(res['enrolled'])} in '{s['name']}'")
+        for sk in res["skipped"][:20]:
+            print(f"      skipped {sk['email']}: {sk['reason']}")
+        if len(res["skipped"]) > 20:
+            print(f"      … and {len(res['skipped']) - 20} more skipped")
+        return 0
+    if act in ("pause", "activate", "archive"):
+        status = {"pause": "paused", "activate": "active", "archive": "archived"}[act]
+        sequences.set_status(db, s["id"], status)
+        print(f"[seq] '{s['name']}' is now {status}")
+        return 0
+    if act == "run":
+        from openleads.automate.sendtime import in_send_window
+        live = bool(args.live)
+        if live and s["status"] != "active":
+            raise ValueError(f"'{s['name']}' is {s['status']} — `openleads seq activate {s['id']}` "
+                             "first (a dry run works either way)")
+        out = sequences.process(db, dry_run=not live, seq_id=s["id"],
+                                send_window_ok=args.now or in_send_window(datetime.now()))
+        verb = "sent" if live else "would send"
+        print(f"[seq] {out['due']} due · {verb} {out['sent'] if live else out['previewed']} · "
+              f"{out['tasks']} task(s) · {out['waiting_window']} waiting for business hours · "
+              f"{out['capped']} over the daily cap")
+        if not live:
+            for r in out["results"][:15]:
+                print(f"      → {r['email']:<34} {_cut(r['subject'], 50)}")
+            print("      (dry run — add --live to send)")
+        return 0
+    if act in ("delete", "rm"):
+        sequences.delete(db, s["id"])
+        print(f"[seq] deleted '{s['name']}'")
+        return 0
+    raise ValueError(f"unknown action '{act}'")
+
+
+# --------------------------------------------------------------------------- #
 # Parser                                                                      #
 # --------------------------------------------------------------------------- #
 def register(sub) -> None:
@@ -319,3 +490,45 @@ def register(sub) -> None:
     co.add_argument("--limit", type=int, default=25)
     co.add_argument("--json", action="store_true")
     co.set_defaults(func=cmd_companies)
+
+    li = sub.add_parser("lists", help="static lists of people or companies",
+                        description="Create lists and add people to them (by email or search).",
+                        formatter_class=argparse.RawDescriptionHelpFormatter,
+                        epilog="examples:\n"
+                               "  openleads lists\n"
+                               '  openleads lists create "Q4 dentists"\n'
+                               '  openleads lists add "Q4 dentists" jane@acme.com bob@beta.io\n'
+                               '  openleads lists add "Q4 dentists" --where dental\n'
+                               '  openleads lists show "Q4 dentists"')
+    li.add_argument("action", nargs="?", choices=["ls", "list", "create", "show", "add", "remove",
+                                                  "delete", "rm"])
+    li.add_argument("args", nargs="*", help="list name, then emails or domains")
+    li.add_argument("--companies", action="store_true", help="company lists instead of people")
+    li.add_argument("--all", action="store_true", help="people and company lists")
+    li.add_argument("--where", help="add everyone matching these search words")
+    li.add_argument("--description")
+    li.add_argument("--limit", type=int, default=50)
+    li.add_argument("--json", action="store_true")
+    li.set_defaults(func=cmd_lists)
+
+    sq = sub.add_parser("seq", aliases=["sequences"], help="multi-step sequences: create, enroll, run",
+                        description="Multi-step, multi-channel sequences (same as the dashboard).",
+                        formatter_class=argparse.RawDescriptionHelpFormatter,
+                        epilog="examples:\n"
+                               "  openleads seq\n"
+                               '  openleads seq create "Q4 outbound" --pitch "We fix X for Y"\n'
+                               '  openleads seq enroll "Q4 outbound" --list "Q4 dentists"\n'
+                               "  openleads seq activate 1\n"
+                               "  openleads seq run 1            # dry run\n"
+                               "  openleads seq run 1 --live")
+    sq.add_argument("action", nargs="?", choices=["ls", "list", "show", "create", "enroll", "pause",
+                                                  "activate", "archive", "run", "delete", "rm"])
+    sq.add_argument("args", nargs="*", help="sequence id or name, then emails for enroll")
+    sq.add_argument("--list", help="enroll everyone in this list")
+    sq.add_argument("--force", action="store_true", help="enroll unverified emails too")
+    sq.add_argument("--blank", action="store_true", help="create without the 5-step starter")
+    sq.add_argument("--pitch", help="one line about your offer for {{sender_context}}")
+    sq.add_argument("--live", action="store_true", help="actually send (run)")
+    sq.add_argument("--now", action="store_true", help="ignore business hours (run)")
+    sq.add_argument("--json", action="store_true")
+    sq.set_defaults(func=cmd_seq)

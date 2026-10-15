@@ -68,3 +68,53 @@ def test_companies_list_and_show(capsys):
     assert "beta.example" in out and "acme.example" not in out
     code, out, _ = run(capsys, "companies", "show", "acme.example")
     assert code == 0 and "HubSpot" in out and "jane@acme.example" in out
+
+
+def test_lists_create_add_show_delete(capsys):
+    code, out, _ = run(capsys, "lists", "create", "Q4 targets")
+    assert code == 0 and "created 'Q4 targets'" in out
+    _, out, _ = run(capsys, "lists", "add", "q4 targets", "jane@acme.example")
+    assert "added 1" in out
+    _, out, _ = run(capsys, "lists", "add", "Q4 targets", "--where", "beta")
+    assert "added 1" in out
+    _, out, _ = run(capsys, "lists", "show", "Q4 targets", "--json")
+    assert {r["email"] for r in json.loads(out)["rows"]} == {"jane@acme.example",
+                                                             "ann@beta.example"}
+    _, out, _ = run(capsys, "lists")
+    assert "Q4 targets" in out and "2" in out
+    run(capsys, "lists", "remove", "Q4 targets", "ann@beta.example")
+    _, out, _ = run(capsys, "people", "--list", "Q4 targets", "--json")
+    assert json.loads(out)["total"] == 1
+    code, out, _ = run(capsys, "lists", "delete", "Q4 targets")
+    assert code == 0 and "deleted" in out
+    code, _, err = run(capsys, "lists", "show", "Q4 targets")
+    assert code == 2 and "no people list" in err
+
+
+def test_sequences_create_enroll_show_run(capsys, monkeypatch):
+    sent = []
+
+    def fake_send(drafts, dry_run=True, db=None, campaign="", step=1, **kw):
+        from openleads.models import SendResult
+        sent.extend((d.email, dry_run) for d in drafts)
+        return [SendResult(d.email, "preview" if dry_run else "sent") for d in drafts]
+    monkeypatch.setattr("openleads.outreach.sender.send_drafts", fake_send)
+    code, out, _ = run(capsys, "seq", "create", "Q4 outbound", "--pitch", "We fix widgets")
+    assert code == 0 and "5 steps" in out
+    run(capsys, "lists", "create", "Hot")
+    run(capsys, "lists", "add", "Hot", "jane@acme.example", "john@acme.example")
+    _, out, _ = run(capsys, "seq", "enroll", "Q4 outbound", "--list", "Hot")
+    assert "enrolled 1" in out and "john@acme.example: email is risky" in out
+    _, out, _ = run(capsys, "seq", "show", "Q4 outbound")
+    assert "1 active" in out and "day 0" in out and "call" in out
+    code, _, err = run(capsys, "seq", "run", "Q4 outbound", "--live")
+    assert code == 2 and "activate" in err
+    _, out, _ = run(capsys, "seq", "run", "Q4 outbound", "--now")
+    assert "would send 1" in out and "jane@acme.example" in out and sent == [("jane@acme.example", True)]
+    run(capsys, "seq", "activate", "1")
+    _, out, _ = run(capsys, "seq", "--json")
+    assert json.loads(out)[0]["status"] == "active"
+    _, out, _ = run(capsys, "sequences")
+    assert "Q4 outbound" in out
+    code, _, err = run(capsys, "seq", "show", "nope")
+    assert code == 2 and "no sequence" in err
