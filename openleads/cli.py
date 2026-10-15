@@ -4,6 +4,7 @@ Command-line interface.
 Finding:   ``find`` · ``sources`` · ``verify`` · ``cache``
 Outreach:  ``write`` · ``send`` · ``run`` (find→verify→write→send) · ``inbox``
 Manage:    ``config`` · ``doctor`` · ``crm`` · ``web`` · ``chat``
+Workspace: ``people`` · ``companies`` (see :mod:`openleads.cli_workspace`)
 
 Running ``openleads`` with no arguments launches the chat REPL. Free-text queries
 are parsed by the rule-based intent parser; explicit flags always override.
@@ -983,6 +984,9 @@ def build_parser() -> argparse.ArgumentParser:
     cp = sub.add_parser("campaign", help="(v2) cold-email companion")
     cp.add_argument("rest", nargs=argparse.REMAINDER)
     cp.set_defaults(func=cmd_campaign)
+
+    from openleads import cli_workspace
+    cli_workspace.register(sub)
     return p
 
 

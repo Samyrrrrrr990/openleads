@@ -1,0 +1,321 @@
+"""
+Workspace commands — the CRM side of OpenLeads from the terminal, on the same
+data as the web dashboard.
+
+``people`` · ``companies`` — search and inspect contacts and accounts, change
+stages, tag, take notes. Every listing takes ``--json`` for scripting.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime
+
+from openleads import ui
+from openleads.db import DB
+
+
+# --------------------------------------------------------------------------- #
+# Output helpers                                                              #
+# --------------------------------------------------------------------------- #
+def _cut(text, width: int) -> str:
+    s = str(text if text is not None else "")
+    return s if len(s) <= width else s[:max(0, width - 1)] + "…"
+
+
+def table(rows: list, cols: list, indent: str = "") -> str:
+    """Plain aligned columns. ``cols`` is ``[(key_or_fn, header, width), ...]``."""
+    if not rows:
+        return ""
+    head = "  ".join(ui.c(h.ljust(w), ui.FAINT) for _, h, w in cols)
+    lines = [indent + head.rstrip()]
+    for r in rows:
+        cells = []
+        for key, _, w in cols:
+            v = key(r) if callable(key) else r.get(key)
+            cells.append(_cut(v, w).ljust(w))
+        lines.append(indent + "  ".join(cells).rstrip())
+    return "\n".join(lines)
+
+
+def _when(ts) -> str:
+    if not ts:
+        return "—"
+    return datetime.fromtimestamp(float(ts)).strftime("%Y-%m-%d")
+
+
+def _dump(obj) -> None:
+    print(json.dumps(obj, indent=2, default=str))
+
+
+def _grade(score) -> str:
+    from openleads.workspace.scoring import grade
+    return grade(int(score or 0))
+
+
+def _split(values) -> list:
+    out = []
+    for v in values or []:
+        out += [x.strip() for x in str(v).split(",") if x.strip()]
+    return out
+
+
+def _with_db(fn):
+    def run(args) -> int:
+        db = DB()
+        try:
+            return fn(db, args)
+        except ValueError as e:
+            print(f"[!] {e}", file=sys.stderr)
+            return 2
+        finally:
+            db.close()
+    run.__name__ = fn.__name__
+    run.__doc__ = fn.__doc__
+    return run
+
+
+def _resolve_list(db, value: str, kind: str = "people") -> dict:
+    from openleads.workspace import lists
+    lst = lists.get(db, value) if str(value).isdigit() else None
+    lst = lst or lists.by_name(db, value, kind)
+    if not lst:
+        raise ValueError(f"no {kind} list called '{value}'")
+    return lst
+
+
+# --------------------------------------------------------------------------- #
+# People                                                                      #
+# --------------------------------------------------------------------------- #
+PEOPLE_COLS = [
+    (lambda r: _grade(r.get("fit_score")), "fit", 3),
+    (lambda r: r.get("name") or " ".join(x for x in (r.get("first_name"), r.get("last_name")) if x),
+     "name", 22),
+    ("title", "title", 22),
+    ("organization", "company", 20),
+    ("email", "email", 36),
+    ("tier", "tier", 6),
+    ("stage", "stage", 12),
+]
+
+
+def _people_filters(db, args) -> dict:
+    f: dict = {}
+    if args.query:
+        f["q"] = " ".join(args.query)
+    for key in ("stage", "tier", "seniority", "department", "country", "source"):
+        vals = _split(getattr(args, key, None))
+        if vals:
+            f[key] = vals
+    if args.tag:
+        f["tags"] = _split(args.tag)
+    if args.list:
+        f["list_id"] = [str(_resolve_list(db, args.list)["id"])]
+    if args.fit:
+        floor = {"A": 75, "B": 55, "C": 35, "D": 0}.get(args.fit.upper())
+        if floor is None:
+            raise ValueError("--fit takes A, B, C or D")
+        f["fit_min"] = floor
+    if args.never_contacted:
+        f["contacted"] = "never"
+    return f
+
+
+PEOPLE_ACTIONS = ("ls", "list", "search", "show", "stage", "tag", "note")
+
+
+@_with_db
+def cmd_people(db, args) -> int:
+    """List / search contacts (default), or act on them."""
+    from openleads.workspace import notes, people, tags
+    action = args.action
+    if action and action not in PEOPLE_ACTIONS:      # `openleads people acme`
+        args.query = [action] + list(args.query)
+        action = "search"
+    if action in (None, "ls", "list", "search"):
+        filters = _people_filters(db, args)
+        res = people.search(db, filters, sort=args.sort, direction="asc" if args.sort == "name" else "desc",
+                            per_page=args.limit)
+        if args.json:
+            _dump(res)
+            return 0
+        if not res["rows"]:
+            print("No contacts match." if filters else
+                  "No contacts yet — run `openleads find …` or `openleads import file.csv`.")
+            return 0
+        print(table(res["rows"], PEOPLE_COLS))
+        more = res["total"] - len(res["rows"])
+        print(ui.c(f"\n{res['total']} contact(s)" + (f" · {more} more (use --limit)" if more > 0 else ""),
+                   ui.FAINT))
+        return 0
+    emails = [e.lower() for e in args.query]
+    if not emails:
+        raise ValueError(f"`people {action}` needs at least one email")
+    if action == "show":
+        d = people.detail(db, emails[0])
+        if not d:
+            raise ValueError(f"{emails[0]} is not in your CRM")
+        if args.json:
+            _dump(d)
+            return 0
+        c = d["contact"]
+        name = c.get("name") or c["email"]
+        print(ui.box([ui.c(name, ui.WHITE, ui.BOLD),
+                      ui.c(" at ".join(x for x in (c.get("title"), c.get("organization")) if x) or "—",
+                           ui.GREY)], title=f"✦ {c['email']}", width=72))
+        facts = [("stage", c.get("stage")), ("email", f"{c.get('tier') or 'unverified'} · "
+                                                     f"{c.get('evidence') or '—'}"),
+                 ("fit", f"{_grade(c.get('fit_score'))} ({c.get('fit_score') or 0})"),
+                 ("seniority", c.get("seniority")), ("department", c.get("department")),
+                 ("phone", c.get("phone")), ("linkedin", c.get("linkedin_url")),
+                 ("location", ", ".join(x for x in (c.get("city"), c.get("state"), c.get("country"))
+                                        if x)),
+                 ("tags", ", ".join(c.get("tags") or [])),
+                 ("last contact", _when(c.get("last_contacted")))]
+        for k, v in facts:
+            if v:
+                print(f"  {ui.c(k.ljust(12), ui.FAINT)} {v}")
+        for e in d["enrollments"]:
+            print(f"  {ui.c('sequence'.ljust(12), ui.FAINT)} {e['sequence_name']} — {e['status']}, "
+                  f"step {int(e['step']) + 1}")
+        for t in d["tasks"]:
+            if t["status"] == "open":
+                print(f"  {ui.c('task'.ljust(12), ui.FAINT)} {t['title']} (due {_when(t['due'])})")
+        for n in d["notes"][:3]:
+            print(f"  {ui.c('note'.ljust(12), ui.FAINT)} {_cut(n['body'], 80)}")
+        if d["timeline"]:
+            print(ui.c("\n  recent activity", ui.WHITE, ui.BOLD))
+            for a in d["timeline"][:8]:
+                print(f"  {ui.c(_when(a['ts']), ui.FAINT)}  {a['label']}"
+                      + (f" — {_cut(a['summary'], 60)}" if a.get("summary") else ""))
+        return 0
+    if action == "stage":
+        if not args.to:
+            raise ValueError("pass the new stage with --to (e.g. --to interested)")
+        res = people.bulk(db, emails, "stage", args.to)
+        print(f"[people] {res.get('count', 0)} moved to {args.to}")
+        return 0
+    if action == "tag":
+        tag_list = _split(args.add or []) or _split(args.remove or [])
+        if not tag_list:
+            raise ValueError("pass --add t1,t2 or --remove t1")
+        n = (tags.remove if args.remove else tags.add)(db, emails, tag_list)
+        print(f"[people] {'untagged' if args.remove else 'tagged'} {n}")
+        return 0
+    if action == "note":
+        if len(args.query) < 2:
+            raise ValueError('usage: openleads people note EMAIL "what happened"')
+        email, body = args.query[0].lower(), " ".join(args.query[1:])
+        if not db.get_lead(email):
+            raise ValueError(f"{email} is not in your CRM")
+        notes.add(db, "contact", email, body)
+        print(f"[people] note added to {email}")
+        return 0
+    raise ValueError(f"unknown action '{action}'")
+
+
+# --------------------------------------------------------------------------- #
+# Companies                                                                   #
+# --------------------------------------------------------------------------- #
+COMPANY_COLS = [
+    ("name", "company", 24), ("domain", "domain", 26), ("industry", "industry", 18),
+    ("company_size", "size", 9), ("people", "people", 6), ("stage", "stage", 10),
+    (lambda r: ", ".join((r.get("technologies") or [])[:3]), "tech", 30),
+]
+
+
+@_with_db
+def cmd_companies(db, args) -> int:
+    """List / search companies, or show one."""
+    from openleads.workspace import companies
+    if args.action == "show":
+        if not args.query:
+            raise ValueError("usage: openleads companies show DOMAIN")
+        d = companies.detail(db, args.query[0].lower())
+        if not d:
+            raise ValueError(f"{args.query[0]} is not in your workspace")
+        if args.json:
+            _dump(d)
+            return 0
+        a = d["account"]
+        print(ui.box([ui.c(a.get("name") or a["domain"], ui.WHITE, ui.BOLD),
+                      ui.c(a.get("description") or "not profiled yet", ui.GREY)],
+                     title=f"✦ {a['domain']}", width=72))
+        for k in ("industry", "company_size", "employees", "phone", "city", "country", "stage"):
+            if a.get(k):
+                print(f"  {ui.c(k.replace('_', ' ').ljust(12), ui.FAINT)} {a[k]}")
+        if a.get("technologies"):
+            print(f"  {ui.c('tech'.ljust(12), ui.FAINT)} {', '.join(a['technologies'])}")
+        if d.get("people"):
+            print(ui.c("\n  people", ui.WHITE, ui.BOLD))
+            print(table(d["people"], PEOPLE_COLS[1:3] + PEOPLE_COLS[4:5] + PEOPLE_COLS[6:], indent="  "))
+        return 0
+    words = list(args.query)
+    if args.action and args.action not in ("ls", "list", "search"):
+        words.insert(0, args.action)              # `openleads companies dental`
+    f: dict = {"q": " ".join(words)} if words else {}
+    if args.tech:
+        f["technologies"] = _split(args.tech)
+    if args.stage:
+        f["stage"] = _split(args.stage)
+    if args.industry:
+        f["industry"] = _split(args.industry)
+    res = companies.search(db, f, sort=args.sort, per_page=args.limit)
+    if args.json:
+        _dump(res)
+        return 0
+    if not res["rows"]:
+        print("No companies match." if f else "No companies yet.")
+        return 0
+    print(table(res["rows"], COMPANY_COLS))
+    print(ui.c(f"\n{res['total']} compan{'y' if res['total'] == 1 else 'ies'}", ui.FAINT))
+    return 0
+
+
+# --------------------------------------------------------------------------- #
+# Parser                                                                      #
+# --------------------------------------------------------------------------- #
+def register(sub) -> None:
+    """Add the workspace subcommands to the main parser."""
+    pe = sub.add_parser("people", help="your contacts: search, show, stage, tag, note",
+                        description="Search and work your contacts (same data as the dashboard).",
+                        formatter_class=argparse.RawDescriptionHelpFormatter,
+                        epilog="examples:\n"
+                               "  openleads people                       # most recent\n"
+                               "  openleads people search acme --fit A\n"
+                               "  openleads people show jane@acme.com\n"
+                               "  openleads people stage jane@acme.com --to interested\n"
+                               "  openleads people tag jane@acme.com --add vip,q4\n"
+                               '  openleads people note jane@acme.com "Call went well"')
+    pe.add_argument("action", nargs="?", help="ls | search | show | stage | tag | note (or search words)")
+    pe.add_argument("query", nargs="*", help="search words, or emails for an action")
+    pe.add_argument("--stage", action="append", help="filter by stage (repeat or comma-separate)")
+    pe.add_argument("--tier", action="append", help="email status: safe, risky")
+    pe.add_argument("--seniority", action="append")
+    pe.add_argument("--department", action="append")
+    pe.add_argument("--country", action="append")
+    pe.add_argument("--source", action="append")
+    pe.add_argument("--tag", action="append")
+    pe.add_argument("--list", help="only people in this list (name or id)")
+    pe.add_argument("--fit", help="minimum ICP grade: A, B, C or D")
+    pe.add_argument("--never-contacted", action="store_true")
+    pe.add_argument("--sort", default="updated",
+                    choices=["updated", "created", "fit", "score", "name", "last_contacted", "seniority"])
+    pe.add_argument("--limit", type=int, default=25)
+    pe.add_argument("--to", help="new stage for `stage`")
+    pe.add_argument("--add", action="append", help="tags to add for `tag`")
+    pe.add_argument("--remove", action="append", help="tags to remove for `tag`")
+    pe.add_argument("--json", action="store_true")
+    pe.set_defaults(func=cmd_people)
+
+    co = sub.add_parser("companies", help="companies in your workspace: search, show")
+    co.add_argument("action", nargs="?", help="ls | show | search words")
+    co.add_argument("query", nargs="*")
+    co.add_argument("--tech", action="append", help="uses this technology (e.g. HubSpot)")
+    co.add_argument("--stage", action="append")
+    co.add_argument("--industry", action="append")
+    co.add_argument("--sort", default="people", choices=["people", "name", "updated", "industry", "size"])
+    co.add_argument("--limit", type=int, default=25)
+    co.add_argument("--json", action="store_true")
+    co.set_defaults(func=cmd_companies)

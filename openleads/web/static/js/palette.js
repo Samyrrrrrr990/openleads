@@ -98,7 +98,7 @@ export function openPalette(initial = "") {
     if (q.length < 2) { remote = { people: [], companies: [] }; build(); return; }
     try {
       const [p, c] = await Promise.all([
-        api.post("/api/people/search", { filters: { q }, per_page: 5, sort: "fit_score" }).catch(() => ({ rows: [] })),
+        api.post("/api/people/search", { filters: { q }, per_page: 5, sort: "fit" }).catch(() => ({ rows: [] })),
         api.post("/api/companies/search", { filters: { q }, per_page: 4 }).catch(() => ({ rows: [] })),
       ]);
       if (my !== seq || !open) return;
