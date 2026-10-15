@@ -158,6 +158,55 @@ def cmd_bench(args) -> int:
     return 0
 
 
+def cmd_company(args) -> int:
+    """Look up one company: profile, tech stack, socials, phones, and its people."""
+    import json as _json
+
+    from openleads.discover.people import find_people
+    from openleads.insights.company import fetch_profile
+    from openleads.insights.phones import display
+    from openleads.insights.techstack import by_category
+    from openleads.insights.titles import classify, label_department, label_seniority
+    domain = args.domain.lower().replace("https://", "").replace("http://", "").strip("/")
+    cache = None if args.no_cache else Cache()
+    try:
+        prof = fetch_profile(domain, cache=cache, refresh=args.no_cache)
+        people = [] if args.no_people else find_people(domain, cache=cache, limit=args.people)
+    finally:
+        if cache:
+            cache.close()
+    if args.json:
+        print(_json.dumps({"profile": prof, "people": people}, indent=2))
+        return 0 if not prof.get("error") else 1
+    if prof.get("error"):
+        print(f"[!] {domain}: {prof['error']}", file=sys.stderr)
+        return 1
+    print(ui.box([ui.c(prof.get("name") or domain, ui.WHITE, ui.BOLD),
+                  ui.c(prof.get("description") or "no description", ui.GREY)],
+                 title=f"✦ {domain}", width=72))
+    facts = [("industry", prof.get("industry")), ("size", prof.get("size")),
+             ("founded", prof.get("founded")),
+             ("phone", ", ".join(display(p) for p in prof.get("phones") or [])),
+             ("address", ", ".join(v for v in (prof.get("address") or {}).values()))]
+    for k, v in facts:
+        if v:
+            print(f"  {ui.c(k.ljust(10), ui.FAINT)} {v}")
+    for net, url in (prof.get("socials") or {}).items():
+        print(f"  {ui.c(net.ljust(10), ui.FAINT)} {url}")
+    grouped = by_category(prof.get("tech") or [])
+    if grouped:
+        print(ui.c("\n  tech stack", ui.WHITE, ui.BOLD))
+        for cat, names in sorted(grouped.items()):
+            print(f"  {ui.c(cat.ljust(22), ui.FAINT)} {', '.join(names)}")
+    if people:
+        print(ui.c("\n  people", ui.WHITE, ui.BOLD))
+        for p in people:
+            sen, dep = classify(p["title"])
+            tag = " · ".join(x for x in (label_seniority(sen), label_department(dep)) if x)
+            print(f"  {p['name']:<28} {p['title'][:34]:<34} {ui.c(tag, ui.FAINT)}")
+    return 0
+
+
 def cmd_mcp(args) -> int:
     """Run the MCP server on stdio (for Claude Desktop, Cursor, …)."""
     from openleads import mcp
@@ -795,6 +844,14 @@ def build_parser() -> argparse.ArgumentParser:
     _add_query_flags(sd, with_output=False)
     sd.add_argument("--live", action="store_true", help="actually send (default: preview)")
     sd.set_defaults(func=cmd_send)
+
+    co = sub.add_parser("company", help="look up a company: tech stack, socials, phones, people")
+    co.add_argument("domain", help="company domain, e.g. acme.com")
+    co.add_argument("--json", action="store_true", help="print JSON")
+    co.add_argument("--people", type=int, default=10, help="max people from the team page")
+    co.add_argument("--no-people", action="store_true", help="skip the team-page crawl")
+    co.add_argument("--no-cache", action="store_true", help="refetch instead of using the cache")
+    co.set_defaults(func=cmd_company)
 
     mc = sub.add_parser("mcp", help="run as an MCP server (Claude Desktop, Cursor, Claude Code)")
     mc.set_defaults(func=cmd_mcp)
