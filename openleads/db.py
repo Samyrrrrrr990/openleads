@@ -310,8 +310,13 @@ class DB:
         """Write a consistent copy of the whole database to ``dest`` (SQLite's online
         backup API — safe while the dashboard or scheduler is writing)."""
         dest = Path(dest).expanduser()
-        if dest.exists() and dest.is_dir():
-            dest = dest / f"openleads-{time.strftime('%Y%m%d-%H%M%S')}.db"
+        if dest.is_dir() or not dest.suffix:        # a folder (made if missing): timestamped name
+            dest.mkdir(parents=True, exist_ok=True)
+            stamp, n = time.strftime("%Y%m%d-%H%M%S"), 1
+            folder, dest = dest, dest / f"openleads-{stamp}.db"
+            while dest.exists():                    # two backups in the same second
+                n += 1
+                dest = folder / f"openleads-{stamp}-{n}.db"
         if dest.exists():
             raise ValueError(f"{dest} already exists")
         dest.parent.mkdir(parents=True, exist_ok=True)

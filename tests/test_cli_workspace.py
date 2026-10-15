@@ -252,7 +252,11 @@ def test_backup_is_a_consistent_private_copy(capsys, tmp_path):
     code, out, _ = run(capsys, "backup", str(folder))
     assert code == 0 and len(list(folder.glob("openleads-*.db"))) == 1
     code, out, _ = run(capsys, "backup")                         # default location
-    assert code == 0 and "backups" in out
+    assert code == 0 and "/backups/openleads-" in out
+    code, out, _ = run(capsys, "backup", str(tmp_path / "new-folder"))   # created if missing
+    assert code == 0 and len(list((tmp_path / "new-folder").glob("openleads-*.db"))) == 1
+    run(capsys, "backup", str(tmp_path / "new-folder"))
+    assert len(list((tmp_path / "new-folder").glob("openleads-*.db"))) == 2   # same second: -2
 
 
 def test_lists_export(capsys, tmp_path):
