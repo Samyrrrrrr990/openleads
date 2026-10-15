@@ -4,6 +4,89 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [5.0.0] - 2026-10-15
+
+**From a lead finder to a lead workspace.** 4.x found people and their emails and
+could send to them. 5.0 adds the rest of what a sales team does in Apollo — a
+people and company database with filters, lists, ICP scoring, multi-step
+sequences, a task queue and a deal pipeline — on the same local SQLite file, in a
+redesigned dashboard, the terminal and your AI assistant. Still $0, no API keys,
+nothing leaves your machine. Existing databases upgrade themselves on first open.
+
+### Added: the workspace
+- **People and companies.** Structured contact fields (seniority, department,
+  phone, LinkedIn, location, owner, stage, fit score), accounts for every company
+  domain, Apollo-style search with facet counts, bulk actions on a selection or
+  every matching row, saved searches, tags, notes, and a timeline per record.
+- **Stages** for contacts, accounts and deals that move on their own (sent →
+  Approaching, reply → Replied, bounce → Bad data, unsubscribe → Do not contact)
+  and never drag a contact backwards.
+- **Lists** of people or companies, **CSV import** that maps Apollo, HubSpot,
+  Salesforce and LinkedIn exports automatically (updating without blanking), and
+  **duplicate** detection and merge.
+- **ICP fit scoring**: a 0–100 score and A–D grade from points you set, with the
+  reasons per contact and a what-if preview before saving.
+- **Sequences**: multi-step, multi-channel cadences (automatic email, manual
+  email, call, LinkedIn, action item) with delays, A/B variants, same-thread
+  follow-ups, AI-written steps, per-sequence settings and a 5-step starter.
+  Manual steps become tasks and hold the contact until done; replies, bounces and
+  unsubscribes take people out. Runs on the existing scheduler heartbeat, inside
+  the warmup cap, business hours and suppression list; dry runs work while paused.
+  Sequences can be cloned.
+- **Templates** with `{{variables}}`, `{{var|fallback}}` and `{Hi|Hey}` spintax,
+  blank-variable warnings and seven starters.
+- **Tasks** (calls, emails, LinkedIn, to-dos) with natural due dates, and a
+  **reply task** created automatically when someone replies.
+- **Deals**: a pipeline with stage probabilities, weighted forecast and win rate;
+  winning a deal makes the contact and company customers.
+- **Activity** feed, **data health** checks, home **KPIs**, "best leads to
+  contact" recommendations, and reply rates by persona.
+- **Company intelligence**: seniority and department from titles, headcount
+  bands, phone normalization, social profiles, 100+ technology signatures, and
+  company profiles read from a homepage (`openleads company acme.com`).
+- **Exports** in Apollo and HubSpot import formats (`-f apollo`, `-f hubspot`).
+- **Backups**: `openleads backup` and Settings → Data & backup take a consistent
+  snapshot while everything keeps running.
+
+### Added: the dashboard, redesigned
+- A new shell and design system (light and dark, phone-width layouts) with
+  pages for Home, Find people, People, Companies, Lists, Sequences, Tasks,
+  Templates, Deals, Analytics, Activity, Import & enrich, Data health, and
+  Settings tabs for ICP scoring and Data & backup. Plain ES modules, no build.
+- Record drawers with deep links (`#/people/jane@acme.com`, `#/deals/7`, …),
+  filters in the URL, a drag-and-drop deal board, a one-at-a-time task queue,
+  a sequence step editor with live preview, a CSV import wizard, a ⌘K command
+  palette, and keyboard shortcuts (G-then-letter navigation, J/K/X in People).
+- `openleads demo` opens the dashboard on an invented `.example` workspace.
+
+### Added: terminal and AI
+- Workspace commands: `people`, `companies`, `lists` (incl. `export`), `seq`,
+  `tasks`, `deals`, `import`, `dedupe`, `stats`, `backup`, `demo`. Listings take
+  `--json`. `find` gains `--seniority`, `--department` and `--no-company`.
+- Chat: `/save` results into a list, plus `/people`, `/tasks`, `/deals`, `/stats`.
+- MCP: 18 workspace tools to read contacts, companies, tasks, the pipeline and
+  sequences, and to save contacts, set stages, tag, note, create tasks and deals
+  and enroll people — none of them send email. `find_leads` can save to a list.
+  Every tool carries read-only / open-world annotations.
+
+### Security
+- The dashboard refuses requests whose `Host` isn't loopback (DNS rebinding),
+  cross-site requests and foreign `Origin`s (including `null`), non-JSON writes
+  (415) and oversized bodies (413), and can't be framed.
+  `OPENLEADS_ALLOWED_HOSTS` allows a reverse proxy's name.
+
+### Changed
+- The database runs in WAL mode with a busy timeout and versioned migrations
+  (`PRAGMA user_version`), so the dashboard, scheduler and CLI share it safely.
+- Hand edits in the dashboard survive later searches that find the same person.
+- Docs: new guides for the workspace, sequences and moving from Apollo; rewritten
+  dashboard, MCP, quickstart and architecture pages; a new README.
+- CI syntax-checks every dashboard module and smoke-tests the workspace.
+
+### Fixed
+- IMAP connections crashed on Python 3.8.
+- The LLM query parser dropped the original query text.
+
 ## [4.6.1] - 2026-10-13
 
 ### Added
