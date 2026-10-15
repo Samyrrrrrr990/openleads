@@ -127,6 +127,76 @@ def _distill_keyword(text: str, location: str | None) -> str | None:
     return kw or None
 
 
+# --- role filters: "VPs of marketing", "engineering managers", "C-level" ------ #
+_DEPT_WORDS = (
+    ("business development", "sales"), ("customer success", "customer_success"),
+    ("human resources", "hr"), ("marketing", "marketing"), ("growth", "marketing"),
+    ("sales", "sales"), ("revenue", "sales"), ("engineering", "engineering"),
+    ("product", "product"), ("design", "design"), ("finance", "finance"),
+    ("people", "hr"), ("talent", "hr"), ("recruiting", "hr"), ("hr", "hr"),
+    ("legal", "legal"), ("operations", "operations"), ("ops", "operations"),
+    ("it", "it"), ("security", "it"), ("data", "data"), ("analytics", "data"),
+    ("support", "customer_success"),
+)
+_DEPT_ALT = "|".join(re.escape(w) for w, _ in _DEPT_WORDS)
+_DEPT_MAP = dict(_DEPT_WORDS)
+# Rank words that are corporate enough to filter on by themselves.
+_LEVELS = (
+    (r"c-?level|c-?suite|cxos?|chief \w+ officers", ["owner", "founder", "c_suite"]),
+    (r"ceos", ["owner", "founder", "c_suite"]),
+    (r"vps|vp|vice[- ]presidents?", ["vp"]),
+    (r"heads? of", ["head"]),
+    (r"directors?", ["director"]),
+)
+_CXO = {"ctos": "engineering", "cmos": "marketing", "cfos": "finance", "coos": "operations",
+        "cros": "sales", "cios": "it", "cisos": "it", "chros": "hr", "cpos": "product"}
+_ROLE_NOUNS = {"recruiters": "hr", "marketers": "marketing", "account executives": "sales",
+               "sdrs": "sales", "bdrs": "sales", "sales reps": "sales"}
+
+
+def role_filters(text: str) -> tuple:
+    """``(seniorities, departments, matched_phrases)`` named explicitly in ``text``.
+
+    Conservative on purpose: a filter that drops every company contact turns a local
+    search into zero results, so bare "managers"/"owners" don't filter ("property
+    managers in Austin" is a business search); "engineering managers" does.
+    """
+    low = f" {(text or '').lower()} "
+    sen: list = []
+    dep: list = []
+    phrases: list = []
+
+    def add(lst, vals):
+        for v in vals:
+            if v and v not in lst:
+                lst.append(v)
+
+    for tok, d in _CXO.items():
+        if re.search(rf"\b{tok}\b", low):
+            add(sen, ["founder", "c_suite"])
+            add(dep, [d])
+            phrases.append(tok)
+    for noun, d in _ROLE_NOUNS.items():
+        if re.search(rf"\b{noun}\b", low):
+            add(dep, [d])
+            phrases.append(noun)
+    for rx, levels in _LEVELS:
+        for m in re.finditer(rf"\b({rx})(?:\s+(?:(?:of|in|for)\s+)?(?:the\s+)?({_DEPT_ALT}))?\b", low):
+            add(sen, levels)
+            phrases.append(m.group(0).strip())
+            if m.group(2):
+                add(dep, [_DEPT_MAP[m.group(2)]])
+        for m in re.finditer(rf"\b({_DEPT_ALT})\s+({rx})\b", low):
+            add(sen, levels)
+            add(dep, [_DEPT_MAP[m.group(1)]])
+            phrases.append(m.group(0).strip())
+    for m in re.finditer(rf"\b({_DEPT_ALT})\s+(managers?|leads|leaders)\b", low):
+        add(sen, ["manager"] if m.group(2).startswith("manager") else ["head", "manager"])
+        add(dep, [_DEPT_MAP[m.group(1)]])
+        phrases.append(m.group(0).strip())
+    return sen, dep, phrases
+
+
 def rule_parse(text: str) -> Query:
     """Deterministically parse free text into a :class:`Query`. Never raises."""
     text = (text or "").strip()
@@ -156,7 +226,12 @@ def rule_parse(text: str) -> Query:
     # (location, keyword) the planner needs. A typed domain (handled above) stays
     # the one unambiguous pin; an explicit `-s`/`/source` still overrides downstream.
     q.location = _extract_location(text)
-    kw = _distill_keyword(text, q.location)
+    sen, dep, phrases = role_filters(text)
+    q.seniority, q.department = sen, dep
+    stripped = text
+    for ph in sorted(phrases, key=len, reverse=True):
+        stripped = re.sub(rf"\b{re.escape(ph)}\b", " ", stripped, flags=re.I)
+    kw = _distill_keyword(stripped, q.location)
     if kw:
         q.keyword = kw
     return q
