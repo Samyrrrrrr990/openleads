@@ -1,31 +1,31 @@
 {
   "version": "4.6.1",
-  "date": "2026-10-14",
+  "date": "2026-10-15",
   "count_per_query": 10,
   "totals": {
-    "leads": 86,
-    "people": 62,
-    "found": 42,
+    "leads": 108,
+    "people": 77,
+    "found": 48,
     "pattern": 3,
-    "guessed": 41,
-    "junk_names": 2,
+    "guessed": 57,
+    "junk_names": 0,
     "queries": 12,
     "queries_with_results": 12,
-    "fill_rate": 0.717,
-    "evidence_rate": 0.523,
-    "junk_rate": 0.032,
-    "median_seconds": 62.9
+    "fill_rate": 0.9,
+    "evidence_rate": 0.472,
+    "junk_rate": 0.0,
+    "median_seconds": 50.6
   },
   "queries": [
     {
       "query": "dentists in Austin",
-      "leads": 4,
-      "people": 2,
-      "found": 2,
+      "leads": 10,
+      "people": 7,
+      "found": 4,
       "pattern": 0,
-      "guessed": 2,
+      "guessed": 6,
       "junk_names": 0,
-      "seconds": 71.2,
+      "seconds": 60.7,
       "error": "",
       "sample": [
         " <downtown@austincosmetic.com> \u00b7 Austin Cosmetic Dentistry",
@@ -35,29 +35,29 @@
     },
     {
       "query": "marketing agencies in Miami",
-      "leads": 4,
-      "people": 3,
-      "found": 2,
-      "pattern": 1,
-      "guessed": 1,
+      "leads": 10,
+      "people": 8,
+      "found": 5,
+      "pattern": 0,
+      "guessed": 5,
       "junk_names": 0,
-      "seconds": 51.7,
+      "seconds": 12.9,
       "error": "",
       "sample": [
-        " <support@kingzcreations.info> \u00b7 Kingz Creations",
-        "Dan Ross <dan.ross@cavmir.com> \u00b7 Cavmir",
-        "Sanjay Gupta <sanjay@cavmir.com> \u00b7 Cavmir"
+        " <hello@craftly.ai> \u00b7 Craftly.AI",
+        "Nicole Lytle <nicole.lytle@craftly.ai> \u00b7 Craftly.AI",
+        "Megan Apa <megan.apa@craftly.ai> \u00b7 Craftly.AI"
       ]
     },
     {
       "query": "law firms in London",
-      "leads": 4,
-      "people": 3,
+      "leads": 10,
+      "people": 9,
       "found": 1,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 9,
       "junk_names": 0,
-      "seconds": 148.8,
+      "seconds": 50.6,
       "error": "",
       "sample": [
         "George W. Cleary <george.cleary@clearygottlieb.com> \u00b7 Cleary Gottlieb Steen & Hamilton LLP",
@@ -67,13 +67,13 @@
     },
     {
       "query": "accountants in Toronto",
-      "leads": 4,
+      "leads": 5,
       "people": 3,
-      "found": 1,
+      "found": 2,
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 64.6,
+      "seconds": 84.9,
       "error": "",
       "sample": [
         "Samantha Marisa <samantha.marisa@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
@@ -83,49 +83,49 @@
     },
     {
       "query": "software companies in Berlin",
-      "leads": 7,
-      "people": 3,
-      "found": 4,
+      "leads": 10,
+      "people": 4,
+      "found": 6,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 4,
       "junk_names": 0,
-      "seconds": 62.2,
+      "seconds": 107.9,
       "error": "",
       "sample": [
-        "Stefan Simon <stefan.simon@berlinwind.com> \u00b7 BerlinWind GmbH",
-        "Mandy H\u00e4rtig <mandy.hartig@berlinwind.com> \u00b7 BerlinWind GmbH",
-        "Lina Simon <lina.simon@berlinwind.com> \u00b7 BerlinWind GmbH"
+        " <kontakt@governikus.de> \u00b7 Governikus",
+        " <secalert@redhat.com> \u00b7 Red Hat",
+        "Duygu Y\u00fcr\u00fckt\u00fcmen <duygu.yuruktumen@atolye15.com> \u00b7 Atolye 15"
       ]
     },
     {
       "query": "gyms in Sydney",
       "leads": 10,
-      "people": 6,
-      "found": 7,
+      "people": 4,
+      "found": 6,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 4,
       "junk_names": 0,
-      "seconds": 52.3,
+      "seconds": 75.8,
       "error": "",
       "sample": [
-        "Ellen Latham <elatham@orangetheory.com> \u00b7 Orangetheory Fitness",
-        "Jerome Kern <jkern@orangetheory.com> \u00b7 Orangetheory Fitness",
-        "David Long <dlong@orangetheory.com> \u00b7 Orangetheory Fitness"
+        " <chippendale@steedfitness.com.au> \u00b7 Steed Fitness",
+        " <info@forgegym.com.au> \u00b7 Forge Gym",
+        "Lizzie Tui <lizzie.tui@eloueratonymundinegym.com.au> \u00b7 Elouera Tony Mundine Gym"
       ]
     },
     {
       "query": "fintech founders",
       "leads": 10,
       "people": 9,
-      "found": 3,
+      "found": 4,
       "pattern": 0,
-      "guessed": 7,
-      "junk_names": 1,
-      "seconds": 22.1,
+      "guessed": 6,
+      "junk_names": 0,
+      "seconds": 17.6,
       "error": "",
       "sample": [
-        "David Villarreal <david@parrotsoftware.io> \u00b7 Parrot Software \ud83e\udd9c",
-        "Grant Ackerman <grant.ackerman@polarfi.com> \u00b7 Polar",
+        "Quan Nguyen <quan.nguyen@gimo.vn> \u00b7 GIMO",
+        "Pauline Roteta <pauline@pasito.ai> \u00b7 Pasito",
         "Bobby Mehta <bobby.mehta@sentilink.com> \u00b7 SentiLink"
       ]
     },
@@ -133,16 +133,16 @@
       "query": "AI startup founders",
       "leads": 10,
       "people": 7,
-      "found": 4,
+      "found": 3,
       "pattern": 0,
-      "guessed": 6,
-      "junk_names": 1,
-      "seconds": 18.5,
+      "guessed": 7,
+      "junk_names": 0,
+      "seconds": 16.5,
       "error": "",
       "sample": [
-        "Owen Phillips, PhD <owen.phd@brainkey.ai> \u00b7 BrainKey",
-        "Kshitij Dixit <kshitij.dixit@perit.ai> \u00b7 Perit.AI",
-        " <careers@estuary.dev> \u00b7 Estuary"
+        "David Marquez <david.marquez@shipmates.app> \u00b7 Shipmates",
+        "Andy Lee <andy.lee@downtobid.com> \u00b7 Downtobid",
+        " <nicholas.hanson@govstar.us> \u00b7 GovStar"
       ]
     },
     {
@@ -153,7 +153,7 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 66.5,
+      "seconds": 100.5,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
@@ -165,16 +165,16 @@
       "query": "machine learning researchers",
       "leads": 10,
       "people": 10,
-      "found": 1,
+      "found": 0,
       "pattern": 0,
-      "guessed": 9,
+      "guessed": 10,
       "junk_names": 0,
-      "seconds": 62.9,
+      "seconds": 22.1,
       "error": "",
       "sample": [
         "Jan Jakub\u016fv <jan.jakubuv@cvut.cz> \u00b7 Czech Technical University in Prague",
-        "Antoni Rogowski <antoni.rogowski@pw.edu.pl> \u00b7 Warsaw University of Technology",
-        "Anna Sztyber <anna.sztyber@pw.edu.pl> \u00b7 Warsaw University of Technology"
+        "Martin Suda <martin.suda@cvut.cz> \u00b7 Czech Technical University in Prague",
+        "Antoni Rogowski <antoni.rogowski@pw.edu.pl> \u00b7 Warsaw University of Technology"
       ]
     },
     {
@@ -185,7 +185,7 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 4.0,
+      "seconds": 2.5,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
@@ -198,15 +198,15 @@
       "leads": 10,
       "people": 3,
       "found": 9,
-      "pattern": 0,
-      "guessed": 1,
+      "pattern": 1,
+      "guessed": 0,
       "junk_names": 0,
-      "seconds": 70.9,
+      "seconds": 30.7,
       "error": "",
       "sample": [
         " <contact@parkerholsman.com> \u00b7 Parker Holsman",
         " <chris@grthomes.com> \u00b7 GRT Homes | eXp Realty Oak Park & River Forest",
-        " <nagel@asknagel.com> \u00b7 Ask Nagel Realty"
+        " <contact@centercoastrealty.com> \u00b7 Center Coast Realty"
       ]
     }
   ]
