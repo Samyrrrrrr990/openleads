@@ -748,6 +748,11 @@ details > summary { cursor: pointer; }
 .pts-cell.is-set { color: var(--text); border-color: var(--line-strong); }
 .pts { width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
 
+/* ------------------------------------------------------------ home: recommended */
+.rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.rec { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); min-width: 0; }
+.rec:hover { border-color: var(--line-strong); background: var(--hover); }
+
 /* ------------------------------------------------------------------ tasks */
 .toolbar--bare { padding: 0; border: 0; background: transparent; }
 .task-section { margin-bottom: 18px; }

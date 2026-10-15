@@ -97,10 +97,29 @@ def home(db, now: float | None = None, days: int = 30, checklist: bool = True) -
                    for k, lab, tone in CONTACT_STAGES],
         "grades": scoring.distribution(db),
         "activity": activity.recent(db, limit=20),
+        "recommended": recommended(db),
     }
     if checklist:
         out["checklist"] = setup_checklist(db, total)
     return out
+
+
+# Who to reach out to next: strong fit, a verified address, never contacted, not
+# already in a sequence, and nobody has written them off.
+RECOMMENDED_FILTERS = {"fit_min": 55, "tier": ["safe"], "contacted": "never", "stage": ["new"]}
+
+
+def recommended(db, limit: int = 6) -> dict:
+    """The best people to contact next, and how many more like them there are."""
+    from openleads.workspace import people
+    where, params = people.build_where(RECOMMENDED_FILTERS)
+    where += (" AND l.email NOT IN (SELECT email FROM enrollments "
+              "WHERE status IN ('active', 'paused'))")
+    total = db.scalar(f"SELECT COUNT(*) FROM leads l {where}", params, default=0)
+    rows = db.query(f"SELECT l.email, l.name, l.first_name, l.last_name, l.title, "
+                    f"l.organization, l.fit_score, l.seniority FROM leads l {where} "
+                    "ORDER BY l.fit_score DESC, l.created DESC LIMIT ?", (*params, limit))
+    return {"total": total, "rows": rows, "filters": RECOMMENDED_FILTERS}
 
 
 def setup_checklist(db, total_contacts: int | None = None) -> list:

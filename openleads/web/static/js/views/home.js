@@ -3,6 +3,7 @@
    KPIs with trends, the send chart, the stage funnel, today's tasks, a
    getting-started checklist, sequences that need attention, and the feed.
    ========================================================================= */
+import { enroll } from "../actions.js";
 import { columns, hbars, sparkline } from "../charts.js";
 import { $, api, esc, fail, fmt, ico, onAct, router, store, toast, ui } from "../core.js";
 import { timeline } from "../timeline.js";
@@ -70,6 +71,14 @@ async function render(root) {
                 ${q.stats.due_now ? `<span class="badge badge--accent">${q.stats.due_now} due</span>` : ""}</a>`).join("")
               : ui.empty("sequence", "No active sequences", "Turn a list into a multi-step campaign.", `<a class="btn btn--sm" href="#/sequences">${ico("plus")} New sequence</a>`)}</div></div>
         </div>
+        ${h.recommended && h.recommended.total ? `<div class="card"><div class="card__head"><h3>Best leads to contact</h3>
+            <span class="faint">${fmt.plural(h.recommended.total, "verified, strong-fit person", "verified, strong-fit people")} never contacted</span>
+            <div class="actions"><button class="btn btn--sm" data-act="rec-enroll">${ico("sequence")} Add all to a sequence</button>
+              <a class="btn btn--sm btn--ghost" href="#/people?fit_min=55&tier=safe&contacted=never&stage=new&sort=fit">See all</a></div></div>
+          <div class="card__body rec-grid">${h.recommended.rows.map((r) => `
+            <a class="rec" href="#/people/${encodeURIComponent(r.email)}">${ui.avatar(ui.name(r) || r.email, r.email)}
+              <div style="min-width:0;flex:1"><div class="t-strong ellipsis">${esc(ui.name(r) || r.email)}</div>
+                <div class="hint ellipsis">${esc([r.title, r.organization].filter(Boolean).join(" · "))}</div></div>${ui.grade(r.fit_score)}</a>`).join("")}</div></div>` : ""}
         <div class="card"><div class="card__head"><h3>Recent activity</h3><div class="actions"><a class="btn btn--sm btn--ghost" href="#/activity">See all</a></div></div>
           <div class="card__body">${timeline(h.activity.slice(0, 10), { showRef: true })}</div></div>
       </div>
@@ -99,6 +108,10 @@ router.register("home", {
     root.innerHTML = `<div class="page">${ui.skeleton(8)}</div>`;
     await render(root);
     onAct(root, {
+      "rec-enroll": async () => {
+        const h = await api.get("/api/home");
+        await enroll({ all: true, filters: h.recommended.filters, total: h.recommended.total });
+      },
       done: async (el) => {
         try {
           await api.post("/api/tasks/complete", { id: el.dataset.id });

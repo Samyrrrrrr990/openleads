@@ -52,3 +52,27 @@ def test_health_report(db):
     assert checks["guessed"]["count"] == 2 and checks["company_only"]["count"] == 1
     assert r["duplicates"] == {"groups": 1, "contacts": 1}
     assert r["unprofiled_companies"] == 2
+
+
+def test_recommended_are_strong_untouched_verified_and_free(db):
+    from openleads.workspace import scoring, sequences
+    for email, title, tier in (("ceo@gamma.example", "CEO", "safe"),
+                               ("vp@gamma.example", "VP of Sales", "safe"),
+                               ("eng@gamma.example", "Engineer", "safe"),
+                               ("cto@gamma.example", "CTO", "risky")):
+        db.upsert_lead({"email": email, "first_name": email[:3].upper(), "title": title,
+                        "tier": tier, "organization": "Gamma",
+                        "signals": {"groundtruth_exact": True}})    # found → +10
+    scoring.rescore(db)
+    rec = stats.recommended(db)
+    emails = [r["email"] for r in rec["rows"]]
+    assert "ceo@gamma.example" in emails and "eng@gamma.example" not in emails   # weak fit
+    assert "cto@gamma.example" not in emails                                      # not safe
+    assert emails == sorted(emails, key=lambda e: -db.get_lead(e)["fit_score"])
+    s = sequences.create(db, "S", sequences.starter_steps())
+    sequences.enroll(db, s["id"], ["ceo@gamma.example"])
+    assert "ceo@gamma.example" not in [r["email"] for r in stats.recommended(db)["rows"]]
+    db.record_touch("vp@gamma.example", "sent")
+    db.set_status("vp@gamma.example", "sent")
+    assert stats.recommended(db)["total"] == rec["total"] - 2
+    assert stats.home(db)["recommended"]["filters"]["contacted"] == "never"
