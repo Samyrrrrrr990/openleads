@@ -18,7 +18,7 @@ CRM (``~/.openleads/openleads.db``):
 * :mod:`~openleads.workspace.saved`      — saved searches
 * :mod:`~openleads.workspace.scoring`    — an ICP fit score per contact
 * :mod:`~openleads.workspace.importer`   — CSV import with header auto-mapping
-* :mod:`~openleads.workspace.dedupe`     — duplicate detection and merge
+* :mod:`~openleads.workspace.duplicates` — duplicate detection and merge
 * :mod:`~openleads.workspace.stats`      — home dashboard numbers and data health
 
 Each module takes an open :class:`openleads.db.DB` and is unit-tested against a
