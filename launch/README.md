@@ -42,7 +42,9 @@ Waiting on you:
 
 Releasing:
 - [ ] Merge the 5.0 PR into `main` once CI is green.
-- [ ] Tag it: `git tag v5.0.0 && git push origin v5.0.0`. The release workflow checks
+- [ ] Tag it: `git tag v5.0.0 && git push origin v5.0.0` — or, without git, run
+      **Actions → Tag release → Run workflow** on `main`, which tags the version in
+      `pyproject.toml` and starts the Release workflow for it. The release workflow checks
       that the tag, `pyproject.toml`, `openleads/__init__.py` and `npm/package.json`
       agree, builds and checks the wheel (dashboard included), and creates the GitHub
       Release.

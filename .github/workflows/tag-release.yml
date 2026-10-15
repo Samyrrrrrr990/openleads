@@ -1,0 +1,40 @@
+name: Tag release
+
+# A release button for when you can't push a tag yourself (from a phone, a
+# browser, or a sandbox): Actions → Tag release → Run workflow (on main).
+# It tags the commit with v<version from pyproject.toml>, then starts the Release
+# workflow for that tag, which publishes to PyPI, npm and GitHub Releases exactly
+# as a pushed tag would. (A tag pushed with GITHUB_TOKEN doesn't trigger other
+# workflows by itself, so the Release run is started explicitly.)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # push the tag
+  actions: write    # start the Release workflow
+
+jobs:
+  tag:
+    name: Tag and start the release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Create the tag from pyproject.toml
+        id: tag
+        run: |
+          version=$(python3 -c "import re; print(re.search(r'^version = \"([^\"]+)\"', open('pyproject.toml').read(), re.M).group(1))")
+          tag="v${version}"
+          if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null; then
+            echo "::error::${tag} already exists — bump the version first"
+            exit 1
+          fi
+          git tag "${tag}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${tag}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Tagged ${GITHUB_SHA} as ${tag}"
+      - name: Start the Release workflow for the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --repo "${GITHUB_REPOSITORY}" --ref "${{ steps.tag.outputs.tag }}"
