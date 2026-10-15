@@ -77,3 +77,23 @@ def test_create_validation(db):
     with pytest.raises(ValueError):
         tasks.create(db, "x", kind="carrier-pigeon")
     assert tasks.create(db, "x", priority="urgent!!")["priority"] == "normal"
+
+
+def test_a_reply_puts_one_reply_task_in_the_queue(tmp_path):
+    from openleads.db import DB
+    from openleads.workspace import tasks
+    db = DB(tmp_path / "r.db")
+    db.upsert_lead({"email": "jane@acme.example", "first_name": "Jane", "last_name": "Doe"})
+    db.set_status("jane@acme.example", "sent")
+    db.set_status("jane@acme.example", "replied")
+    db.set_status("jane@acme.example", "replied")              # a second reply: no duplicate
+    open_ = tasks.list_tasks(db, "open")
+    assert [(t["title"], t["kind"], t["priority"]) for t in open_] == \
+        [("Reply to Jane Doe", "email", "high")]
+    assert tasks.counts(db)["overdue"] + tasks.counts(db)["today"] == 1
+    tasks.complete(db, open_[0]["id"])
+    db.set_status("jane@acme.example", "replied")              # replied again later: new task
+    assert len(tasks.list_tasks(db, "open")) == 1
+    db.set_status("jane@acme.example", "bounced")
+    assert len(tasks.list_tasks(db, "open")) == 1               # bounces don't make tasks
+    db.close()

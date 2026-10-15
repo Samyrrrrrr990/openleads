@@ -290,6 +290,21 @@ class DB:
             "UPDATE enrollments SET status=?, finished=?, next_due=NULL "
             "WHERE email=? AND status IN ('active', 'paused')", (stop, now, email))
         self._conn.commit()
+        if status == STATUS_REPLIED:
+            self._reply_task(email)
+
+    def _reply_task(self, email: str) -> None:
+        """A reply deserves an answer: put a high-priority task in the queue, once."""
+        open_task = self._conn.execute(
+            "SELECT 1 FROM tasks WHERE contact=? AND status='open' AND title LIKE 'Reply to %'",
+            (email,)).fetchone()
+        if open_task:
+            return
+        from openleads.workspace import tasks
+        lead = self.get_lead(email) or {}
+        who = lead.get("name") or lead.get("first_name") or email
+        tasks.create(self, f"Reply to {who}", kind="email", contact=email, due="now",
+                     priority="high", note="They replied to your outreach.")
 
     def list_leads(self, status: str | None = None, limit: int = 1000) -> list[dict]:
         if status:

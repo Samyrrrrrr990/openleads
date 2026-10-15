@@ -13,7 +13,9 @@ def test_seed_fills_every_page_with_invented_data(tmp_path):
     domains = {r["domain"] for r in db.query("SELECT domain FROM accounts")}
     assert all(d.endswith(".example") for d in domains)
     assert db.scalar("SELECT COUNT(*) FROM enrollments WHERE status='active'") > 0
-    assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == counts["tasks"]
+    replied = db.scalar("SELECT COUNT(*) FROM leads WHERE status='replied'")
+    assert replied and db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == \
+        counts["tasks"] + replied                           # + a "Reply to …" task each
     assert {r["stage"] for r in db.query("SELECT stage FROM deals")} >= {"qualify", "won", "lost"}
     assert len(duplicates.find(db)) == 2
     home = stats.home(db, now=1_790_000_000.0)

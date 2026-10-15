@@ -18,8 +18,8 @@ def test_upsert_logs_created_and_status_logs_stage(db):
     db.set_status("jane@acme.example", "sent")
     db.set_status("jane@acme.example", "replied")
     kinds = [r["kind"] for r in activity.timeline(db, "contact", "Jane@Acme.example")]
-    assert kinds[0] in ("replied", "stage")
-    assert {"created", "stage", "replied", "email_sent"} <= set(kinds)
+    assert kinds[0] == "task_created"                       # the "Reply to …" task
+    assert {"created", "stage", "replied", "email_sent", "task_created"} <= set(kinds)
     stage_rows = [r for r in activity.timeline(db, "contact", "jane@acme.example")
                   if r["kind"] == "stage"]
     assert stage_rows[0]["summary"] == "Approaching → Replied"
