@@ -14,7 +14,9 @@ Tools:
 * ``list_sources`` — what OpenLeads can search
 
 …plus workspace tools (see :mod:`openleads.mcp_workspace`) to search contacts and
-companies, read a full record, and check tasks, the pipeline and sequences.
+companies, read a full record, check tasks, the pipeline and sequences — and to
+save contacts into lists, set stages, tag, take notes, create tasks and deals,
+and enroll people in sequences. None of them send email.
 
 stdout carries only protocol messages; anything else goes to stderr.
 """
@@ -174,7 +176,9 @@ def handle(msg: dict) -> dict | None:
                              "'guessed' are unconfirmed; prefer tier 'safe' for sending. "
                              "The workspace tools (search_contacts, get_contact, "
                              "search_companies, list_tasks, pipeline, …) read the user's "
-                             "saved CRM."),
+                             "saved CRM; save_contacts stores find_leads results in a "
+                             "list, and enroll_in_sequence queues outreach without "
+                             "sending anything immediately."),
         })
     if method == "ping":
         return ok({})

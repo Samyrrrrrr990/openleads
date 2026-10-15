@@ -230,6 +230,192 @@ HANDLERS = {
 }
 
 
+WRITE_TOOLS = [
+    {"name": "save_contacts", "annotations": {**_RW, "title": "Save contacts"},
+     "description": ("Save people to the workspace (e.g. results from find_leads), optionally "
+                     "into a list and with tags. Existing contacts are updated without blanking "
+                     "fields. Each contact needs an email; other fields are optional."),
+     "inputSchema": _obj({
+         "contacts": {"type": "array", "items": _obj({
+             "email": _S, "first_name": _S, "last_name": _S, "name": _S, "title": _S,
+             "organization": _S, "phone": _S, "linkedin_url": _S, "city": _S, "country": _S,
+             "tier": _S}, ["email"])},
+         "list": {**_S, "description": "Add them to this list (created if new)."},
+         "tags": {"type": "array", "items": _S}}, ["contacts"])},
+    {"name": "add_to_list", "annotations": {**_RW, "title": "Add to list"},
+     "description": "Add saved contacts to a people list (created if it doesn't exist).",
+     "inputSchema": _obj({"list": _S, "emails": _EMAILS}, ["list", "emails"])},
+    {"name": "set_stage", "annotations": {**_RW, "title": "Set stage"},
+     "description": ("Move contacts to a stage: new, approaching, replied, interested, meeting, "
+                     "customer, not_interested, unresponsive, do_not_contact, bad_data."),
+     "inputSchema": _obj({"emails": _EMAILS, "stage": _S}, ["emails", "stage"])},
+    {"name": "tag_contacts", "annotations": {**_RW, "title": "Tag contacts"},
+     "description": "Add (or with remove=true, remove) tags on contacts.",
+     "inputSchema": _obj({"emails": _EMAILS, "tags": {"type": "array", "items": _S},
+                          "remove": {"type": "boolean", "default": False}}, ["emails", "tags"])},
+    {"name": "add_note", "annotations": {**_RW, "title": "Add a note"},
+     "description": "Add a note to a contact's record (call notes, context, next steps).",
+     "inputSchema": _obj({"email": _S, "text": _S, "pinned": {"type": "boolean"}},
+                         ["email", "text"])},
+    {"name": "create_task", "annotations": {**_RW, "title": "Create a task"},
+     "description": ("Create a follow-up task. kind: call, email, linkedin or todo. due accepts "
+                     "today, tomorrow, +3d, +2h, a weekday (fri) or YYYY-MM-DD."),
+     "inputSchema": _obj({"title": _S, "contact": {**_S, "description": "Contact email."},
+                          "kind": {"type": "string", "enum": ["call", "email", "linkedin", "todo"]},
+                          "due": _S, "note": _S,
+                          "priority": {"type": "string", "enum": ["low", "normal", "high"]}},
+                         ["title"])},
+    {"name": "complete_task", "annotations": {**_RW, "title": "Complete a task"},
+     "description": "Mark a task done (a sequence task moves that contact to their next step).",
+     "inputSchema": _obj({"id": {"type": "integer"}}, ["id"])},
+    {"name": "create_deal", "annotations": {**_RW, "title": "Create a deal"},
+     "description": ("Open a deal. stage: qualify, meeting, proposal, negotiation, won, lost. "
+                     "amount accepts 12000, 12k or $2.5k."),
+     "inputSchema": _obj({"name": _S, "contact": _S, "company": {**_S, "description": "Domain."},
+                          "amount": _S, "stage": _S, "close_date": _S}, ["name"])},
+    {"name": "move_deal", "annotations": {**_RW, "title": "Move a deal"},
+     "description": "Move a deal to another stage (won makes its contact and company customers).",
+     "inputSchema": _obj({"id": {"type": "integer"}, "stage": _S}, ["id", "stage"])},
+    {"name": "enroll_in_sequence", "annotations": {**_RW, "title": "Enroll in a sequence"},
+     "description": ("Add contacts (by email or a whole list) to an existing sequence. People "
+                     "who are suppressed, unverified, or already in a sequence are skipped "
+                     "with a reason. Nothing is sent immediately; steps run on schedule."),
+     "inputSchema": _obj({"sequence": {**_S, "description": "Sequence name or id."},
+                          "emails": _EMAILS, "list": _S}, ["sequence"])},
+]
+TOOLS += WRITE_TOOLS
+
+
+def _emails(args) -> list:
+    out = [str(e).lower().strip() for e in (args.get("emails") or []) if str(e).strip()]
+    if not out:
+        raise ValueError("emails is required")
+    return out
+
+
+def save_contacts(db, args: dict) -> dict:
+    from openleads.workspace import lists, people, scoring, tags
+    contacts = args.get("contacts") or []
+    if not isinstance(contacts, list) or not contacts:
+        raise ValueError("contacts must be a non-empty list")
+    created, updated, saved, skipped = 0, 0, [], []
+    for c in contacts[:1000]:
+        email = str((c or {}).get("email") or "").lower().strip()
+        if not people._EMAIL_RE.match(email):
+            skipped.append({"email": email, "reason": "not a valid email"})
+            continue
+        row = {k: str(v) for k, v in c.items() if k in (
+            "first_name", "last_name", "name", "title", "organization", "phone", "linkedin_url",
+            "city", "country", "tier", "website", "industry") and v}
+        if row.get("name") and not (row.get("first_name") or row.get("last_name")):
+            parts = row.pop("name").split()
+            row["first_name"], row["last_name"] = parts[0], " ".join(parts[1:])
+        row.pop("name", None)
+        if db.get_lead(email):
+            people.update(db, email, {k: v for k, v in row.items() if k in people.EDITABLE})
+            updated += 1
+        else:
+            db.upsert_lead({**row, "email": email, "source": "assistant"})
+            created += 1
+        saved.append(email)
+    if saved:
+        scoring.rescore(db, saved)
+        if args.get("tags"):
+            tags.add(db, saved, [str(t) for t in args["tags"]])
+    lst = None
+    if saved and args.get("list"):
+        lst = lists.ensure(db, str(args["list"]), "people")
+        lists.add(db, lst["id"], saved)
+    return {"created": created, "updated": updated, "skipped": skipped,
+            "list": lst["name"] if lst else None}
+
+
+def add_to_list(db, args: dict) -> dict:
+    from openleads.workspace import lists
+    emails = [e for e in _emails(args) if db.get_lead(e)]
+    lst = lists.ensure(db, str(args.get("list") or ""), "people")
+    n = lists.add(db, lst["id"], emails)
+    return {"list": lst["name"], "added": n, "not_in_workspace": len(_emails(args)) - len(emails)}
+
+
+def set_stage(db, args: dict) -> dict:
+    from openleads.workspace import people
+    return {"updated": people.bulk(db, _emails(args), "stage", str(args.get("stage") or ""))["count"]}
+
+
+def tag_contacts(db, args: dict) -> dict:
+    from openleads.workspace import tags
+    names = [str(t) for t in args.get("tags") or [] if str(t).strip()]
+    if not names:
+        raise ValueError("tags is required")
+    fn = tags.remove if args.get("remove") else tags.add
+    return {"changed": fn(db, _emails(args), names)}
+
+
+def add_note(db, args: dict) -> dict:
+    from openleads.workspace import notes
+    email = str(args.get("email") or "").lower().strip()
+    if not db.get_lead(email):
+        raise ValueError(f"{email} is not in the workspace")
+    n = notes.add(db, "contact", email, str(args.get("text") or ""), bool(args.get("pinned")))
+    return {"note_id": n["id"]}
+
+
+def create_task(db, args: dict) -> dict:
+    from openleads.workspace import tasks
+    t = tasks.create(db, str(args.get("title") or ""), kind=args.get("kind") or "todo",
+                     contact=str(args.get("contact") or ""), due=args.get("due"),
+                     note=str(args.get("note") or ""), priority=args.get("priority") or "normal")
+    return _compact(t, ("id", "kind", "title", "contact", "due", "priority"))
+
+
+def complete_task(db, args: dict) -> dict:
+    from openleads.workspace import tasks
+    t = tasks.complete(db, args.get("id"))
+    if not t:
+        raise ValueError(f"no task {args.get('id')}")
+    return {"id": t["id"], "status": t["status"]}
+
+
+def create_deal(db, args: dict) -> dict:
+    from openleads.workspace import deals
+    d = deals.create(db, str(args.get("name") or ""), account=str(args.get("company") or ""),
+                     contact=str(args.get("contact") or ""), stage=args.get("stage") or "qualify",
+                     amount=args.get("amount"), close_date=str(args.get("close_date") or ""))
+    return _compact(d, ("id", "name", "stage", "amount", "account", "contact", "close_date"))
+
+
+def move_deal(db, args: dict) -> dict:
+    from openleads.workspace import deals
+    d = deals.move(db, args.get("id"), str(args.get("stage") or ""))
+    if not d:
+        raise ValueError(f"no deal {args.get('id')}")
+    return {"id": d["id"], "stage": d["stage"]}
+
+
+def enroll_in_sequence(db, args: dict) -> dict:
+    from openleads.workspace import people, sequences
+    seq = sequences.get(db, args.get("sequence"))
+    if not seq:
+        raise ValueError(f"no sequence '{args.get('sequence')}'")
+    emails = [str(e).lower() for e in args.get("emails") or []]
+    if args.get("list"):
+        emails += people.matching_emails(db, {"list_id": [str(_list_id(db, str(args["list"]))["id"])]})
+    if not emails:
+        raise ValueError("give emails or a list")
+    res = sequences.enroll(db, seq["id"], emails)
+    return {"sequence": seq["name"], "status": seq["status"], "enrolled": len(res["enrolled"]),
+            "skipped": res["skipped"][:50]}
+
+
+HANDLERS.update({
+    "save_contacts": save_contacts, "add_to_list": add_to_list, "set_stage": set_stage,
+    "tag_contacts": tag_contacts, "add_note": add_note, "create_task": create_task,
+    "complete_task": complete_task, "create_deal": create_deal, "move_deal": move_deal,
+    "enroll_in_sequence": enroll_in_sequence,
+})
+
+
 def call(name: str, args: dict) -> dict:
     """Run one workspace tool against the local database."""
     from openleads.db import DB

@@ -24,9 +24,9 @@ def workspace(monkeypatch, tmp_path):
     db.close()
 
 
-def call(name, **args):
+def call(_tool, **args):
     r = mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
-                    "params": {"name": name, "arguments": args}})["result"]
+                    "params": {"name": _tool, "arguments": args}})["result"]
     assert r["isError"] is False, r["content"][0]["text"]
     return r["structuredContent"]
 
@@ -67,3 +67,46 @@ def test_companies_tasks_pipeline_sequences_stats():
     assert call("list_sequences") == {"sequences": []}
     st = call("workspace_stats")
     assert st["contacts"]["total"] == 2 and st["pipeline"]["open_count"] == 1
+
+
+def test_write_tools_change_the_workspace():
+    r = call("save_contacts", list="From Claude", tags=["ai"], contacts=[
+        {"email": "Ann@Gamma.example", "name": "Ann Lee", "title": "Head of Growth",
+         "organization": "Gamma", "tier": "safe"},
+        {"email": "jane@acme.example", "phone": "+1 512 555 0100"},
+        {"email": "nope"}])
+    assert r["created"] == 1 and r["updated"] == 1 and r["skipped"][0]["email"] == "nope"
+    assert r["list"] == "From Claude"
+    ann = call("get_contact", email="ann@gamma.example")["contact"]
+    assert ann["name"] == "Ann Lee" and "ai" in ann["tags"]
+    assert ann["lists"] == ["From Claude"]
+    assert call("get_contact", email="jane@acme.example")["contact"]["title"] == "VP of Sales"
+    assert call("add_to_list", list="Hot", emails=["jane@acme.example", "x@y.example"]) == \
+        {"list": "Hot", "added": 1, "not_in_workspace": 1}
+    assert call("set_stage", emails=["jane@acme.example"], stage="interested")["updated"] == 1
+    assert call("tag_contacts", emails=["jane@acme.example"], tags=["vip"])["changed"] == 1
+    call("add_note", email="jane@acme.example", text="Wants a demo Thursday")
+    t = call("create_task", title="Send deck", contact="jane@acme.example", kind="email",
+             due="tomorrow")
+    call("complete_task", id=t["id"])
+    d = call("create_deal", name="Gamma pilot", contact="ann@gamma.example", amount="2.5k")
+    assert d["amount"] == 2500 and d["stage"] == "qualify"
+    assert call("move_deal", id=d["id"], stage="won")["stage"] == "won"
+    jane = call("get_contact", email="jane@acme.example")
+    assert jane["contact"]["stage"] == "interested" and "vip" in jane["contact"]["tags"]
+    assert jane["notes"][0]["text"] == "Wants a demo Thursday"
+    assert call("get_contact", email="ann@gamma.example")["contact"]["stage"] == "customer"
+
+
+def test_enroll_in_sequence_tool():
+    from openleads.workspace import sequences
+    db = DB()
+    sequences.create(db, "Q4", sequences.starter_steps())
+    db.close()
+    call("add_to_list", list="Q4 list", emails=["jane@acme.example", "bob@beta.example"])
+    r = call("enroll_in_sequence", sequence="Q4", list="Q4 list")
+    assert r["enrolled"] == 1 and r["skipped"][0]["email"] == "bob@beta.example"
+    assert call("get_contact", email="jane@acme.example")["sequences"][0]["name"] == "Q4"
+    bad = mcp.handle({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                      "params": {"name": "enroll_in_sequence", "arguments": {"sequence": "nope"}}})
+    assert bad["result"]["isError"] is True
