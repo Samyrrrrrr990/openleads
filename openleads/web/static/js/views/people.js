@@ -32,6 +32,8 @@ const CFG = [
   { key: "list_id", label: "Lists", icon: "list", facetKey: "lists", alias: "list" },
   { key: "sequence", label: "Sequences", icon: "sequence", type: "select",
     options: [["", "Any"], ["any", "In a sequence"], ["none", "Not in a sequence"]] },
+  { key: "status", label: "Email activity", icon: "mail", order: ["new", "queued", "sent", "replied", "bounced", "unsubscribed"],
+    labels: (k) => ({ new: "Not emailed", queued: "Queued", sent: "Emailed", replied: "Replied", bounced: "Bounced", unsubscribed: "Unsubscribed" }[k] || k) },
   { key: "contacted", label: "Last contacted", icon: "send", type: "select",
     options: [["", "Any time"], ["never", "Never contacted"], ["ever", "Contacted"], ["7d", "In the last 7 days"], ["30d", "In the last 30 days"], ["90d", "In the last 90 days"]] },
   { key: "created_within", label: "Added", icon: "calendar", type: "select",

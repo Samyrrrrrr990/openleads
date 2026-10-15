@@ -56,7 +56,7 @@ SORTS = {
 LIST_FILTERS = ("stage", "tier", "seniority", "department", "source", "evidence", "country",
                 "company_size", "industry", "status")
 FACETS = ("stage", "tier", "seniority", "department", "source", "evidence", "country",
-          "company_size", "industry")
+          "company_size", "industry", "status")
 EDITABLE = ("first_name", "last_name", "title", "organization", "phone", "linkedin_url",
             "website", "city", "state", "country", "industry", "seniority", "department",
             "owner", "stage")
