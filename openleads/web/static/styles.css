@@ -663,6 +663,12 @@ body:has(.drawer) .toasts { bottom: 72px; }
 .palette__item .sub { color: var(--faint); font-size: 12px; margin-left: auto; white-space: nowrap; }
 .palette__group { font-size: 11px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .05em; padding: 8px 10px 4px; }
 .palette__foot { display: flex; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--faint); }
+.palette__foot kbd, .palette__input kbd { margin-right: 2px; }
+.palette .scrim { z-index: 0; }
+.palette__box { position: relative; z-index: 1; }
+.palette__item .avatar--sm { width: 22px; height: 22px; font-size: 9.5px; }
+.kbd-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.kbd-row:last-child { border-bottom: 0; }
 
 
 /* -------------------------------------------------------------- templates */
