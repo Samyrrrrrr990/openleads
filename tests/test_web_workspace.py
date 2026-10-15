@@ -180,3 +180,83 @@ def test_tasks_and_deals(base):
     status, _ = post(base, "/api/deals/move", {"id": did, "stage": "partying"})
     assert status == 400
     assert post(base, "/api/deals/delete", {"id": did})[1]["ok"]
+
+
+def test_templates_and_preview(base):
+    _, ts = get(base, "/api/templates")
+    assert len(ts["templates"]) >= 5
+    _, s = post(base, "/api/templates/save", {"name": "Mine", "subject": "hi {{first_name}}",
+                                              "body": "About {{company}}."})
+    assert s["template"]["name"] == "Mine"
+    status, err = post(base, "/api/templates/save", {"name": "Bad", "subject": "x",
+                                                     "body": "{{shoe_size}}"})
+    assert status == 400 and "shoe_size" in err["error"]
+    _, pv = post(base, "/api/templates/preview", {"subject": "hi {{first_name}}",
+                                                  "body": "{{title}} at {{company}}",
+                                                  "email": "jane@acme.example"})
+    assert pv["draft"]["subject"] == "hi Jane" and pv["draft"]["body"] == "VP of Sales at Acme"
+    _, pv2 = post(base, "/api/templates/preview", {"subject": "{{first_name}}", "body": "x"})
+    assert pv2["sample"] is True and pv2["draft"]["subject"] == "Jane"
+
+
+def test_sequences_flow(base, monkeypatch):
+    _, st = get(base, "/api/sequences/starter")
+    assert len(st["steps"]) == 5
+    _, s = post(base, "/api/sequences/save", {"name": "Outbound", "starter": True,
+                                              "settings": {"skip_weekends": False,
+                                                           "send_window": False}})
+    sid = s["sequence"]["id"]
+    status, err = post(base, "/api/sequences/save", {"name": "outbound"})
+    assert status == 400
+    assert post(base, "/api/sequences/status", {"id": sid, "status": "active"})[1]["ok"]
+    _, e = post(base, "/api/sequences/enroll", {"id": sid, "all": True, "filters": {}})
+    assert e["enrolled"] == ["ann@beta.example", "jane@acme.example"]
+    assert e["skipped"][0]["email"] == "john@acme.example"
+    _, pv = post(base, "/api/sequences/preview", {"id": sid, "step": 0,
+                                                  "email": "jane@acme.example"})
+    assert pv["draft"]["email"] == "jane@acme.example" and "Jane" in pv["draft"]["body"]
+    _, pv3 = post(base, "/api/sequences/preview", {"id": sid, "step": 2})
+    assert pv3["type"] == "call"
+    events = stream(base, "/api/sequences/run", {"id": sid, "live": False})
+    done = events[-1]
+    assert done["type"] == "done" and done["previewed"] == 2 and done["live"] is False
+    _, g = get(base, f"/api/sequences/get?id={sid}")
+    assert g["stats"]["summary"]["active"] == 2 and len(g["enrollments"]) == 2
+    assert post(base, "/api/sequences/pause", {"id": sid, "emails": ["ann@beta.example"],
+                                               "status": "paused"})[1]["count"] == 1
+    assert post(base, "/api/sequences/unenroll", {"id": sid, "emails": ["ann@beta.example"]}
+                )[1]["removed"] == 1
+    _, allseq = get(base, "/api/sequences")
+    assert allseq["sequences"][0]["stats"]["enrolled"] == 2
+    assert post(base, "/api/sequences/delete", {"id": sid})[1]["ok"]
+
+
+def test_saved_scoring_import_duplicates_export(base):
+    _, sv = post(base, "/api/saved/save", {"name": "VPs", "filters": {"seniority": ["vp"]}})
+    assert sv["saved"]["filters"] == {"seniority": ["vp"]}
+    assert get(base, "/api/saved")[1]["saved"][0]["name"] == "VPs"
+    _, sc = post(base, "/api/scoring/save", {"model": {"departments": {"sales": 20}}})
+    assert sc["ok"] and sc["model"]["departments"] == {"sales": 20}
+    _, ex = post(base, "/api/scoring/explain", {"email": "jane@acme.example"})
+    assert {"reason": "department: sales", "points": 20} in ex["reasons"]
+    csv_text = "Email,First Name,Last Name,Company\njane.doe@acme.example,Jane,Doe,Acme\n"
+    _, pv = post(base, "/api/import/preview", {"csv": csv_text})
+    assert pv["with_email"] == 1 and pv["mapping"]["Email"] == "email"
+    _, im = post(base, "/api/import", {"csv": csv_text, "list_name": "Imported"})
+    assert im["created"] == 1 and im["list"]["name"] == "Imported"
+    status, _ = post(base, "/api/import", {"csv": "  "})
+    assert status == 400
+    _, dup = get(base, "/api/duplicates")
+    assert dup["count"] == 1
+    _, mg = post(base, "/api/duplicates/merge", {"all": True})
+    assert mg["merged"] == 1
+    _, out = post(base, "/api/people/export", {"filters": {"q": "acme"}, "format": "apollo"})
+    assert out["count"] == 2 and out["content"].startswith("First Name,Last Name,Title")
+    assert "HubSpot" in out["content"] and out["filename"].endswith(".csv")
+    _, js = post(base, "/api/people/export", {"emails": ["ann@beta.example"], "format": "json"})
+    assert js["count"] == 1 and '"email": "ann@beta.example"' in js["content"]
+    _, plain = post(base, "/api/people/export", {"emails": ["ann@beta.example"]})
+    assert plain["content"].startswith("First Name,Last Name,Email")
+    status, _ = post(base, "/api/people/export", {"emails": ["ann@beta.example"],
+                                                   "format": "xlsx"})
+    assert status == 400

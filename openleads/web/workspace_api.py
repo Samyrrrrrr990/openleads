@@ -444,3 +444,323 @@ def deals_move(db, p):
 def deals_delete(db, p):
     from openleads.workspace import deals
     return {"ok": deals.delete(db, p.get("id"))}
+
+
+# --------------------------------------------------------------------------- #
+# Templates + sequences                                                       #
+# --------------------------------------------------------------------------- #
+@route(GET, "/api/templates")
+def templates_all(db, p):
+    from openleads.workspace import templates
+    return {"templates": templates.list_templates(db, p.get("category") or None)}
+
+
+@route(POST, "/api/templates/save")
+def templates_save(db, p):
+    from openleads.workspace import templates
+    if p.get("id"):
+        row = templates.update(db, p["id"], p)
+        if row is None:
+            raise ValueError("no such template")
+        return {"ok": True, "template": row}
+    return {"ok": True, "template": templates.create(db, p.get("name") or "",
+                                                     p.get("subject") or "", p.get("body") or "",
+                                                     p.get("category") or "")}
+
+
+@route(POST, "/api/templates/delete")
+def templates_delete(db, p):
+    from openleads.workspace import templates
+    return {"ok": templates.delete(db, p.get("id"))}
+
+
+_SAMPLE = {"email": "jane@acme.example", "first_name": "Jane", "last_name": "Doe",
+           "title": "VP of Sales", "organization": "Acme", "city": "Austin", "country": "US",
+           "industry": "Software"}
+
+
+@route(POST, "/api/templates/preview")
+def templates_preview(db, p):
+    """Render a subject/body for one contact (or a sample) and lint it."""
+    from openleads.workspace import templates
+    contact = db.get_lead(p["email"]) if p.get("email") else None
+    sender = {"sender_context": p["context"]} if p.get("context") else None
+    draft, missing = templates.render_draft(p.get("subject") or "", p.get("body") or "",
+                                            contact or _SAMPLE, sender)
+    return {"draft": draft.to_dict(), "missing": missing, "sample": contact is None,
+            "unknown": templates.unknown_variables((p.get("subject") or "") + "\n"
+                                                   + (p.get("body") or ""))}
+
+
+@route(GET, "/api/sequences")
+def sequences_all(db, p):
+    from openleads.workspace import sequences
+    return {"sequences": sequences.list_sequences(db)}
+
+
+@route(GET, "/api/sequences/get")
+def sequences_get(db, p):
+    from openleads.workspace import sequences
+    seq = sequences.get(db, p.get("id"))
+    if not seq:
+        raise ValueError("no such sequence")
+    return {"sequence": seq, "stats": sequences.stats(db, seq["id"]),
+            "enrollments": sequences.enrollments(db, seq["id"], p.get("status") or None,
+                                                 limit=_int(p.get("limit"), 500) or 500)}
+
+
+@route(GET, "/api/sequences/starter")
+def sequences_starter(db, p):
+    from openleads.workspace import sequences
+    return {"steps": sequences.starter_steps(), "settings": sequences.DEFAULT_SETTINGS}
+
+
+@route(POST, "/api/sequences/save")
+def sequences_save(db, p):
+    from openleads.workspace import sequences
+    if p.get("id"):
+        seq = sequences.update(db, p["id"], name=p.get("name"), steps=p.get("steps"),
+                               settings=p.get("settings"))
+    else:
+        steps = p.get("steps")
+        if steps is None and p.get("starter"):
+            steps = sequences.starter_steps()
+        seq = sequences.create(db, p.get("name") or "", steps or [], p.get("settings"))
+    return {"ok": True, "sequence": seq}
+
+
+@route(POST, "/api/sequences/status")
+def sequences_status(db, p):
+    from openleads.workspace import sequences
+    return {"ok": True, "sequence": sequences.set_status(db, p.get("id"), p.get("status") or "")}
+
+
+@route(POST, "/api/sequences/delete")
+def sequences_delete(db, p):
+    from openleads.workspace import sequences
+    return {"ok": sequences.delete(db, p.get("id"))}
+
+
+@route(POST, "/api/sequences/enroll")
+def sequences_enroll(db, p):
+    """Enroll a selection, a list (``list_id``) or everyone matching ``filters``."""
+    from openleads.workspace import lists, sequences
+    emails = lists.members(db, p["list_id"]) if p.get("list_id") else _emails_from(db, p)
+    res = sequences.enroll(db, p.get("id"), emails, force=bool(p.get("force")))
+    return {"ok": True, **res}
+
+
+@route(POST, "/api/sequences/unenroll")
+def sequences_unenroll(db, p):
+    from openleads.workspace import sequences
+    return {"ok": True, "removed": sequences.unenroll(db, p.get("id"), _emails_from(db, p))}
+
+
+@route(POST, "/api/sequences/pause")
+def sequences_pause(db, p):
+    """Pause (status=paused) or resume (status=active) contacts inside a sequence."""
+    from openleads.workspace import sequences
+    return {"ok": True, "count": sequences.set_enrollment_status(
+        db, p.get("id"), _emails_from(db, p), p.get("status") or "paused")}
+
+
+@route(POST, "/api/sequences/preview")
+def sequences_preview(db, p):
+    """What step N's email looks like for one contact (or a sample)."""
+    from openleads.workspace import sequences
+    seq = sequences.get(db, p.get("id"))
+    if not seq:
+        raise ValueError("no such sequence")
+    idx = _int(p.get("step"), 0)
+    if not 0 <= idx < len(seq["steps"]):
+        raise ValueError("no such step")
+    step = seq["steps"][idx]
+    lead = db.get_lead(p["email"]) if p.get("email") else None
+    enr = {"email": (lead or _SAMPLE)["email"], "thread_subject": ""}
+    if step["type"] not in ("auto_email", "manual_email"):
+        return {"type": step["type"], "note": step.get("note", "")}
+    draft, variant, missing = sequences._draft_for(db, seq, step, enr, lead or _SAMPLE)
+    return {"type": step["type"], "draft": draft.to_dict(), "variant": variant,
+            "missing": missing, "sample": lead is None}
+
+
+@route(STREAM, "/api/sequences/run")
+def sequences_run(db, p, emit):
+    """Run due steps now. Dry-run unless ``live``; outside the send window unless forced."""
+    from datetime import datetime
+
+    from openleads.automate.sendtime import in_send_window
+    from openleads.workspace import sequences
+    live = bool(p.get("live"))
+    window = True if p.get("ignore_window") else in_send_window(datetime.now())
+    emit({"type": "phase", "message": ("running" if live else "previewing")
+          + " due sequence steps…"})
+
+    def on_progress(kind, payload):
+        if kind == "send":
+            emit({"type": "send", "result": payload.to_dict()})
+        elif kind == "phase":
+            emit({"type": "phase", "message": str(payload)})
+    res = sequences.process(db, dry_run=not live, send_window_ok=window,
+                            seq_id=p.get("id") or None, on_progress=on_progress)
+    emit({"type": "done", "live": live, **res})
+
+
+# --------------------------------------------------------------------------- #
+# Saved searches, scoring, import, duplicates, export                         #
+# --------------------------------------------------------------------------- #
+@route(GET, "/api/saved")
+def saved_all(db, p):
+    from openleads.workspace import saved
+    return {"saved": saved.list_saved(db, p.get("kind") or None)}
+
+
+@route(POST, "/api/saved/save")
+def saved_save(db, p):
+    from openleads.workspace import saved
+    return {"ok": True, "saved": saved.save(db, p.get("name") or "", p.get("filters") or {},
+                                            p.get("kind") or "people")}
+
+
+@route(POST, "/api/saved/delete")
+def saved_delete(db, p):
+    from openleads.workspace import saved
+    return {"ok": saved.delete(db, p.get("id"), p.get("kind") or "people")}
+
+
+@route(GET, "/api/scoring")
+def scoring_get(db, p):
+    from openleads.workspace import scoring
+    return {"model": scoring.get_model(db), "distribution": scoring.distribution(db),
+            "default": scoring.DEFAULT_MODEL}
+
+
+@route(POST, "/api/scoring/save")
+def scoring_save(db, p):
+    from openleads.workspace import scoring
+    model = scoring.save_model(db, p.get("model") or {})
+    changed = scoring.rescore(db)
+    return {"ok": True, "model": model, "rescored": changed,
+            "distribution": scoring.distribution(db)}
+
+
+@route(POST, "/api/scoring/explain")
+def scoring_explain(db, p):
+    from openleads.workspace import scoring
+    lead = db.get_lead(p.get("email") or "")
+    if not lead:
+        raise ValueError("no such contact")
+    acc = db.query_one("SELECT technologies FROM accounts WHERE domain=?", (lead["domain"],))
+    techs = [t for t in ((acc or {}).get("technologies") or "").split("|") if t]
+    score, parts = scoring.explain(lead, scoring.get_model(db), techs)
+    return {"score": score, "grade": scoring.grade(score),
+            "reasons": [{"reason": r, "points": pts} for r, pts in parts]}
+
+
+@route(POST, "/api/import/preview")
+def import_preview(db, p):
+    from openleads.workspace import importer
+    return importer.preview(p.get("csv") or "", p.get("mapping") or None)
+
+
+@route(POST, "/api/import")
+def import_run(db, p):
+    from openleads.workspace import importer
+    if not (p.get("csv") or "").strip():
+        raise ValueError("paste or upload a CSV first")
+    res = importer.import_rows(db, p["csv"], p.get("mapping") or None,
+                               list_name=p.get("list_name") or "", tags=p.get("tags") or [],
+                               stage=p.get("stage") or "", source=p.get("source") or "import")
+    res["emails"] = res["emails"][:1000]
+    return {"ok": True, **res}
+
+
+@route(GET, "/api/duplicates")
+def duplicates_find(db, p):
+    from openleads.workspace import duplicates
+    groups = duplicates.find(db, limit=_int(p.get("limit"), 200) or 200)
+    return {"groups": groups, "count": len(groups)}
+
+
+@route(POST, "/api/duplicates/merge")
+def duplicates_merge(db, p):
+    from openleads.workspace import duplicates
+    if p.get("all"):
+        return {"ok": True, **duplicates.merge_all(db)}
+    return {"ok": True, **duplicates.merge(db, p.get("primary") or "", p.get("others") or [])}
+
+
+def _leads_for_export(db, emails: list) -> list:
+    """CRM rows → Lead objects (with company tech/socials) for the writers."""
+    import json
+
+    from openleads.models import Lead
+    out = []
+    for i in range(0, len(emails), 500):
+        chunk = emails[i:i + 500]
+        marks = ",".join("?" for _ in chunk)
+        accounts = {a["domain"]: a for a in db.query(
+            f"SELECT * FROM accounts WHERE domain IN (SELECT domain FROM leads "
+            f"WHERE email IN ({marks}))", chunk)}
+        for r in db.query(f"SELECT * FROM leads WHERE email IN ({marks}) ORDER BY name", chunk):
+            try:
+                data = json.loads(r.get("data") or "{}")
+            except ValueError:
+                data = {}
+            acc = accounts.get(r["domain"]) or {}
+            socials = {k: acc.get(f"{k}_url") for k in ("linkedin", "twitter", "facebook",
+                                                        "instagram") if acc.get(f"{k}_url")}
+            out.append(Lead(
+                first_name=r["first_name"] or "", last_name=r["last_name"] or "",
+                email=r["email"], title=r["title"] or "", organization=r["organization"] or "",
+                industry=r["industry"] or acc.get("industry") or "",
+                employees=r["employees"] or acc.get("employees") or "",
+                linkedin_url=r["linkedin_url"] or "", city=r["city"] or "",
+                country=r["country"] or "", website=r["website"] or acc.get("website") or "",
+                confidence=data.get("confidence", "none"), score=r["score"] or 0,
+                source=r["source"] or "", tier=r["tier"] or "",
+                signals=data.get("signals") or {}, reasons=data.get("reasons") or [],
+                confidence_pct=r["confidence_pct"] or 0, seniority=r["seniority"] or "",
+                department=r["department"] or "", phone=r["phone"] or acc.get("phone") or "",
+                company_size=r["company_size"] or acc.get("company_size") or "",
+                technologies=[t for t in (acc.get("technologies") or "").split("|") if t],
+                socials=socials, description=acc.get("description") or ""))
+    return out
+
+
+@route(POST, "/api/people/export")
+def people_export(db, p):
+    """A selection (or everyone matching filters) as CSV / Apollo / HubSpot / JSON text."""
+    import io
+    import json
+
+    from openleads import writers
+    emails = _emails_from(db, p) if (p.get("emails") or p.get("all")) else \
+        _emails_from(db, {"all": True, "filters": p.get("filters") or {}})
+    fmt = p.get("format") or "csv"
+    leads = _leads_for_export(db, emails)
+    if fmt == "json":
+        body = json.dumps([ld.to_dict() for ld in leads], indent=2, ensure_ascii=False)
+    else:
+        fields, row = {"csv": (None, None),
+                       "apollo": (writers.APOLLO_FIELDS, writers.apollo_row),
+                       "hubspot": (writers.HUBSPOT_FIELDS, writers.hubspot_row)}.get(fmt, (0, 0))
+        if fields == 0:
+            raise ValueError("format must be csv, apollo, hubspot or json")
+        import csv as _csv
+        buf = io.StringIO()
+        if fields is None:
+            from openleads.models import CSV_FIELDS
+            w = _csv.DictWriter(buf, fieldnames=CSV_FIELDS)
+            w.writeheader()
+            for ld in leads:
+                w.writerow(ld.to_csv_row())
+        else:
+            w = _csv.DictWriter(buf, fieldnames=fields)
+            w.writeheader()
+            for ld in leads:
+                w.writerow(row(ld))
+        body = buf.getvalue()
+    ext = "json" if fmt == "json" else "csv"
+    return {"ok": True, "count": len(leads), "format": fmt, "content": body,
+            "filename": f"openleads-{fmt}-{len(leads)}.{ext}"}
