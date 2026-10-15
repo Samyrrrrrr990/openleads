@@ -33,3 +33,16 @@ def test_rule_parse_sets_filters_and_strips_them_from_keyword():
     q2 = rule_parse("marketing agencies in Miami")
     assert q2.seniority == [] and q2.department == []
     assert q2.location == "Miami"
+
+
+def test_llm_parse_keeps_original_text_and_filters(monkeypatch):
+    from openleads import intent
+    monkeypatch.setattr(intent, "openrouter_key", lambda: "k")
+    monkeypatch.setattr(intent, "llm_parse", lambda text: intent._query_from_dict(
+        {"keyword": "dentist", "count": 5, "seniority": ["owner", "bogus"],
+         "department": "medical"}))
+    q, mode = intent.parse("dental practice owners in Austin")
+    assert mode == "llm"
+    assert q.text == "dental practice owners in Austin"
+    assert q.location == "Austin"
+    assert q.seniority == ["owner"] and q.department == ["medical"]

@@ -247,8 +247,11 @@ _LLM_SYSTEM = (
     "You convert a user's lead-generation request into a compact JSON object with "
     "keys: source (one of yc, github, npi, openalex, producthunt, or null), count "
     "(int), industry (str|null), location (str|null), keyword (str|null), title "
-    "(str|null), verified_only (bool), fmt (csv|json|ndjson). Respond with ONLY the "
-    "JSON object, no prose."
+    "(str|null), verified_only (bool), fmt (csv|json|ndjson), seniority (list of: owner, "
+    "founder, c_suite, partner, vp, head, director, manager, senior, entry; [] if not "
+    "asked), department (list of: engineering, product, design, data, marketing, sales, "
+    "customer_success, operations, finance, hr, legal, it, medical, research; [] if not "
+    "asked). Respond with ONLY the JSON object, no prose."
 )
 
 
@@ -296,6 +299,13 @@ def _query_from_dict(d: dict) -> Query:
     q.verified_only = bool(d.get("verified_only"))
     if d.get("fmt") in FORMATS:
         q.fmt = d["fmt"]
+    from openleads.insights.titles import DEPARTMENT_LABELS, SENIORITY_LABELS
+    for f, allowed in (("seniority", SENIORITY_LABELS), ("department", DEPARTMENT_LABELS)):
+        vals = d.get(f)
+        if isinstance(vals, str):
+            vals = [vals]
+        if isinstance(vals, list):
+            setattr(q, f, [v for v in vals if isinstance(v, str) and v in allowed])
     return q
 
 
@@ -309,5 +319,10 @@ def parse(text: str, allow_llm: bool = True) -> tuple[Query, str]:
     if allow_llm and openrouter_key():
         lq = llm_parse(text)
         if lq is not None:
+            # Keep the original words: federation routes and local search picks OSM
+            # categories from them, and the LLM's fields alone lose that signal.
+            lq.text = rq.text
+            if not lq.location:
+                lq.location = rq.location
             return lq, "llm"
     return rq, "rule"
