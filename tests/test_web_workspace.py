@@ -149,6 +149,12 @@ def test_lists_tags_notes_activity(base):
     assert tl["activity"][0]["kind"] == "note"
     _, feed = get(base, "/api/activity?limit=5")
     assert len(feed["activity"]) <= 5
+    _, feed = get(base, "/api/activity?counts=1&type=contact&kinds=note")
+    assert [a["kind"] for a in feed["activity"]] == ["note"]
+    assert feed["counts"]["note"] == 1 and any(k["key"] == "note" for k in feed["kinds"])
+    _, older = get(base, f"/api/activity?before={feed['activity'][0]['ts']}&kinds=note")
+    assert older["activity"] == []
+    assert get(base, "/api/activity?before=soon")[0] == 400
     assert post(base, "/api/notes/delete", {"id": n["note"]["id"]})[1]["ok"]
     assert post(base, "/api/lists/delete", {"id": lid})[1]["ok"]
 

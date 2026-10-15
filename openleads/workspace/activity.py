@@ -115,26 +115,61 @@ def timeline(db, ref_type: str, ref: str, limit: int = 100) -> list:
 FEED_EXCLUDE = ("created", "updated")
 
 
-def recent(db, limit: int = 50, kinds=None, exclude=FEED_EXCLUDE) -> list:
-    """The workspace-wide feed (home page), newest first."""
+def recent(db, limit: int = 50, kinds=None, exclude=FEED_EXCLUDE, before: float | None = None,
+           ref_type: str | None = None) -> list:
+    """The workspace-wide feed, newest first.
+
+    ``kinds`` keeps only those event kinds (``email_sent`` and friends come from
+    the send log); ``before`` pages back from a timestamp; ``ref_type`` keeps
+    one kind of record (contact, company, deal, search).
+    """
+    where, params = [], []
     if kinds:
-        marks = ",".join("?" for _ in kinds)
-        rows = db.query(f"SELECT * FROM activity WHERE kind IN ({marks}) "
-                        "ORDER BY ts DESC, id DESC LIMIT ?", (*kinds, limit))
-    else:
-        ex = list(exclude or ()) or ["\x00"]
-        marks = ",".join("?" for _ in ex)
-        rows = db.query(f"SELECT * FROM activity WHERE kind NOT IN ({marks}) "
-                        "ORDER BY ts DESC, id DESC LIMIT ?", (*ex, limit))
-    out = [_row(r) for r in rows]
-    if not kinds or any(k.startswith("email_") for k in kinds):
-        out += _touch_rows(db, "1=1", (), limit)
+        where.append(f"kind IN ({','.join('?' for _ in kinds)})")
+        params += list(kinds)
+    elif exclude:
+        where.append(f"kind NOT IN ({','.join('?' for _ in exclude)})")
+        params += list(exclude)
+    if before is not None:
+        where.append("ts < ?")
+        params.append(float(before))
+    if ref_type:
+        where.append("ref_type = ?")
+        params.append(ref_type)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    out = [_row(r) for r in db.query(f"SELECT * FROM activity {clause} "
+                                     "ORDER BY ts DESC, id DESC LIMIT ?", (*params, limit))]
+    wants_email = (not kinds or any(k.startswith("email_") for k in kinds)) \
+        and ref_type in (None, "contact")
+    if wants_email:
+        touch_where, touch_params = "1=1", []
+        if before is not None:
+            touch_where, touch_params = "ts < ?", [float(before)]
+        email_kinds = [k[6:] for k in (kinds or ()) if k.startswith("email_")]
+        if email_kinds:
+            touch_where += f" AND status IN ({','.join('?' for _ in email_kinds)})"
+            touch_params += email_kinds
+        out += _touch_rows(db, touch_where, touch_params, limit)
     out.sort(key=lambda r: r["ts"], reverse=True)
+    out = out[:limit]
     names = _names(db, {r["ref"] for r in out if r["ref_type"] == "contact"})
     for r in out:
         if r["ref_type"] == "contact":
             r["name"] = names.get(r["ref"], "")
-    return out[:limit]
+    return out
+
+
+def counts_by_kind(db, since: float | None = None) -> dict:
+    """How many of each event kind happened (since a timestamp), sends included."""
+    params = [] if since is None else [float(since)]
+    cond = "" if since is None else "WHERE ts >= ?"
+    out = {r["kind"]: r["n"] for r in db.query(
+        f"SELECT kind, COUNT(*) AS n FROM activity {cond} GROUP BY kind", params)}
+    for r in db.query("SELECT status, COUNT(*) AS n FROM touches WHERE status IN "
+                      f"('sent', 'error', 'skipped') {'AND ts >= ?' if since is not None else ''} "
+                      "GROUP BY status", params):
+        out[f"email_{r['status']}"] = r["n"]
+    return out
 
 
 def _names(db, emails) -> dict:

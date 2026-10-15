@@ -11,6 +11,7 @@ into the server's tables.
 """
 from __future__ import annotations
 
+import time
 from typing import Callable
 
 from openleads.db import DB
@@ -356,7 +357,17 @@ def activity_feed(db, p):
     if p.get("ref_type") and p.get("ref"):
         return {"activity": activity.timeline(db, p["ref_type"], p["ref"], limit=limit)}
     kinds = [k for k in (p.get("kinds") or "").split(",") if k]
-    return {"activity": activity.recent(db, limit=limit, kinds=kinds or None)}
+    before = p.get("before")
+    try:
+        before = float(before) if before not in (None, "") else None
+    except ValueError:
+        raise ValueError("before must be a timestamp") from None
+    out = {"activity": activity.recent(db, limit=limit, kinds=kinds or None, before=before,
+                                       ref_type=p.get("type") or None)}
+    if p.get("counts"):
+        out["counts"] = activity.counts_by_kind(db, since=time.time() - 30 * 86400)
+        out["kinds"] = [{"key": k, "label": v[0], "icon": v[1]} for k, v in activity.KINDS.items()]
+    return out
 
 
 # --------------------------------------------------------------------------- #

@@ -52,3 +52,21 @@ def test_company_timeline_includes_its_people(db):
     activity.log(db, "contact", "a@acme.example", "note", "Champion")
     summaries = [r["summary"] for r in activity.timeline(db, "company", "acme.example")]
     assert "Big account" in summaries and "Champion" in summaries
+
+
+def test_feed_pages_filters_and_counts(db):
+    db.upsert_lead({"email": "a@x.example", "first_name": "A"})
+    for i in range(5):
+        activity.log(db, "contact", "a@x.example", "note", f"n{i}", ts=1000 + i)
+    activity.log(db, "deal", "7", "deal_stage", "moved", ts=2000)
+    db.record_touch("a@x.example", "sent", subject="hello", campaign="c", step=1)
+    first = activity.recent(db, limit=3)
+    assert first[0]["kind"] == "email_sent" and len(first) == 3
+    older = activity.recent(db, limit=3, before=first[-1]["ts"])
+    assert [r["summary"] for r in older] == ["n3", "n2", "n1"]
+    assert [r["kind"] for r in activity.recent(db, ref_type="deal")] == ["deal_stage"]
+    only_sent = activity.recent(db, kinds=["email_sent"])
+    assert [r["summary"] for r in only_sent] == ["hello"]
+    assert activity.recent(db, kinds=["email_error"]) == []
+    counts = activity.counts_by_kind(db)
+    assert counts["note"] == 5 and counts["email_sent"] == 1 and counts["created"] == 1
