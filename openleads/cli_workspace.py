@@ -440,6 +440,10 @@ def cmd_seq(db, args) -> int:
                 print(f"      → {r['email']:<34} {_cut(r['subject'], 50)}")
             print("      (dry run — add --live to send)")
         return 0
+    if act == "clone":
+        c = sequences.clone(db, s["id"], rest[1] if len(rest) > 1 else None)
+        print(f"[seq] cloned '{s['name']}' → '{c['name']}' (id {c['id']}, paused, nobody enrolled)")
+        return 0
     if act in ("delete", "rm"):
         sequences.delete(db, s["id"])
         print(f"[seq] deleted '{s['name']}'")
@@ -822,7 +826,8 @@ def register(sub) -> None:
                                "  openleads seq run 1            # dry run\n"
                                "  openleads seq run 1 --live")
     sq.add_argument("action", nargs="?", choices=["ls", "list", "show", "create", "enroll", "pause",
-                                                  "activate", "archive", "run", "delete", "rm"])
+                                                  "activate", "archive", "run", "clone", "delete",
+                                                  "rm"])
     sq.add_argument("args", nargs="*", help="sequence id or name, then emails for enroll")
     sq.add_argument("--list", help="enroll everyone in this list")
     sq.add_argument("--force", action="store_true", help="enroll unverified emails too")

@@ -227,3 +227,11 @@ def test_demo_seeds_a_separate_workspace(capsys, tmp_path, home, monkeypatch):
     monkeypatch.setenv("OPENLEADS_HOME", str(home))
     code, _, err = run(capsys, "demo", "--dir", str(home), "--no-serve")
     assert code == 2 and "refusing" in err
+
+
+def test_seq_clone(capsys):
+    run(capsys, "seq", "create", "Base")
+    code, out, _ = run(capsys, "seq", "clone", "Base", "Base v2")
+    assert code == 0 and "'Base v2'" in out
+    _, out, _ = run(capsys, "seq", "--json")
+    assert {s["name"] for s in json.loads(out)} == {"Base", "Base v2"}

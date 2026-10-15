@@ -213,3 +213,16 @@ def test_scheduler_tick_runs_sequences(db, sent, monkeypatch):
     assert live["sequence_sent"] == 1
     live = scheduler.tick(db=db, dry_run=False)
     assert live["sequence_tasks"] == 1
+
+
+def test_clone_copies_steps_and_settings_not_people(db):
+    s = S.create(db, "Q4", [EMAIL, {"type": "call"}], {"daily_limit": 9}, status="active")
+    S.enroll(db, s["id"], ["jane@acme.example"])
+    c = S.clone(db, s["id"])
+    assert c["name"] == "Q4 (copy)" and c["status"] == "paused"
+    assert [st["type"] for st in c["steps"]] == ["auto_email", "call"]
+    assert c["settings"]["daily_limit"] == 9 and S.enrollments(db, c["id"]) == []
+    assert S.clone(db, s["id"])["name"] == "Q4 (copy) (2)"
+    assert S.clone(db, "Q4", "Q1 2027")["name"] == "Q1 2027"
+    with pytest.raises(ValueError):
+        S.clone(db, 999)

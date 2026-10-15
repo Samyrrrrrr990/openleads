@@ -234,6 +234,8 @@ def test_sequences_flow(base, monkeypatch):
                 )[1]["removed"] == 1
     _, allseq = get(base, "/api/sequences")
     assert allseq["sequences"][0]["stats"]["enrolled"] == 2
+    _, c = post(base, "/api/sequences/clone", {"id": sid})
+    assert c["sequence"]["name"] == "Outbound (copy)" and c["sequence"]["status"] == "paused"
     assert post(base, "/api/sequences/delete", {"id": sid})[1]["ok"]
 
 

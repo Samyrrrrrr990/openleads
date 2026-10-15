@@ -546,6 +546,12 @@ def sequences_save(db, p):
     return {"ok": True, "sequence": seq}
 
 
+@route(POST, "/api/sequences/clone")
+def sequences_clone(db, p):
+    from openleads.workspace import sequences
+    return {"ok": True, "sequence": sequences.clone(db, p.get("id"), p.get("name") or None)}
+
+
 @route(POST, "/api/sequences/status")
 def sequences_status(db, p):
     from openleads.workspace import sequences

@@ -370,7 +370,11 @@ function bindEditor(root) {
       const name = await promptDialog({ title: "Rename sequence", label: "Name", value: E.seq.name });
       if (name) { try { await api.post("/api/sequences/save", { id: E.seq.id, name }); await reloadEditor(); } catch (err) { fail(err); } }
     },
-    more: (el) => menu(el, [{ label: "Archive", value: "archive", icon: "layers" }, { sep: true }, { label: "Delete sequence", value: "delete", icon: "trash", danger: true }], async (v) => {
+    more: (el) => menu(el, [{ label: "Clone", value: "clone", icon: "copy" }, { label: "Archive", value: "archive", icon: "layers" }, { sep: true }, { label: "Delete sequence", value: "delete", icon: "trash", danger: true }], async (v) => {
+      if (v === "clone") {
+        const r = await api.post("/api/sequences/clone", { id: E.seq.id });
+        toast(`Cloned as '${r.sequence.name}' (paused)`); router.go("sequences", r.sequence.id);
+      }
       if (v === "archive") { await api.post("/api/sequences/status", { id: E.seq.id, status: "archived" }); toast("Archived"); router.go("sequences"); }
       if (v === "delete" && await confirmDialog(`Delete '${E.seq.name}'? Everyone in it is removed and its open tasks are deleted. The send log stays.`, { ok: "Delete", danger: true })) {
         await api.post("/api/sequences/delete", { id: E.seq.id }); toast("Deleted"); router.go("sequences");

@@ -190,6 +190,19 @@ def set_status(db, seq, status: str) -> dict:
     return get(db, cur["id"])
 
 
+def clone(db, seq, name: str | None = None) -> dict:
+    """A paused copy of a sequence — same steps and settings, nobody enrolled."""
+    cur = get(db, seq)
+    if not cur:
+        raise ValueError("no such sequence")
+    base = " ".join((name or f"{cur['name']} (copy)").split())[:80]
+    new_name, n = base, 2
+    while get(db, new_name):
+        new_name = f"{base[:74]} ({n})"
+        n += 1
+    return create(db, new_name, cur["steps"], cur["settings"], status="paused")
+
+
 def delete(db, seq) -> bool:
     cur = get(db, seq)
     if not cur:
