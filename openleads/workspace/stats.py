@@ -104,6 +104,26 @@ def home(db, now: float | None = None, days: int = 30, checklist: bool = True) -
     return out
 
 
+_REPLIED_SQL = ("(l.status='replied' OR l.stage IN ('replied', 'interested', 'meeting', "
+                "'customer'))")
+BREAKDOWNS = ("seniority", "department", "industry", "company_size", "source")
+
+
+def reply_breakdown(db, min_contacted: int = 1, top: int = 12) -> dict:
+    """Who replies: reply rate among contacted people, by seniority, department,
+    industry, company size and source — the personas worth more of your time."""
+    out = {}
+    for col in BREAKDOWNS:
+        rows = db.query(
+            f"SELECT COALESCE(NULLIF(l.{col}, ''), '') AS value, COUNT(*) AS contacted, "
+            f"SUM(CASE WHEN {_REPLIED_SQL} THEN 1 ELSE 0 END) AS replied FROM leads l "
+            "WHERE l.last_contacted IS NOT NULL GROUP BY value HAVING contacted >= ? "
+            "ORDER BY contacted DESC LIMIT ?", (min_contacted, top))
+        out[col] = [{"value": r["value"], "contacted": r["contacted"], "replied": r["replied"] or 0,
+                     "rate": round(100 * (r["replied"] or 0) / r["contacted"], 1)} for r in rows]
+    return out
+
+
 # Who to reach out to next: strong fit, a verified address, never contacted, not
 # already in a sequence, and nobody has written them off.
 RECOMMENDED_FILTERS = {"fit_min": 55, "tier": ["safe"], "contacted": "never", "stage": ["new"]}

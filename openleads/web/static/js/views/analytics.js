@@ -4,9 +4,29 @@
    series), with hover tooltips on every mark.
    ========================================================================= */
 import { columns, hbars } from "../charts.js";
-import { $, api, esc, fmt, ico, router, ui } from "../core.js";
+import { $, api, esc, fmt, ico, router, store, ui } from "../core.js";
 
 let cleanups = [];
+const DIMS = [["seniority", "Seniority"], ["department", "Department"], ["industry", "Industry"],
+  ["company_size", "Company size"], ["source", "Source"]];
+let DIM = "seniority";
+
+function dimLabel(dim, v) {
+  if (!v) return "(unknown)";
+  if (dim === "seniority") return store.label("seniorities", v);
+  if (dim === "department") return store.label("departments", v);
+  return dim === "company_size" ? `${v} employees` : v;
+}
+
+function whoReplies(rb) {
+  const rows = (rb && rb[DIM]) || [];
+  if (!rows.length) return `<p class="muted">No one has been contacted yet — reply rates show up here after your first sends.</p>`;
+  return hbars(rows.map((r) => ({
+    label: `${dimLabel(DIM, r.value)} · ${fmt.num(r.contacted)}`, value: r.rate,
+    title: `${dimLabel(DIM, r.value)}: ${fmt.num(r.replied)} of ${fmt.num(r.contacted)} replied`,
+    href: r.value ? `#/people?${DIM}=${encodeURIComponent(r.value)}&contacted=ever` : "",
+  })), { max: 100, valueFmt: (v) => fmt.pct(v) });
+}
 
 function tile(label, value, sub = "", icon = "") {
   return `<div class="card stat"><span class="stat__label">${icon ? ico(icon, "ico--sm") : ""}${esc(label)}</span>
@@ -17,8 +37,8 @@ router.register("analytics", {
   title: "Analytics",
   async mount(root) {
     root.innerHTML = `<div class="page">${ui.skeleton(8)}</div>`;
-    const [a, h, s] = await Promise.all([api.get("/api/analytics"), api.get("/api/home"),
-      api.get("/api/sequences").catch(() => ({ sequences: [] }))]);
+    const [a, h, s, rb] = await Promise.all([api.get("/api/analytics"), api.get("/api/home"),
+      api.get("/api/sequences").catch(() => ({ sequences: [] })), api.get("/api/analytics/replies").catch(() => ({}))]);
     const e = h.emails;
     const tierItems = Object.entries(a.by_tier || {}).sort((x, y) => y[1] - x[1]).map(([k, v]) => ({
       label: k === "safe" ? "Safe" : k === "risky" ? "Risky" : k === "bad" ? "Bad" : "Unverified", value: v,
@@ -50,6 +70,11 @@ router.register("analytics", {
         <div class="card"><div class="card__head"><h3>Email status</h3></div><div class="card__body">${hbars(tierItems)}</div></div>
         <div class="card"><div class="card__head"><h3>Where contacts came from</h3></div><div class="card__body">${hbars(srcItems)}</div></div>
       </div>
+      <div class="card mt-lg"><div class="card__head"><div><h3>Who replies</h3>
+          <p class="hint" style="margin-top:2px">Reply rate among people you've contacted. Spend more time on the personas that answer.</p></div>
+          <div class="actions"><div class="seg" role="tablist">${DIMS.map(([k, l]) =>
+            `<button type="button" class="${k === DIM ? "is-on" : ""}" data-dim="${k}">${l}</button>`).join("")}</div></div></div>
+        <div class="card__body" id="who-replies">${whoReplies(rb)}</div></div>
       <div class="card mt-lg"><div class="card__head"><h3>Sequences</h3><div class="actions"><a class="btn btn--sm" href="#/sequences">${ico("sequence")} All sequences</a></div></div>
         ${seqs.length ? `<div class="table-wrap"><table class="tbl tbl--compact"><thead><tr><th>Sequence</th><th>Status</th>
           <th class="col-num">Enrolled</th><th class="col-num">Contacted</th><th class="col-num">Sent</th><th class="col-num">Replied</th><th class="col-num">Reply rate</th><th class="col-num">Bounce rate</th></tr></thead><tbody>
@@ -67,6 +92,12 @@ router.register("analytics", {
     ];
     root.addEventListener("click", (ev) => {
       const tr = ev.target.closest("tr[data-href]"); if (tr) location.hash = tr.dataset.href;
+      const d = ev.target.closest("[data-dim]");
+      if (d) {
+        DIM = d.dataset.dim;
+        root.querySelectorAll("[data-dim]").forEach((b) => b.classList.toggle("is-on", b === d));
+        $("#who-replies", root).innerHTML = whoReplies(rb);
+      }
     });
   },
   unmount() { cleanups.forEach((c) => c && c()); cleanups = []; },

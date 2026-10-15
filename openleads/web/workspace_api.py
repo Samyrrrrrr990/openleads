@@ -96,6 +96,12 @@ def home(db, p):
     return stats.home(db, days=_int(p.get("days"), 30) or 30)
 
 
+@route(GET, "/api/analytics/replies")
+def analytics_replies(db, p):
+    from openleads.workspace import stats
+    return stats.reply_breakdown(db, min_contacted=max(1, _int(p.get("min"), 1)))
+
+
 @route(GET, "/api/health")
 def health(db, p):
     from openleads.workspace import stats

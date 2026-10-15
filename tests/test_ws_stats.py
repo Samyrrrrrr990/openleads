@@ -76,3 +76,25 @@ def test_recommended_are_strong_untouched_verified_and_free(db):
     db.set_status("vp@gamma.example", "sent")
     assert stats.recommended(db)["total"] == rec["total"] - 2
     assert stats.home(db)["recommended"]["filters"]["contacted"] == "never"
+
+
+def test_reply_breakdown_by_persona(db):
+    for email, title, replied in (("a@x.example", "VP of Sales", True),
+                                  ("b@x.example", "VP of Marketing", False),
+                                  ("c@x.example", "Software Engineer", False),
+                                  ("d@x.example", "Engineering Manager", False)):
+        db.upsert_lead({"email": email, "first_name": email[0], "title": title})
+        db.record_touch(email, "sent")
+        db.set_status(email, "sent")
+        if replied:
+            db.set_status(email, "replied")
+    db.upsert_lead({"email": "never@x.example", "title": "CEO"})       # not contacted: ignored
+    b = stats.reply_breakdown(db)
+    vp = next(r for r in b["seniority"] if r["value"] == "vp")
+    assert vp == {"value": "vp", "contacted": 2, "replied": 1, "rate": 50.0}
+    assert not any(r["value"] == "c_suite" for r in b["seniority"])
+    sales = next(r for r in b["department"] if r["value"] == "sales")
+    assert sales["rate"] == 100.0
+    assert set(b) == set(stats.BREAKDOWNS)
+    assert stats.reply_breakdown(db, min_contacted=2)["department"] == \
+        [r for r in b["department"] if r["contacted"] >= 2]
