@@ -6,6 +6,7 @@ Values are JSON-serialized and stored per namespace with a per-namespace TTL:
 * ``mx``      — MX lookup results, 7 days
 * ``verify``  — SMTP verification outcomes, 14 days
 * ``dataset`` — large source fetches (e.g. the YC dump), 1 day
+* ``profile`` — parsed company profiles (tech stack, socials, phones), 14 days
 
 A cache hit short-circuits the network, which is both a big speedup on re-runs
 and the polite thing to do to mail servers. Disable with ``--no-cache``.
@@ -20,7 +21,7 @@ import time
 from openleads.config import cache_path
 
 DAY = 86400
-DEFAULT_TTLS = {"mx": 7 * DAY, "verify": 14 * DAY, "dataset": 1 * DAY}
+DEFAULT_TTLS = {"mx": 7 * DAY, "verify": 14 * DAY, "dataset": 1 * DAY, "profile": 14 * DAY}
 
 
 class Cache:
