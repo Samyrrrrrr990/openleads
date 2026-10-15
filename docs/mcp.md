@@ -44,7 +44,7 @@ No Python on the PATH? Use the npm wrapper instead:
 
 | Tool | What it does |
 |---|---|
-| `find_leads` | Plain-English search ("fintech founders", "law firms in London"). Returns people and companies with an email, a deliverability tier (`safe`/`risky`) and evidence (`found`, `pattern`, `guessed`). Takes `count`, `verified_only` and `budget_seconds`. |
+| `find_leads` | Plain-English search ("fintech founders", "law firms in London"). Returns people and companies with an email, a deliverability tier (`safe`/`risky`) and evidence (`found`, `pattern`, `guessed`). Takes `count`, `verified_only`, `budget_seconds`, and `save_to_list` to also save the results into a workspace list. |
 | `find_email` | A name plus a company domain gives the most likely address, with evidence. |
 | `verify_email` | Checks one address: `safe`, `risky` or `bad`, and why. |
 | `list_sources` | Lists what OpenLeads can search. |

@@ -48,6 +48,9 @@ TOOLS = [
                                   "description": "Only return deliverable (safe-tier) emails."},
                 "budget_seconds": {"type": "integer", "minimum": 10, "maximum": 300,
                                    "default": 90},
+                "save_to_list": {"type": "string",
+                                 "description": "Also save the results to your workspace, in "
+                                                "this list (created if new)."},
             },
             "required": ["query"],
         },
@@ -108,6 +111,20 @@ def _email_dict(r, checking: bool = False) -> dict:
             "evidence": ev, "reasons": r.reasons}
 
 
+def _save_found(db, leads, list_name: str) -> dict:
+    """Upsert found leads into the workspace (scored) and add them to a list."""
+    from openleads.workspace import lists, scoring
+    emails, new = [], 0
+    for ld in leads:
+        if ld.email:
+            new += bool(db.upsert_lead(ld.to_dict()))
+            emails.append(ld.email.lower())
+    scoring.rescore(db, emails)
+    lst = lists.ensure(db, list_name, "people")
+    lists.add(db, lst["id"], emails)
+    return {"list": lst["name"], "saved": len(emails), "new": new}
+
+
 def call_tool(name: str, args: dict) -> dict:
     """Run one tool and return a JSON-ready result (raises on bad input)."""
     from openleads.cache.store import Cache
@@ -133,7 +150,10 @@ def call_tool(name: str, args: dict) -> dict:
             q.verified_only = bool(args.get("verified_only", False))
             q.budget = max(10, min(int(args.get("budget_seconds") or 90), 300))
             leads = build_leads(q, cache=cache, db=db)
-            return {"query": text, "count": len(leads), "leads": [_lead_dict(x) for x in leads]}
+            out = {"query": text, "count": len(leads), "leads": [_lead_dict(x) for x in leads]}
+            if args.get("save_to_list") and leads:
+                out["saved"] = _save_found(db, leads, str(args["save_to_list"]))
+            return out
         if name == "find_email":
             from openleads.emails.resolve import find_email
             nm, dom = str(args.get("name") or ""), str(args.get("domain") or "")

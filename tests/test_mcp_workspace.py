@@ -110,3 +110,16 @@ def test_enroll_in_sequence_tool():
     bad = mcp.handle({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
                       "params": {"name": "enroll_in_sequence", "arguments": {"sequence": "nope"}}})
     assert bad["result"]["isError"] is True
+
+
+def test_find_leads_can_save_to_a_list(monkeypatch):
+    from openleads.models import Lead
+    found = [Lead(first_name="Ada", last_name="Lee", email="ada@zeta.example", tier="safe",
+                  organization="Zeta", title="Founder"),
+             Lead(first_name="No", last_name="Email", email="", organization="Zeta")]
+    monkeypatch.setattr("openleads.engine.build_leads", lambda q, cache=None, db=None: found)
+    r = call("find_leads", query="founders at zeta", save_to_list="Zeta founders")
+    assert r["count"] == 2 and r["saved"] == {"list": "Zeta founders", "saved": 1, "new": 1}
+    c = call("get_contact", email="ada@zeta.example")["contact"]
+    assert c["lists"] == ["Zeta founders"] and c["fit_score"] > 0
+    assert "saved" not in call("find_leads", query="founders at zeta")
