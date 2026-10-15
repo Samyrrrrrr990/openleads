@@ -82,7 +82,7 @@ def _identity_flags() -> dict:
 # --------------------------------------------------------------------------- #
 # Read endpoints                                                              #
 # --------------------------------------------------------------------------- #
-def state() -> dict:
+def state(params: dict | None = None) -> dict:
     """Bootstrap payload for the SPA: version, sources, settings, CRM snapshot."""
     from openleads.automate import crm
     db = DB()
@@ -108,7 +108,7 @@ def _sources_list() -> list[dict]:
     ]
 
 
-def sources() -> dict:
+def sources(params: dict | None = None) -> dict:
     return {"sources": _sources_list()}
 
 
@@ -125,7 +125,7 @@ def crm(payload: dict | None = None) -> dict:
         db.close()
 
 
-def get_settings() -> dict:
+def get_settings(params: dict | None = None) -> dict:
     return {"settings": settings.all_settings(), "groups": settings.groups(),
             "identity": _identity_flags()}
 
@@ -150,12 +150,12 @@ def update_settings(payload: dict) -> dict:
             "settings": settings.all_settings(), "identity": _identity_flags()}
 
 
-def doctor() -> dict:
+def doctor(params: dict | None = None) -> dict:
     from openleads import doctor as doc
     return doc.report()
 
 
-def providers_presets() -> dict:
+def providers_presets(params: dict | None = None) -> dict:
     """SMTP provider presets so the UI can auto-fill host/port on selection."""
     try:
         from openleads.outreach import providers
@@ -306,7 +306,7 @@ def enrich(payload: dict, emit: Emit) -> None:
         db.close()
 
 
-def recipes_list() -> dict:
+def recipes_list(params: dict | None = None) -> dict:
     from openleads.automate import recipes
     db = DB()
     try:
@@ -419,7 +419,7 @@ def export_leads(payload: dict) -> dict:
                             target=payload.get("target") or None)
 
 
-def analytics() -> dict:
+def analytics(params: dict | None = None) -> dict:
     from openleads.automate import crm as crmmod
     db = DB()
     try:
