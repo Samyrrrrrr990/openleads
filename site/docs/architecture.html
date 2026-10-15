@@ -66,11 +66,15 @@
 </nav>
 <main class="docs__main" id="main"><article class="prose">
 <div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Reference</span><i class="ph ph-caret-right"></i><span>Architecture</span></div>
-<div class="dhead"><span class="dhead__sec"><i class="ph ph-tree-structure"></i>Reference</span><span class="dhead__meta">3 min read</span></div><h1 id="architecture">Architecture</h1>
-<p class="lede">OpenLeads v3.0 is a small, readable Python package built around one idea: <strong>a universal deliverability engine fed by pluggable sources, that also writes and sends.</strong> The core library is 100% standard library (zero runtime dependencies), the verify engine, the SMTP sender, <em>and</em> the web server are all stdlib. The pretty chat TUI and the LLM-drafting convenience live behind optional extras.</p>
+<div class="dhead"><span class="dhead__sec"><i class="ph ph-tree-structure"></i>Reference</span><span class="dhead__meta">5 min read</span></div><h1 id="architecture">Architecture</h1>
+<p class="lede">OpenLeads is a small, readable Python package built around one idea: <strong>a universal deliverability engine fed by pluggable sources, that also writes and sends</strong> — with a local sales workspace (people, companies, lists, sequences, tasks, deals) on top. The core library is 100% standard library (zero runtime dependencies), the verify engine, the SMTP sender, <em>and</em> the web server are all stdlib. The pretty chat TUI and the LLM-drafting convenience live behind optional extras.</p>
 <div class="codeblock"><div class="codeblock__bar"><span>text</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads/
 ├── cli.py            argparse front-end: find · run · write · send · sources · verify ·
 │                       inbox · crm · config · doctor · web · cache · chat · campaign
+├── cli_workspace.py  people · companies · lists · seq · tasks · deals · import ·
+│                       dedupe · stats · demo
+├── mcp.py · mcp_workspace.py   MCP server: lead finding + workspace read/write tools
+├── demo.py           invented .example workspace for `openleads demo`
 ├── chat.py           interactive REPL (rich/prompt_toolkit if installed, else stdlib)
 ├── intent.py         natural-language → Query (rule-based; optional free-LLM)
 ├── engine.py         the pipeline: Query → Source.search() → resolve → score → Lead
@@ -78,6 +82,8 @@
 ├── settings.py       persistent, CLI/web-writable config + secret store (chmod 600)
 ├── config.py         ~/.openleads paths, optional env (OPENROUTER_API_KEY, GITHUB_TOKEN)
 ├── db.py             durable SQLite state: leads · touches · suppression · patterns
+├── schema.py         versioned migrations (PRAGMA user_version), contact columns,
+│                       workspace tables, account sync
 ├── config_cmd.py     `openleads config` (interactive + set/get/list)
 ├── doctor.py         finding + sending health check (CLI text + JSON report())
 ├── writers.py        csv · json · ndjson output
@@ -115,9 +121,24 @@
 ├── web/              LOCAL-FIRST DASHBOARD (stdlib only, no Node, no build)
 │   ├── server.py       ThreadingHTTPServer on 127.0.0.1; static + JSON API; CSP
 │   ├── api.py          handlers bridging to the engine (streaming NDJSON)
-│   └── static/         pre-built SPA: index.html · styles.css · app.js
+│   ├── workspace_api.py  the workspace JSON API (people, companies, sequences, …)
+│   └── static/         pre-built SPA, plain ES modules: app.js · js/core.js ·
+│                         js/views/*.js · styles.css (no build step)
 │
-├── cache/store.py    sqlite3 cache: mx (7d) · verify (14d) · dataset (1d)
+├── insights/         WHAT A LEAD IS: titles (seniority, department) · companysize ·
+│                       phones · socials · techstack (100+ signatures) · company profiles
+│
+├── workspace/        THE CRM (Apollo-style), all over db.py
+│   ├── people.py · companies.py   search, facets, records, bulk actions
+│   ├── lists.py · tags.py · notes.py · saved.py · activity.py
+│   ├── stages.py       contact / account / deal stages and automatic moves
+│   ├── sequences.py    multi-step, multi-channel cadences; the runner
+│   ├── tasks.py · deals.py · templates.py
+│   ├── scoring.py      ICP fit score 0–100 + A–D grade, with reasons
+│   ├── importer.py · duplicates.py   CSV import with auto-mapping; merge
+│   └── stats.py        home dashboard numbers and data health
+│
+├── cache/store.py    sqlite3 cache: mx (7d) · verify (14d) · dataset (1d) · profile (14d)
 └── campaign.py       v2 cold-email companion ([campaign] extra)
 
 lead_engine.py        v1 back-compat shim → openleads
@@ -145,6 +166,10 @@ npm/                  npx/npm wrapper around the Python CLI</code></pre></div>
         M--&gt;&gt;E: EmailResult(email, label, score 0–100)
     end
     E--&gt;&gt;U: stream leads → CSV / JSON / NDJSON</pre><figcaption>diagram</figcaption></figure>
+<h2 id="the-workspace-data-model" class="anchored"><a class="hlink" href="#the-workspace-data-model">#</a>The workspace data model</h2>
+<p>All state lives in one SQLite file, <code>~/.openleads/openleads.db</code>, opened in WAL mode with a busy timeout so the dashboard, the scheduler and the CLI can share it. Schema changes are <strong>versioned migrations</strong> in <code>schema.py</code>, tracked with <code>PRAGMA user_version</code> and applied in a single <code>BEGIN IMMEDIATE</code> transaction, so an old database upgrades itself the first time a new version opens it.</p>
+<div class="tablewrap"><table><thead><tr><th>Table</th><th>Holds</th></tr></thead><tbody><tr><td><code>leads</code></td><td>one row per person: structured columns (name, title, company, phone, LinkedIn, location, seniority, department, stage, owner, fit score, …) plus the original record as JSON</td></tr><tr><td><code>accounts</code></td><td>one row per company domain, filled from contacts and homepage profiles (tech stack as `\</td><td>A\</td><td>B\</td><td>`)</td></tr><tr><td><code>lists</code> · <code>list_members</code> · <code>contact_tags</code> · <code>notes</code> · <code>saved_searches</code></td><td>organization</td></tr><tr><td><code>activity</code></td><td>the timeline; sends come from <code>touches</code> and are merged in at read time</td></tr><tr><td><code>sequences</code> · <code>enrollments</code></td><td>cadence definitions (steps as JSON) and where each person is</td></tr><tr><td><code>tasks</code> · <code>deals</code> · <code>templates</code></td><td>the follow-up queue, the pipeline, reusable emails</td></tr><tr><td><code>touches</code> · <code>suppression</code> · <code>patterns</code></td><td>the send log, do-not-contact, learned email patterns</td></tr></tbody></table></div>
+<p>Hand edits made in the dashboard are remembered, so a later search that finds the same person again refreshes their email evidence without overwriting the title or phone you corrected.</p>
 <h2 id="design-principles" class="anchored"><a class="hlink" href="#design-principles">#</a>Design principles</h2>
 <ol><li><strong>Zero dependencies in the core.</strong> Engine + library are stdlib only, easy to audit, trivial to run. Pretty TUI and sending are opt-in extras.</li><li><strong>One job per unit.</strong> Sources discover; the email engine verifies; writers format; the cache remembers. Each is testable in isolation, mostly without the network.</li><li><strong>Inverted moat.</strong> Coverage scales by adding sources, not by owning a database. The email engine is vertical-agnostic.</li><li><strong>Honest confidence.</strong> Guesses are labeled as guesses and scored 0–100; domain-less records (e.g. NPI) are surfaced without faking emails.</li><li><strong>Polite by default.</strong> Connection reuse, small delays, multi-resolver MX, and caching keep OpenLeads a good network citizen.</li></ol>
 <p>See <a href="how-it-works.html"><code>how-it-works.md</code></a> for the email engine internals and <a href="sources.html"><code>sources.md</code></a> for adding a vertical.</p>
@@ -153,7 +178,7 @@ npm/                  npx/npm wrapper around the Python CLI</code></pre></div>
 <a class="pn pn--next" href="how-it-works.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Email engine</b></a>
 </nav>
 </article></main>
-<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#data-flow">Data flow</a><a class="toc__l2" href="#design-principles">Design principles</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/architecture.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
+<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#data-flow">Data flow</a><a class="toc__l2" href="#the-workspace-data-model">The workspace data model</a><a class="toc__l2" href="#design-principles">Design principles</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/architecture.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
 </div>
 <footer class="footer docs-footer">
   <div class="container footer__legal">

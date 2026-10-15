@@ -1,8 +1,9 @@
 # Architecture
 
-OpenLeads v3.0 is a small, readable Python package built around one idea:
+OpenLeads is a small, readable Python package built around one idea:
 **a universal deliverability engine fed by pluggable sources, that also writes and
-sends.** The core library is 100% standard library (zero runtime dependencies), the
+sends** — with a local sales workspace (people, companies, lists, sequences, tasks,
+deals) on top. The core library is 100% standard library (zero runtime dependencies), the
 verify engine, the SMTP sender, *and* the web server are all stdlib. The pretty chat
 TUI and the LLM-drafting convenience live behind optional extras.
 
@@ -10,6 +11,10 @@ TUI and the LLM-drafting convenience live behind optional extras.
 openleads/
 ├── cli.py            argparse front-end: find · run · write · send · sources · verify ·
 │                       inbox · crm · config · doctor · web · cache · chat · campaign
+├── cli_workspace.py  people · companies · lists · seq · tasks · deals · import ·
+│                       dedupe · stats · demo
+├── mcp.py · mcp_workspace.py   MCP server: lead finding + workspace read/write tools
+├── demo.py           invented .example workspace for `openleads demo`
 ├── chat.py           interactive REPL (rich/prompt_toolkit if installed, else stdlib)
 ├── intent.py         natural-language → Query (rule-based; optional free-LLM)
 ├── engine.py         the pipeline: Query → Source.search() → resolve → score → Lead
@@ -17,6 +22,8 @@ openleads/
 ├── settings.py       persistent, CLI/web-writable config + secret store (chmod 600)
 ├── config.py         ~/.openleads paths, optional env (OPENROUTER_API_KEY, GITHUB_TOKEN)
 ├── db.py             durable SQLite state: leads · touches · suppression · patterns
+├── schema.py         versioned migrations (PRAGMA user_version), contact columns,
+│                       workspace tables, account sync
 ├── config_cmd.py     `openleads config` (interactive + set/get/list)
 ├── doctor.py         finding + sending health check (CLI text + JSON report())
 ├── writers.py        csv · json · ndjson output
@@ -54,9 +61,24 @@ openleads/
 ├── web/              LOCAL-FIRST DASHBOARD (stdlib only, no Node, no build)
 │   ├── server.py       ThreadingHTTPServer on 127.0.0.1; static + JSON API; CSP
 │   ├── api.py          handlers bridging to the engine (streaming NDJSON)
-│   └── static/         pre-built SPA: index.html · styles.css · app.js
+│   ├── workspace_api.py  the workspace JSON API (people, companies, sequences, …)
+│   └── static/         pre-built SPA, plain ES modules: app.js · js/core.js ·
+│                         js/views/*.js · styles.css (no build step)
 │
-├── cache/store.py    sqlite3 cache: mx (7d) · verify (14d) · dataset (1d)
+├── insights/         WHAT A LEAD IS: titles (seniority, department) · companysize ·
+│                       phones · socials · techstack (100+ signatures) · company profiles
+│
+├── workspace/        THE CRM (Apollo-style), all over db.py
+│   ├── people.py · companies.py   search, facets, records, bulk actions
+│   ├── lists.py · tags.py · notes.py · saved.py · activity.py
+│   ├── stages.py       contact / account / deal stages and automatic moves
+│   ├── sequences.py    multi-step, multi-channel cadences; the runner
+│   ├── tasks.py · deals.py · templates.py
+│   ├── scoring.py      ICP fit score 0–100 + A–D grade, with reasons
+│   ├── importer.py · duplicates.py   CSV import with auto-mapping; merge
+│   └── stats.py        home dashboard numbers and data health
+│
+├── cache/store.py    sqlite3 cache: mx (7d) · verify (14d) · dataset (1d) · profile (14d)
 └── campaign.py       v2 cold-email companion ([campaign] extra)
 
 lead_engine.py        v1 back-compat shim → openleads
@@ -89,6 +111,28 @@ sequenceDiagram
     end
     E-->>U: stream leads → CSV / JSON / NDJSON
 ```
+
+## The workspace data model
+
+All state lives in one SQLite file, `~/.openleads/openleads.db`, opened in WAL
+mode with a busy timeout so the dashboard, the scheduler and the CLI can share it.
+Schema changes are **versioned migrations** in `schema.py`, tracked with
+`PRAGMA user_version` and applied in a single `BEGIN IMMEDIATE` transaction, so an
+old database upgrades itself the first time a new version opens it.
+
+| Table | Holds |
+|---|---|
+| `leads` | one row per person: structured columns (name, title, company, phone, LinkedIn, location, seniority, department, stage, owner, fit score, …) plus the original record as JSON |
+| `accounts` | one row per company domain, filled from contacts and homepage profiles (tech stack as `\|A\|B\|`) |
+| `lists` · `list_members` · `contact_tags` · `notes` · `saved_searches` | organization |
+| `activity` | the timeline; sends come from `touches` and are merged in at read time |
+| `sequences` · `enrollments` | cadence definitions (steps as JSON) and where each person is |
+| `tasks` · `deals` · `templates` | the follow-up queue, the pipeline, reusable emails |
+| `touches` · `suppression` · `patterns` | the send log, do-not-contact, learned email patterns |
+
+Hand edits made in the dashboard are remembered, so a later search that finds the
+same person again refreshes their email evidence without overwriting the title or
+phone you corrected.
 
 ## Design principles
 

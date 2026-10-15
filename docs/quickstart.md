@@ -3,8 +3,10 @@
 This is the 10-minute path: install, find leads, write the emails, connect your
 mailbox, and send it safely. Every sending step is **dry-run by default**.
 
-> TL;DR: `pip install "openleads[all]"` → `openleads web` → click through Find →
-> Write → Connect → Send. Or stay in the terminal with `openleads run`.
+> TL;DR: `pip install "openleads[all]"` → `openleads web` → Find people → save
+> them to a list → put the list in a sequence. Or stay in the terminal with
+> `openleads run`. Just looking? `openleads demo` opens the dashboard on an
+> invented workspace.
 
 ---
 
@@ -12,7 +14,7 @@ mailbox, and send it safely. Every sending step is **dry-run by default**.
 
 ```bash
 pip install "openleads[all]"     # engine + chat TUI + sending niceties
-openleads --version              # → openleads 4.6.1
+openleads --version              # → openleads 5.0.0
 openleads init                   # friendly first-run setup (optional)
 ```
 
@@ -100,18 +102,44 @@ headers. No tracking pixels, ever.
 openleads web
 ```
 
-Opens `http://127.0.0.1:8787`: the same engine, in your browser, fully local.
-See [`web.md`](./web.md).
-
-## 7. Manage what you've done
+Opens `http://127.0.0.1:8787`: the same engine, in your browser, fully local — a
+people and company database, lists, sequences, tasks, deals and analytics.
+See [`web.md`](./web.md). To look around first without touching your own data:
 
 ```bash
-openleads crm                 # leads + touches + status, locally in SQLite
-openleads crm --export out.csv
-openleads inbox               # optional: scan IMAP for replies & bounces
+openleads demo
 ```
 
-Replies and bounces update status and **stop** follow-up sequences automatically.
+## 7. Work your leads
+
+Everything you find is saved to your workspace. Organize it, then let a sequence
+do the follow-up:
+
+```bash
+openleads people --fit A --never-contacted          # your best untouched leads
+openleads lists create "Q4 dentists"
+openleads lists add "Q4 dentists" --where dental
+openleads seq create "Q4 outbound" --pitch "We fill last-minute cancellations"
+openleads seq enroll "Q4 outbound" --list "Q4 dentists"
+openleads seq run "Q4 outbound"                      # dry run: what would send
+openleads seq activate "Q4 outbound"                 # let the scheduler run it
+openleads tasks --bucket today                       # calls and LinkedIn steps due
+```
+
+Already have a list from Apollo, HubSpot or a spreadsheet?
+`openleads import export.csv --list "Imported"`. The [workspace guide](./workspace.md)
+and the [sequences guide](./sequences.md) cover the rest.
+
+## 8. Keep an eye on it
+
+```bash
+openleads stats               # contacts, sends, replies, tasks, pipeline
+openleads inbox               # optional: scan IMAP for replies & bounces
+openleads crm --export out.csv
+```
+
+Replies and bounces update each contact's stage and **stop** their sequences
+automatically.
 
 ---
 
@@ -121,11 +149,12 @@ Everything is under `~/.openleads/` (override with `OPENLEADS_HOME`):
 
 | File | What |
 |---|---|
-| `openleads.db` | leads, touches, suppression, learned patterns, campaigns |
+| `openleads.db` | your workspace: people, companies, lists, sequences, tasks, deals, notes, activity, plus touches, suppression and learned patterns |
 | `cache.db` | MX / SMTP / dataset cache (speeds up re-runs) |
 | `config.json` | non-secret preferences |
 | `secrets.json` | API keys + mailbox credentials (`chmod 600`) |
 | `sources/*.py` | your own source plugins |
 
-Next: [Deliverability deep-dive](./deliverability.md) · [Sending guide](./sending.md) ·
+Next: [Workspace](./workspace.md) · [Sequences](./sequences.md) ·
+[Deliverability deep-dive](./deliverability.md) · [Sending guide](./sending.md) ·
 [Web dashboard](./web.md) · [Write a source](./sources.md).

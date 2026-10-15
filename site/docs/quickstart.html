@@ -68,11 +68,11 @@
 <div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Get started</span><i class="ph ph-caret-right"></i><span>Quickstart</span></div>
 <div class="dhead"><span class="dhead__sec"><i class="ph ph-rocket-launch"></i>Get started</span><span class="dhead__meta">3 min read</span></div><h1 id="quickstart-from-zero-to-a-sent-campaign">Quickstart: from zero to a sent campaign</h1>
 <p class="lede">This is the 10-minute path: install, find leads, write the emails, connect your mailbox, and send it safely. Every sending step is <strong>dry-run by default</strong>.</p>
-<div class="callout callout--note"><i class="ph ph-info"></i><div>TL;DR: <code>pip install &quot;openleads[all]&quot;</code> → <code>openleads web</code> → click through Find → Write → Connect → Send. Or stay in the terminal with <code>openleads run</code>.</div></div>
+<div class="callout callout--note"><i class="ph ph-info"></i><div>TL;DR: <code>pip install &quot;openleads[all]&quot;</code> → <code>openleads web</code> → Find people → save them to a list → put the list in a sequence. Or stay in the terminal with <code>openleads run</code>. Just looking? <code>openleads demo</code> opens the dashboard on an invented workspace.</div></div>
 <hr/>
 <h2 id="1-install" class="anchored"><a class="hlink" href="#1-install">#</a>1. Install</h2>
 <div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>pip install &quot;openleads[all]&quot;     # engine + chat TUI + sending niceties
-openleads --version              # → openleads 4.6.1
+openleads --version              # → openleads 5.0.0
 openleads init                   # friendly first-run setup (optional)</code></pre></div>
 <p>Node user? <code>npx openleads</code> works too (it installs the Python package on first run).</p>
 <h2 id="2-sanity-check-your-setup" class="anchored"><a class="hlink" href="#2-sanity-check-your-setup">#</a>2. Sanity-check your setup</h2>
@@ -103,23 +103,35 @@ openleads send  &quot;10 AI founders&quot; --live           # find → write →
 <p>Sending honors your <strong>warmup ramp</strong> and <strong>daily cap</strong>, paces sends with human-like delays, skips anyone on your <strong>suppression list</strong>, and adds one-click unsubscribe headers. No tracking pixels, ever.</p>
 <h2 id="6-prefer-a-ui" class="anchored"><a class="hlink" href="#6-prefer-a-ui">#</a>6. Prefer a UI?</h2>
 <div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads web</code></pre></div>
-<p>Opens <code>http://127.0.0.1:8787</code>: the same engine, in your browser, fully local. See <a href="web.html"><code>web.md</code></a>.</p>
-<h2 id="7-manage-what-you-ve-done" class="anchored"><a class="hlink" href="#7-manage-what-you-ve-done">#</a>7. Manage what you've done</h2>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads crm                 # leads + touches + status, locally in SQLite
-openleads crm --export out.csv
-openleads inbox               # optional: scan IMAP for replies &amp; bounces</code></pre></div>
-<p>Replies and bounces update status and <strong>stop</strong> follow-up sequences automatically.</p>
+<p>Opens <code>http://127.0.0.1:8787</code>: the same engine, in your browser, fully local — a people and company database, lists, sequences, tasks, deals and analytics. See <a href="web.html"><code>web.md</code></a>. To look around first without touching your own data:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads demo</code></pre></div>
+<h2 id="7-work-your-leads" class="anchored"><a class="hlink" href="#7-work-your-leads">#</a>7. Work your leads</h2>
+<p>Everything you find is saved to your workspace. Organize it, then let a sequence do the follow-up:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads people --fit A --never-contacted          # your best untouched leads
+openleads lists create &quot;Q4 dentists&quot;
+openleads lists add &quot;Q4 dentists&quot; --where dental
+openleads seq create &quot;Q4 outbound&quot; --pitch &quot;We fill last-minute cancellations&quot;
+openleads seq enroll &quot;Q4 outbound&quot; --list &quot;Q4 dentists&quot;
+openleads seq run &quot;Q4 outbound&quot;                      # dry run: what would send
+openleads seq activate &quot;Q4 outbound&quot;                 # let the scheduler run it
+openleads tasks --bucket today                       # calls and LinkedIn steps due</code></pre></div>
+<p>Already have a list from Apollo, HubSpot or a spreadsheet? <code>openleads import export.csv --list &quot;Imported&quot;</code>. The <a href="workspace.html">workspace guide</a> and the <a href="sequences.html">sequences guide</a> cover the rest.</p>
+<h2 id="8-keep-an-eye-on-it" class="anchored"><a class="hlink" href="#8-keep-an-eye-on-it">#</a>8. Keep an eye on it</h2>
+<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads stats               # contacts, sends, replies, tasks, pipeline
+openleads inbox               # optional: scan IMAP for replies &amp; bounces
+openleads crm --export out.csv</code></pre></div>
+<p>Replies and bounces update each contact's stage and <strong>stop</strong> their sequences automatically.</p>
 <hr/>
 <h3 id="where-things-live" class="anchored"><a class="hlink" href="#where-things-live">#</a>Where things live</h3>
 <p>Everything is under <code>~/.openleads/</code> (override with <code>OPENLEADS_HOME</code>):</p>
-<div class="tablewrap"><table><thead><tr><th>File</th><th>What</th></tr></thead><tbody><tr><td><code>openleads.db</code></td><td>leads, touches, suppression, learned patterns, campaigns</td></tr><tr><td><code>cache.db</code></td><td>MX / SMTP / dataset cache (speeds up re-runs)</td></tr><tr><td><code>config.json</code></td><td>non-secret preferences</td></tr><tr><td><code>secrets.json</code></td><td>API keys + mailbox credentials (<code>chmod 600</code>)</td></tr><tr><td><code>sources/*.py</code></td><td>your own source plugins</td></tr></tbody></table></div>
-<p>Next: <a href="deliverability.html">Deliverability deep-dive</a> · <a href="sending.html">Sending guide</a> · <a href="web.html">Web dashboard</a> · <a href="sources.html">Write a source</a>.</p>
+<div class="tablewrap"><table><thead><tr><th>File</th><th>What</th></tr></thead><tbody><tr><td><code>openleads.db</code></td><td>your workspace: people, companies, lists, sequences, tasks, deals, notes, activity, plus touches, suppression and learned patterns</td></tr><tr><td><code>cache.db</code></td><td>MX / SMTP / dataset cache (speeds up re-runs)</td></tr><tr><td><code>config.json</code></td><td>non-secret preferences</td></tr><tr><td><code>secrets.json</code></td><td>API keys + mailbox credentials (<code>chmod 600</code>)</td></tr><tr><td><code>sources/*.py</code></td><td>your own source plugins</td></tr></tbody></table></div>
+<p>Next: <a href="workspace.html">Workspace</a> · <a href="sequences.html">Sequences</a> · <a href="deliverability.html">Deliverability deep-dive</a> · <a href="sending.html">Sending guide</a> · <a href="web.html">Web dashboard</a> · <a href="sources.html">Write a source</a>.</p>
 <nav class="prevnext" aria-label="Previous and next page">
 <a class="pn pn--prev" href="index.html"><span><i class="ph ph-arrow-left"></i>Back</span><b>Overview</b></a>
 <a class="pn pn--next" href="web.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Web dashboard</b></a>
 </nav>
 </article></main>
-<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-install">1. Install</a><a class="toc__l2" href="#2-sanity-check-your-setup">2. Sanity-check your setup</a><a class="toc__l2" href="#3-find-leads">3. Find leads</a><a class="toc__l2" href="#4-connect-your-mailbox">4. Connect your mailbox (once)</a><a class="toc__l2" href="#5-write-send">5. Write + send</a><a class="toc__l2" href="#6-prefer-a-ui">6. Prefer a UI?</a><a class="toc__l2" href="#7-manage-what-you-ve-done">7. Manage what you&#x27;ve done</a><a class="toc__l3" href="#where-things-live">Where things live</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/quickstart.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
+<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-install">1. Install</a><a class="toc__l2" href="#2-sanity-check-your-setup">2. Sanity-check your setup</a><a class="toc__l2" href="#3-find-leads">3. Find leads</a><a class="toc__l2" href="#4-connect-your-mailbox">4. Connect your mailbox (once)</a><a class="toc__l2" href="#5-write-send">5. Write + send</a><a class="toc__l2" href="#6-prefer-a-ui">6. Prefer a UI?</a><a class="toc__l2" href="#7-work-your-leads">7. Work your leads</a><a class="toc__l2" href="#8-keep-an-eye-on-it">8. Keep an eye on it</a><a class="toc__l3" href="#where-things-live">Where things live</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/quickstart.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
 </div>
 <footer class="footer docs-footer">
   <div class="container footer__legal">
