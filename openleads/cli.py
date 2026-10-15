@@ -46,6 +46,12 @@ def _query_from_args(args) -> Query:
         q.max_companies = args.max_companies
     if getattr(args, "budget", None) is not None:
         q.budget = args.budget
+    if getattr(args, "no_company", False):
+        q.company_profile = False
+    for attr in ("seniority", "department"):
+        val = getattr(args, attr, None)
+        if val:
+            setattr(q, attr, [v.strip() for v in val.split(",") if v.strip()])
     q.use_cache = not getattr(args, "no_cache", False)
     return q
 
@@ -118,7 +124,7 @@ def cmd_find(args) -> int:
         return 1
     print(ui.summary_line(leads))
     writers.write(leads, fmt=q.fmt, path=q.out)
-    dest = q.out or ("leads.csv" if q.fmt == "csv" else "stdout")
+    dest = q.out or writers.DEFAULT_PATHS.get(q.fmt, "stdout")
     print(ui.c(f"  ↳ wrote {len(leads)} leads → {dest}\n", ui.GREY))
     return 0
 
@@ -747,8 +753,15 @@ def _add_query_flags(p, with_output=True):
     p.add_argument("--max-companies", type=int, help="scan budget")
     p.add_argument("--budget", type=int, metavar="SECONDS",
                    help="stop searching after this many seconds (default 90; 0 = no limit)")
+    p.add_argument("--seniority", metavar="LIST",
+                   help="keep only these seniorities, e.g. vp,director,head (see `openleads people --help`)")
+    p.add_argument("--department", metavar="LIST",
+                   help="keep only these departments, e.g. marketing,sales")
+    p.add_argument("--no-company", action="store_true",
+                   help="skip company profiles (tech stack, socials, phone) for speed")
     if with_output:
-        p.add_argument("--format", choices=["csv", "json", "ndjson"], help="output format")
+        p.add_argument("--format", choices=["csv", "json", "ndjson", "apollo", "hubspot"],
+                       help="output format (apollo/hubspot: CRM-ready CSV columns)")
         p.add_argument("-o", "--out", help="output path ('-' for stdout)")
 
 
