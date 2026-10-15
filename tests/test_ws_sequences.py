@@ -108,6 +108,15 @@ def test_dry_run_changes_nothing(db, sent):
     assert enr["step"] == 0 and enr["status"] == "active"
 
 
+def test_paused_sequence_previews_but_never_sends(db, sent):
+    s = S.create(db, "A", [EMAIL])                       # created paused
+    S.enroll(db, s["id"], ["jane@acme.example"])
+    assert S.process(db, dry_run=True)["due"] == 0       # global tick skips paused
+    assert S.process(db, dry_run=True, seq_id=s["id"])["previewed"] == 1
+    assert S.process(db, dry_run=False, seq_id=s["id"])["due"] == 0
+    assert not [x for x in sent if x[4] == "sent"]
+
+
 def test_live_run_sends_threads_and_waits_on_tasks(db, sent):
     s = S.create(db, "A", [EMAIL,
                            {"type": "auto_email", "delay_days": 0, "subject": "ignored",

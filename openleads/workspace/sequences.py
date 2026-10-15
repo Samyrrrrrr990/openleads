@@ -400,10 +400,14 @@ def _draft_for(db, seq: dict, step: dict, enr: dict, lead: dict):
     return draft, variant, missing
 
 
-def due_enrollments(db, now: float | None = None, seq_id=None) -> list:
+def due_enrollments(db, now: float | None = None, seq_id=None, paused_ok: bool = False) -> list:
+    """Active enrollments whose next step is due. ``paused_ok`` also includes
+    sequences that are paused (used to preview one before activating it)."""
     now = time.time() if now is None else now
-    where = ("e.status='active' AND s.status='active' AND e.task_id IS NULL "
+    where = ("e.status='active' AND e.task_id IS NULL "
              "AND e.next_due IS NOT NULL AND e.next_due <= ?")
+    if not paused_ok:
+        where += " AND s.status='active'"
     params = [now]
     if seq_id is not None:
         where += " AND s.id=?"
@@ -423,7 +427,8 @@ def process(db, now: float | None = None, dry_run: bool = True, send_window_ok: 
     """Run every due step once. Dry-run previews emails and changes nothing.
 
     Returns counts: ``due, sent, previewed, tasks, finished, waiting_window, capped,
-    errors`` plus per-email ``results``.
+    errors`` plus per-email ``results``. A dry run of one sequence (``seq_id``)
+    previews it even while it is paused, so it can be checked before activating.
     """
     from openleads.outreach.sender import send_drafts
     on_progress = on_progress or (lambda *_: None)
@@ -432,7 +437,7 @@ def process(db, now: float | None = None, dry_run: bool = True, send_window_ok: 
            "waiting_window": 0, "capped": 0, "errors": 0, "skipped": 0, "results": []}
     seqs: dict = {}
     batches: dict = {}                  # (seq_id, step_idx) → [(enr, variant, draft)]
-    for enr in due_enrollments(db, now, seq_id):
+    for enr in due_enrollments(db, now, seq_id, paused_ok=dry_run and seq_id is not None):
         out["due"] += 1
         seq = seqs.get(enr["sequence_id"]) or get(db, enr["sequence_id"])
         seqs[enr["sequence_id"]] = seq
