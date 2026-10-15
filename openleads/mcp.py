@@ -13,6 +13,9 @@ Tools:
 * ``verify_email`` — check one address: safe / risky / bad, and why
 * ``list_sources`` — what OpenLeads can search
 
+…plus workspace tools (see :mod:`openleads.mcp_workspace`) to search contacts and
+companies, read a full record, and check tasks, the pipeline and sequences.
+
 stdout carries only protocol messages; anything else goes to stderr.
 """
 from __future__ import annotations
@@ -74,6 +77,17 @@ TOOLS = [
         "inputSchema": {"type": "object", "properties": {}},
     },
 ]
+for _t in TOOLS:
+    _t.setdefault("annotations", {"readOnlyHint": True, "openWorldHint": True})
+
+
+def _workspace_tools() -> list:
+    from openleads import mcp_workspace
+    return mcp_workspace.TOOLS
+
+
+def all_tools() -> list:
+    return TOOLS + _workspace_tools()
 
 
 def _lead_dict(ld) -> dict:
@@ -97,6 +111,9 @@ def call_tool(name: str, args: dict) -> dict:
     from openleads.cache.store import Cache
     from openleads.db import DB
     args = args or {}
+    from openleads import mcp_workspace
+    if name in mcp_workspace.HANDLERS:
+        return mcp_workspace.call(name, args)
     if name == "list_sources":
         from openleads.sources import list_sources
         return {"sources": [{"name": s.name, "kind": s.kind, "vertical": s.vertical,
@@ -154,12 +171,15 @@ def handle(msg: dict) -> dict | None:
             "serverInfo": {"name": "openleads", "version": __version__},
             "instructions": ("Use find_leads with a plain-English description of the "
                              "people or businesses wanted. Emails marked evidence="
-                             "'guessed' are unconfirmed; prefer tier 'safe' for sending."),
+                             "'guessed' are unconfirmed; prefer tier 'safe' for sending. "
+                             "The workspace tools (search_contacts, get_contact, "
+                             "search_companies, list_tasks, pipeline, …) read the user's "
+                             "saved CRM."),
         })
     if method == "ping":
         return ok({})
     if method == "tools/list":
-        return ok({"tools": TOOLS})
+        return ok({"tools": all_tools()})
     if method == "tools/call":
         name = params.get("name", "")
         try:
