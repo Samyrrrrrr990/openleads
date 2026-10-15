@@ -655,6 +655,13 @@ def scoring_save(db, p):
             "distribution": scoring.distribution(db)}
 
 
+@route(POST, "/api/scoring/preview")
+def scoring_preview(db, p):
+    """What a draft model would do, before saving it."""
+    from openleads.workspace import scoring
+    return scoring.simulate(db, p.get("model") or {})
+
+
 @route(POST, "/api/scoring/explain")
 def scoring_explain(db, p):
     from openleads.workspace import scoring

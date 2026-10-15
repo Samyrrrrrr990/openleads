@@ -53,4 +53,9 @@ def test_rescore_and_distribution(tmp_path):
     assert scoring.rescore(db) == 1                       # bob also uses acme's HubSpot
     assert scoring.distribution(db) == {"A": 1, "B": 0, "C": 1, "D": 0}
     assert scoring.get_model(db)["technologies"] == {"HubSpot": 30}
+    sim = scoring.simulate(db, {"technologies": {}, "titles": [{"keyword": "engineer",
+                                                                 "points": 60}]})
+    assert sim["distribution"] == {"A": 0, "B": 1, "C": 1, "D": 0} and sim["changed"] == 2
+    assert sim["top"][0]["email"] == "bob@acme.example" and sim["top"][0]["grade"] == "B"
+    assert db.get_lead("jane@acme.example")["fit_score"] == 80      # nothing saved
     db.close()

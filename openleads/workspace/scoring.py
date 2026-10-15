@@ -164,6 +164,29 @@ def rescore(db, emails=None) -> int:
     return len(updates)
 
 
+def simulate(db, model: dict, top: int = 8) -> dict:
+    """Score everyone with a draft ``model`` without saving it: the grade
+    distribution, how many grades would change, and the best matches."""
+    m = normalize_model(model)
+    techs = {r["domain"]: [t for t in (r["technologies"] or "").split("|") if t]
+             for r in db.query("SELECT domain, technologies FROM accounts "
+                               "WHERE COALESCE(technologies, '') != ''")}
+    dist = {g: 0 for _, g in GRADES}
+    moved = 0
+    scored = []
+    for r in db.query(f"SELECT {', '.join(_FIELDS)}, name, organization FROM leads"):
+        s = score(r, m, techs.get(r["domain"]))
+        g = grade(s)
+        dist[g] += 1
+        moved += g != grade(r["fit_score"] or 0)
+        scored.append((s, r))
+    scored.sort(key=lambda x: (-x[0], x[1]["email"]))
+    return {"distribution": dist, "changed": moved,
+            "top": [{"email": r["email"], "name": r["name"], "title": r["title"],
+                     "organization": r["organization"], "score": s, "grade": grade(s)}
+                    for s, r in scored[:top]]}
+
+
 def distribution(db) -> dict:
     """How many contacts sit in each grade (for the dashboard)."""
     out = {g: 0 for _, g in GRADES}
