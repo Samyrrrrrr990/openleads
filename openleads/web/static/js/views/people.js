@@ -5,7 +5,7 @@
    opens in a drawer (#/people/<email>) without losing your place.
    ========================================================================= */
 import { addToList, enroll, exportMenu, moreMenu, setStage, writeEmails } from "../actions.js";
-import { $, api, debounce, esc, fail, fmt, ico, menu, modal, onAct, promptDialog, router, store, toast, ui } from "../core.js";
+import { $, $$, api, debounce, esc, fail, fmt, ico, menu, modal, onAct, promptDialog, router, store, toast, ui } from "../core.js";
 import * as F from "../filters.js";
 import { openContact } from "./contact.js";
 
@@ -193,6 +193,7 @@ function renderTable() {
           <div><span class="name">${esc(name || r.organization || r.email)}</span><span class="sub">${esc(r.title || (name ? "" : "Company address"))}</span></div></div></td>
         ${cols.map((c) => cell(r, c.key)).join("")}</tr>`;
     }).join("")}</tbody></table>`;
+  if (cursor >= 0) $$("#ppl-table tbody tr[data-email]", ROOT)[cursor]?.classList.add("is-cursor");
   renderBulk(); renderPager();
 }
 
@@ -297,10 +298,17 @@ function syncDrawer(ctx) {
   if (ctx.id) {
     if (drawerHandle && drawerHandle.email === ctx.id && !drawerHandle.closed) return;
     drawerHandle?.close?.();
-    drawerHandle = openContact(ctx.id, {
-      onClose: () => { drawerHandle = null; const p = router.parse(); if (p.name === "people" && p.id) history.replaceState(null, "", router.href("people", "", p.params)); },
+    const email = ctx.id;
+    const handle = openContact(email, {
+      onClose: () => {
+        if (drawerHandle === handle) drawerHandle = null;
+        // Only clear the URL if it still points at this record (not the one replacing it).
+        const p = router.parse();
+        if (p.name === "people" && p.id === email) history.replaceState(null, "", router.href("people", "", p.params));
+      },
       onChange: () => load({ facets: false }),
     });
+    drawerHandle = handle;
   } else if (drawerHandle) { drawerHandle.close(); drawerHandle = null; }
 }
 
@@ -372,6 +380,8 @@ router.register("people", {
         writeEmails(rows);
       },
     });
+    cursor = -1;
+    document.addEventListener("keydown", onKeys);
     await load();
     syncDrawer(ctx);
   },
@@ -389,8 +399,43 @@ router.register("people", {
     }
     syncDrawer(ctx);
   },
-  unmount() { drawerHandle?.close(); drawerHandle = null; },
+  unmount() { document.removeEventListener("keydown", onKeys); drawerHandle?.close(); drawerHandle = null; },
 });
 
 let lastKey = "";
 function paramKey(params) { return JSON.stringify(Object.entries(params).sort()); }
+
+/* Keyboard: J/K move through the rows (or through records while one is open),
+   X selects, Enter or O opens. Ignored while typing or in a dialog. */
+let cursor = -1;
+function setCursor(i) {
+  const rows = $$("#ppl-table tbody tr[data-email]", ROOT);
+  if (!rows.length) return;
+  cursor = Math.max(0, Math.min(rows.length - 1, i));
+  rows.forEach((r, k) => r.classList.toggle("is-cursor", k === cursor));
+  rows[cursor].scrollIntoView({ block: "nearest" });
+}
+function onKeys(e) {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (document.querySelector(".modal-wrap, .palette, .menu")) return;
+  const k = e.key.toLowerCase();
+  if (!["j", "k", "x", "o", "enter"].includes(k)) return;
+  const open = router.parse().id;
+  const emails = S.rows.map((r) => r.email);
+  if (open && (k === "j" || k === "k")) {          // step through records in the drawer
+    const i = emails.indexOf(open) + (k === "j" ? 1 : -1);
+    if (i >= 0 && i < emails.length) { e.preventDefault(); setCursor(i); router.go("people", emails[i], router.parse().params, { replace: true }); }
+    return;
+  }
+  if (open || document.querySelector(".drawer")) return;
+  e.preventDefault();
+  if (k === "j") setCursor(cursor + 1);
+  else if (k === "k") setCursor(cursor < 0 ? 0 : cursor - 1);
+  else if (cursor >= 0 && emails[cursor]) {
+    if (k === "x") {
+      const box = $(`#ppl-table [data-sel="${CSS.escape(emails[cursor])}"]`, ROOT);
+      if (box) { box.checked = !box.checked; box.dispatchEvent(new Event("change", { bubbles: true })); }
+    } else router.go("people", emails[cursor], router.parse().params);
+  }
+}

@@ -139,7 +139,8 @@ export function showShortcuts() {
       ${row(["T"], "Toggle dark mode")}${row(["N"], "New item on this page")}${row(["Esc"], "Close a panel or dialog")}
       <h3 class="mb mt-lg">On a page</h3>
       ${row(["↵"], "Task queue: complete & next")}${row(["S"], "Task queue: skip")}${row(["Z"], "Task queue: snooze")}
-      ${row(["[", "]"], "Deals: move focused deal a stage")}</div>
+      ${row(["J", "K"], "People: move down / up (or next / previous record)")}${row(["X"], "People: select the row")}
+      ${row(["↵"], "People: open the row")}${row(["[", "]"], "Deals: move focused deal a stage")}</div>
     <div><h3 class="mb">Go to</h3>${GO.filter(([, n]) => names[n]).map(([k, n]) => row(["G", k.toUpperCase()], esc(names[n]))).join("")}</div></div>` });
 }
 

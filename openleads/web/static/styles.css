@@ -375,6 +375,7 @@ kbd { display: inline-grid; place-items: center; min-width: 18px; height: 18px; 
 .tbl tbody tr:hover { background: var(--hover); }
 .tbl tbody tr.is-selected { background: var(--accent-wash); }
 .tbl tbody tr.is-click { cursor: pointer; }
+.tbl tbody tr.is-cursor { box-shadow: inset 3px 0 0 var(--accent); background: var(--hover); }
 .tbl tbody tr.row-in { animation: rowin .35s var(--ease); }
 @keyframes rowin { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
 .tbl .col-check { width: 40px; padding-right: 0; }

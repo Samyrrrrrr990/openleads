@@ -201,8 +201,15 @@ function syncDrawer(ctx) {
   if (ctx.id) {
     if (handle && handle.domain === ctx.id && !handle.closed) return;
     handle?.close();
-    handle = openCompany(ctx.id, { onClose: () => { handle = null; const p = router.parse(); if (p.id) history.replaceState(null, "", router.href("companies", "", p.params)); },
+    const domain = ctx.id;
+    const mine = openCompany(domain, {
+      onClose: () => {
+        if (handle === mine) handle = null;
+        const p = router.parse();      // leave the URL alone if another company replaced this one
+        if (p.name === "companies" && p.id === domain) history.replaceState(null, "", router.href("companies", "", p.params));
+      },
       onChange: () => load({ facets: false }) });
+    handle = mine;
   } else if (handle) { handle.close(); handle = null; }
 }
 
