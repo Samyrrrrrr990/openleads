@@ -235,3 +235,21 @@ def test_seq_clone(capsys):
     assert code == 0 and "'Base v2'" in out
     _, out, _ = run(capsys, "seq", "--json")
     assert {s["name"] for s in json.loads(out)} == {"Base", "Base v2"}
+
+
+def test_backup_is_a_consistent_private_copy(capsys, tmp_path):
+    import sqlite3
+    code, out, _ = run(capsys, "backup", str(tmp_path / "snap.db"))
+    assert code == 0 and "snap.db" in out
+    conn = sqlite3.connect(tmp_path / "snap.db")
+    assert conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0] == 3
+    conn.close()
+    assert oct((tmp_path / "snap.db").stat().st_mode & 0o777) == "0o600"
+    code, _, err = run(capsys, "backup", str(tmp_path / "snap.db"))
+    assert code == 2 and "already exists" in err                 # never overwrites
+    folder = tmp_path / "many"
+    folder.mkdir()
+    code, out, _ = run(capsys, "backup", str(folder))
+    assert code == 0 and len(list(folder.glob("openleads-*.db"))) == 1
+    code, out, _ = run(capsys, "backup")                         # default location
+    assert code == 0 and "backups" in out

@@ -306,6 +306,27 @@ class DB:
         tasks.create(self, f"Reply to {who}", kind="email", contact=email, due="now",
                      priority="high", note="They replied to your outreach.")
 
+    def backup(self, dest) -> dict:
+        """Write a consistent copy of the whole database to ``dest`` (SQLite's online
+        backup API — safe while the dashboard or scheduler is writing)."""
+        dest = Path(dest).expanduser()
+        if dest.exists() and dest.is_dir():
+            dest = dest / f"openleads-{time.strftime('%Y%m%d-%H%M%S')}.db"
+        if dest.exists():
+            raise ValueError(f"{dest} already exists")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with self._lock:
+            target = sqlite3.connect(str(dest))
+            try:
+                self._conn.backup(target)
+            finally:
+                target.close()
+        try:
+            dest.chmod(0o600)            # it holds your contacts; keep it private
+        except OSError:
+            pass
+        return {"path": str(dest), "bytes": dest.stat().st_size}
+
     def list_leads(self, status: str | None = None, limit: int = 1000) -> list[dict]:
         if status:
             rows = self._conn.execute(

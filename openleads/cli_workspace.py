@@ -5,7 +5,8 @@ data as the web dashboard.
 ``people`` · ``companies`` — search and inspect contacts and accounts, change
 stages, tag, take notes. ``lists`` — build lists. ``seq`` — multi-step sequences:
 create, enroll, run. ``tasks`` — the follow-up queue. ``deals`` — the pipeline.
-``import`` · ``dedupe`` · ``stats`` — data in, data clean, numbers out. ``demo`` —
+``import`` · ``dedupe`` · ``stats`` · ``backup`` — data in, data clean, numbers out,
+data safe. ``demo`` —
 a throwaway workspace of invented data to try the dashboard on.
 Every listing takes ``--json`` for scripting.
 """
@@ -711,6 +712,17 @@ def cmd_stats(db, args) -> int:
     return 0
 
 
+@_with_db
+def cmd_backup(db, args) -> int:
+    """Snapshot the whole workspace to a file (safe while anything else is running)."""
+    from openleads.config import home
+    dest = args.dest or str(home() / "backups")
+    res = db.backup(dest)
+    print(f"[backup] {res['path']} ({res['bytes'] / 1024:.0f} KB) — restore by copying it over "
+          f"{db.path} while OpenLeads is stopped")
+    return 0
+
+
 def cmd_demo(args) -> int:
     """Seed a throwaway workspace with invented data and open the dashboard on it."""
     import os
@@ -913,3 +925,7 @@ def register(sub) -> None:
     dm.add_argument("--no-open", action="store_true", help="don't open a browser")
     dm.add_argument("--no-serve", action="store_true", help="seed only, don't start the dashboard")
     dm.set_defaults(func=cmd_demo)
+
+    bk = sub.add_parser("backup", help="snapshot your whole workspace to a file")
+    bk.add_argument("dest", nargs="?", help="file or folder (default: ~/.openleads/backups/)")
+    bk.set_defaults(func=cmd_backup)
