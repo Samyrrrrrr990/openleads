@@ -53,9 +53,52 @@ class DB:
         # this connection is shared across threads — open it cross-thread and
         # serialize the methods those threads touch (learn_pattern/patterns_for).
         self._lock = threading.Lock()
-        self._conn = sqlite3.connect(self.path, check_same_thread=False)
+        self._conn = sqlite3.connect(self.path, check_same_thread=False, timeout=10)
         self._conn.row_factory = sqlite3.Row
+        self._pragmas()
         self._init()
+
+    def _pragmas(self) -> None:
+        """WAL lets the dashboard read while the scheduler writes; wait, don't fail, on locks."""
+        try:
+            self._conn.execute("PRAGMA busy_timeout = 10000")
+            self._conn.execute("PRAGMA foreign_keys = ON")
+            if self.path != ":memory:":
+                self._conn.execute("PRAGMA journal_mode = WAL")
+                self._conn.execute("PRAGMA synchronous = NORMAL")
+        except sqlite3.DatabaseError:
+            pass  # e.g. a network filesystem without shared-memory support
+
+    # --- generic helpers (used by the workspace modules) -------------------- #
+    def query(self, sql: str, params=()) -> list[dict]:
+        """Run a SELECT and return plain dict rows."""
+        with self._lock:
+            rows = self._conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def query_one(self, sql: str, params=()) -> dict | None:
+        with self._lock:
+            row = self._conn.execute(sql, params).fetchone()
+        return dict(row) if row else None
+
+    def scalar(self, sql: str, params=(), default=None):
+        """First column of the first row (``COUNT(*)`` and friends)."""
+        with self._lock:
+            row = self._conn.execute(sql, params).fetchone()
+        return row[0] if row and row[0] is not None else default
+
+    def execute(self, sql: str, params=()) -> sqlite3.Cursor:
+        """Run one write statement and commit. Returns the cursor (``lastrowid``, ``rowcount``)."""
+        with self._lock:
+            cur = self._conn.execute(sql, params)
+            self._conn.commit()
+        return cur
+
+    def executemany(self, sql: str, seq) -> int:
+        with self._lock:
+            cur = self._conn.executemany(sql, seq)
+            self._conn.commit()
+        return cur.rowcount
 
     def _init(self) -> None:
         c = self._conn
