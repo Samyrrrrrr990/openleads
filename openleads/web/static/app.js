@@ -7,6 +7,7 @@ import { $, api, esc, ico, router, store, toast } from "./js/core.js";
 import "./js/views/home.js";
 import "./js/views/prospect.js";
 import "./js/views/people.js";
+import "./js/views/companies.js";
 import "./js/views/compose.js";
 import "./js/views/analytics.js";
 import "./js/views/workflows.js";

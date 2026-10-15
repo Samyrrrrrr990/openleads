@@ -75,6 +75,7 @@ function syncUrl() {
     page: S.page > 1 ? S.page : "" });
   const h = router.href("people", router.parse().id, params);
   if (location.hash !== h) history.replaceState(null, "", h);
+  lastKey = paramKey(router.parse().params);
 }
 
 async function load({ facets = true } = {}) {
@@ -309,6 +310,7 @@ router.register("people", {
     S.direction = ctx.params.dir || (["name", "organization", "location", "email"].includes(S.sort) ? "asc" : "desc");
     S.page = +ctx.params.page || 1;
     S.selected = new Set(); S.allMatching = false;
+    lastKey = paramKey(ctx.params);
     shell();
     renderFilters();
     F.bind($("#ppl-filters", root), FSTATE, () => { S.page = 1; S.allMatching = false; load(); }, renderFilters);
@@ -369,6 +371,22 @@ router.register("people", {
     await load();
     syncDrawer(ctx);
   },
-  update(ctx) { syncDrawer(ctx); },
+  update(ctx) {
+    // A link to the same page with different filters (#/people?stage=…) re-applies them.
+    const key = paramKey(ctx.params);
+    if (key !== lastKey) {
+      lastKey = key;
+      S.filters = F.fromParams(CFG, ctx.params);
+      S.q = ctx.params.q || ""; S.page = +ctx.params.page || 1;
+      if (ctx.params.sort) S.sort = ctx.params.sort;
+      $("#ppl-q", ROOT).value = S.q;
+      S.selected.clear(); S.allMatching = false;
+      load();
+    }
+    syncDrawer(ctx);
+  },
   unmount() { drawerHandle?.close(); drawerHandle = null; },
 });
+
+let lastKey = "";
+function paramKey(params) { return JSON.stringify(Object.entries(params).sort()); }
