@@ -75,6 +75,17 @@ def _as_list(v) -> list:
     return [str(v)]
 
 
+def _ids(v) -> list:
+    """List ids from one id, '3,4', or a list; junk is ignored."""
+    out = []
+    for x in _as_list(v if not isinstance(v, int) else str(v)):
+        try:
+            out.append(int(x))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def _truthy(v) -> bool:
     return v is True or str(v).lower() in ("1", "true", "yes", "on")
 
@@ -108,12 +119,16 @@ def build_where(filters: dict | None, skip: str | None = None) -> tuple:
         marks = ",".join("?" for _ in tags)
         where.append(f"l.email IN (SELECT email FROM contact_tags WHERE tag IN ({marks}))")
         params += tags
-    if f.get("list_id") not in (None, "") and skip != "list_id":
-        where.append("l.email IN (SELECT ref FROM list_members WHERE list_id=?)")
-        params.append(int(f["list_id"]))
-    if f.get("not_list_id") not in (None, ""):
-        where.append("l.email NOT IN (SELECT ref FROM list_members WHERE list_id=?)")
-        params.append(int(f["not_list_id"]))
+    ids = _ids(f.get("list_id"))
+    if ids and skip != "list_id":
+        where.append(f"l.email IN (SELECT ref FROM list_members WHERE list_id IN "
+                     f"({','.join('?' for _ in ids)}))")
+        params += ids
+    not_ids = _ids(f.get("not_list_id"))
+    if not_ids:
+        where.append(f"l.email NOT IN (SELECT ref FROM list_members WHERE list_id IN "
+                     f"({','.join('?' for _ in not_ids)}))")
+        params += not_ids
     domains = [d.lower() for d in _as_list(f.get("domain"))]
     if domains:
         where.append(f"l.domain IN ({','.join('?' for _ in domains)})")

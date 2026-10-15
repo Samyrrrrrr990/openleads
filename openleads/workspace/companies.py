@@ -20,7 +20,7 @@ from openleads.insights import companysize
 from openleads.schema import tech_column
 from openleads.workspace import activity
 from openleads.workspace import lists as listmod
-from openleads.workspace.people import _as_list, _truthy
+from openleads.workspace.people import _as_list, _ids, _truthy
 from openleads.workspace.stages import ACCOUNT_STAGE_KEYS, ACCOUNT_STAGES, label
 
 _PEOPLE = "(SELECT COUNT(*) FROM leads l WHERE l.domain = a.domain)"
@@ -76,9 +76,11 @@ def build_where(filters: dict | None, skip: str | None = None) -> tuple:
     if techs and skip != "technologies":
         where.append("(" + " OR ".join("a.technologies LIKE ?" for _ in techs) + ")")
         params += [f"%|{t}|%" for t in techs]
-    if f.get("list_id") not in (None, ""):
-        where.append("a.domain IN (SELECT ref FROM list_members WHERE list_id=?)")
-        params.append(int(f["list_id"]))
+    ids = _ids(f.get("list_id"))
+    if ids and skip != "list_id":
+        where.append(f"a.domain IN (SELECT ref FROM list_members WHERE list_id IN "
+                     f"({','.join('?' for _ in ids)}))")
+        params += ids
     if _truthy(f.get("has_phone")):
         where.append("COALESCE(a.phone, '') != ''")
     if f.get("min_people") not in (None, ""):

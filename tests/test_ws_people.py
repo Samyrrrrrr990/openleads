@@ -137,3 +137,14 @@ def test_bulk_actions_and_delete(db):
     with pytest.raises(ValueError):
         people.bulk(db, everyone, "explode")
     assert people.bulk(db, [], "tag", "x")["count"] == 0
+
+
+def test_list_filter_accepts_one_or_many_ids(db):
+    a, b = lists.create(db, "A"), lists.create(db, "B")
+    lists.add(db, a["id"], ["jane@acme.example"])
+    lists.add(db, b["id"], ["ann@beta.example"])
+    assert people.search(db, {"list_id": [str(a["id"]), str(b["id"])]})["total"] == 2
+    assert people.search(db, {"list_id": f"{a['id']}"})["total"] == 1
+    assert people.search(db, {"list_id": []})["total"] == 4          # empty = no filter
+    assert people.search(db, {"list_id": ["junk"]})["total"] == 4
+    assert people.search(db, {"not_list_id": [a["id"], b["id"]]})["total"] == 2
