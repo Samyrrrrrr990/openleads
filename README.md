@@ -141,7 +141,7 @@ who replies. Failed runs send a desktop alert, plus a webhook if you set one.
 Rather run it in CI? There's a GitHub Action:
 
 ```yaml
-- uses: Samyrrrrrr990/openleads@v4.6.1
+- uses: Samyrrrrrr990/openleads@v5.0.0
   with: { query: "marketing agencies in Miami", count: 50 }
 ```
 

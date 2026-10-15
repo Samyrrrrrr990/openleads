@@ -2,18 +2,18 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Samyrrrrrr990/openleads",
   "title": "OpenLeads",
-  "description": "Find people and work emails from public data, labeled found, pattern, or guessed. No API keys.",
+  "description": "Find leads with honest email evidence, then work them: CRM, sequences, tasks, deals. No API keys.",
   "repository": {
     "url": "https://github.com/Samyrrrrrr990/openleads",
     "source": "github"
   },
   "websiteUrl": "https://samyrrrrrr990.github.io/openleads/",
-  "version": "4.6.1",
+  "version": "5.0.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "openleads",
-      "version": "4.6.1",
+      "version": "5.0.0",
       "transport": {
         "type": "stdio"
       },

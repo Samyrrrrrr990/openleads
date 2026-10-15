@@ -92,7 +92,7 @@ jobs:
   leads:
     runs-on: ubuntu-latest
     steps:
-      - uses: Samyrrrrrr990/openleads@v4.6.1
+      - uses: Samyrrrrrr990/openleads@v5.0.0
         id: leads
         with: { query: "marketing agencies in Miami", count: 50 }
       - uses: actions/upload-artifact@v4
