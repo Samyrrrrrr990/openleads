@@ -151,3 +151,21 @@ def test_preflight_scoring(monkeypatch):
     monkeypatch.setattr(deliverability, "_has_dkim", lambda d, cache=None: False)
     bad = deliverability.preflight("acme.io")
     assert bad["grade"] == "F" and not bad["ready"] and bad["fixes"]
+
+
+def test_imap_ssl_falls_back_without_timeout_kwarg(monkeypatch):
+    """Python 3.8's IMAP4_SSL has no timeout= keyword; connecting must still work."""
+    import socket
+
+    from openleads.outreach import providers
+    calls = []
+
+    def fake_ssl(host, port, **kw):
+        if "timeout" in kw:
+            raise TypeError("unexpected keyword argument 'timeout'")
+        calls.append((host, port, socket.getdefaulttimeout()))
+        return "conn"
+    monkeypatch.setattr(providers.imaplib, "IMAP4_SSL", fake_ssl)
+    assert providers._imap_ssl("imap.example", 993, 7) == "conn"
+    assert calls == [("imap.example", 993, 7)]
+    assert socket.getdefaulttimeout() is None

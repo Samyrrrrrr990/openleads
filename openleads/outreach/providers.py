@@ -128,9 +128,24 @@ def connect_imap(cfg: dict | None = None, timeout: int = 30):
     cfg = cfg or imap_config()
     if not cfg.get("host"):
         raise RuntimeError("no IMAP host configured")
-    server = imaplib.IMAP4_SSL(cfg["host"], 993, timeout=timeout)
+    server = _imap_ssl(cfg["host"], 993, timeout)
     server.login(cfg["user"], cfg["password"])
     return server
+
+
+def _imap_ssl(host: str, port: int, timeout):
+    """IMAP4_SSL with a timeout. The keyword only exists on Python 3.9+; on 3.8 the
+    socket default timeout gives the same protection for the connect."""
+    try:
+        return imaplib.IMAP4_SSL(host, port, timeout=timeout)
+    except TypeError:
+        import socket
+        old = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(timeout)
+        try:
+            return imaplib.IMAP4_SSL(host, port)
+        finally:
+            socket.setdefaulttimeout(old)
 
 
 # --- Sent-folder visibility (so sent mail shows in the user's mail client) ---- #
