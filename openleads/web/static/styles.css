@@ -388,7 +388,7 @@ kbd { display: inline-grid; place-items: center; min-width: 18px; height: 18px; 
 .cell-person .name { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
 .cell-person .sub { font-size: 12px; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .cell-email { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
-.cell-email .addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px; }
+.cell-email .addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px; }
 .copy { opacity: 0; color: var(--faint); display: inline-grid; padding: 2px; border-radius: 4px; }
 tr:hover .copy, .copy:focus-visible { opacity: 1; }
 .copy:hover { color: var(--text); background: var(--panel-3); }

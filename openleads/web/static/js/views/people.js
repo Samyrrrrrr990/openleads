@@ -45,18 +45,20 @@ const CFG = [
     options: [["", "Any"], ["yes", "Has a LinkedIn profile"], ["no", "No LinkedIn profile"]] },
 ];
 
+// Order = left to right. The narrow, decision-making columns (fit, stage) come
+// before the wide ones so they stay in view without scrolling.
 const COLUMNS = [
+  { key: "fit", label: "Fit", sort: "fit", def: true },
   { key: "company", label: "Company", sort: "organization", def: true },
   { key: "email", label: "Email", sort: "email", def: true },
   { key: "stage", label: "Stage", sort: "stage", def: true },
-  { key: "fit", label: "Fit", sort: "fit", def: true },
+  { key: "last_contacted", label: "Last contacted", sort: "last_contacted", def: true },
   { key: "seniority", label: "Seniority", sort: "seniority", def: false },
   { key: "department", label: "Department", def: false },
   { key: "location", label: "Location", sort: "location", def: true },
   { key: "phone", label: "Phone", def: false },
   { key: "tags", label: "Tags & lists", def: true },
   { key: "sequence", label: "Sequence", def: false },
-  { key: "last_contacted", label: "Last contacted", sort: "last_contacted", def: true },
   { key: "created", label: "Added", sort: "created", def: false },
   { key: "source", label: "Source", def: false },
 ];
