@@ -1,5 +1,6 @@
 """Fixture-based tests for github / npi / openalex / producthunt parsers (no network)."""
 from openleads.sources.github import parse_user
+from openleads.sources.huggingface import parse_models, parse_profile
 from openleads.sources.npi import parse_results
 from openleads.sources.openalex import parse_authors
 from openleads.sources.producthunt import parse_feed
@@ -79,6 +80,42 @@ def test_openalex_no_institution_domainless():
     assert e.domain == ""
     assert e.organization == ""
 
+
+
+# --- huggingface ------------------------------------------------------------
+def test_huggingface_parse_models_deduplicates_authors():
+    data = {
+        "results": [
+            {"id": "alice/model-a", "author": "alice"},
+            {"id": "alice/model-b", "author": "alice"},
+            {"id": "bob/model-c", "author": "bob"},
+        ]
+    }
+    assert parse_models(data) == ["alice", "bob"]
+
+
+def test_huggingface_parse_profile_keeps_public_links():
+    e = parse_profile(
+        "alice",
+        {
+            "name": "Alice Example",
+            "fullname": "Alice Example",
+            "company": "Acme AI",
+            "website": "https://alice.example",
+            "location": "Paris",
+            "links": {"github": "https://github.com/alice"},
+        },
+    )
+    assert e is not None
+    assert e.full_name == "Alice Example"
+    assert e.organization == "Acme AI"
+    assert e.website == "https://alice.example"
+    assert e.links["github"] == "https://github.com/alice"
+    assert e.links["huggingface"].endswith("/alice")
+
+
+def test_huggingface_parse_profile_skips_organizations():
+    assert parse_profile("acme", {"type": "org", "name": "Acme"}) is None
 
 # --- producthunt ------------------------------------------------------------
 def test_producthunt_parse_atom_feed():
