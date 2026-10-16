@@ -67,7 +67,7 @@
 </nav>
 <main class="docs__main" id="main"><article class="prose">
 <div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Get started</span><i class="ph ph-caret-right"></i><span>Quickstart</span></div>
-<div class="dhead"><span class="dhead__sec"><i class="ph ph-rocket-launch"></i>Get started</span><span class="dhead__meta">3 min read</span></div><h1 id="quickstart-from-zero-to-a-sent-campaign">Quickstart: from zero to a sent campaign</h1>
+<div class="dhead"><span class="dhead__sec"><i class="ph ph-rocket-launch"></i>Get started</span><span class="dhead__meta">4 min read</span></div><h1 id="quickstart-from-zero-to-a-sent-campaign">Quickstart: from zero to a sent campaign</h1>
 <p class="lede">This is the 10-minute path: install, find leads, write the emails, connect your mailbox, and send it safely. Every sending step is <strong>dry-run by default</strong>.</p>
 <div class="callout callout--note"><i class="ph ph-info"></i><div>TL;DR: <code>pip install &quot;openleads[all]&quot;</code> → <code>openleads web</code> → Find people → save them to a list → put the list in a sequence. Or stay in the terminal with <code>openleads run</code>. Just looking? <code>openleads demo</code> opens the dashboard on an invented workspace.</div></div>
 <hr/>
@@ -76,6 +76,25 @@
 openleads --version              # → openleads 5.0.0
 openleads init                   # friendly first-run setup (optional)</code></pre></div>
 <p>Node user? <code>npx openleads</code> works too (it installs the Python package on first run).</p>
+<h3 id="windows" class="anchored"><a class="hlink" href="#windows">#</a>Windows (PowerShell)</h3>
+<p>Install with <code>pipx</code> so OpenLeads and its Python dependencies stay in an isolated environment:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>powershell</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>py -m pip install --user pipx
+py -m pipx ensurepath</code></pre></div>
+<p>Close and reopen PowerShell after <code>ensurepath</code> so the updated PATH takes effect, then install and check the CLI:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>powershell</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>pipx install &quot;openleads[all]&quot;
+openleads --version
+openleads init</code></pre></div>
+<p>PowerShell accepts double-quoted search phrases directly. Keep the phrase in one quoted argument; a variable works too:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>powershell</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads find &quot;marketing agencies in Miami&quot; -n 10
+$query = &#x27;marketing agencies in Miami&#x27;
+openleads find $query -n 10</code></pre></div>
+<p>The scheduler uses Windows Task Scheduler (not cron). Check its status before enabling it:</p>
+<div class="codeblock"><div class="codeblock__bar"><span>powershell</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads schedule status
+openleads schedule on
+openleads schedule status
+openleads runs</code></pre></div>
+<p>Only run <code>schedule on</code> after reviewing any existing recipes and watchers: it activates due jobs, which may include sending if you previously configured them. The computer must be awake and the Windows user profile available for scheduled runs.</p>
+<p>If you prefer not to use <code>pipx</code>, <code>py -m pip install --user &quot;openleads[all]&quot;</code> is an alternative; make sure your Python user Scripts directory is on PATH so PowerShell can find <code>openleads.exe</code>.</p>
 <h2 id="2-sanity-check-your-setup" class="anchored"><a class="hlink" href="#2-sanity-check-your-setup">#</a>2. Sanity-check your setup</h2>
 <div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads doctor</code></pre></div>
 <p><code>doctor</code> tells you, in plain language, what works and what to fix:</p>
@@ -132,7 +151,7 @@ openleads crm --export out.csv</code></pre></div>
 <a class="pn pn--next" href="web.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Web dashboard</b></a>
 </nav>
 </article></main>
-<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-install">1. Install</a><a class="toc__l2" href="#2-sanity-check-your-setup">2. Sanity-check your setup</a><a class="toc__l2" href="#3-find-leads">3. Find leads</a><a class="toc__l2" href="#4-connect-your-mailbox">4. Connect your mailbox (once)</a><a class="toc__l2" href="#5-write-send">5. Write + send</a><a class="toc__l2" href="#6-prefer-a-ui">6. Prefer a UI?</a><a class="toc__l2" href="#7-work-your-leads">7. Work your leads</a><a class="toc__l2" href="#8-keep-an-eye-on-it">8. Keep an eye on it</a><a class="toc__l3" href="#where-things-live">Where things live</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/quickstart.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
+<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-install">1. Install</a><a class="toc__l3" href="#windows">Windows (PowerShell)</a><a class="toc__l2" href="#2-sanity-check-your-setup">2. Sanity-check your setup</a><a class="toc__l2" href="#3-find-leads">3. Find leads</a><a class="toc__l2" href="#4-connect-your-mailbox">4. Connect your mailbox (once)</a><a class="toc__l2" href="#5-write-send">5. Write + send</a><a class="toc__l2" href="#6-prefer-a-ui">6. Prefer a UI?</a><a class="toc__l2" href="#7-work-your-leads">7. Work your leads</a><a class="toc__l2" href="#8-keep-an-eye-on-it">8. Keep an eye on it</a><a class="toc__l3" href="#where-things-live">Where things live</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/quickstart.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
 </div>
 <footer class="footer docs-footer">
   <div class="container footer__legal">
