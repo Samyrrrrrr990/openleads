@@ -1,4 +1,5 @@
 """On-device scheduler: pure plist/cron generators + scheduled-campaign selection."""
+import subprocess
 import time
 
 import pytest
@@ -56,3 +57,24 @@ def test_save_scheduled_campaign_defaults(db):
     rows = {r["name"]: r["data"] for r in db.list_campaigns()}
     assert rows["c1"]["enabled"] is True
     assert rows["c1"]["send_hour"] == 9
+
+
+def test_windows_schedule_status_replaces_undecodable_console_output(monkeypatch):
+    monkeypatch.setattr(scheduler.sys, "platform", "win32")
+    captured = {}
+
+    def fake_run(args, **kwargs):
+        captured.update(kwargs)
+        return subprocess.CompletedProcess(args, 1, stdout="", stderr="task not found")
+
+    monkeypatch.setattr(scheduler.subprocess, "run", fake_run)
+    result = scheduler.status()
+
+    assert captured["text"] is True
+    assert captured["errors"] == "replace"
+    assert result == {
+        "installed": False,
+        "kind": "schtasks",
+        "path": scheduler.WIN_TASK,
+        "mode": "",
+    }
