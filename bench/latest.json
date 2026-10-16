@@ -1,20 +1,20 @@
 {
-  "version": "4.6.1",
-  "date": "2026-10-15",
+  "version": "5.0.0",
+  "date": "2026-10-16",
   "count_per_query": 10,
   "totals": {
-    "leads": 108,
-    "people": 77,
-    "found": 48,
+    "leads": 101,
+    "people": 69,
+    "found": 56,
     "pattern": 3,
-    "guessed": 57,
+    "guessed": 42,
     "junk_names": 0,
     "queries": 12,
     "queries_with_results": 12,
-    "fill_rate": 0.9,
-    "evidence_rate": 0.472,
+    "fill_rate": 0.842,
+    "evidence_rate": 0.584,
     "junk_rate": 0.0,
-    "median_seconds": 50.6
+    "median_seconds": 54.5
   },
   "queries": [
     {
@@ -25,7 +25,7 @@
       "pattern": 0,
       "guessed": 6,
       "junk_names": 0,
-      "seconds": 60.7,
+      "seconds": 41.8,
       "error": "",
       "sample": [
         " <downtown@austincosmetic.com> \u00b7 Austin Cosmetic Dentistry",
@@ -35,29 +35,29 @@
     },
     {
       "query": "marketing agencies in Miami",
-      "leads": 10,
-      "people": 8,
-      "found": 5,
-      "pattern": 0,
-      "guessed": 5,
+      "leads": 4,
+      "people": 3,
+      "found": 2,
+      "pattern": 1,
+      "guessed": 1,
       "junk_names": 0,
-      "seconds": 12.9,
+      "seconds": 38.3,
       "error": "",
       "sample": [
-        " <hello@craftly.ai> \u00b7 Craftly.AI",
-        "Nicole Lytle <nicole.lytle@craftly.ai> \u00b7 Craftly.AI",
-        "Megan Apa <megan.apa@craftly.ai> \u00b7 Craftly.AI"
+        " <support@kingzcreations.info> \u00b7 Kingz Creations",
+        "Dan Ross <dan@cavmir.com> \u00b7 Cavmir",
+        "Sanjay Gupta <sanjay.gupta@cavmir.com> \u00b7 Cavmir"
       ]
     },
     {
       "query": "law firms in London",
-      "leads": 10,
-      "people": 9,
+      "leads": 4,
+      "people": 3,
       "found": 1,
       "pattern": 0,
-      "guessed": 9,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 50.6,
+      "seconds": 108.9,
       "error": "",
       "sample": [
         "George W. Cleary <george.cleary@clearygottlieb.com> \u00b7 Cleary Gottlieb Steen & Hamilton LLP",
@@ -67,13 +67,13 @@
     },
     {
       "query": "accountants in Toronto",
-      "leads": 5,
-      "people": 3,
-      "found": 2,
+      "leads": 10,
+      "people": 7,
+      "found": 6,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 4,
       "junk_names": 0,
-      "seconds": 84.9,
+      "seconds": 54.5,
       "error": "",
       "sample": [
         "Samantha Marisa <samantha.marisa@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
@@ -84,12 +84,12 @@
     {
       "query": "software companies in Berlin",
       "leads": 10,
-      "people": 4,
-      "found": 6,
+      "people": 3,
+      "found": 7,
       "pattern": 0,
-      "guessed": 4,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 107.9,
+      "seconds": 41.8,
       "error": "",
       "sample": [
         " <kontakt@governikus.de> \u00b7 Governikus",
@@ -101,16 +101,16 @@
       "query": "gyms in Sydney",
       "leads": 10,
       "people": 4,
-      "found": 6,
+      "found": 7,
       "pattern": 0,
-      "guessed": 4,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 75.8,
+      "seconds": 98.4,
       "error": "",
       "sample": [
         " <chippendale@steedfitness.com.au> \u00b7 Steed Fitness",
         " <info@forgegym.com.au> \u00b7 Forge Gym",
-        "Lizzie Tui <lizzie.tui@eloueratonymundinegym.com.au> \u00b7 Elouera Tony Mundine Gym"
+        "Lizzie Tui <lizzie@eloueratonymundinegym.com.au> \u00b7 Elouera Tony Mundine Gym"
       ]
     },
     {
@@ -121,11 +121,11 @@
       "pattern": 0,
       "guessed": 6,
       "junk_names": 0,
-      "seconds": 17.6,
+      "seconds": 33.9,
       "error": "",
       "sample": [
-        "Quan Nguyen <quan.nguyen@gimo.vn> \u00b7 GIMO",
-        "Pauline Roteta <pauline@pasito.ai> \u00b7 Pasito",
+        "Thiago Diniz <thiago.diniz@hent.com.br> \u00b7 Hent",
+        "Geoff Flarity <geoff.flarity@withkash.com> \u00b7 Kash",
         "Bobby Mehta <bobby.mehta@sentilink.com> \u00b7 SentiLink"
       ]
     },
@@ -133,27 +133,27 @@
       "query": "AI startup founders",
       "leads": 10,
       "people": 7,
-      "found": 3,
+      "found": 5,
       "pattern": 0,
-      "guessed": 7,
+      "guessed": 5,
       "junk_names": 0,
-      "seconds": 16.5,
+      "seconds": 17.4,
       "error": "",
       "sample": [
-        "David Marquez <david.marquez@shipmates.app> \u00b7 Shipmates",
-        "Andy Lee <andy.lee@downtobid.com> \u00b7 Downtobid",
-        " <nicholas.hanson@govstar.us> \u00b7 GovStar"
+        "Shaunak Srivastava <shaunak.srivastava@dexto.ai> \u00b7 Dexto",
+        " <customers@treat.health> \u00b7 Treat Health",
+        "Josh Kelly <josh@pave-robotics.com> \u00b7 Pave Robotics"
       ]
     },
     {
       "query": "rust developers in Berlin",
       "leads": 10,
       "people": 10,
-      "found": 7,
+      "found": 8,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 2,
       "junk_names": 0,
-      "seconds": 100.5,
+      "seconds": 103.2,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
@@ -165,11 +165,11 @@
       "query": "machine learning researchers",
       "leads": 10,
       "people": 10,
-      "found": 0,
+      "found": 2,
       "pattern": 0,
-      "guessed": 10,
+      "guessed": 8,
       "junk_names": 0,
-      "seconds": 22.1,
+      "seconds": 56.1,
       "error": "",
       "sample": [
         "Jan Jakub\u016fv <jan.jakubuv@cvut.cz> \u00b7 Czech Technical University in Prague",
@@ -185,7 +185,7 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 2.5,
+      "seconds": 4.1,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
@@ -198,15 +198,15 @@
       "leads": 10,
       "people": 3,
       "found": 9,
-      "pattern": 1,
-      "guessed": 0,
+      "pattern": 0,
+      "guessed": 1,
       "junk_names": 0,
-      "seconds": 30.7,
+      "seconds": 59.1,
       "error": "",
       "sample": [
-        " <contact@parkerholsman.com> \u00b7 Parker Holsman",
-        " <chris@grthomes.com> \u00b7 GRT Homes | eXp Realty Oak Park & River Forest",
-        " <contact@centercoastrealty.com> \u00b7 Center Coast Realty"
+        "Matt Garrison <mgarrison@r2.me> \u00b7 R2 Companies",
+        "Howard Marks <howard.marks@r2.me> \u00b7 R2 Companies",
+        "Marc Garrison <mgarrison@r2.me> \u00b7 R2 Companies"
       ]
     }
   ]
