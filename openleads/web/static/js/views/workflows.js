@@ -28,20 +28,22 @@ const WF_NODES = [
 const WF_EDGES = [["trigger", "find"], ["find", "verify"], ["verify", "write"], ["write", "send"],
   ["verify", "review"], ["review", "export"]];
 
-const W = { list: [], cur: null, sel: "find", isNew: false, dirty: false, running: false };
+const W = { list: [], cur: null, sel: "find", isNew: false, dirty: false, running: false, saving: false };
 let ROOT = null;
 
 const blank = () => ({ name: "", query: "", count: 25, schedule: "weekdays 09:00", enabled: true,
   verified_only: true, context: "", send: false, sequence: false, export: null });
+// Recipes are JSON data; nested export settings must not share the saved list's objects.
+const cloneRecipe = (r) => JSON.parse(JSON.stringify(r));
 
 async function load() {
   try { W.list = (await api.get("/api/recipes")).recipes || []; } catch (_) { W.list = []; }
   if (W.cur && !W.isNew) {
     const fresh = W.list.find((r) => r.name === W.cur.name);
-    W.cur = fresh ? { ...fresh } : null;
+    W.cur = fresh ? cloneRecipe(fresh) : null;
   }
   if (!W.cur) {
-    if (W.list.length) { W.cur = { ...W.list[0] }; W.isNew = false; }
+    if (W.list.length) { W.cur = cloneRecipe(W.list[0]); W.isNew = false; }
     else { W.cur = blank(); W.isNew = true; }
   }
 }
@@ -157,8 +159,9 @@ function render() {
           <span class="wf__status" id="wf-status"><i></i><span>${W.dirty ? "Unsaved changes" : "Ready"}</span></span>
           <div class="row" style="margin-left:auto">
             ${W.isNew ? "" : `<button type="button" class="btn btn--ghost btn--sm btn--danger" data-act="delete">${ico("trash")} <span>Delete</span></button>`}
-            <button type="button" class="btn btn--sm" data-act="test" ${W.running ? "disabled" : ""}>${ico("play")} Test run</button>
-            <button type="button" class="btn btn--primary btn--sm" data-act="save">${ico("check")} Save</button>
+            <button type="button" class="btn btn--sm" data-act="duplicate" ${W.running || W.saving ? "disabled" : ""}>${ico("copy")} Duplicate</button>
+            <button type="button" class="btn btn--sm" data-act="test" ${W.running || W.saving ? "disabled" : ""}>${ico("play")} Test run</button>
+            <button type="button" class="btn btn--primary btn--sm" data-act="save" ${W.saving ? "disabled" : ""}>${ico("check")} Save</button>
           </div>
         </div>
         ${canvas(r)}
@@ -200,9 +203,14 @@ function set(field, el) {
 }
 
 async function save() {
+  if (W.saving) return false;
   const r = W.cur;
   if (!r.name || !/^[\w.-]+$/.test(r.name)) { toast("Name the workflow with letters, numbers, dashes or dots.", "err"); return false; }
   if (!r.query) { W.sel = "find"; render(); toast("Find leads needs an audience.", "err"); return false; }
+  W.saving = true;
+  $('[data-act="duplicate"]', ROOT)?.setAttribute("disabled", "");
+  $('[data-act="save"]', ROOT)?.setAttribute("disabled", "");
+  $('[data-act="test"]', ROOT)?.setAttribute("disabled", "");
   try {
     const res = await api.post("/api/recipes/save", { ...r, schedule: r.enabled ? (r.schedule || "").trim() : "" });
     toast(`Saved '${r.name}'.`);
@@ -210,6 +218,14 @@ async function save() {
     await load(); render();
     return true;
   } catch (e) { fail(e); return false; }
+  finally {
+    W.saving = false;
+    $('[data-act="save"]', ROOT)?.removeAttribute("disabled");
+    if (!W.running) {
+      $('[data-act="duplicate"]', ROOT)?.removeAttribute("disabled");
+      $('[data-act="test"]', ROOT)?.removeAttribute("disabled");
+    }
+  }
 }
 
 function node(id, state, badge) {
@@ -242,6 +258,7 @@ async function test() {
   const logEl = $("#wf-log", ROOT); if (logEl) logEl.innerHTML = "";
   status("Running", "running");
   $('[data-act="test"]', ROOT)?.setAttribute("disabled", "");
+  $('[data-act="duplicate"]', ROOT)?.setAttribute("disabled", "");
   let leads = 0, safe = 0, risky = 0, phase = "";
   node("trigger", "done", "manual"); edge("trigger", "find", "done"); node("find", "running", "0 leads");
   log(`<b>Trigger</b> test run started for “${esc(r.query)}”`);
@@ -283,6 +300,7 @@ async function test() {
     $$(".wfn.is-running", ROOT).forEach((n) => n.classList.remove("is-running"));
     $$(".wf__edges path.is-live", ROOT).forEach((p) => p.classList.remove("is-live"));
     $('[data-act="test"]', ROOT)?.removeAttribute("disabled");
+    $('[data-act="duplicate"]', ROOT)?.removeAttribute("disabled");
   }
 }
 
@@ -302,7 +320,17 @@ async function onClick(e) {
     setTimeout(() => $('[data-wf="name"]', ROOT)?.focus(), 30);
   } else if (act === "open") {
     const r = W.list.find((x) => x.name === a.dataset.name);
-    if (r) { W.cur = { ...r }; W.isNew = false; W.dirty = false; render(); }
+    if (r) { W.cur = cloneRecipe(r); W.isNew = false; W.dirty = false; render(); }
+  } else if (act === "duplicate") {
+    if (W.running || W.saving || !W.cur) return;
+    const base = `${W.cur.name || "workflow"}-copy`;
+    let name = base;
+    for (let n = 2; W.list.some((r) => r.name === name); n++) name = `${base}-${n}`;
+    W.cur = { ...cloneRecipe(W.cur), name };
+    // A copy has its own creation time and run history when it is saved.
+    for (const key of ["created_at", "last_run", "last_run_at", "when"]) delete W.cur[key];
+    W.isNew = true; W.dirty = true; W.sel = "find"; render();
+    setTimeout(() => $('[data-wf="name"]', ROOT)?.focus(), 30);
   } else if (act === "save") save();
   else if (act === "test") test();
   else if (act === "delete") {
