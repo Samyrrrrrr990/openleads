@@ -20,6 +20,44 @@ openleads init                   # friendly first-run setup (optional)
 
 Node user? `npx openleads` works too (it installs the Python package on first run).
 
+### Windows (PowerShell)
+
+Install with `pipx` so OpenLeads and its Python dependencies stay in an isolated environment:
+
+```powershell
+py -m pip install --user pipx
+py -m pipx ensurepath
+```
+
+Close and reopen PowerShell after `ensurepath` so the updated PATH takes effect, then install and check the CLI:
+
+```powershell
+pipx install "openleads[all]"
+openleads --version
+openleads init
+```
+
+PowerShell accepts double-quoted search phrases directly. Keep the phrase in one quoted argument; a variable works too:
+
+```powershell
+openleads find "marketing agencies in Miami" -n 10
+$query = 'marketing agencies in Miami'
+openleads find $query -n 10
+```
+
+The scheduler uses Windows Task Scheduler (not cron). Check its status before enabling it:
+
+```powershell
+openleads schedule status
+openleads schedule on
+openleads schedule status
+openleads runs
+```
+
+Only run `schedule on` after reviewing any existing recipes and watchers: it activates due jobs, which may include sending if you previously configured them. The computer must be awake and the Windows user profile available for scheduled runs.
+
+If you prefer not to use `pipx`, `py -m pip install --user "openleads[all]"` is an alternative; make sure your Python user Scripts directory is on PATH so PowerShell can find `openleads.exe`.
+
 ## 2. Sanity-check your setup
 
 ```bash
