@@ -1,31 +1,31 @@
 {
   "version": "5.0.0",
-  "date": "2026-10-22",
+  "date": "2026-10-23",
   "count_per_query": 10,
   "totals": {
-    "leads": 94,
-    "people": 69,
-    "found": 43,
+    "leads": 87,
+    "people": 65,
+    "found": 37,
     "pattern": 5,
-    "guessed": 46,
+    "guessed": 45,
     "junk_names": 0,
     "queries": 12,
     "queries_with_results": 12,
-    "fill_rate": 0.783,
-    "evidence_rate": 0.511,
+    "fill_rate": 0.725,
+    "evidence_rate": 0.483,
     "junk_rate": 0.0,
-    "median_seconds": 62.5
+    "median_seconds": 64.9
   },
   "queries": [
     {
       "query": "dentists in Austin",
       "leads": 10,
-      "people": 7,
+      "people": 6,
       "found": 4,
       "pattern": 0,
       "guessed": 6,
       "junk_names": 0,
-      "seconds": 69.2,
+      "seconds": 58.8,
       "error": "",
       "sample": [
         " <downtown@austincosmetic.com> \u00b7 Austin Cosmetic Dentistry",
@@ -35,13 +35,13 @@
     },
     {
       "query": "marketing agencies in Miami",
-      "leads": 9,
-      "people": 7,
-      "found": 3,
+      "leads": 7,
+      "people": 6,
+      "found": 2,
       "pattern": 2,
-      "guessed": 4,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 44.0,
+      "seconds": 64.9,
       "error": "",
       "sample": [
         " <support@kingzcreations.info> \u00b7 Kingz Creations",
@@ -57,7 +57,7 @@
       "pattern": 0,
       "guessed": 2,
       "junk_names": 0,
-      "seconds": 89.4,
+      "seconds": 90.0,
       "error": "",
       "sample": [
         "George W. Cleary <george.cleary@clearygottlieb.com> \u00b7 Cleary Gottlieb Steen & Hamilton LLP",
@@ -73,7 +73,7 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 62.5,
+      "seconds": 64.9,
       "error": "",
       "sample": [
         "Samantha Marisa <samantha.marisa@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
@@ -83,13 +83,13 @@
     },
     {
       "query": "software companies in Berlin",
-      "leads": 5,
-      "people": 3,
-      "found": 2,
+      "leads": 10,
+      "people": 4,
+      "found": 6,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 4,
       "junk_names": 0,
-      "seconds": 70.7,
+      "seconds": 99.0,
       "error": "",
       "sample": [
         " <kontakt@governikus.de> \u00b7 Governikus",
@@ -99,33 +99,33 @@
     },
     {
       "query": "gyms in Sydney",
-      "leads": 9,
-      "people": 4,
-      "found": 5,
+      "leads": 4,
+      "people": 1,
+      "found": 3,
       "pattern": 0,
-      "guessed": 4,
+      "guessed": 1,
       "junk_names": 0,
-      "seconds": 86.2,
+      "seconds": 62.8,
       "error": "",
       "sample": [
+        " <chippendale@steedfitness.com.au> \u00b7 Steed Fitness",
         " <info@forgegym.com.au> \u00b7 Forge Gym",
-        "Lizzie Tui <lizzie.tui@eloueratonymundinegym.com.au> \u00b7 Elouera Tony Mundine Gym",
-        " <mark@chisauclub.com.au> \u00b7 Chi Sau Club - Wing Chun Kung Fu"
+        "Lizzie Tui <lizzie.tui@eloueratonymundinegym.com.au> \u00b7 Elouera Tony Mundine Gym"
       ]
     },
     {
       "query": "fintech founders",
       "leads": 10,
-      "people": 9,
-      "found": 4,
+      "people": 10,
+      "found": 2,
       "pattern": 0,
-      "guessed": 6,
+      "guessed": 8,
       "junk_names": 0,
-      "seconds": 18.2,
+      "seconds": 16.9,
       "error": "",
       "sample": [
-        "Omar Kassim <omar.kassim@nomod.com> \u00b7 Nomod",
-        "Bhavuk Kaul <bhavuk@plateiq.com> \u00b7 Plate IQ",
+        "Reinhart Hermanus <reinhart.hermanus@finnix.id> \u00b7 Finnix",
+        "Gabe Roeloffs <gabe.roeloffs@zerosettle.io> \u00b7 ZeroSettle",
         "Bobby Mehta <bobby.mehta@sentilink.com> \u00b7 SentiLink"
       ]
     },
@@ -133,16 +133,16 @@
       "query": "AI startup founders",
       "leads": 10,
       "people": 7,
-      "found": 5,
+      "found": 4,
       "pattern": 0,
-      "guessed": 5,
+      "guessed": 6,
       "junk_names": 0,
-      "seconds": 17.4,
+      "seconds": 13.7,
       "error": "",
       "sample": [
-        "Jagath Vytheeswaran <jagath@vogent.ai> \u00b7 Vogent",
+        "Alex Lee <alex.lee@trytruewind.com> \u00b7 Truewind",
         " <customers@treat.health> \u00b7 Treat Health",
-        "Nirali Zaveri <nirali.zaveri@usefriz.com> \u00b7 Friz"
+        "Armand Iorgulescu <armand.iorgulescu@fed10.ai> \u00b7 Fed10"
       ]
     },
     {
@@ -153,7 +153,7 @@
       "pattern": 0,
       "guessed": 2,
       "junk_names": 0,
-      "seconds": 100.6,
+      "seconds": 102.5,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
@@ -169,7 +169,7 @@
       "pattern": 0,
       "guessed": 10,
       "junk_names": 0,
-      "seconds": 34.8,
+      "seconds": 38.1,
       "error": "",
       "sample": [
         "Jan Jakub\u016fv <jan.jakubuv@cvut.cz> \u00b7 Czech Technical University in Prague",
@@ -185,7 +185,7 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 3.7,
+      "seconds": 4.0,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
@@ -195,13 +195,13 @@
     },
     {
       "query": "real estate agents in Chicago",
-      "leads": 10,
-      "people": 4,
-      "found": 8,
+      "leads": 5,
+      "people": 3,
+      "found": 4,
       "pattern": 1,
-      "guessed": 1,
+      "guessed": 0,
       "junk_names": 0,
-      "seconds": 53.0,
+      "seconds": 68.0,
       "error": "",
       "sample": [
         "Matt Garrison <mgarrison@r2.me> \u00b7 R2 Companies",
