@@ -4,6 +4,11 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Windows `schedule status` replaces undecodable Task Scheduler output instead of emitting a UnicodeDecodeError traceback.
+
 ## [5.0.0] - 2026-10-15
 
 **From a lead finder to a lead workspace.** 4.x found people and their emails and

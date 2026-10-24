@@ -150,7 +150,7 @@ def status() -> dict:
         return {"installed": p.exists(), "kind": "launchd", "path": str(p), "mode": mode}
     if sys.platform.startswith("win"):
         r = subprocess.run(["schtasks", "/Query", "/TN", WIN_TASK], capture_output=True,
-                           text=True, check=False)
+                           text=True, errors="replace", check=False)
         return {"installed": r.returncode == 0, "kind": "schtasks", "path": WIN_TASK,
                 "mode": ""}
     tab = _read_crontab()
