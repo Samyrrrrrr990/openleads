@@ -38,8 +38,8 @@ SUITE = [
     "machine learning researchers",
     "emails at stripe.com",
     "real estate agents in Chicago",
+    "plumbers in Denver",
 ]
-
 
 @dataclass
 class QueryScore:
