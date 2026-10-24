@@ -469,7 +469,7 @@ def cmd_enrich(args) -> int:
 
 
 def cmd_export(args) -> int:
-    """Export your CRM (or a leads CSV) to a sink: csv/json/ndjson/sheets/webhook/notion/airtable."""
+    """Export your CRM (or a leads CSV) to a configured sink."""
     from openleads.automate import crm, exporters
     db = DB()
     try:
@@ -942,7 +942,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ex = sub.add_parser("export", help="export your CRM to a sink")
     ex.add_argument("sink", choices=["csv", "json", "ndjson", "sheets", "webhook",
-                                     "notion", "airtable"], help="where to send the leads")
+                                     "notion", "airtable", "hubspot"], help="where to send the leads")
     ex.add_argument("--target", help="file path or URL (sink-dependent)")
     ex.add_argument("--from", dest="from_file", help="export a leads CSV instead of the CRM")
     ex.add_argument("--status", help="CRM status filter (new/sent/replied/…)")
