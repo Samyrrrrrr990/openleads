@@ -67,6 +67,8 @@ jobs:
             node --check "$out" || { echo "::error file=$f::syntax error"; exit 1; }
           done
           echo "checked $(find openleads/web/static -name '*.js' | wc -l) modules"
+      - name: Test workflow interactions (offline)
+        run: node --experimental-vm-modules --test tests/js/*.test.mjs
       - run: python -m pip install .
       - name: Demo workspace and workspace CLI
         run: |

@@ -4,6 +4,12 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims for
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Duplicate a workflow into an unsaved copy from the canvas toolbar. Copies keep
+  the current settings, receive an available name, and leave the original alone.
+
 ## [5.0.0] - 2026-10-15
 
 **From a lead finder to a lead workspace.** 4.x found people and their emails and

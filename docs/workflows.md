@@ -32,6 +32,18 @@ Nodes that are switched off are drawn dashed, and the run skips them.
 5. Leave **Send** off for the first few runs. Turn it on once the drafts look right.
 6. Click **Save**.
 
+## Copy one
+
+Click **Duplicate** beside Delete to open an unsaved copy of the current workflow,
+including your latest edits and export settings. The name starts with `<name>-copy`;
+if that name exists, it uses `<name>-copy-2`, then `-3`, and so on. You can edit the
+name and audience before saving. An untitled workflow becomes `workflow-copy`.
+The original stays unchanged, and the copy starts with no run history.
+
+Duplicating does not save or run anything. Click **Save** to persist the copy, or
+**Test run** to save it and start a dry run. Duplicate is unavailable while a save
+or test run is in progress.
+
 ## Test it
 
 **Test run** executes the whole workflow as a dry run. The nodes light up as each
