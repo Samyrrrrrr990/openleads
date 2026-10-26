@@ -1,31 +1,31 @@
 {
   "version": "5.0.0",
-  "date": "2026-10-25",
+  "date": "2026-10-26",
   "count_per_query": 10,
   "totals": {
-    "leads": 80,
-    "people": 62,
-    "found": 36,
-    "pattern": 3,
-    "guessed": 41,
+    "leads": 96,
+    "people": 68,
+    "found": 52,
+    "pattern": 4,
+    "guessed": 40,
     "junk_names": 0,
     "queries": 12,
     "queries_with_results": 12,
-    "fill_rate": 0.667,
-    "evidence_rate": 0.487,
+    "fill_rate": 0.8,
+    "evidence_rate": 0.583,
     "junk_rate": 0.0,
-    "median_seconds": 68.3
+    "median_seconds": 60.0
   },
   "queries": [
     {
       "query": "dentists in Austin",
-      "leads": 4,
-      "people": 2,
-      "found": 2,
+      "leads": 10,
+      "people": 7,
+      "found": 4,
       "pattern": 0,
-      "guessed": 2,
+      "guessed": 6,
       "junk_names": 0,
-      "seconds": 77.5,
+      "seconds": 57.0,
       "error": "",
       "sample": [
         " <downtown@austincosmetic.com> \u00b7 Austin Cosmetic Dentistry",
@@ -38,30 +38,30 @@
       "leads": 10,
       "people": 8,
       "found": 4,
-      "pattern": 0,
-      "guessed": 6,
+      "pattern": 1,
+      "guessed": 5,
       "junk_names": 0,
-      "seconds": 47.6,
+      "seconds": 46.3,
       "error": "",
       "sample": [
         " <support@kingzcreations.info> \u00b7 Kingz Creations",
-        "Dan Ross <dan.ross@cavmir.com> \u00b7 Cavmir",
+        "Dan Ross <dan@cavmir.com> \u00b7 Cavmir",
         "Sanjay Gupta <sanjay.gupta@cavmir.com> \u00b7 Cavmir"
       ]
     },
     {
       "query": "law firms in London",
       "leads": 4,
-      "people": 2,
-      "found": 2,
+      "people": 3,
+      "found": 1,
       "pattern": 0,
-      "guessed": 2,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 160.4,
+      "seconds": 109.4,
       "error": "",
       "sample": [
         "George W. Cleary <george.cleary@clearygottlieb.com> \u00b7 Cleary Gottlieb Steen & Hamilton LLP",
-        " <clerks@5sah.co.uk> \u00b7 Five St. Andrew's Hill",
+        "David Josse <david.josse@5sah.co.uk> \u00b7 Five St. Andrew's Hill",
         " <david.ho@christine-lee.co.uk> \u00b7 Christine Lee & Co Solicitors"
       ]
     },
@@ -73,7 +73,7 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 96.8,
+      "seconds": 73.9,
       "error": "",
       "sample": [
         "Samantha Marisa <samantha.marisa@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
@@ -83,13 +83,13 @@
     },
     {
       "query": "software companies in Berlin",
-      "leads": 5,
-      "people": 3,
-      "found": 2,
+      "leads": 10,
+      "people": 4,
+      "found": 6,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 4,
       "junk_names": 0,
-      "seconds": 68.6,
+      "seconds": 93.8,
       "error": "",
       "sample": [
         " <kontakt@governikus.de> \u00b7 Governikus",
@@ -105,7 +105,7 @@
       "pattern": 0,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 81.1,
+      "seconds": 85.5,
       "error": "",
       "sample": [
         " <chippendale@steedfitness.com.au> \u00b7 Steed Fitness",
@@ -116,16 +116,16 @@
     {
       "query": "fintech founders",
       "leads": 10,
-      "people": 10,
-      "found": 2,
+      "people": 9,
+      "found": 3,
       "pattern": 0,
-      "guessed": 8,
+      "guessed": 7,
       "junk_names": 0,
-      "seconds": 25.1,
+      "seconds": 29.9,
       "error": "",
       "sample": [
-        "Jacob Fortinsky <jacob.fortinsky@novig.com> \u00b7 Novig",
-        "Conor Murray <conor.murray@openinvest.com> \u00b7 OpenInvest",
+        "Akash Sinha <akash@cashfree.com> \u00b7 Cashfree Payments",
+        "Sho Sugihara <sho.sugihara@fuseinsight.com> \u00b7 Fuse",
         "Bobby Mehta <bobby.mehta@sentilink.com> \u00b7 SentiLink"
       ]
     },
@@ -133,16 +133,16 @@
       "query": "AI startup founders",
       "leads": 10,
       "people": 7,
-      "found": 3,
+      "found": 8,
       "pattern": 0,
-      "guessed": 7,
+      "guessed": 2,
       "junk_names": 0,
-      "seconds": 15.6,
+      "seconds": 20.9,
       "error": "",
       "sample": [
-        "Faza Fahleraz <faza.fahleraz@latentspace.sh> \u00b7 Latent Space",
+        "Larissa Tyagi <larissa@theorahq.com> \u00b7 Theora",
         " <customers@treat.health> \u00b7 Treat Health",
-        "Kevin Zhang <kevin.zhang@getcohesiveai.com> \u00b7 Cohesive"
+        "Krishang Todi <krishang@aegishealth.us> \u00b7 Aegis"
       ]
     },
     {
@@ -153,7 +153,7 @@
       "pattern": 0,
       "guessed": 2,
       "junk_names": 0,
-      "seconds": 61.4,
+      "seconds": 100.4,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
@@ -169,7 +169,7 @@
       "pattern": 0,
       "guessed": 8,
       "junk_names": 0,
-      "seconds": 57.1,
+      "seconds": 57.7,
       "error": "",
       "sample": [
         "Jan Jakub\u016fv <jan.jakubuv@cvut.cz> \u00b7 Czech Technical University in Prague",
@@ -185,7 +185,7 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 4.2,
+      "seconds": 4.5,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
@@ -195,13 +195,13 @@
     },
     {
       "query": "real estate agents in Chicago",
-      "leads": 5,
+      "leads": 10,
       "people": 3,
-      "found": 4,
+      "found": 9,
       "pattern": 1,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 68.3,
+      "seconds": 60.0,
       "error": "",
       "sample": [
         "Matt Garrison <mgarrison@r2.me> \u00b7 R2 Companies",
