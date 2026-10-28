@@ -303,7 +303,7 @@ class LocalSource(Source):
             elements = []
             for key, value in selectors:
                 if value != "*":
-                    elements += search_pois(key, value, place, cache=self.cache)
+                    elements += search_pois(key, value, place, cache=self.cache, bbox=bbox)
             data = {"elements": elements}
         for ent in extract_businesses(data or {}):
             if not ent.extra.get("city") and place:

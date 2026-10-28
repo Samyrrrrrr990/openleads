@@ -1,0 +1,205 @@
+# Major metros for offline geocoding (openleads.discover.geo).
+# Columns (tab-separated): name, aliases (";"-separated), ISO country code, latitude, longitude, radius_km
+# Coordinates are the conventional city-centre points; radius_km bounds the business search box.
+# Ambiguous names resolve to the metro listed here; a qualifier that doesn't match (e.g. "London, Ontario") falls through to Nominatim.
+New York	NYC;New York City;New York, NY;NY, NY;Manhattan	US	40.7128	-74.0060	20
+Brooklyn	Brooklyn, NY	US	40.6782	-73.9442	10
+Los Angeles	LA;Los Angeles, CA	US	34.0522	-118.2437	25
+Chicago	Chicago, IL	US	41.8781	-87.6298	20
+Houston	Houston, TX	US	29.7604	-95.3698	25
+Phoenix	Phoenix, AZ	US	33.4484	-112.0740	25
+Philadelphia	Philly;Philadelphia, PA	US	39.9526	-75.1652	18
+San Antonio	San Antonio, TX	US	29.4241	-98.4936	22
+San Diego	San Diego, CA	US	32.7157	-117.1611	20
+Dallas	Dallas, TX	US	32.7767	-96.7970	22
+Fort Worth	Fort Worth, TX	US	32.7555	-97.3308	20
+San Jose	San Jose, CA	US	37.3382	-121.8863	18
+Austin	ATX;Austin, TX	US	30.2672	-97.7431	20
+Jacksonville	Jacksonville, FL	US	30.3322	-81.6557	25
+Columbus	Columbus, OH	US	39.9612	-82.9988	18
+Charlotte	Charlotte, NC	US	35.2271	-80.8431	20
+San Francisco	SF;San Fran;San Francisco, CA	US	37.7749	-122.4194	10
+Oakland	Oakland, CA	US	37.8044	-122.2712	10
+Palo Alto	Palo Alto, CA	US	37.4419	-122.1430	8
+Indianapolis	Indianapolis, IN	US	39.7684	-86.1581	20
+Seattle	Seattle, WA	US	47.6062	-122.3321	15
+Denver	Denver, CO	US	39.7392	-104.9903	18
+Boulder	Boulder, CO	US	40.0150	-105.2705	10
+Washington	Washington, DC;Washington DC;DC	US	38.9072	-77.0369	15
+Boston	Boston, MA	US	42.3601	-71.0589	15
+Cambridge, MA	Cambridge, Massachusetts	US	42.3736	-71.1097	6
+Nashville	Nashville, TN	US	36.1627	-86.7816	20
+Detroit	Detroit, MI	US	42.3314	-83.0458	18
+Portland	Portland, OR	US	45.5152	-122.6784	15
+Las Vegas	Vegas;Las Vegas, NV	US	36.1699	-115.1398	20
+Memphis	Memphis, TN	US	35.1495	-90.0490	18
+Louisville	Louisville, KY	US	38.2527	-85.7585	18
+Baltimore	Baltimore, MD	US	39.2904	-76.6122	15
+Milwaukee	Milwaukee, WI	US	43.0389	-87.9065	15
+Albuquerque	Albuquerque, NM	US	35.0844	-106.6504	18
+Tucson	Tucson, AZ	US	32.2226	-110.9747	18
+Sacramento	Sacramento, CA	US	38.5816	-121.4944	18
+Kansas City	Kansas City, MO	US	39.0997	-94.5786	20
+Atlanta	ATL;Atlanta, GA	US	33.7490	-84.3880	20
+Miami	Miami, FL	US	25.7617	-80.1918	15
+Fort Lauderdale	Fort Lauderdale, FL	US	26.1224	-80.1373	12
+Tampa	Tampa, FL	US	27.9506	-82.4572	18
+Orlando	Orlando, FL	US	28.5383	-81.3792	18
+Raleigh	Raleigh, NC	US	35.7796	-78.6382	18
+Minneapolis	Minneapolis, MN	US	44.9778	-93.2650	15
+New Orleans	NOLA;New Orleans, LA	US	29.9511	-90.0715	15
+Cleveland	Cleveland, OH	US	41.4993	-81.6944	15
+Pittsburgh	Pittsburgh, PA	US	40.4406	-79.9959	15
+Cincinnati	Cincinnati, OH	US	39.1031	-84.5120	15
+St. Louis	Saint Louis;St. Louis, MO	US	38.6270	-90.1994	15
+Salt Lake City	SLC;Salt Lake City, UT	US	40.7608	-111.8910	15
+Honolulu	Honolulu, HI	US	21.3069	-157.8583	15
+Oklahoma City	OKC;Oklahoma City, OK	US	35.4676	-97.5164	20
+Omaha	Omaha, NE	US	41.2565	-95.9345	15
+Boise	Boise, ID	US	43.6150	-116.2023	15
+Buffalo	Buffalo, NY	US	42.8864	-78.8784	12
+Richmond	Richmond, VA	US	37.5407	-77.4360	15
+Birmingham, AL	Birmingham, Alabama	US	33.5186	-86.8104	15
+Toronto	Toronto, ON	CA	43.6532	-79.3832	20
+Montreal	Montreal, QC	CA	45.5017	-73.5673	18
+Vancouver	Vancouver, BC	CA	49.2827	-123.1207	15
+Calgary	Calgary, AB	CA	51.0447	-114.0719	20
+Edmonton	Edmonton, AB	CA	53.5461	-113.4938	20
+Ottawa	Ottawa, ON	CA	45.4215	-75.6972	18
+Winnipeg	Winnipeg, MB	CA	49.8951	-97.1384	15
+Quebec City	Québec;Quebec City, QC;Ville de Québec	CA	46.8139	-71.2080	15
+Mexico City	CDMX;Ciudad de México	MX	19.4326	-99.1332	25
+Guadalajara		MX	20.6597	-103.3496	18
+Monterrey		MX	25.6866	-100.3161	18
+São Paulo		BR	-23.5505	-46.6333	25
+Rio de Janeiro	Rio	BR	-22.9068	-43.1729	20
+Buenos Aires		AR	-34.6037	-58.3816	20
+Santiago	Santiago de Chile	CL	-33.4489	-70.6693	20
+Bogotá		CO	4.7110	-74.0721	20
+Medellín		CO	6.2442	-75.5812	15
+Lima		PE	-12.0464	-77.0428	20
+Montevideo		UY	-34.9011	-56.1645	15
+London	London, UK;London, England;Greater London;City of London	GB	51.5074	-0.1278	20
+Manchester	Manchester, UK	GB	53.4808	-2.2426	15
+Birmingham	Birmingham, UK	GB	52.4862	-1.8904	15
+Leeds		GB	53.8008	-1.5491	12
+Liverpool		GB	53.4084	-2.9916	12
+Bristol	Bristol, UK	GB	51.4545	-2.5879	12
+Glasgow		GB	55.8642	-4.2518	12
+Edinburgh		GB	55.9533	-3.1883	12
+Cardiff		GB	51.4816	-3.1791	12
+Belfast		GB	54.5973	-5.9301	12
+Cambridge	Cambridge, UK	GB	52.2053	0.1218	8
+Oxford	Oxford, UK	GB	51.7520	-1.2577	8
+Dublin	Dublin, Ireland	IE	53.3498	-6.2603	15
+Paris		FR	48.8566	2.3522	15
+Lyon		FR	45.7640	4.8357	12
+Marseille		FR	43.2965	5.3698	15
+Berlin		DE	52.5200	13.4050	20
+Munich	München;Muenchen	DE	48.1351	11.5820	15
+Hamburg		DE	53.5511	9.9937	15
+Frankfurt	Frankfurt am Main	DE	50.1109	8.6821	12
+Cologne	Köln;Koeln	DE	50.9375	6.9603	12
+Düsseldorf	Duesseldorf	DE	51.2277	6.7735	12
+Stuttgart		DE	48.7758	9.1829	12
+Leipzig		DE	51.3397	12.3731	12
+Amsterdam		NL	52.3676	4.9041	12
+Rotterdam		NL	51.9244	4.4777	12
+The Hague	Den Haag	NL	52.0705	4.3007	10
+Utrecht		NL	52.0907	5.1214	10
+Brussels	Bruxelles;Brussel	BE	50.8503	4.3517	12
+Antwerp	Antwerpen	BE	51.2194	4.4025	10
+Luxembourg	Luxembourg City	LU	49.6116	6.1319	8
+Madrid		ES	40.4168	-3.7038	18
+Barcelona		ES	41.3874	2.1686	15
+Valencia	Valencia, Spain	ES	39.4699	-0.3763	12
+Seville	Sevilla	ES	37.3891	-5.9845	12
+Lisbon	Lisboa	PT	38.7223	-9.1393	15
+Porto	Oporto	PT	41.1579	-8.6291	12
+Rome	Roma	IT	41.9028	12.4964	18
+Milan	Milano	IT	45.4642	9.1900	15
+Naples	Napoli	IT	40.8518	14.2681	12
+Turin	Torino	IT	45.0703	7.6869	12
+Florence	Firenze	IT	43.7696	11.2558	10
+Vienna	Wien	AT	48.2082	16.3738	15
+Zurich	Zuerich	CH	47.3769	8.5417	12
+Geneva	Genève	CH	46.2044	6.1432	10
+Basel		CH	47.5596	7.5886	8
+Copenhagen	København;Kobenhavn	DK	55.6761	12.5683	15
+Stockholm		SE	59.3293	18.0686	15
+Gothenburg	Göteborg	SE	57.7089	11.9746	12
+Oslo		NO	59.9139	10.7522	15
+Helsinki		FI	60.1699	24.9384	15
+Reykjavik		IS	64.1466	-21.9426	10
+Warsaw	Warszawa	PL	52.2297	21.0122	15
+Kraków	Cracow	PL	50.0647	19.9450	12
+Wrocław	Wroclaw	PL	51.1079	17.0385	10
+Prague	Praha	CZ	50.0755	14.4378	15
+Budapest		HU	47.4979	19.0402	15
+Bucharest	București	RO	44.4268	26.1025	15
+Sofia		BG	42.6977	23.3219	12
+Athens	Athina	GR	37.9838	23.7275	18
+Istanbul		TR	41.0082	28.9784	25
+Ankara		TR	39.9334	32.8597	18
+Kyiv	Kiev	UA	50.4501	30.5234	18
+Tallinn		EE	59.4370	24.7536	10
+Riga		LV	56.9496	24.1052	10
+Vilnius		LT	54.6872	25.2797	10
+Belgrade	Beograd	RS	44.7866	20.4489	12
+Zagreb		HR	45.8150	15.9819	12
+Ljubljana		SI	46.0569	14.5058	8
+Moscow	Moskva	RU	55.7558	37.6173	25
+Dubai		AE	25.2048	55.2708	20
+Abu Dhabi		AE	24.4539	54.3773	15
+Doha		QA	25.2854	51.5310	15
+Riyadh		SA	24.7136	46.6753	20
+Tel Aviv	Tel Aviv-Yafo;Tel-Aviv	IL	32.0853	34.7818	12
+Jerusalem		IL	31.7683	35.2137	10
+Amman		JO	31.9454	35.9284	12
+Beirut		LB	33.8938	35.5018	8
+Tehran		IR	35.6892	51.3890	20
+Cairo		EG	30.0444	31.2357	20
+Casablanca		MA	33.5731	-7.5898	15
+Lagos		NG	6.5244	3.3792	20
+Accra		GH	5.6037	-0.1870	15
+Nairobi		KE	-1.2921	36.8219	15
+Johannesburg	Joburg;Jozi	ZA	-26.2041	28.0473	20
+Cape Town		ZA	-33.9249	18.4241	15
+Tokyo		JP	35.6762	139.6503	25
+Osaka		JP	34.6937	135.5023	18
+Kyoto		JP	35.0116	135.7681	10
+Seoul		KR	37.5665	126.9780	20
+Busan		KR	35.1796	129.0756	15
+Beijing	Peking	CN	39.9042	116.4074	25
+Shanghai		CN	31.2304	121.4737	25
+Shenzhen		CN	22.5431	114.0579	20
+Guangzhou		CN	23.1291	113.2644	20
+Hong Kong	HK	HK	22.3193	114.1694	15
+Taipei		TW	25.0330	121.5654	15
+Singapore		SG	1.3521	103.8198	20
+Kuala Lumpur	KL	MY	3.1390	101.6869	18
+Bangkok		TH	13.7563	100.5018	20
+Jakarta		ID	-6.2088	106.8456	20
+Manila	Metro Manila	PH	14.5995	120.9842	18
+Ho Chi Minh City	Saigon;HCMC	VN	10.8231	106.6297	18
+Hanoi	Ha Noi	VN	21.0278	105.8342	15
+Mumbai	Bombay	IN	19.0760	72.8777	20
+Delhi	New Delhi	IN	28.6139	77.2090	25
+Bangalore	Bengaluru	IN	12.9716	77.5946	20
+Hyderabad	Hyderabad, India	IN	17.3850	78.4867	20
+Chennai	Madras	IN	13.0827	80.2707	20
+Pune		IN	18.5204	73.8567	15
+Kolkata	Calcutta	IN	22.5726	88.3639	18
+Karachi		PK	24.8607	67.0011	20
+Lahore		PK	31.5204	74.3587	18
+Dhaka		BD	23.8103	90.4125	15
+Sydney	Sydney, NSW	AU	-33.8688	151.2093	20
+Melbourne	Melbourne, VIC	AU	-37.8136	144.9631	20
+Brisbane	Brisbane, QLD	AU	-27.4698	153.0251	18
+Perth	Perth, WA	AU	-31.9505	115.8605	18
+Adelaide		AU	-34.9285	138.6007	15
+Canberra		AU	-35.2809	149.1300	12
+Gold Coast		AU	-28.0167	153.4000	15
+Auckland		NZ	-36.8485	174.7633	15
+Wellington		NZ	-41.2865	174.7762	10
+Christchurch		NZ	-43.5321	172.6362	12

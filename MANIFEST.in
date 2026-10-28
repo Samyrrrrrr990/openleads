@@ -1,5 +1,7 @@
 # Ship the pre-built local dashboard so end users need no Node/build step.
 recursive-include openleads/web/static *
+# Data files read at runtime: given names (person-name gate), metro gazetteer.
+include openleads/discover/given_names.txt openleads/discover/places.tsv
 
 # Docs, license, changelog in the source distribution.
 include README.md CHANGELOG.md LICENSE COMMERCIAL-LICENSE.md
