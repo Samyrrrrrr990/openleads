@@ -33,6 +33,15 @@ def test_profile_mapping_omits_empty_and_unrelated_fields():
     assert exporters.hubspot_properties({"first_name": " ", "last_name": None, "phone": 123}) == {}
 
 
+def test_crm_rows_with_a_single_name_field_keep_the_name():
+    # `openleads export hubspot` exports CRM rows, which carry "name", not first/last.
+    assert exporters.hubspot_properties({"name": "Ada  Lovelace Byron", "organization": "Example Co"}) == {
+        "firstname": "Ada", "lastname": "Lovelace Byron", "company": "Example Co"}
+    assert exporters.hubspot_properties({"name": "Ada"}) == {"firstname": "Ada"}
+    assert exporters.hubspot_properties({"name": "Ada Lovelace", "first_name": "Augusta"}) == {
+        "firstname": "Augusta"}
+
+
 @pytest.mark.parametrize("token", [None, "", " \t "])
 def test_missing_token_never_calls_http(monkeypatch, token):
     monkeypatch.setattr(exporters.settings, "get", lambda key: token)

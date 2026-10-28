@@ -9,6 +9,7 @@ from typing import Iterator
 from openleads._http import get_json
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
+from openleads.sources.github import _usable_domain
 
 API = "https://huggingface.co/api"
 _HANDLE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,95}")
@@ -23,7 +24,8 @@ def _url(value) -> str:
     value = _text(value)
     try:
         parsed = urllib.parse.urlsplit(value)
-        if parsed.scheme in {"https", "http"} and parsed.hostname and not parsed.username and not parsed.password:
+        if (parsed.scheme in {"https", "http"} and parsed.hostname
+                and not parsed.username and not parsed.password):
             return value
     except ValueError:
         pass
@@ -86,7 +88,9 @@ def parse_profile(username: str, profile: dict | None) -> Entity | None:
     if github and urllib.parse.urlsplit(github).hostname in {"github.com", "www.github.com"}:
         links["github"] = github
     return Entity(
-        full_name=name, title="ML contributor", organization=org, domain="",
+        # A personal site on its own domain is somewhere an email can be found;
+        # shared hosts (github.io, huggingface.co, ...) are not.
+        full_name=name, title="ML contributor", organization=org, domain=_usable_domain("", home),
         website=home or links["huggingface"], location=_text(profile.get("location")),
         links=links, extra={"vertical": "ML developers", "huggingface": username}, source="huggingface",
     )

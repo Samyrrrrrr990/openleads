@@ -41,6 +41,7 @@ SUITE = [
     "plumbers in Denver",
 ]
 
+
 @dataclass
 class QueryScore:
     query: str

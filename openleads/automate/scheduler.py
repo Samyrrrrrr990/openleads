@@ -185,7 +185,7 @@ def _uninstall_launchd() -> dict:
 
 def _install_windows(hour, minute, every_minutes) -> dict:
     r = subprocess.run(schtasks_args(hour, minute, every_minutes=every_minutes),
-                       capture_output=True, text=True, check=False)
+                       capture_output=True, text=True, errors="replace", check=False)
     ok = r.returncode == 0
     return {"ok": ok, "kind": "schtasks", "path": WIN_TASK,
             "detail": f"task installed — {_describe(hour, minute, every_minutes)}" if ok
@@ -194,7 +194,7 @@ def _install_windows(hour, minute, every_minutes) -> dict:
 
 def _uninstall_windows() -> dict:
     r = subprocess.run(["schtasks", "/Delete", "/F", "/TN", WIN_TASK], capture_output=True,
-                       text=True, check=False)
+                       text=True, errors="replace", check=False)
     return {"ok": r.returncode == 0, "kind": "schtasks",
             "detail": "task removed" if r.returncode == 0 else "no task installed"}
 

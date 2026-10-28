@@ -100,3 +100,19 @@ def test_empty_query_or_zero_count_does_not_fetch(query):
 def test_http_failure_degrades_to_empty_results():
     with patch("openleads.sources.huggingface.get_json", return_value=None):
         assert list(HuggingFaceSource().search(Query(keyword="bert"))) == []
+
+
+def test_personal_site_on_its_own_domain_becomes_the_email_domain():
+    own = parse_profile("alice", {"user": "alice", "fullname": "Alice Example",
+                                  "website": "https://alice.example/about"})
+    shared = parse_profile("bob", {"user": "bob", "fullname": "Bob Example",
+                                   "website": "https://bob.github.io"})
+    assert own is not None and own.domain == "alice.example"
+    assert shared is not None and shared.domain == ""
+
+
+def test_ml_builder_searches_route_to_hugging_face():
+    from openleads.federation import plan
+    assert "huggingface" in plan(Query(text="hugging face model authors"))
+    assert "huggingface" in plan(Query(text="ML engineers in Berlin"))
+    assert "huggingface" not in plan(Query(text="dentists in Austin", location="Austin"))

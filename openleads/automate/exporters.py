@@ -159,8 +159,16 @@ def hubspot_properties(lead: dict) -> dict:
     fields = {"first_name": "firstname", "last_name": "lastname", "organization": "company",
               "title": "jobtitle", "phone": "phone", "website": "website",
               "city": "city", "country": "country"}
-    return {dest: lead[src].strip() for src, dest in fields.items()
-            if isinstance(lead.get(src), str) and lead[src].strip()}
+    props = {dest: lead[src].strip() for src, dest in fields.items()
+             if isinstance(lead.get(src), str) and lead[src].strip()}
+    # CRM rows (``openleads export hubspot``) carry a single "name" field.
+    name = lead.get("name")
+    if "firstname" not in props and "lastname" not in props and isinstance(name, str) and name.strip():
+        first, _, last = name.strip().partition(" ")
+        props["firstname"] = first
+        if last.strip():
+            props["lastname"] = last.strip()
+    return props
 
 
 class _HubSpotNoRedirect(urllib.request.HTTPRedirectHandler):

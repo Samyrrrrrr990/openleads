@@ -39,6 +39,8 @@ _RESEARCH = ("researcher", "researchers", "professor", "academic", "scientist",
              "scientists", "phd", "scholar", "postdoc", "publication")
 _HEALTH = ("doctor", "doctors", "physician", "dentist", "dentists", "clinic",
            "nurse", "pediatric", "dermatolog", "cardiolog", "therapist", "surgeon")
+_ML = ("hugging face", "huggingface", "ml engineer", "machine learning engineer",
+       "ml developer", "model author", "dataset author", "llm developer", "ai engineer")
 _STARTUP = ("founder", "founders", "startup", "startups", "co-founder", "cofounder",
             "ceo", "cto", "yc", "y combinator", "saas", "indie hacker", "maker")
 _COMPANY = ("company", "companies", "firm", "firms", "brand", "brands", "enterprise",
@@ -105,7 +107,7 @@ def plan(query: Query) -> list[str]:
                 picks.append(n)
 
     # A place + a business-ish category → local businesses (the headline path).
-    if loc and (_has(text, _LOCAL) or not _has(text, _DEV + _RESEARCH + _STARTUP)):
+    if loc and (_has(text, _LOCAL) or not _has(text, _DEV + _RESEARCH + _STARTUP + _ML)):
         add("local")
     # Health + a place → local clinics first (they publish websites, so they're
     # reachable). NPI records carry no email, so they only lead when there's no place.
@@ -115,12 +117,14 @@ def plan(query: Query) -> list[str]:
         add("github")
     if _has(text, _RESEARCH):
         add("openalex")
+    if _has(text, _ML):
+        add("huggingface")
     if _has(text, _STARTUP):
         add("yc", "hn")
     if _has(text, _COMPANY) or (query.industry and not loc):
         add("companies", "edgar")
     # A location with no developer/researcher target is a local-business search.
-    if loc and not (set(picks) & {"github", "openalex"}):
+    if loc and not (set(picks) & {"github", "openalex", "huggingface"}):
         add("local")
     # Sensible default when nothing matched: startups + hiring + companies.
     if not picks:

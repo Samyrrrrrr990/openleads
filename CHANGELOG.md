@@ -13,9 +13,13 @@ All notable changes to OpenLeads are documented here. Format loosely follows
   private app token (`hubspot_token` / `HUBSPOT_TOKEN`). Populated profile fields
   update existing contacts without clearing blanks; failures report confirmed
   progress. Available from the CLI, recipes, watchers and workflow export menus.
+- `huggingface` source: authors of public Hugging Face models and datasets, with
+  their personal site's domain for the email search. Searches for ML builders
+  ("ML engineers", "hugging face model authors") include it automatically.
 
 ### Fixed
-- Windows `schedule status` replaces undecodable Task Scheduler output instead of emitting a UnicodeDecodeError traceback.
+- Windows `schedule on`, `schedule off` and `schedule status` replace undecodable
+  Task Scheduler output instead of failing with a UnicodeDecodeError.
 
 ## [5.0.0] - 2026-10-15
 
