@@ -12,6 +12,9 @@ learned patterns, SPF/DMARC) and emits a **tier**:
               don't send unless the user opts in.
 * ``bad``   — no MX / disposable / can't form an address → drop.
 
+A DNS lookup that *failed* (``mx_unknown``) is not "no MX": it lands in ``risky``
+with a low likelihood and a "couldn't check the mail server" reason.
+
 The bias is deliberate: a missing or errored signal never *adds* confidence, and a
 pattern guess never reaches ``safe`` without corroboration. Honest gating is what
 makes real-world deliverability beat tools that label every guess "valid".
@@ -69,6 +72,19 @@ def assess(s: dict) -> dict:
     on the same shape is a sound, sendable bet — which is exactly how Hunter works.
     """
     reasons: list[str] = []
+
+    # DNS lookups failed: "couldn't check" is not "no mail server". Keep the lead as
+    # risky (a re-run will settle it) instead of dropping it as undeliverable.
+    if s.get("mx_unknown") and not s.get("mx_exists"):
+        if s.get("disposable"):
+            return _verdict(0, "bad", "none", ["disposable / throwaway domain"])
+        if s.get("no_candidates"):
+            return _verdict(0, "bad", "none", ["couldn't form an address from the name"])
+        why = "couldn't check the mail server (DNS lookup failed) — re-run to confirm"
+        if s.get("groundtruth_exact"):
+            return _verdict(60, "risky", "pattern_guess",
+                            ["found publicly (ground-truth address)", why], pct=60)
+        return _verdict(30, "risky", "pattern_guess", [why], s.get("role_account"), pct=30)
 
     # Hard fails first.
     if not s.get("mx_exists"):

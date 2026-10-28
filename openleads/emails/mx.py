@@ -4,6 +4,10 @@ MX lookups via DNS-over-HTTPS, cross-checked across multiple resolvers.
 Using two independent resolvers (Google + Cloudflare) lets us (a) survive one
 provider being down and (b) award extra confidence when they *agree* on the
 mail exchangers for a domain.
+
+A failed lookup is reported as ``status: "error"`` — never as "no MX" — so a DNS
+hiccup can't mark every address at a domain undeliverable (and cache that for a
+week).
 """
 from __future__ import annotations
 
@@ -58,21 +62,54 @@ def parse_mx(doh_json: dict) -> list[str]:
     return [h for _, h in mxs]
 
 
+def _answer(doh_json) -> tuple:
+    """``(status, hosts)`` for one resolver's DoH JSON reply (pure).
+
+    DNS ``Status`` 0 is NOERROR (MX hosts, or ``nomx`` when there are none), 3 is
+    NXDOMAIN (the domain does not exist). Anything else — SERVFAIL, REFUSED, a
+    reply that isn't DoH JSON — means *we don't know*, which is not the same as
+    "no mail server".
+    """
+    if not isinstance(doh_json, dict):
+        return "error", []
+    st = doh_json.get("Status", 0)
+    if st == 3:
+        return "nxdomain", []
+    if st != 0:
+        return "error", []
+    hosts = parse_mx(doh_json)
+    return ("ok" if hosts else "nomx"), hosts
+
+
 def lookup(domain: str, timeout: int = 15) -> dict:
     """Resolve MX for ``domain`` across all resolvers.
 
-    Returns ``{"hosts": [...], "resolvers_ok": int, "agreement": bool}``.
+    Returns ``{"hosts", "resolvers_ok", "agreement", "status", "errors"}``.
 
     * ``hosts`` is the merged, priority-stable host list.
     * ``resolvers_ok`` counts resolvers that returned at least one MX.
     * ``agreement`` is True when ≥2 resolvers returned the *same* top host set.
+    * ``status`` is ``ok`` (MX found), ``nomx`` (the domain answers but publishes no
+      MX), ``nxdomain`` (no such domain) or ``error`` (no resolver gave an answer —
+      a network/DNS failure, which callers must not treat or cache as "no MX").
+    * ``errors`` lists what went wrong per resolver (empty when all answered).
     """
     per_resolver: dict[str, list[str]] = {}
+    statuses: dict[str, str] = {}
+    errors: list[str] = []
     for name, tmpl in RESOLVERS.items():
+        url = tmpl.format(name=domain)
         try:
-            per_resolver[name] = parse_mx(_query(tmpl.format(name=domain), timeout))
-        except Exception:
-            per_resolver[name] = []
+            reply = _query(url, timeout)
+        except Exception as e:  # noqa: BLE001 — any failure is "no answer"
+            statuses[name], per_resolver[name] = "error", []
+            errors.append(f"{name}: {_http._reason(e)}")
+            _http._record(url, _http._reason(e))
+            continue
+        statuses[name], per_resolver[name] = _answer(reply)
+        if statuses[name] == "error":
+            st = reply.get("Status") if isinstance(reply, dict) else "?"
+            errors.append(f"{name}: DNS status {st}")
 
     ok = {n: h for n, h in per_resolver.items() if h}
     # Merge preserving the first resolver's priority order, then append novel hosts.
@@ -91,7 +128,23 @@ def lookup(domain: str, timeout: int = 15) -> dict:
             for j in range(i + 1, len(host_sets))
         )
 
-    return {"hosts": merged, "resolvers_ok": len(ok), "agreement": agreement}
+    seen = set(statuses.values())
+    if merged:
+        status = "ok"
+    elif "nxdomain" in seen:
+        status = "nxdomain"
+    elif "nomx" in seen:
+        status = "nomx"
+    else:
+        status = "error"
+    return {"hosts": merged, "resolvers_ok": len(ok), "agreement": agreement,
+            "status": status, "errors": errors}
+
+
+def is_unknown(info: dict | None) -> bool:
+    """True when an MX lookup result means "couldn't check", not "no mail server"."""
+    info = info or {}
+    return info.get("status") == "error" and not info.get("hosts")
 
 
 def parse_txt(doh_json: dict) -> list[str]:
@@ -131,26 +184,37 @@ def dns_health(domain: str, cache=None, timeout: int = 15) -> dict:
 
     spf_present = dmarc_present = False
     dmarc_policy = ""
-    try:
-        for txt in parse_txt(_query(TXT_RESOLVER.format(name=domain), timeout)):
-            if txt.lower().startswith("v=spf1"):
-                spf_present = True
-    except Exception:
-        pass
-    try:
-        for txt in parse_txt(_query(TXT_RESOLVER.format(name=f"_dmarc.{domain}"), timeout)):
-            low = txt.lower()
-            if low.startswith("v=dmarc1"):
-                dmarc_present = True
-                for part in low.split(";"):
-                    part = part.strip()
-                    if part.startswith("p="):
-                        dmarc_policy = part[2:].strip()
-    except Exception:
-        pass
+    failed = False
+
+    def txt_records(name: str) -> list[str]:
+        nonlocal failed
+        try:
+            reply = _query(TXT_RESOLVER.format(name=name), timeout)
+        except Exception:  # noqa: BLE001 — a failed lookup is "unknown", not "absent"
+            failed = True
+            return []
+        # NOERROR / NXDOMAIN are answers; SERVFAIL & co. mean we couldn't tell.
+        if not isinstance(reply, dict) or reply.get("Status", 0) not in (0, 3):
+            failed = True
+            return []
+        return parse_txt(reply)
+
+    for txt in txt_records(domain):
+        if txt.lower().startswith("v=spf1"):
+            spf_present = True
+    for txt in txt_records(f"_dmarc.{domain}"):
+        low = txt.lower()
+        if low.startswith("v=dmarc1"):
+            dmarc_present = True
+            for part in low.split(";"):
+                part = part.strip()
+                if part.startswith("p="):
+                    dmarc_policy = part[2:].strip()
 
     result = {"spf_present": spf_present, "dmarc_present": dmarc_present,
               "dmarc_policy": dmarc_policy}
-    if cache is not None:
+    # A lookup that failed is retried next time instead of pinning "no SPF/DMARC"
+    # on the domain for a week.
+    if cache is not None and not failed:
         cache.set("mx", f"dnshealth:{domain}", result)
     return result
