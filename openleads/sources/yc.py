@@ -11,9 +11,9 @@ import html as ihtml
 import json
 import random
 import re
-from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
+from openleads._concurrency import ordered_map
 from openleads._http import get_json, get_text
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
@@ -144,15 +144,12 @@ class YCSource(Source):
                             cache=self.cache, ttl_ns="dataset")
             return c, domain, page
 
-        # Fetch founder pages concurrently, but in bounded chunks so an early stop
-        # (engine has enough leads) doesn't fetch the entire 400-company tail. The
-        # chunk scales with the request so a small ``count`` doesn't over-fetch a
-        # big tail. The old sequential 30 s-timeout fetch per company was the stall.
-        chunk = min(12, max(4, query.count * 2))
-        for start in range(0, len(usable), chunk):
-            window = usable[start:start + chunk]
-            with ThreadPoolExecutor(max_workers=8) as ex:
-                pages = list(ex.map(fetch_page, window))
+        # Fetch founder pages concurrently but lazily (a bounded in-order window), so
+        # an early stop (enough leads, time budget) neither fetches the 400-company
+        # tail nor waits for in-flight pages. The window scales with the request.
+        workers = min(6, max(2, query.count))
+        pages = ordered_map(fetch_page, usable, workers)
+        try:
             for c, domain, page in pages:
                 exec_ = pick_exec(parse_founders(page or ""))
                 if not exec_:
@@ -173,3 +170,5 @@ class YCSource(Source):
                     },
                     source=self.name,
                 )
+        finally:
+            pages.close()

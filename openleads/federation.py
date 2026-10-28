@@ -21,11 +21,10 @@ unchanged; everything downstream (email waterfall, scoring, output) is reused.
 from __future__ import annotations
 
 import re
-from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace as _dc_replace
 from typing import Iterator
 
+from openleads._concurrency import BudgetExhausted, ordered_map
 from openleads.discover.people import find_people
 from openleads.emails import groundtruth
 from openleads.emails.permute import is_role_account
@@ -187,16 +186,25 @@ def expand_company(ent: Entity, cache=None, discover: bool = True,
 
 
 def _roundrobin(streams) -> Iterator:
-    """Yield from each iterable in turn so results stay diverse as they arrive."""
+    """Yield from each iterable in turn so results stay diverse as they arrive.
+
+    A stream that raises is dropped (the others keep going): one broken source
+    must never end the whole search.
+    """
     streams = [iter(s) for s in streams]
     while streams:
         nxt = []
         for s in streams:
             try:
-                yield next(s)
-                nxt.append(s)
+                item = next(s)
             except StopIteration:
                 continue
+            except BudgetExhausted:
+                return
+            except Exception:  # noqa: BLE001 — isolate a failing source
+                continue
+            yield item
+            nxt.append(s)
         streams = nxt
 
 
@@ -223,35 +231,27 @@ def search(query: Query, cache=None, db=None, discover_people: bool | None = Non
             return [ent]
 
     seen: set[tuple] = set()
-    for group in _ordered_parallel(expand, _roundrobin(streams), EXPAND_WORKERS):
-        for cand in group:
-            key = (cand.domain, (cand.full_name or "").lower().strip())
-            if key in seen:
-                continue
-            seen.add(key)
-            yield cand
-
-
-def _ordered_parallel(fn, items, workers: int) -> Iterator:
-    """``map(fn, items)`` on a thread pool, in order, pulling ``items`` lazily.
-
-    At most ``workers * 2`` calls are in flight, so a consumer that stops early
-    (enough leads, time budget hit) doesn't leave dozens of site crawls running.
-    """
-    it = iter(items)
-    pending: deque = deque()
-    ex = ThreadPoolExecutor(max_workers=max(1, workers))
+    groups = ordered_map(expand, _roundrobin(streams), EXPAND_WORKERS)
     try:
-        for item in it:
-            pending.append(ex.submit(fn, item))
-            if len(pending) >= workers * 2:
-                break
-        while pending:
-            yield pending.popleft().result()
-            nxt = next(it, None)
-            if nxt is not None:
-                pending.append(ex.submit(fn, nxt))
+        for group in groups:
+            for cand in group:
+                key = (cand.domain, (cand.full_name or "").lower().strip())
+                if key in seen:
+                    continue
+                seen.add(key)
+                yield cand
+    except BudgetExhausted:
+        return
     finally:
-        for f in pending:
-            f.cancel()
-        ex.shutdown(wait=False)
+        groups.close()
+        for s in streams:
+            close = getattr(s, "close", None)
+            if close is not None:
+                try:
+                    close()
+                except Exception:  # noqa: BLE001 — cleanup only
+                    pass
+
+
+# Back-compat name (tests and plugins import it from here).
+_ordered_parallel = ordered_map

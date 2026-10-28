@@ -9,16 +9,21 @@ v3.1 makes it **fast and honest**: email resolution runs concurrently (so a batc
 of MX/SMTP probes overlaps instead of blocking one-by-one), the scan bails early
 when a source yields nothing usable (no more multi-minute silent waits), and any
 underlying HTTP failure is surfaced instead of vanishing.
+
+v5.1 makes the time budget **a real deadline**: entities are pulled lazily into a
+small in-order window, every network call is clamped to the deadline, and when it
+passes the run keeps what already finished and returns.
 """
 from __future__ import annotations
 
-import itertools
+import math
 import threading
-import time
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Callable
 
-from openleads import _http, federation
+from openleads import _concurrency, _http, federation
 from openleads.emails.permute import is_free_provider
 from openleads.emails.resolve import find_email
 from openleads.insights import companysize, phones, titles
@@ -152,15 +157,21 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     "deliverable only" — it keeps only ``safe``-tier leads the engine is confident
     won't bounce.
 
-    Email resolution runs concurrently in ordered windows; the scan stops early
-    when a source clearly can't satisfy the request, and HTTP failures surface.
+    Entities are pulled from the source stream lazily and resolved concurrently in
+    a small in-order window; a lead is emitted as soon as the head of the window is
+    ready. ``query.budget`` is a real deadline: every network call is clamped to
+    it, and when it passes the run keeps whatever already finished (in stream
+    order), cancels the rest and returns — about a second after the budget at most.
     """
     use_cache = cache if query.use_cache else None
     _http.clear_errors()
-    gen, label = _entity_stream(query, use_cache, db, on_progress)
-
     budget = getattr(query, "budget", 0) or 0
-    deadline = time.monotonic() + budget if budget > 0 else None
+    with _concurrency.deadline(budget):
+        return _run(query, use_cache, db, on_progress, budget)
+
+
+def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget) -> list[Lead]:
+    gen, label = _entity_stream(query, use_cache, db, on_progress)
     profiles: dict = {}
     plock = threading.Lock()
 
@@ -170,7 +181,7 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
         with plock:
             if domain in profiles:
                 return profiles[domain]
-        if deadline and deadline - time.monotonic() < PROFILE_RESERVE_SECONDS:
+        if _concurrency.remaining() < PROFILE_RESERVE_SECONDS:
             return None
         prof = fetch_profile(domain, cache=use_cache, timeout=PROFILE_TIMEOUT)
         with plock:
@@ -188,52 +199,136 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
         return EmailResult(**_DOMAINLESS), None
 
     leads: list[Lead] = []
-    scanned = with_domain = 0
+    state = {"scanned": 0, "with_domain": 0}
     futility = max(25, query.count * 4)   # give up if nothing usable after this many
     workers = max(1, min(8, query.count))
     gen = iter(gen)
+    pool = ThreadPoolExecutor(max_workers=workers)
+    window: deque = deque()                # (entity, future), in stream order
+    pulled = 0
+    exhausted = False
+    stop = ""
 
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        while len(leads) < query.count and scanned < query.max_companies:
-            if deadline and time.monotonic() >= deadline:
-                on_progress("phase", f"time budget ({budget}s) reached — returning "
-                            f"{len(leads)} lead(s); raise it with --budget")
+    def take(entity: Entity, outcome) -> None:
+        """Fold one resolved entity into the results (tier gates, profile, filters)."""
+        state["scanned"] += 1
+        result, profile = outcome
+        if entity.domain:
+            state["with_domain"] += 1
+            if result.tier == "bad":   # no MX / disposable / unguessable
+                return
+        if query.verified_only and result.tier != "safe":
+            return
+        lead = apply_profile(entity_to_lead(entity, result), profile)
+        if not matches_filters(lead, query):
+            return
+        leads.append(lead)
+        on_progress("lead", lead)
+
+    def take_finished_head() -> None:
+        while window and window[0][1].done() and len(leads) < query.count:
+            entity, fut = window.popleft()
+            outcome = _outcome(fut)
+            if outcome is not None:
+                take(entity, outcome)
+            if state["scanned"] % workers == 0:
+                _scan(on_progress, state, leads)
+
+    try:
+        while True:
+            take_finished_head()
+            if len(leads) >= query.count:
+                stop = "count_reached"
                 break
-            batch = list(itertools.islice(gen, workers))
-            if not batch:
+            if not leads and state["scanned"] >= futility:
+                stop = "futility"
                 break
-            scanned += len(batch)
-            # Resolve the whole batch (threads) before touching the DB on this
-            # thread → no worker/main-thread SQLite overlap. Order is preserved.
-            results = list(pool.map(resolve, batch))
-            for entity, (result, profile) in zip(batch, results):
-                if entity.domain:
-                    with_domain += 1
-                    if result.tier == "bad":   # no MX / disposable / unguessable
-                        continue
-                if query.verified_only and result.tier != "safe":
-                    continue
-                lead = apply_profile(entity_to_lead(entity, result), profile)
-                if not matches_filters(lead, query):
-                    continue
-                leads.append(lead)
-                on_progress("lead", leads[-1])
+            if _concurrency.remaining() <= 0:
+                stop = "budget"
+                break
+            # Keep the window full: pull the next entity from the stream lazily.
+            if not exhausted and len(window) < workers * 2 and pulled < query.max_companies:
+                try:
+                    entity = next(gen)
+                except StopIteration:
+                    exhausted = True
+                except _concurrency.BudgetExhausted:
+                    exhausted = True
+                except Exception as e:  # noqa: BLE001 — a broken stream ends the scan, not the run
+                    exhausted = True
+                    on_progress("phase", f"note: {label} stopped early ({type(e).__name__}: {e})")
+                else:
+                    pulled += 1
+                    window.append((entity, _concurrency.submit(pool, resolve, entity)))
+                continue
+            if not window:
+                stop = "max_companies" if pulled >= query.max_companies else "exhausted"
+                if _concurrency.remaining() <= 0:
+                    stop = "budget"
+                break
+            # Nothing to pull right now: wait for the head of the window.
+            left = _concurrency.remaining()
+            try:
+                window[0][1].result(timeout=None if left == math.inf else max(0.0, left))
+            except FutureTimeout:
+                stop = "budget"
+                break
+            except Exception:  # noqa: BLE001 — a failed resolve is skipped when taken
+                pass
+        if stop == "budget":
+            # Keep the work that already finished, in stream order; drop the rest.
+            for entity, fut in list(window):
                 if len(leads) >= query.count:
                     break
-            on_progress("scan", {"scanned": scanned, "found": len(leads),
-                                  "with_domain": with_domain})
-            if not leads and scanned >= futility:
-                if with_domain == 0:
-                    on_progress("phase", f"{label}: these records carry no email "
-                                "domain — try a source with emails (local · hn · yc).")
-                else:
-                    on_progress("phase", f"{label}: no deliverable matches — try "
-                                "without 'verified only' or a broader query.")
-                break
+                if fut.done():
+                    outcome = _outcome(fut)
+                    if outcome is not None:
+                        take(entity, outcome)
+            on_progress("phase", f"time budget ({budget}s) reached — returning "
+                        f"{len(leads)} lead(s); raise it with --budget")
+    finally:
+        for _, fut in window:
+            fut.cancel()
+        pool.shutdown(wait=False)
+        _close(gen)
 
+    _scan(on_progress, state, leads)
+    if stop == "futility":
+        if state["with_domain"] == 0:
+            on_progress("phase", f"{label}: these records carry no email "
+                        "domain — try a source with emails (local · hn · yc).")
+        else:
+            on_progress("phase", f"{label}: no deliverable matches — try "
+                        "without 'verified only' or a broader query.")
     _surface_errors(label, leads, on_progress)
     on_progress("phase", f"done: {len(leads)} lead(s)")
     return leads
+
+
+def _outcome(fut):
+    """A finished resolve future's ``(EmailResult, profile)``, or None if it failed."""
+    if fut.cancelled():
+        return None
+    try:
+        return fut.result(timeout=0)
+    except Exception:  # noqa: BLE001 — one entity that can't resolve is skipped
+        return None
+
+
+def _close(gen) -> None:
+    """Close a source stream now (its finally blocks cancel pending fetches)."""
+    close = getattr(gen, "close", None)
+    if close is None:
+        return
+    try:
+        close()
+    except Exception:  # noqa: BLE001 — cleanup must never mask the result
+        pass
+
+
+def _scan(on_progress: ProgressFn, state: dict, leads: list) -> None:
+    on_progress("scan", {"scanned": state["scanned"], "found": len(leads),
+                         "with_domain": state["with_domain"]})
 
 
 def _entity_stream(query: Query, cache, db, on_progress: ProgressFn):

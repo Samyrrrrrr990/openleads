@@ -116,5 +116,7 @@ class CompaniesSource(Source):
         limit = max(query.count * 4, 50)
         sparql = build_sparql(industry_qid, country_qid, limit)
         url = f"{WD_SPARQL}?{urllib.parse.urlencode({'query': sparql, 'format': 'json'})}"
-        data = get_json(url, headers=_UA, cache=self.cache, ttl_ns="dataset", timeout=40)
+        # 20s, not 40: a SPARQL query that slow is better retried next run than
+        # allowed to eat most of a search's time budget.
+        data = get_json(url, headers=_UA, cache=self.cache, ttl_ns="dataset", timeout=20)
         yield from parse_bindings(data or {})

@@ -21,8 +21,8 @@ and unit-tested.
 from __future__ import annotations
 
 import re
-from concurrent.futures import ThreadPoolExecutor
 
+from openleads._concurrency import BudgetExhausted, ordered_map
 from openleads._http import get_json, get_text
 from openleads.config import USER_AGENT, github_token
 
@@ -85,14 +85,19 @@ def harvest_from_site(domain: str, cache=None, timeout: int = 8) -> list[str]:
 
     found: list[str] = []
     seen: set[str] = set()
-    with ThreadPoolExecutor(max_workers=len(_SITE_PATHS)) as ex:
-        for text in ex.map(fetch, _SITE_PATHS):
+    pages = ordered_map(fetch, _SITE_PATHS, len(_SITE_PATHS))
+    try:
+        for text in pages:
             if not text:
                 continue
             for e in extract_emails(text, domain):
                 if e not in seen:
                     seen.add(e)
                     found.append(e)
+    except BudgetExhausted:
+        pass                      # out of time: keep what the finished pages gave
+    finally:
+        pages.close()
     return found
 
 
