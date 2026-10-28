@@ -47,7 +47,16 @@ openleads demo --port 8788        # a seeded, invented workspace to develop agai
 - The CSP forbids inline scripts and handlers: wire events with
   `addEventListener` / `onAct`, never `onclick=`.
 - Colors and spacing come from the tokens at the top of `styles.css`; define
-  anything new for both light and dark.
+  anything new for both light and dark. The look is deliberately quiet: ink on
+  paper, one accent (`--accent`) only for focus and selection, and color only
+  where it means state (deliverable, risky, bounced, overdue). Prefer an open
+  section with a rule over a new box, plain text over a pill, and no shadows
+  except on things that float (menus, dialogs, drawers, toasts).
+- Show an email's evidence with `ui.mark(evidence, tier)` (shape = found,
+  pattern or guessed; color = deliverability) rather than inventing a badge, and
+  a stage with `ui.stage(key)`.
+- The typeface (Atkinson Hyperlegible) ships in `static/fonts/`; don't add web
+  fonts or icon fonts from a CDN, the CSP blocks them anyway.
 - `tests/test_web.py` fails if the shell imports a module the server can't serve,
   and CI syntax-checks every module with `node --check`.
 
