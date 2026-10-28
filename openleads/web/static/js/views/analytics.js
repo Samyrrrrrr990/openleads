@@ -52,7 +52,7 @@ router.register("analytics", {
     const seqs = s.sequences || [];
     root.innerHTML = `<section class="page">
       <div class="head"><div><div class="head__title"><h1>Analytics</h1></div>
-        <p class="head__sub">Computed locally from your CRM and send log. Click any bar to see the people behind it.</p></div></div>
+        <p class="head__sub">Click a bar to see the people behind it.</p></div></div>
       <div class="grid grid-4">
         ${tile("Contacts", fmt.num(a.total_leads), `${fmt.num(a.deliverable)} deliverable`, "users")}
         ${tile("Emails sent", fmt.num(e.sent_30d), `last 30 days · ${fmt.num(e.sent_today)} today`, "send")}

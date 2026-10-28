@@ -39,7 +39,7 @@ function groupHtml(g) {
   return `<div class="card"><div class="card__head"><div><h3>${esc(title)}</h3><p class="hint" style="margin-top:2px">${esc(desc)}</p></div></div>
     <div class="card__body stack">${items.map((s) => `
       <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:center">
-        <div><label for="set-${s.key}" class="t-strong" style="font-weight:600">${esc(s.key.replace(/_/g, " "))}</label>
+        <div><label for="set-${s.key}" class="t-strong" style="font-weight:600">${esc(s.key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()))}</label>
           <div class="hint">${esc(s.description)}${s.source === "env" ? ' <span class="badge badge--sm badge--info">from env</span>' : ""}</div></div>
         <div>${control(s)}</div></div>`).join('<div class="divider" style="margin:2px 0"></div>')}
     </div>
@@ -54,7 +54,7 @@ function render() {
   const extra = extraTabs.find((t) => t.key === TAB);
   ROOT.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Settings</h1></div>
-      <p class="head__sub">Configure everything here — no dotfiles. Saved to <code>~/.openleads</code>; secrets are masked and never sent back to the browser.</p></div>
+      <p class="head__sub">Saved to <code>~/.openleads</code> on this machine. Passwords and keys are never sent back to the browser.</p></div>
       <div class="head__actions"><a class="btn" href="#/doctor">${ico("doctor")} Run Doctor</a></div></div>
     <div class="tabs" style="border-bottom:1px solid var(--line);margin-bottom:16px">${tabs.map(([k, l]) =>
       `<button type="button" class="${TAB === k ? "is-on" : ""}" data-act="tab" data-k="${k}">${esc(l)}</button>`).join("")}</div>

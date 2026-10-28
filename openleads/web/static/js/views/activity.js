@@ -53,8 +53,7 @@ function sum(keys) { return (keys || Object.keys(A.counts)).reduce((n, k) => n +
 
 function render() {
   ROOT.innerHTML = `<section class="page">
-    <div class="head"><div><div class="head__title"><h1>Activity</h1></div>
-      <p class="head__sub">Everything that happened across your workspace. Click a name to open the record.</p></div></div>
+    <div class="head"><div><div class="head__title"><h1>Activity</h1></div></div></div>
     <div class="grid grid-4 mb">${[["Emails sent", ["email_sent"], "send", ""], ["Replies", ["replied"], "reply", "good"],
       ["Stage changes", ["stage", "deal_stage"], "flag", ""], ["Tasks done", ["task_done"], "check", ""]].map(([l, k, i, tone]) =>
       `<div class="card stat"><div class="stat__label">${ico(i, "ico--sm")} ${l}</div><div class="stat__value" ${tone && sum(k) ? `style="color:var(--${tone})"` : ""}>${fmt.num(sum(k))}</div><div class="hint">last 30 days</div></div>`).join("")}</div>

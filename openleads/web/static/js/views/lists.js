@@ -53,8 +53,7 @@ function open(l) {
 
 function render() {
   ROOT.innerHTML = `<section class="page">
-    <div class="head"><div><div class="head__title"><h1>Lists</h1></div>
-      <p class="head__sub">Static groups you build from searches, selections and imports. Work a list in the table, put it in a sequence, or export it.</p></div>
+    <div class="head"><div><div class="head__title"><h1>Lists</h1></div></div>
       <div class="head__actions"><button class="btn btn--primary" data-act="new">${ico("plus")} New list</button></div></div>
     <div class="seg mb" role="tablist">${[["people", "People lists", "users"], ["companies", "Company lists", "building"]].map(([k, l, i]) =>
       `<button type="button" class="${KIND === k ? "is-on" : ""}" data-act="kind" data-k="${k}">${ico(i, "ico--sm")} ${l}</button>`).join("")}</div>

@@ -57,7 +57,7 @@ function render() {
   const t = D.board.totals;
   ROOT.innerHTML = `<section class="page page--wide">
     <div class="head"><div><div class="head__title"><h1>Deals</h1></div>
-      <p class="head__sub">Your pipeline from first meeting to signed. Drag a deal between stages; winning one marks its contact and company as customers.</p></div>
+      <p class="head__sub">Drag a deal to another stage to move it. Winning a deal marks its contact and company as customers.</p></div>
       <div class="head__actions"><button class="btn btn--primary" data-act="new">${ico("plus")} New deal</button></div></div>
     <div class="grid grid-4 mb">
       <div class="card stat"><div class="stat__label">${ico("layers", "ico--sm")} Open pipeline</div><div class="stat__value">${esc(fmt.money(t.open_value))}</div><div class="hint">${fmt.plural(t.open_count, "open deal")}</div></div>

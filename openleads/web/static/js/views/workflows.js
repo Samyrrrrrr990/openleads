@@ -143,7 +143,7 @@ function render() {
   ROOT.innerHTML = `
   <section class="page">
     <div class="head"><div><div class="head__title"><h1>Workflows</h1></div>
-      <p class="head__sub">A workflow is a recipe drawn as nodes. Click a node to edit it, then test it. Scheduled runs use the same engine as <code>openleads recipe run</code>.</p></div></div>
+      <p class="head__sub">A recipe drawn as steps. Click a step to edit it, then test the workflow.</p></div></div>
     <div class="wf__shell">
       <aside class="wf__list">
         <button type="button" class="btn btn--primary btn--sm" data-act="new">${ico("plus")} New workflow</button>

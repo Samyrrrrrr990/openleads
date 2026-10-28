@@ -40,7 +40,7 @@ function row(t) {
     <button class="task-check" data-act="${done ? "reopen" : "done"}" data-id="${t.id}" title="${done ? "Reopen" : "Mark done"}" aria-label="${done ? "Reopen" : "Mark done"}">${ico("check", "ico--sm")}</button>
     <span class="task-kind task-kind--${esc(t.kind)}" title="${esc(store.label("task_kinds", t.kind))}">${ico(KIND_ICON[t.kind] || "task", "ico--sm")}</span>
     <div class="task-main">
-      <div class="task-title">${esc(t.title)}${t.priority === "high" ? ` <span class="badge badge--sm badge--bad">High</span>` : ""}${t.status === "skipped" ? ` <span class="badge badge--sm">Skipped</span>` : ""}</div>
+      <div class="task-title">${esc(t.title)}${t.priority === "high" ? ` <span class="task-flag" title="High priority">High</span>` : ""}${t.status === "skipped" ? ` <span class="badge badge--sm">Skipped</span>` : ""}</div>
       <div class="hint ellipsis">${t.contact ? `<a class="link" href="#/people/${encodeURIComponent(t.contact)}">${esc(t.contact_name || t.contact)}</a>${t.contact_org ? ` · ${esc(t.contact_org)}` : ""}` : ""}
         ${t.sequence_name ? `${t.contact ? " · " : ""}<a class="link" href="#/sequences/${t.sequence_id}">${ico("sequence", "ico--sm")} ${esc(t.sequence_name)} · step ${(t.step ?? 0) + 1}</a>` : ""}
         ${t.note ? `${t.contact || t.sequence_name ? " · " : ""}<span class="faint">${esc(t.note)}</span>` : ""}</div>
@@ -80,7 +80,7 @@ function render() {
   const due = (c.overdue || 0) + (c.today || 0);
   ROOT.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Tasks</h1></div>
-      <p class="head__sub">Calls, emails and LinkedIn touches — from your sequences and your own follow-ups. Finishing a sequence task moves that person to their next step.</p></div>
+      <p class="head__sub">Finishing a sequence task moves that person to their next step.</p></div>
       <div class="head__actions">
         ${due ? `<button class="btn" data-act="queue">${ico("play")} Start queue <span class="faint">${due}</span></button>` : ""}
         <button class="btn btn--primary" data-act="new">${ico("plus")} New task</button></div></div>

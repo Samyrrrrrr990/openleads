@@ -82,7 +82,7 @@ const queuePreview = debounce(refreshPreview, 250);
 function render() {
   ROOT.innerHTML = `<section class="page page--wide">
     <div class="head"><div><div class="head__title"><h1>Templates</h1></div>
-      <p class="head__sub">Reusable emails for Compose and sequence steps. Variables fill from each contact; blanks fall back to what you write after the <code>|</code>.</p></div>
+      <p class="head__sub">Variables fill from each contact. When a value is blank, the text after <code>|</code> is used instead.</p></div>
       <div class="head__actions"><button class="btn btn--primary" data-act="new">${ico("plus")} New template</button></div></div>
     <div class="tpl-shell">
       <aside class="card tpl-lib" id="tpl-lib">${libraryHtml()}</aside>

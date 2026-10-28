@@ -18,7 +18,7 @@ function render() {
   const watchers = Object.values(DATA.watchers);
   ROOT.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Recipes & watchers</h1></div>
-      <p class="head__sub">A <b>recipe</b> finds, writes, sends and exports on a schedule. A <b>watcher</b> tells you only when <i>new</i> leads match. Both run from your machine once <code>openleads schedule on</code> is installed. Prefer a canvas? Use <a class="link" href="#/workflows">Workflows</a>.</p></div></div>
+      <p class="head__sub">A recipe finds, writes, sends and exports on a schedule. A watcher tells you only when new leads match. Both run on this machine once <code>openleads schedule on</code> is set up.</p></div></div>
     <div class="card">
       <div class="card__head"><h3>${ico("robot")} Recipes</h3><span class="muted">${fmt.num(DATA.recipes.length)}</span></div>
       <form class="card__body form-grid" data-form="recipe" style="grid-template-columns:repeat(4,minmax(0,1fr))">

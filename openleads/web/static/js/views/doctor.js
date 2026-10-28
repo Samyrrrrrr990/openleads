@@ -10,7 +10,7 @@ function render(root, d) {
   const tone = { ok: "good", warn: "warn", bad: "bad" };
   root.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Doctor</h1></div>
-      <p class="head__sub">What works, what to fix — in plain language. Nothing here sends mail.</p></div>
+      <p class="head__sub">Checks for finding and sending. Nothing here sends email.</p></div>
       <div class="head__actions"><button class="btn" data-act="recheck">${ico("refresh")} Re-check</button></div></div>
     <div class="grid grid-4">
       <div class="card stat"><span class="stat__label">${ico("check", "ico--sm")} Passing</span><span class="stat__value">${s.ok || 0}</span></div>

@@ -16,7 +16,7 @@ async function renderIndex() {
   const seqs = (await api.get("/api/sequences")).sequences || [];
   ROOT.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Sequences</h1></div>
-      <p class="head__sub">Multi-step outreach that runs itself: emails send on schedule inside your warmup cap, calls and LinkedIn steps become tasks, and anyone who replies, bounces or unsubscribes leaves automatically.</p></div>
+      <p class="head__sub">Emails send on schedule within your warmup cap. Calls and LinkedIn steps become tasks. Anyone who replies, bounces or unsubscribes leaves the sequence.</p></div>
       <div class="head__actions"><button class="btn btn--primary" data-act="new">${ico("plus")} New sequence</button></div></div>
     ${seqs.length ? `<div class="card"><div class="table-wrap"><table class="tbl"><thead><tr>
       <th>Sequence</th><th>Status</th><th class="col-num">Active</th><th class="col-num">Contacted</th><th class="col-num">Replied</th>
@@ -34,10 +34,7 @@ async function renderIndex() {
       : `<div class="card">${ui.empty("sequence", "No sequences yet",
         "Start from a proven 5-step, two-week cadence — intro, bump, call, LinkedIn, breakup — and make it yours.",
         `<button class="btn btn--primary" data-act="new">${ico("plus")} New sequence</button>`)}</div>`}
-    <div class="grid grid-3 mt-lg">${[["mail", "Automatic emails", "Personalized with {{variables}}, A/B variants and threaded follow-ups. They send inside business hours and your daily warmup cap."],
-      ["task", "Manual steps", "Calls, LinkedIn touches and hand-written emails become tasks; the contact waits until the task is done."],
-      ["reply", "Stops on reply", "With IMAP connected, a reply, bounce or unsubscribe ends the sequence for that person automatically."]].map(([i, t, d]) =>
-      `<div class="card card--pad"><div class="row">${ico(i)}<h3>${t}</h3></div><p class="muted mt">${d}</p></div>`).join("")}</div></section>`;
+</section>`;
 }
 
 async function newSequence() {
@@ -190,7 +187,7 @@ function renderEditor() {
     <div class="crumbs"><a href="#/sequences">Sequences</a>${ico("chevron", "ico--sm")}<span>${esc(q.name)}</span></div>
     <div class="head"><div><div class="head__title"><h1>${esc(q.name)}</h1><button class="btn btn--xs btn--ghost btn--icon" data-act="rename" title="Rename">${ico("edit")}</button>
         ${q.status === "active" ? '<span class="badge badge--good"><span class="dot"></span>Active</span>' : `<span class="badge">${esc(q.status)}</span>`}</div>
-      <p class="head__sub">${fmt.plural(E.steps.length, "step")} over ${dayOf(E.steps.length - 1)} days · ${esc(q.settings.context ? "custom pitch" : "pitch from Settings")}</p></div>
+      <p class="head__sub">${fmt.plural(E.steps.length, "step")} over ${dayOf(E.steps.length - 1)} days, ${esc(q.settings.context ? "with its own pitch" : "using the pitch from Settings")}</p></div>
       <div class="head__actions">
         ${ui.switch("active", q.status === "active", q.status === "active" ? "Active" : "Paused", 'data-status')}
         <button class="btn" data-act="add-contacts">${ico("user-plus")} Add contacts</button>

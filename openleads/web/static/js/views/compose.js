@@ -61,7 +61,7 @@ function render() {
 }
 
 const head = () => `<div class="head"><div><div class="head__title"><h1>Compose & send</h1></div>
-  <p class="head__sub">One-off emails to a selection. Edit anything — your edits are what gets sent.</p></div>
+  <p class="head__sub">One-off emails to a selection. What you edit here is exactly what gets sent.</p></div>
   <div class="head__actions"><a class="btn" href="#/sequences">${ico("sequence")} Use a sequence instead</a></div></div>`;
 
 function draftCard(d, i) {
