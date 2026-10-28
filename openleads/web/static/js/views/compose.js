@@ -13,7 +13,7 @@ const C = () => (store.compose ||= { leads: [], drafts: [] });
 function lintBadge(d) {
   const s = d.lint?.score ?? 0;
   const tone = s < 20 ? "good" : s < 35 ? "warn" : "bad";
-  return `<span class="badge badge--${tone}" title="${esc((d.lint?.warnings || []).join(" · ") || "No spam triggers found")}">spam score ${s}</span>`;
+  return `<span class="badge badge--${tone}" title="${esc((d.lint?.warnings || []).join(", ") || "No spam triggers found")}">spam score ${s}</span>`;
 }
 
 function render() {

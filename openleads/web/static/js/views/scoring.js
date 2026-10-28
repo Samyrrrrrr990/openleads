@@ -64,10 +64,10 @@ function sidePanel() {
   return `<div class="card" style="position:sticky;top:16px">
     <div class="card__head"><h3>${M.dirty ? "If you save" : "Your contacts"}</h3>${M.dirty && p ? `<span class="badge badge--warn">${fmt.plural(p.changed, "grade change")}</span>` : ""}</div>
     <div class="card__body stack">
-      ${hbars(["A", "B", "C", "D"].map((g) => ({ label: `${g} · ${GRADE_HINT[g]}`, title: `Grade ${g}${M.dirty ? ` — now ${fmt.num(M.dist[g] || 0)}` : ""}`, value: dist[g] || 0 })), { max: total })}
+      ${hbars(["A", "B", "C", "D"].map((g) => ({ label: `${g}: ${GRADE_HINT[g]}`, title: `Grade ${g}${M.dirty ? ` — now ${fmt.num(M.dist[g] || 0)}` : ""}`, value: dist[g] || 0 })), { max: total })}
       ${p && p.top.length ? `<div><div class="hint mb-sm">Best matches${M.dirty ? " under this model" : ""}</div>
         ${p.top.map((r) => `<a class="list-row" href="#/people/${encodeURIComponent(r.email)}" style="display:flex;padding:7px 0">${ui.grade(r.score)}
-          <div style="min-width:0;flex:1"><div class="ellipsis t-strong">${esc(r.name || r.email)}</div><div class="hint ellipsis">${esc([r.title, r.organization].filter(Boolean).join(" · "))}</div></div>
+          <div style="min-width:0;flex:1"><div class="ellipsis t-strong">${esc(r.name || r.email)}</div><div class="hint ellipsis">${esc([r.title, r.organization].filter(Boolean).join(", "))}</div></div>
           <span class="num faint">${r.score}</span></a>`).join("")}</div>` : ""}
       <div class="row" style="gap:6px"><button class="btn btn--ghost btn--sm" data-act-s="reset">Reset to default</button><span class="spacer"></span>
         ${M.dirty ? `<button class="btn btn--sm" data-act-s="discard">Discard</button>` : ""}

@@ -35,12 +35,12 @@ function ring(v) {
 function groupHtml(g, i) {
   const keep = H.keep[i] || g[0].email;
   return `<div class="dup-group card" data-group="${i}">
-    <div class="dup-group__head"><b>${esc(ui.name(g[0]) || g[0].name)}</b><span class="faint">${esc(g[0].organization || g[0].domain)} · ${g.length} records</span>
+    <div class="dup-group__head"><b>${esc(ui.name(g[0]) || g[0].name)}</b><span class="faint">${esc(g[0].organization || g[0].domain)}, ${g.length} records</span>
       <span class="spacer"></span><button class="btn btn--sm btn--primary" data-act="merge" data-i="${i}">${ico("merge")} Merge into selected</button></div>
     ${g.map((r) => `<label class="dup-row ${r.email === keep ? "is-keep" : ""}">
       <input type="radio" name="keep-${i}" value="${esc(r.email)}" ${r.email === keep ? "checked" : ""} data-keep="${i}"/>
       <div class="dup-row__main"><div class="row" style="gap:6px">${ui.mark(r.evidence, r.tier)}<span>${esc(r.email)}</span></div>
-        <div class="hint">${esc(r.title || "No title")} · score ${fmt.num(r.score || 0)} · added ${esc(fmt.rel(r.created))}</div></div>
+        <div class="hint">${esc(r.title || "No title")}, score ${fmt.num(r.score || 0)}, added ${esc(fmt.rel(r.created))}</div></div>
       ${ui.stage(r.stage)}
       ${r.email === keep ? `<span class="badge badge--good">Keep</span>` : `<span class="badge">Merge in</span>`}
     </label>`).join("")}</div>`;
@@ -64,7 +64,7 @@ function render() {
               <span class="health-row__n">${fmt.num(c.count)}</span><span class="health-row__pct faint">${fmt.pct(c.pct)}</span>
               ${ico("chevron", "ico--sm faint")}</a>`).join("")}</div></div>
         <div class="card"><div class="card__head"><h3>Duplicate people</h3>
-          <span class="faint">${H.groups.length ? `${fmt.plural(H.groups.length, "group")} · ${fmt.plural(h.duplicates.contacts, "extra record")}` : "none found"}</span>
+          <span class="faint">${H.groups.length ? `${fmt.plural(H.groups.length, "group")}, ${fmt.plural(h.duplicates.contacts, "extra record")}` : "none found"}</span>
           ${H.groups.length > 1 ? `<div class="actions"><button class="btn btn--sm" data-act="merge-all">${ico("merge")} Merge all into the best record</button></div>` : ""}</div>
           <div class="card__body">${H.groups.length
             ? `<p class="hint mb">Same name at the same company under different addresses. Merging keeps the selected record and moves tags, lists, notes, tasks, deals, sequences and history onto it; blank fields are filled from the others.</p>

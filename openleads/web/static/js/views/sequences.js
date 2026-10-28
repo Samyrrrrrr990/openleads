@@ -24,7 +24,7 @@ async function renderIndex() {
       ${seqs.map((q) => `<tr class="is-click" data-open="${q.id}">
         <td><div class="t-strong">${esc(q.name)}</div><div class="row" style="gap:3px;margin-top:3px">${q.steps.map((s) =>
           `<span class="step__type step__type--${s.type}" style="width:20px;height:20px;border-radius:5px" title="${esc(typeLabel(s.type))}">${ico(TYPE_ICON[s.type], "ico--sm")}</span>`).join("")}
-          <span class="hint" style="margin-left:4px">${fmt.plural(q.steps.length, "step")} · ${q.steps.reduce((a, s) => a + s.delay_days, 0)} days</span></div></td>
+          <span class="hint" style="margin-left:4px">${fmt.plural(q.steps.length, "step")}, ${q.steps.reduce((a, s) => a + s.delay_days, 0)} days</span></div></td>
         <td>${ui.switch("status", q.status === "active", q.status === "active" ? "Active" : q.status === "archived" ? "Archived" : "Paused", `data-toggle="${q.id}"`)}</td>
         <td class="col-num">${fmt.num(q.stats.active)}</td><td class="col-num">${fmt.num(q.stats.contacted)}</td>
         <td class="col-num">${fmt.num(q.stats.replied)}</td><td class="col-num">${fmt.pct(q.stats.reply_rate)}</td>
@@ -77,15 +77,15 @@ function stepView(s, i) {
       <span>Day ${dayOf(i)}</span></div>
     <div class="step__card ${editing ? "is-editing" : ""}">
       <div class="step__head"><span class="step__type step__type--${s.type}">${ico(TYPE_ICON[s.type])}</span>
-        <div style="min-width:0;flex:1"><b>${esc(typeLabel(s.type))}</b>${(s.variants || []).length > 1 ? ` <span class="badge badge--violet badge--sm">A/B · ${s.variants.length} variants</span>` : ""}${s.ai ? ' <span class="badge badge--accent badge--sm">AI</span>' : ""}
-          <div class="hint">${s.type === "auto_email" ? `${fmt.num(st.sent || 0)} sent` : `${fmt.num(st.tasks_done || 0)} done`} · ${fmt.num(st.waiting || 0)} waiting here</div></div>
+        <div style="min-width:0;flex:1"><b>${esc(typeLabel(s.type))}</b>${(s.variants || []).length > 1 ? ` <span class="badge badge--violet badge--sm">A/B, ${s.variants.length} variants</span>` : ""}${s.ai ? ' <span class="badge badge--accent badge--sm">AI</span>' : ""}
+          <div class="hint">${s.type === "auto_email" ? `${fmt.num(st.sent || 0)} sent` : `${fmt.num(st.tasks_done || 0)} done`}, ${fmt.num(st.waiting || 0)} waiting here</div></div>
         <button class="btn btn--xs btn--ghost btn--icon" data-step-up="${i}" ${i === 0 ? "disabled" : ""} title="Move up">${ico("up")}</button>
         <button class="btn btn--xs btn--ghost btn--icon" data-step-down="${i}" ${i === E.steps.length - 1 ? "disabled" : ""} title="Move down">${ico("chevron-down")}</button>
         <button class="btn btn--xs ${editing ? "btn--primary" : ""}" data-step-edit="${i}">${editing ? "Done" : "Edit"}</button>
         <button class="btn btn--xs btn--ghost btn--icon" data-step-del="${i}" title="Delete step">${ico("trash")}</button></div>
       ${editing ? stepEditor(s, i) : `<div class="step__preview">${preview}</div>`}
       ${!editing && (st.variants || []).length > 1 ? `<div class="step__preview" style="padding-top:0">${st.variants.map((x, k) =>
-        `<span class="badge badge--outline">${String.fromCharCode(65 + k)}: ${x.sent} sent · ${fmt.pct(x.reply_rate)} replied</span>`).join(" ")}</div>` : ""}
+        `<span class="badge badge--outline">${String.fromCharCode(65 + k)}: ${x.sent} sent, ${fmt.pct(x.reply_rate)} replied</span>`).join(" ")}</div>` : ""}
     </div></div></div>`;
 }
 
@@ -137,7 +137,7 @@ function stepsTab() {
       <div class="card__head"><h3>Preview</h3></div>
       <div class="card__body stack">
         <div class="row"><select class="select select--sm" data-prev-step>${E.steps.map((s, i) =>
-          `<option value="${i}" ${i === E.preview.step ? "selected" : ""}>Step ${i + 1} · ${esc(typeLabel(s.type))}</option>`).join("")}</select></div>
+          `<option value="${i}" ${i === E.preview.step ? "selected" : ""}>Step ${i + 1}: ${esc(typeLabel(s.type))}</option>`).join("")}</select></div>
         <select class="select select--sm" data-prev-email><option value="">Sample contact (Jane at Acme)</option>${enrolled.map((e) =>
           `<option value="${esc(e.email)}" ${e.email === E.preview.email ? "selected" : ""}>${esc(e.name || e.email)}</option>`).join("")}</select>
         <div id="seq-preview">${ui.skeleton(3)}</div>
@@ -212,7 +212,7 @@ const refreshPreview = (() => {
       try {
         const r = await api.post("/api/sequences/preview", { id: E.seq.id, step: E.preview.step, email: E.preview.email || undefined });
         if (!r.draft) { el.innerHTML = `<div class="banner">${ico(TYPE_ICON[r.type] || "task")}<div><b>${esc(typeLabel(r.type))}</b> — becomes a task: “${esc(r.note || typeLabel(r.type))}”</div></div>`; return; }
-        el.innerHTML = `<div class="email-card" style="background:var(--panel)"><div class="hint">To ${esc(r.draft.email)}${r.sample ? " (sample)" : ""}${r.variant ? ` · variant ${String.fromCharCode(65 + r.variant)}` : ""}</div>
+        el.innerHTML = `<div class="email-card" style="background:var(--panel)"><div class="hint">To ${esc(r.draft.email)}${r.sample ? " (sample)" : ""}${r.variant ? `, variant ${String.fromCharCode(65 + r.variant)}` : ""}</div>
           <b>${esc(r.draft.subject)}</b><div style="white-space:pre-wrap;font-size:13px">${esc(r.draft.body)}</div>
           <div class="row row--wrap">${r.draft.lint ? `<span class="badge ${r.draft.lint.ok ? "badge--good" : "badge--warn"}">spam score ${r.draft.lint.score}</span>` : ""}
           ${(r.missing || []).map((m) => `<span class="badge badge--warn" title="Blank for this contact">{{${esc(m)}}} blank</span>`).join("")}</div></div>`;
@@ -249,7 +249,7 @@ async function addContacts() {
     },
   });
   if (!res) return;
-  toast(`Enrolled ${res.enrolled.length}${res.skipped.length ? ` · ${res.skipped.length} skipped` : ""}`);
+  toast(`Enrolled ${res.enrolled.length}${res.skipped.length ? `, ${res.skipped.length} skipped` : ""}`);
   if (res.skipped.length) showSkipped(res.skipped);
   await reloadEditor();
 }
@@ -268,10 +268,10 @@ async function runNow(anchor) {
       if (live && paused) await api.post("/api/sequences/status", { id: E.seq.id, status: "active" });
       await api.stream("/api/sequences/run", { id: E.seq.id, live, ignore_window: true }, (ev) => { if (ev.type === "done") done = ev; });
       if (done) {
-        toast(`${done.due} due · ${live ? `${done.sent} sent` : `${done.previewed} previewed`} · ${done.tasks} tasks${done.capped ? ` · ${done.capped} over the cap` : ""}`);
+        toast(`${done.due} due, ${live ? `${done.sent} sent` : `${done.previewed} previewed`}, ${done.tasks} tasks${done.capped ? `, ${done.capped} over the cap` : ""}`);
         if (!live && done.results.length) {
           modal({ title: "Dry run — what would send", wide: true, body: `<div class="table-wrap" style="max-height:420px;border:1px solid var(--line);border-radius:10px"><table class="tbl tbl--compact"><thead><tr><th>To</th><th>Step</th><th>Subject</th></tr></thead><tbody>
-            ${done.results.map((r) => `<tr><td class="t-mono">${esc(r.email)}</td><td>${r.step}${r.variant ? " · " + String.fromCharCode(65 + r.variant) : ""}</td><td>${esc(r.subject)}</td></tr>`).join("")}</tbody></table></div>` });
+            ${done.results.map((r) => `<tr><td class="t-mono">${esc(r.email)}</td><td>${r.step}${r.variant ? " (" + String.fromCharCode(65 + r.variant) + ")" : ""}</td><td>${esc(r.subject)}</td></tr>`).join("")}</tbody></table></div>` });
         }
       }
       await reloadEditor();

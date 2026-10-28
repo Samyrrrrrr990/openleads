@@ -418,7 +418,7 @@ export const router = {
     main.replaceChildren(root);
     main.scrollTop = 0;
     current = { name: ctx.name, view: views[ctx.name], root, ctx };
-    document.title = `${views[ctx.name].title || ctx.name} · OpenLeads`;
+    document.title = `${views[ctx.name].title || ctx.name} | OpenLeads`;
     this.onChange && this.onChange(ctx);
     try { await views[ctx.name].mount(root, ctx); }
     catch (e) { root.innerHTML = `<div class="page">${ui.empty("x", "This page hit an error", esc(e.message))}</div>`; console.error(e); }

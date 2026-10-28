@@ -22,7 +22,7 @@ function whoReplies(rb) {
   const rows = (rb && rb[DIM]) || [];
   if (!rows.length) return `<p class="muted">No one has been contacted yet — reply rates show up here after your first sends.</p>`;
   return hbars(rows.map((r) => ({
-    label: `${dimLabel(DIM, r.value)} · ${fmt.num(r.contacted)}`, value: r.rate,
+    label: `${dimLabel(DIM, r.value)} (${fmt.num(r.contacted)})`, value: r.rate,
     title: `${dimLabel(DIM, r.value)}: ${fmt.num(r.replied)} of ${fmt.num(r.contacted)} replied`,
     href: r.value ? `#/people?${DIM}=${encodeURIComponent(r.value)}&contacted=ever` : "",
   })), { max: 100, valueFmt: (v) => fmt.pct(v) });
@@ -55,7 +55,7 @@ router.register("analytics", {
         <p class="head__sub">Click a bar to see the people behind it.</p></div></div>
       <div class="grid grid-4">
         ${tile("Contacts", fmt.num(a.total_leads), `${fmt.num(a.deliverable)} deliverable`, "users")}
-        ${tile("Emails sent", fmt.num(e.sent_30d), `last 30 days · ${fmt.num(e.sent_today)} today`, "send")}
+        ${tile("Emails sent", fmt.num(e.sent_30d), `last 30 days, ${fmt.num(e.sent_today)} today`, "send")}
         ${tile("Reply rate", fmt.pct(e.reply_rate), `${fmt.num(e.replied)} of ${fmt.num(e.contacted)} contacted`, "reply")}
         ${tile("Bounce rate", fmt.pct(e.bounce_rate), `${fmt.num(e.bounced)} bounced`, "x")}
       </div>

@@ -156,7 +156,7 @@ function cell(r, key) {
     case "tags": return `<td><div class="tags" style="max-width:220px">${(r.lists || []).slice(0, 2).map((l) =>
       `<span class="tag"><i class="color-dot c-${esc(l.color || "gray")}"></i>${esc(l.name)}</span>`).join("")}${(r.tags || []).slice(0, 3).map((t) =>
       `<span class="tag">#${esc(t)}</span>`).join("")}</div></td>`;
-    case "sequence": return `<td>${r.sequence ? `<a class="badge badge--info" href="#/sequences/${r.sequence.id}" data-stop>${esc(r.sequence.name)} · ${r.sequence.step + 1}</a>` : '<span class="faint">—</span>'}</td>`;
+    case "sequence": return `<td>${r.sequence ? `<a class="badge badge--info" href="#/sequences/${r.sequence.id}" data-stop>${esc(r.sequence.name)}, step ${r.sequence.step + 1}</a>` : '<span class="faint">—</span>'}</td>`;
     case "last_contacted": return `<td class="t-sub nowrap">${r.last_contacted ? esc(fmt.rel(r.last_contacted)) : "Never"}</td>`;
     case "created": return `<td class="t-sub nowrap">${esc(fmt.rel(r.created))}</td>`;
     case "source": return `<td class="t-sub">${esc(r.source || "—")}</td>`;

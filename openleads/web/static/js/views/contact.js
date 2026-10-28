@@ -42,7 +42,7 @@ export function openContact(email, { onClose, onChange } = {}) {
     return `<div class="drawer__head"><div class="drawer__top">
         ${name ? ui.avatar(name, c.email, "avatar--lg") : ui.companyAvatar(c.organization, "avatar--lg")}
         <div class="drawer__title"><h2>${esc(name || c.organization || c.email)}</h2>
-          <div class="sub">${esc(c.title || "")}${c.title && c.organization ? " · " : ""}${c.domain
+          <div class="sub">${esc(c.title || "")}${c.title && c.organization ? ", " : ""}${c.domain
             ? `<a class="link" href="#/companies/${encodeURIComponent(c.domain)}">${esc(c.organization || c.domain)}</a>` : esc(c.organization || "")}</div>
           <div class="row row--wrap mt" style="gap:6px">
             ${c.seniority ? `<span class="badge badge--outline">${esc(store.label("seniorities", c.seniority))}</span>` : ""}
@@ -85,7 +85,7 @@ export function openContact(email, { onClose, onChange } = {}) {
         <div class="card card--pad stack--sm stack">
           <div class="row"><h3>Sequences</h3><span class="spacer"></span><button class="btn btn--xs btn--ghost" data-a="seq">${ico("plus", "ico--sm")} Add</button></div>
           ${enr.length ? enr.map((e) => `<div class="row"><a class="link ellipsis" href="#/sequences/${e.sequence_id}">${esc(e.sequence_name)}</a><span class="spacer"></span>
-            <span class="badge ${e.status === "active" ? "badge--info" : e.status === "replied" ? "badge--good" : ""}">${esc(e.status)}${e.status === "active" || e.status === "paused" ? ` · step ${e.step + 1}` : ""}</span></div>`).join("")
+            <span class="badge ${e.status === "active" ? "badge--info" : e.status === "replied" ? "badge--good" : ""}">${esc(e.status)}${e.status === "active" || e.status === "paused" ? `, step ${e.step + 1}` : ""}</span></div>`).join("")
             : `<span class="hint">Not in any sequence.</span>`}
         </div>
       </div>
@@ -115,7 +115,7 @@ export function openContact(email, { onClose, onChange } = {}) {
           <button type="button" data-unlist="${l.id}" title="Remove from list">${ico("x", "ico--sm")}</button></span>`).join("") || '<span class="hint">In no lists.</span>'}</div>
       </div></div>
       ${acc ? `<div class="card mt"><div class="card__head">${ui.companyAvatar(acc.name || acc.domain)}<div style="min-width:0"><h3 class="ellipsis">${esc(acc.name || acc.domain)}</h3>
-          <div class="hint">${esc([acc.industry, acc.company_size && acc.company_size + " employees", acc.city].filter(Boolean).join(" · "))}</div></div>
+          <div class="hint">${esc([acc.industry, acc.company_size && acc.company_size + " employees", acc.city].filter(Boolean).join(", "))}</div></div>
           <div class="actions"><a class="btn btn--xs" href="#/companies/${encodeURIComponent(acc.domain)}">Open ${ico("arrow", "ico--sm")}</a></div></div>
         <div class="card__body stack">${acc.description ? `<p class="muted">${esc(acc.description)}</p>` : ""}
           <dl class="kv"><dt>Website</dt><dd><a class="link" href="${esc(acc.website || "https://" + acc.domain)}" target="_blank" rel="noopener noreferrer">${esc(acc.domain)}</a></dd>
@@ -140,7 +140,7 @@ export function openContact(email, { onClose, onChange } = {}) {
         <button class="btn btn--primary" type="submit">${ico("plus")} Add</button></form>
       <div class="mt">${data.tasks.length ? data.tasks.map((t) => `<div class="list-row">
         <button class="btn btn--icon btn--xs ${t.status === "done" ? "btn--primary" : ""}" data-taskdone="${t.id}" ${t.status !== "open" ? "disabled" : ""} title="Done">${ico("check", "ico--sm")}</button>
-        <div style="flex:1;min-width:0"><div class="${t.status !== "open" ? "faint" : ""}">${esc(t.title)}</div><div class="hint">${esc(t.kind)} · ${esc(t.status === "open" ? fmt.due(t.due) : t.status)}${t.sequence_name ? ` · ${esc(t.sequence_name)}` : ""}</div></div></div>`).join("")
+        <div style="flex:1;min-width:0"><div class="${t.status !== "open" ? "faint" : ""}">${esc(t.title)}</div><div class="hint">${esc(t.kind)}, ${esc(t.status === "open" ? fmt.due(t.due) : t.status)}${t.sequence_name ? `, ${esc(t.sequence_name)}` : ""}</div></div></div>`).join("")
         : '<p class="muted">No tasks for this contact.</p>'}</div>`;
   }
 
@@ -148,7 +148,7 @@ export function openContact(email, { onClose, onChange } = {}) {
     return `<div class="row"><span class="spacer"></span><button class="btn btn--sm btn--primary" data-a="deal">${ico("plus")} New deal</button></div>
       <div class="mt">${data.deals.length ? data.deals.map((x) => `<a class="list-row" href="#/deals/${x.id}" style="display:flex">
         <span class="tl-icon tl-icon--good">${ico("deal")}</span><div style="flex:1;min-width:0"><div class="t-strong">${esc(x.name)}</div>
-        <div class="hint">${esc(store.label("deal_stages", x.stage))}${x.close_date ? ` · closes ${esc(x.close_date)}` : ""}</div></div>
+        <div class="hint">${esc(store.label("deal_stages", x.stage))}${x.close_date ? `, closes ${esc(x.close_date)}` : ""}</div></div>
         <b class="num">${esc(fmt.money(x.amount, x.currency))}</b></a>`).join("") : '<p class="muted">No deals yet.</p>'}</div>`;
   }
 

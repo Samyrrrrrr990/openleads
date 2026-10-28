@@ -32,7 +32,7 @@ function render() {
           <button class="btn btn--primary" type="submit">${ico("check")} Save recipe</button></div>
       </form>
       ${DATA.recipes.length ? `<div class="table-wrap"><table class="tbl tbl--compact"><thead><tr><th>Name</th><th>Audience</th><th>When</th><th>Mode</th><th>Export</th><th class="col-num"></th></tr></thead><tbody>
-        ${DATA.recipes.map((r) => `<tr><td class="t-strong">${esc(r.name)}</td><td class="muted">${esc(r.query)} · ${r.count}</td>
+        ${DATA.recipes.map((r) => `<tr><td class="t-strong">${esc(r.name)}</td><td class="muted">${esc(r.query)}, ${r.count} leads</td>
           <td>${r.enabled ? `<span class="badge badge--info">${esc(r.when || r.schedule || "scheduled")}</span>` : '<span class="badge">manual</span>'}</td>
           <td>${r.send ? '<span class="badge badge--accent">sends</span>' : '<span class="badge">finds</span>'}</td>
           <td class="muted">${r.export ? esc(r.export.sink) : "—"}</td>

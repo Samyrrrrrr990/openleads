@@ -27,7 +27,7 @@ function opts() {
     ${ui.switch("deep", P.deep, "Deep harvest")}
     <select class="select select--sm" name="source" style="width:auto">
       <option value="">All sources (auto)</option>
-      ${(store.state?.sources || []).map((s) => `<option value="${esc(s.name)}" ${P.source === s.name ? "selected" : ""}>${esc(s.name)} · ${esc(s.vertical)}</option>`).join("")}
+      ${(store.state?.sources || []).map((s) => `<option value="${esc(s.name)}" ${P.source === s.name ? "selected" : ""}>${esc(s.name)}: ${esc(s.vertical)}</option>`).join("")}
     </select>
   </div>
   <div class="row row--wrap mt" style="gap:6px">
@@ -50,7 +50,7 @@ function render() {
     </div></div>
     <form class="bigsearch" data-form="search">
       ${ico("find")}
-      <input name="q" value="${esc(P.query)}" placeholder="dentists in Austin · VPs of marketing at SaaS companies · emails at acme.com" autocomplete="off" spellcheck="false" />
+      <input name="q" value="${esc(P.query)}" placeholder="For example: dentists in Austin, or VPs of marketing at SaaS companies" autocomplete="off" spellcheck="false" />
       <button class="btn btn--accent" type="submit" ${P.running ? "disabled" : ""}>${P.running ? '<span class="spinner"></span> Searching' : ico("bolt") + " Search"}</button>
     </form>
     <div class="row row--wrap mt" style="gap:6px">${EXAMPLES.map((x) =>
@@ -84,7 +84,7 @@ function results() {
     ${P.running ? '<div class="sweep"></div>' : ""}
     <div class="card__head">
       <h3>${P.running ? "Searching…" : "Results"}</h3>
-      <span class="muted">${fmt.num(P.leads.length)} found · ${fmt.num(safe)} safe · ${fmt.num(fresh)} new to your CRM</span>
+      <span class="muted">${fmt.num(P.leads.length)} found, ${fmt.num(safe)} deliverable, ${fmt.num(fresh)} new to your workspace</span>
       <div class="actions">
         <button class="btn btn--sm" data-act="log">${ico("code")} Engine log</button>
         ${P.leads.length ? `<button class="btn btn--sm" data-act="open-people">${ico("users")} Open in People</button>` : ""}
@@ -115,10 +115,10 @@ function row(l, i) {
       <div><span class="name">${esc(name || l.organization || "—")}</span><span class="sub">${esc(l.title || "")}</span></div></div></td>
     <td><div class="cell-email">${l.email ? ui.mark(l.evidence, l.tier) : ""}<span class="addr">${esc(l.email || "—")}</span>${l.email ? ui.copy(l.email) : ""}</div></td>
     <td><div class="ellipsis" style="max-width:200px">${esc(l.organization || "")}</div><div class="t-sub">${esc(l.industry || "")}</div></td>
-    <td>${l.seniority ? `<span class="badge badge--outline">${esc(store.label("seniorities", l.seniority))}</span>` : '<span class="faint">—</span>'}</td>
+    <td class="t-sub">${l.seniority ? esc(store.label("seniorities", l.seniority)) : '<span class="faint">—</span>'}</td>
     <td class="t-sub">${esc([l.city, l.country].filter(Boolean).join(", "))}</td>
     <td>${ui.grade(l.fit_score || 0)}</td>
-    <td>${l.is_new ? '<span class="badge badge--good badge--sm">New</span>' : '<span class="badge badge--sm">In CRM</span>'}</td>
+    <td class="t-sub">${l.is_new ? '<span style="color:var(--text)">New</span>' : '<span class="faint">Saved before</span>'}</td>
   </tr>`;
 }
 
@@ -152,7 +152,7 @@ async function run() {
   } catch (e) { fail(e); }
   P.running = false;
   render();
-  if (P.done && P.done.count) toast(`${fmt.num(P.done.count)} found · ${fmt.num(P.done.new || 0)} new in People`);
+  if (P.done && P.done.count) toast(`${fmt.plural(P.done.count, "lead")} found, ${fmt.num(P.done.new || 0)} new in People`);
 }
 
 const sel = () => ({ emails: Array.from(P.selected) });

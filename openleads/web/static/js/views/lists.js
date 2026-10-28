@@ -62,7 +62,7 @@ function render() {
         <div class="row"><i class="color-dot c-${esc(l.color || "gray")}" style="width:12px;height:12px"></i><b class="ellipsis" style="font-size:14.5px">${esc(l.name)}</b>
           <span class="spacer"></span><button class="btn btn--xs btn--ghost btn--icon" data-more="${l.id}" title="More">${ico("more")}</button></div>
         <div class="row"><span class="stat__value" style="font-size:26px">${fmt.num(l.count)}</span><span class="muted">${l.kind === "companies" ? "companies" : "people"}</span></div>
-        <div class="hint ellipsis">${esc(l.description || "")}${l.description ? " · " : ""}updated ${esc(fmt.rel(l.updated))}</div>
+        <div class="hint ellipsis">${esc(l.description || "")}${l.description ? ", " : ""}updated ${esc(fmt.rel(l.updated))}</div>
         ${l.kind === "people" ? `<div class="row mt" style="gap:6px"><button class="btn btn--sm" data-enroll="${l.id}">${ico("sequence")} Add to sequence</button>
           <button class="btn btn--sm" data-export="${l.id}">${ico("download")} Export</button></div>` : ""}
       </div>`).join("")}</div>`

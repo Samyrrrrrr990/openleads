@@ -74,7 +74,7 @@ export function openPalette(initial = "") {
     const acts = ACTIONS.slice(1).filter((a) => !q || match(a.label, q));
     if (!q || match(find.label, q)) acts.unshift(find); else if (q.length > 1) acts.push(find);
     if (q.length > 1) {
-      remote.people.forEach((p) => out.push({ group: "People", label: ui.name(p) || p.email, sub: [p.title, p.organization].filter(Boolean).join(" · ") || p.email,
+      remote.people.forEach((p) => out.push({ group: "People", label: ui.name(p) || p.email, sub: [p.title, p.organization].filter(Boolean).join(", ") || p.email,
         html: ui.avatar(ui.name(p) || p.email, p.email, "avatar--sm"), run: () => router.go("people", p.email) }));
       remote.companies.forEach((c) => out.push({ group: "Companies", label: c.name || c.domain, sub: c.domain,
         html: ui.companyAvatar(c.name || c.domain, "avatar--sm"), run: () => router.go("companies", c.domain) }));

@@ -41,7 +41,7 @@ export function selPayload(sel) {
 /** Enroll a selection in a sequence (pick one or create from the starter). */
 export async function enroll(sel) {
   const seqs = ((await api.get("/api/sequences")).sequences || []).filter((s) => s.status !== "archived");
-  const options = seqs.map((s) => `<option value="${s.id}">${esc(s.name)} · ${s.status} · ${s.steps.length} steps</option>`).join("");
+  const options = seqs.map((s) => `<option value="${s.id}">${esc(s.name)} (${s.status}, ${s.steps.length} steps)</option>`).join("");
   let result = null;
   await modal({
     title: `Add ${who(sel)} to a sequence`,
@@ -67,7 +67,7 @@ export async function enroll(sel) {
   });
   if (!result) return null;
   const n = result.enrolled.length, k = result.skipped.length;
-  toast(`Enrolled ${fmt.num(n)}${k ? ` · ${fmt.num(k)} skipped` : ""}`, n ? "ok" : "err",
+  toast(`Enrolled ${fmt.num(n)}${k ? `, ${fmt.num(k)} skipped` : ""}`, n ? "ok" : "err",
     { label: "Open sequence", run: () => router.go("sequences", result.sequence_id) });
   if (k) showSkipped(result.skipped);
   return result;

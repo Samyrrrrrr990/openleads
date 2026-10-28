@@ -26,7 +26,7 @@ function dropzone() {
         <input type="file" accept=".csv,.tsv,.txt,text/csv" id="imp-file" hidden/>
         <span class="dropzone__icon">${ico("upload")}</span>
         <b>Drop a CSV here or click to choose a file</b>
-        <span class="hint">Apollo, HubSpot, Salesforce, LinkedIn Sales Navigator or any spreadsheet export · up to 50,000 rows</span>
+        <span class="hint">Apollo, HubSpot, Salesforce, LinkedIn Sales Navigator or any spreadsheet export. Up to 50,000 rows.</span>
       </label>
       <details class="mt"><summary class="link">…or paste CSV text</summary>
         <textarea class="textarea input--mono mt" id="imp-paste" rows="7" placeholder="First Name,Last Name,Email,Company,Title&#10;Jane,Doe,jane@acme.com,Acme,VP of Sales"></textarea>
@@ -48,7 +48,7 @@ function mappingTable() {
     const cur = I.mapping[h] || "";
     const dup = cur && used.filter((f) => f === cur).length > 1;
     const vals = (p.raw || []).map((r) => r[h]).filter(Boolean).slice(0, 2);
-    return `<tr class="${cur ? "" : "is-muted"}"><td><b>${esc(h)}</b><div class="hint ellipsis" style="max-width:280px">${vals.length ? vals.map(esc).join(" · ") : "<i>empty</i>"}</div></td>
+    return `<tr class="${cur ? "" : "is-muted"}"><td><b>${esc(h)}</b><div class="hint ellipsis" style="max-width:280px">${vals.length ? vals.map(esc).join(", ") : "<i>empty</i>"}</div></td>
       <td>${ico("arrow", "ico--sm faint")}</td>
       <td><select class="select select--sm" data-map="${esc(h)}"><option value="">Don't import</option>${fields.map((f) =>
         `<option value="${f}" ${f === cur ? "selected" : ""}>${esc(LABELS[f] || f)}</option>`).join("")}</select>
@@ -68,7 +68,7 @@ function mapStep() {
   const p = I.preview;
   const hasEmail = Object.values(I.mapping).includes("email");
   return `<div class="row mb" style="gap:10px">${ico("table")}<b>${esc(I.filename || "Pasted CSV")}</b>
-      <span class="faint">${fmt.plural(p.total, "row")} · ${fmt.plural(p.headers.length, "column")}</span><span class="spacer"></span>
+      <span class="faint">${fmt.plural(p.total, "row")}, ${fmt.plural(p.headers.length, "column")}</span><span class="spacer"></span>
       <button class="btn btn--sm btn--ghost" data-i="reset">${ico("x")} Start over</button></div>
     <div class="grid grid-main-side">
       <div class="stack">
@@ -100,7 +100,7 @@ function resultStep() {
   const r = I.result;
   return `<div class="card card--pad stack" style="max-width:720px">
     <div class="row" style="gap:12px"><span class="tl-icon tl-icon--good" style="width:40px;height:40px">${ico("check")}</span>
-      <div><h2 style="margin:0">Import complete</h2><div class="muted">${fmt.plural(r.created, "new contact")} · ${fmt.plural(r.updated, "updated")}${r.list ? ` · in list <b>${esc(r.list.name)}</b>` : ""}</div></div></div>
+      <div><h2 style="margin:0">Import complete</h2><div class="muted">${fmt.plural(r.created, "new contact")}, ${fmt.plural(r.updated, "updated")}${r.list ? `, in list <b>${esc(r.list.name)}</b>` : ""}</div></div></div>
     ${r.skipped.length ? `<details><summary class="link">${fmt.plural(r.skipped.length, "row")} skipped</summary>
       <div class="table-wrap mt" style="max-height:220px"><table class="tbl tbl--compact"><thead><tr><th>Row</th><th>Value</th><th>Why</th></tr></thead><tbody>
       ${r.skipped.slice(0, 200).map((s) => `<tr><td>${s.row}</td><td class="t-mono">${esc(s.email)}</td><td>${esc(s.reason)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}

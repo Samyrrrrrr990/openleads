@@ -23,7 +23,7 @@ function libraryHtml() {
       <button type="button" class="tpl-item ${S.draft && S.draft.id === t.id ? "is-on" : ""}" data-tpl="${t.id}">
         <div class="row" style="gap:6px"><b class="ellipsis" style="flex:1;min-width:0">${esc(t.name)}</b>${t.category ? `<span class="badge badge--sm">${esc(t.category)}</span>` : ""}</div>
         <div class="hint ellipsis">${esc(t.subject || "(no subject)")}</div>
-        <div class="hint">${t.used ? `used ${fmt.plural(t.used, "time")} · ` : ""}edited ${esc(fmt.rel(t.updated))}</div></button>`).join("")
+        <div class="hint">${t.used ? `used ${fmt.plural(t.used, "time")}, ` : ""}edited ${esc(fmt.rel(t.updated))}</div></button>`).join("")
       : `<p class="hint" style="padding:12px">No templates match.</p>`}</div>`;
 }
 
@@ -39,7 +39,7 @@ function editorHtml() {
       <div class="field"><label>Subject</label><input class="input input--sm" name="subject" value="${esc(t.subject)}" placeholder="quick question about {{company}}"/></div>
     </div>
     <div class="field"><label>Body</label><textarea class="textarea tpl-body" name="body" rows="14">${esc(t.body)}</textarea></div>
-    <div><div class="hint mb-sm">Insert a variable · use <code>{{first_name|there}}</code> for a fallback and <code>{Hi|Hey}</code> to vary wording per person</div>
+    <div><div class="hint mb-sm">Insert a variable. Use <code>{{first_name|there}}</code> for a fallback and <code>{Hi|Hey}</code> to vary wording per person</div>
       <div class="var-chips">${(store.meta?.template_variables || []).map((v) =>
         `<button type="button" data-insert="{{${v.key}}}" title="${esc(v.label)} — e.g. ${esc(v.example)}">{{${v.key}}}</button>`).join("")}</div></div>
     <div class="row" style="gap:8px">

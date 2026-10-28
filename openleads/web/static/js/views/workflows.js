@@ -59,7 +59,7 @@ function off(id, r) {
 function summary(id, r) {
   switch (id) {
     case "trigger": return r.enabled ? (r.schedule || r.when || "daily 09:00") : "Manual only";
-    case "find": return r.query ? `${r.query} · ${r.count}` : "Set an audience";
+    case "find": return r.query ? `${r.query}, ${r.count} leads` : "Set an audience";
     case "verify": return r.verified_only ? "Safe only" : "Safe and risky";
     case "write": return r.context ? r.context : "Default pitch";
     case "send": return r.send ? (r.sequence ? "On, with follow-ups" : "On, warmup capped") : "Off";

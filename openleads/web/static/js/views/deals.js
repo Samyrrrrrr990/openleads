@@ -31,7 +31,7 @@ function boardHtml() {
     <div class="board__col board__col--${c.key}" data-col="${c.key}">
       <div class="board__head"><div class="row"><i class="stage-dot stage-dot--${c.key}"></i><b>${esc(c.label)}</b><span class="faint">${c.count}</span>
         <span class="spacer"></span>${isOpenStage(c.key) ? `<span class="hint" title="Win probability">${c.probability}%</span>` : ""}</div>
-        <div class="hint ellipsis" title="${esc(fmt.money(c.total))}${isOpenStage(c.key) ? ` total · ${esc(fmt.money(c.weighted))} weighted` : ""}">${esc(fmt.moneyCompact(c.total))}${isOpenStage(c.key) && c.total ? ` · ${esc(fmt.moneyCompact(c.weighted))} weighted` : ""}</div></div>
+        <div class="hint ellipsis" title="${esc(fmt.money(c.total))}${isOpenStage(c.key) ? ` total, ${esc(fmt.money(c.weighted))} weighted` : ""}">${esc(fmt.moneyCompact(c.total))}${isOpenStage(c.key) && c.total ? `, ${esc(fmt.moneyCompact(c.weighted))} weighted` : ""}</div></div>
       <div class="board__items" data-drop="${c.key}">${c.deals.map(card).join("")}
         ${isOpenStage(c.key) ? `<button class="board__add" data-act="new" data-stage="${c.key}">${ico("plus", "ico--sm")} Add deal</button>` : ""}</div>
     </div>`).join("")}</div>`;
@@ -63,7 +63,7 @@ function render() {
       <div class="card stat"><div class="stat__label">${ico("layers", "ico--sm")} Open pipeline</div><div class="stat__value">${esc(fmt.money(t.open_value))}</div><div class="hint">${fmt.plural(t.open_count, "open deal")}</div></div>
       <div class="card stat"><div class="stat__label">${ico("chart", "ico--sm")} Weighted forecast</div><div class="stat__value">${esc(fmt.money(t.weighted))}</div><div class="hint">value × stage probability</div></div>
       <div class="card stat"><div class="stat__label">${ico("star", "ico--sm")} Won</div><div class="stat__value">${esc(fmt.money(t.won_value))}</div><div class="hint">${fmt.plural(t.won_count, "deal")}</div></div>
-      <div class="card stat"><div class="stat__label">${ico("flag", "ico--sm")} Win rate</div><div class="stat__value">${fmt.pct(t.win_rate)}</div><div class="hint">${t.won_count} won · ${t.lost_count} lost</div></div>
+      <div class="card stat"><div class="stat__label">${ico("flag", "ico--sm")} Win rate</div><div class="stat__value">${fmt.pct(t.win_rate)}</div><div class="hint">${t.won_count} won, ${t.lost_count} lost</div></div>
     </div>
     <div class="toolbar toolbar--bare mb">
       <div class="seg">${[["board", "Board", "columns"], ["table", "Table", "table"]].map(([k, l, i]) =>
@@ -113,7 +113,7 @@ async function openDeal(id) {
   const stages = store.meta?.deal_stages || [];
   d.el.innerHTML = `<div class="drawer__head"><div class="drawer__top">
       <span class="tl-icon tl-icon--good" style="width:40px;height:40px">${ico("deal")}</span>
-      <div class="drawer__title"><h2>${esc(deal.name)}</h2><div class="sub">${esc(deal.account_name || deal.account || "No company")} · ${esc(fmt.money(deal.amount || 0, deal.currency))}</div></div>
+      <div class="drawer__title"><h2>${esc(deal.name)}</h2><div class="sub">${esc(deal.account_name || deal.account || "No company")}, ${esc(fmt.money(deal.amount || 0, deal.currency))}</div></div>
       <button class="btn btn--ghost btn--icon btn--sm" data-d="close">${ico("x")}</button></div>
       <div class="stage-track">${stages.map((s) => `<button type="button" class="stage-track__step ${s.key === deal.stage ? "is-on" : ""} stage-track__step--${s.key}" data-move="${s.key}">${esc(s.label)}</button>`).join("")}</div>
     </div>

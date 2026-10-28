@@ -24,7 +24,7 @@ export function item(a, { showRef = false } = {}) {
   const href = showRef ? refHref(a) : "";
   let title = esc(a.label);
   if (a.kind === "search") title = `Searched <b>“${esc(a.ref)}”</b>`;
-  else if (who) title += ` · ${href ? `<a class="link" href="${href}"><b>${esc(who)}</b></a>` : `<b>${esc(who)}</b>`}`;
+  else if (who) title += `: ${href ? `<a class="link" href="${href}"><b>${esc(who)}</b></a>` : `<b>${esc(who)}</b>`}`;
   const extra = a.kind === "email_error" && a.data?.error ? a.data.error : "";
   // Deal events repeat the deal's name in their summary; don't say it twice.
   let summary = a.summary || "";

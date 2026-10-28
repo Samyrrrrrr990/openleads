@@ -81,7 +81,7 @@ function renderTable() {
       <td><div class="cell-person"><div><span class="name">${esc(r.name || r.domain)}</span><span class="sub">${esc(r.domain)}</span></div></div></td>
       <td class="t-sub">${esc(r.industry || "—")}</td><td class="t-sub nowrap">${esc(r.company_size || "—")}</td>
       <td class="t-sub nowrap">${esc([r.city, r.state || r.country].filter(Boolean).join(", ") || "—")}</td>
-      <td class="nowrap"><a class="link" href="#/people?domain=${encodeURIComponent(r.domain)}" data-stop>${fmt.num(r.people)}</a> <span class="faint">· ${fmt.num(r.safe)} safe</span></td>
+      <td class="nowrap"><a class="link" href="#/people?domain=${encodeURIComponent(r.domain)}" data-stop>${fmt.num(r.people)}</a> <span class="faint">(${fmt.num(r.safe)} safe)</span></td>
       <td><div class="tags tags--nowrap" style="max-width:250px" title="${esc(r.technologies.join(", "))}">${r.technologies.slice(0, 2).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}${r.technologies.length > 2 ? `<span class="tag">+${r.technologies.length - 2}</span>` : ""}${!r.technologies.length && !r.profiled ? '<span class="faint">not profiled</span>' : ""}</div></td>
       <td><span class="badge">${esc(store.label("account_stages", r.stage || "prospect"))}</span></td>
       <td class="t-sub nowrap">${r.phone ? esc(fmt.phone(r.phone)) : "—"}</td></tr>`).join("")}</tbody></table>`;
@@ -104,7 +104,7 @@ async function profile(domains) {
   await api.stream("/api/companies/enrich", { domains }, (ev) => {
     if (ev.type === "company") ev.ok ? ok++ : failed++;
   });
-  toast(`Profiled ${ok}${failed ? ` · ${failed} unreachable` : ""}`, failed && !ok ? "err" : "ok");
+  toast(`Profiled ${ok}${failed ? `, ${failed} unreachable` : ""}`, failed && !ok ? "err" : "ok");
   load();
 }
 
@@ -145,7 +145,7 @@ export function openCompany(domain, { onClose, onChange } = {}) {
           <div class="mt">${data.deals.length ? data.deals.map((x) => `<div class="list-row"><span class="tl-icon tl-icon--good">${ico("deal")}</span>
           <div style="flex:1"><b>${esc(x.name)}</b><div class="hint">${esc(store.label("deal_stages", x.stage))}</div></div><b class="num">${esc(fmt.money(x.amount, x.currency))}</b></div>`).join("") : '<p class="muted">No deals.</p>'}</div>`;
     d.el.innerHTML = `<div class="drawer__head"><div class="drawer__top">${ui.companyAvatar(a.name || a.domain, "avatar--lg")}
-        <div class="drawer__title"><h2>${esc(a.name || a.domain)}</h2><div class="sub">${esc(a.domain)}${a.industry ? " · " + esc(a.industry) : ""}</div>
+        <div class="drawer__title"><h2>${esc(a.name || a.domain)}</h2><div class="sub">${esc(a.domain)}${a.industry ? ", " + esc(a.industry) : ""}</div>
           <div class="row row--wrap mt" style="gap:6px">${a.company_size ? `<span class="badge badge--outline">${esc(a.company_size)} employees</span>` : ""}
           ${a.city ? `<span class="badge badge--outline">${ico("pin", "ico--sm")}${esc([a.city, a.country].filter(Boolean).join(", "))}</span>` : ""}
           <span class="badge badge--outline">${ico("users", "ico--sm")}${fmt.num(a.people)} in CRM</span></div></div>
