@@ -137,7 +137,7 @@ export function openCompany(domain, { onClose, onChange } = {}) {
         <div class="actions"><a class="btn btn--xs" href="#/people?domain=${encodeURIComponent(a.domain)}">Open in People</a></div></div>
         ${data.people.length ? data.people.slice(0, 12).map((p) => `<a class="list-row" style="display:flex;padding:9px 16px" href="#/people/${encodeURIComponent(p.email)}">
           ${ui.avatar(ui.name(p) || p.email, p.email, "avatar--sm")}<div style="flex:1;min-width:0"><div class="t-strong ellipsis">${esc(ui.name(p) || p.email)}</div>
-          <div class="hint ellipsis">${esc(p.title || "")}</div></div>${ui.tierDot(p.tier)}${ui.stage(p.stage)}</a>`).join("") : '<div class="card__body"><p class="muted">No contacts here yet.</p></div>'}</div>`
+          <div class="hint ellipsis">${esc(p.title || "")}</div></div>${ui.stage(p.stage)}</a>`).join("") : '<div class="card__body"><p class="muted">No contacts here yet.</p></div>'}</div>`
       : tab === "activity" ? `<div class="composer"><textarea class="textarea" data-note placeholder="Add a note about this account…"></textarea>
           <div class="composer__foot"><span class="spacer"></span><button class="btn btn--sm btn--primary" data-a="note">${ico("note")} Save note</button></div></div>
           <div class="mt-lg">${timeline(data.timeline, { showRef: true })}</div>`
