@@ -23,8 +23,9 @@ running on the same engine and the same local database as the CLI.
   `openleads/web/static/` and shipped in the wheel. End users need **no
   toolchain**.
 - **No external requests from the page.** A strict same-origin
-  Content-Security-Policy blocks third-party scripts, styles and fonts. System
-  fonts, no CDN, no analytics: nothing phones home.
+  Content-Security-Policy blocks third-party scripts, styles and fonts. The
+  typeface ships inside the package, and there is no CDN and no analytics:
+  nothing phones home.
 
 ## The pages
 
@@ -76,10 +77,27 @@ CSV; start the task queue; find new people for what you typed).
 
 Shortcuts never fire while you're typing or inside a dialog.
 
+### Reading an email address
+
+Every address carries one small mark. Its **shape** says how OpenLeads knows the
+address, and its **color** says whether it will deliver:
+
+| Mark | Meaning |
+|---|---|
+| filled square | **Found**: published on the web or confirmed by the mail server |
+| half-filled square | **Pattern**: built from an address format seen at that company |
+| outlined square | **Guessed**: a common format with nothing confirming it |
+| green, amber, red | Deliverable, risky, will bounce |
+
+Hover a mark for the full reason; the contact record lists every check. The
+same marks appear in tables, records, search results and exports.
+
 ### Light and dark
 
 The interface follows your system theme; the moon/sun button (or **T**) pins one.
-It respects `prefers-reduced-motion` and works down to phone width.
+It uses Atkinson Hyperlegible, a typeface drawn so that characters like `l`, `I`
+and `1` can't be mistaken for each other, which matters when you're reading email
+addresses. It respects `prefers-reduced-motion` and works down to phone width.
 
 ## The JSON API
 
