@@ -63,7 +63,7 @@ function renderNav() {
   host.innerHTML = NAV.map(([group, items]) => {
     const links = items.filter(([name]) => router.views[name]);
     if (!links.length) return "";
-    return `<div class="nav__group">${esc(group)}</div>` + links.map(([name, label, icon]) =>
+    return `<div class="nav__group" role="presentation" data-group="${esc(group)}"></div>` + links.map(([name, label, icon]) =>
       `<a class="navlink" href="#/${name}" data-nav="${name}" title="${esc(label)}">${ico(icon)}<span>${esc(label)}</span>`
       + (name === "tasks" ? '<span class="navlink__count hidden" id="nav-tasks"></span>' : "") + "</a>").join("");
   }).join("");
@@ -121,7 +121,7 @@ async function loadReadiness() {
     const g = d?.preflight?.grade || "—";
     const el = $("#readiness");
     el.textContent = g;
-    el.className = "badge badge--sm " + ({ A: "badge--good", B: "badge--info", C: "badge--warn", F: "badge--bad" }[g] || "");
+    el.className = "nav__grade " + ({ A: "is-good", B: "", C: "is-warn", F: "is-bad" }[g] || "");
     store.doctor = d;
   } catch (_) { /* offline */ }
 }

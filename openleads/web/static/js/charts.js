@@ -46,7 +46,7 @@ export function columns(el, points, { height = 150, unit = "", empty = "No data 
     points.forEach((p, i) => {
       const x = padL + i * band + (band - bw) / 2;
       const top = y(p.count), h = y(0) - top;
-      if (p.count > 0) svg += `<path class="bar" data-i="${i}" d="${roundTopRect(x, top, bw, h, Math.min(4, bw / 2))}"/>`;
+      if (p.count > 0) svg += `<path class="bar" data-i="${i}" d="${roundTopRect(x, top, bw, h, Math.min(2, bw / 2))}"/>`;
       svg += `<rect class="hit" data-i="${i}" x="${padL + i * band}" y="${padT}" width="${band}" height="${H - padT - padB}"
         data-tip-title="${esc(shortDate(p.date))}" data-tip-v="${esc(fmt.num(p.count))}${unit ? " " + esc(unit) : ""}"/>`;
     });
