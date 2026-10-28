@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import contextvars
 import math
+import threading
 import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -89,6 +90,52 @@ def submit(executor, fn, *args, **kwargs):
     """
     ctx = contextvars.copy_context()
     return executor.submit(ctx.run, fn, *args, **kwargs)
+
+
+class KeyedTurns:
+    """Tasks sharing a key run one at a time, in the order their tickets were issued.
+
+    The engine resolves several people at one company domain; each resolution can
+    teach the domain's email pattern to the next. Running them concurrently made
+    the result depend on thread timing. Issue a ticket per task (in stream order,
+    on the submitting thread), then wrap the work in ``with turns.turn(key, t):``.
+
+    Waiting ends early when the run deadline passes or :meth:`abort` is called, so
+    a cancelled task can never leave its successors blocked.
+    """
+
+    def __init__(self) -> None:
+        self._cv = threading.Condition()
+        self._issued: dict = {}
+        self._serving: dict = {}
+        self._aborted = False
+
+    def ticket(self, key) -> int:
+        with self._cv:
+            n = self._issued.get(key, 0)
+            self._issued[key] = n + 1
+            return n
+
+    @contextmanager
+    def turn(self, key, ticket: int):
+        with self._cv:
+            while not self._aborted and self._serving.get(key, 0) < ticket:
+                left = remaining()
+                if left <= 0:
+                    break
+                self._cv.wait(timeout=min(0.25, left))
+        try:
+            yield
+        finally:
+            with self._cv:
+                self._serving[key] = max(self._serving.get(key, 0), ticket + 1)
+                self._cv.notify_all()
+
+    def abort(self) -> None:
+        """Release every waiter (the run is stopping)."""
+        with self._cv:
+            self._aborted = True
+            self._cv.notify_all()
 
 
 def ordered_map(fn, items, workers: int) -> Iterator:

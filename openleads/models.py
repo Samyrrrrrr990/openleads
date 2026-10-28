@@ -220,6 +220,9 @@ class Query:
     company_profile: bool = True    # read each company's homepage: tech, socials, phone
     seniority: list = field(default_factory=list)    # keep only these seniorities
     department: list = field(default_factory=list)   # keep only these departments
+    # Seed for sources that sample (YC). None = derived from the query text, so the
+    # same search returns the same companies run after run.
+    seed: int | None = None
 
     def replace(self, **changes) -> "Query":
         """Return a copy with the given fields changed (for chat refinement)."""

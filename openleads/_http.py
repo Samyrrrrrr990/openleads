@@ -23,6 +23,7 @@ v5.1 makes every call **resilient and budget-aware**:
 """
 from __future__ import annotations
 
+import contextvars
 import email.utils
 import http.client
 import json
@@ -34,6 +35,7 @@ import urllib.error
 import urllib.request
 import zlib
 from collections import deque
+from contextlib import contextmanager
 
 from openleads import _concurrency
 from openleads._concurrency import BudgetExhausted
@@ -235,16 +237,48 @@ STALE_NAMESPACES = ("dataset", "geo")
 STALE_SECONDS = 7 * 86400
 
 
+# Run-scoped memo of URLs that failed *permanently* in this run (404, DNS, TLS…),
+# so the next caller in the same run (another person at the same domain) doesn't
+# fetch a dead page again. Transient failures are not memoized.
+_DEAD: contextvars.ContextVar = contextvars.ContextVar("openleads_http_dead", default=None)
+
+
+@contextmanager
+def run_scope():
+    """Scope one search run: within it, a permanently failed URL is fetched once."""
+    token = _DEAD.set((threading.Lock(), set()))
+    try:
+        yield
+    finally:
+        _DEAD.reset(token)
+
+
+def _dead(url: str, add: bool = False) -> bool:
+    memo = _DEAD.get()
+    if memo is None:
+        return False
+    lock, urls = memo
+    with lock:
+        if add:
+            urls.add(url)
+            return True
+        return url in urls
+
+
 def _fetch(url, headers, timeout, cache, ttl_ns, data, validate, retries, parse):
     use_cache = cache is not None and bool(ttl_ns) and data is None
     if use_cache:
         hit = cache.get(ttl_ns, url)
         if hit is not None:
             return hit
+    if data is None and _dead(url):
+        return _stale(cache, ttl_ns, url) if use_cache else None
     try:
         value = parse(request(url, headers, timeout, data=data, retries=retries))
     except FETCH_ERRORS as e:
         _record(url, _reason(e))
+        if data is None and not is_transient(e) and not isinstance(e, BudgetExhausted):
+            _dead(url, add=True)
         return _stale(cache, ttl_ns, url) if use_cache else None
     reason = validate(value) if validate else None
     if reason:

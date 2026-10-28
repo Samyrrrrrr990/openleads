@@ -11,6 +11,7 @@ import html as ihtml
 import json
 import random
 import re
+import zlib
 from typing import Iterator
 
 from openleads._concurrency import ordered_map
@@ -116,8 +117,18 @@ def filter_companies(companies, query: Query):
             if industry.lower() not in blob:
                 continue
         out.append(c)
-    random.shuffle(out)
+    # Shuffled so repeat searches don't all start at "A…", but seeded from the query
+    # so the same search samples the same companies every run (stable results).
+    random.Random(sample_seed(query)).shuffle(out)
     return out
+
+
+def sample_seed(query: Query) -> int:
+    """``query.seed`` if set, else a stable hash of the query's words."""
+    if getattr(query, "seed", None) is not None:
+        return int(query.seed)
+    text = (query.text or query.keyword or query.industry or "").strip().lower()
+    return zlib.crc32(text.encode("utf-8"))
 
 
 class YCSource(Source):

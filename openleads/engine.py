@@ -24,6 +24,7 @@ from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Callable
 
 from openleads import _concurrency, _http, federation
+from openleads.cache.store import MemoryCache
 from openleads.emails.permute import is_free_provider
 from openleads.emails.resolve import find_email
 from openleads.insights import companysize, phones, titles
@@ -163,10 +164,12 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     it, and when it passes the run keeps whatever already finished (in stream
     order), cancels the rest and returns — about a second after the budget at most.
     """
-    use_cache = cache if query.use_cache else None
+    # Without a persistent cache (``--no-cache``, or none passed) a run-scoped memo
+    # still makes each URL a single fetch per run; nothing is written to disk.
+    use_cache = cache if (query.use_cache and cache is not None) else MemoryCache()
     _http.clear_errors()
     budget = getattr(query, "budget", 0) or 0
-    with _concurrency.deadline(budget):
+    with _concurrency.deadline(budget), _http.run_scope():
         return _run(query, use_cache, db, on_progress, budget)
 
 
@@ -188,12 +191,19 @@ def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget) -> list[L
             profiles[domain] = prof
         return prof
 
-    def resolve(entity: Entity):
+    # People at the same domain resolve one at a time, in stream order: each one
+    # can teach the domain's email pattern to the next, so concurrent resolution
+    # made emails and evidence depend on thread timing. It also means the second
+    # person reuses the first one's MX / site fetches instead of racing them.
+    turns = _concurrency.KeyedTurns()
+
+    def resolve(entity: Entity, ticket: int):
         if entity.domain:
-            res = find_email(entity.full_name, entity.domain, cache=use_cache,
-                             db=db, links=entity.links, deep=query.deep,
-                             known_email=entity.extra.get("public_email"))
-            prof = profile_for(entity.domain) if res.tier != "bad" else None
+            with turns.turn(entity.domain, ticket):
+                res = find_email(entity.full_name, entity.domain, cache=use_cache,
+                                 db=db, links=entity.links, deep=query.deep,
+                                 known_email=entity.extra.get("public_email"))
+                prof = profile_for(entity.domain) if res.tier != "bad" else None
             return res, prof
         # Domain-less vertical (e.g. NPI): the public record is itself the value.
         return EmailResult(**_DOMAINLESS), None
@@ -259,7 +269,8 @@ def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget) -> list[L
                     on_progress("phase", f"note: {label} stopped early ({type(e).__name__}: {e})")
                 else:
                     pulled += 1
-                    window.append((entity, _concurrency.submit(pool, resolve, entity)))
+                    ticket = turns.ticket(entity.domain) if entity.domain else 0
+                    window.append((entity, _concurrency.submit(pool, resolve, entity, ticket)))
                 continue
             if not window:
                 stop = "max_companies" if pulled >= query.max_companies else "exhausted"
@@ -289,6 +300,7 @@ def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget) -> list[L
     finally:
         for _, fut in window:
             fut.cancel()
+        turns.abort()             # a cancelled ticket must never block a running one
         pool.shutdown(wait=False)
         _close(gen)
 
