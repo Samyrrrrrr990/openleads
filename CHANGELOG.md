@@ -9,6 +9,10 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 ### Added
 - Duplicate a workflow into an unsaved copy from the canvas toolbar. Copies keep
   the current settings, receive an available name, and leave the original alone.
+- Optional `hubspot` export sink: create or update contacts by email using a
+  private app token (`hubspot_token` / `HUBSPOT_TOKEN`). Populated profile fields
+  update existing contacts without clearing blanks; failures report confirmed
+  progress. Available from the CLI, recipes, watchers and workflow export menus.
 
 ### Fixed
 - Windows `schedule status` replaces undecodable Task Scheduler output instead of emitting a UnicodeDecodeError traceback.

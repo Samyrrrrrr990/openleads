@@ -5,7 +5,7 @@
    ========================================================================= */
 import { $, api, confirmDialog, esc, fail, fmt, ico, onAct, router, toast, ui } from "../core.js";
 
-const SINKS = ["csv", "json", "ndjson", "sheets", "webhook", "notion", "airtable"];
+const SINKS = ["csv", "json", "ndjson", "sheets", "webhook", "notion", "airtable", "hubspot"];
 let ROOT = null;
 let DATA = { recipes: [], watchers: {} };
 

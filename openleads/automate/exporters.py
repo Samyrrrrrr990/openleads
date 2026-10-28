@@ -10,18 +10,24 @@ up only when their token is configured (nothing is required):
 * ``webhook``                     — POST the leads as NDJSON to a URL (Zapier/Make/n8n).
 * ``notion``                      — create a page per lead in a Notion database.
 * ``airtable``                    — create a record per lead in an Airtable table.
+* ``hubspot``                     — create or update contacts by email.
 
 Network sinks accept an injected ``poster`` so they unit-test without the network.
+HubSpot accepts ``requester(method, url, body, headers) -> (status, text)`` instead,
+because updating contacts uses PATCH and creation must distinguish HTTP errors.
 """
 from __future__ import annotations
 
 import json
+import urllib.error
+import urllib.parse
+import urllib.request
 
 from openleads import settings, writers
 from openleads._http import get_text
 from openleads.config import home
 
-SINKS = ("csv", "json", "ndjson", "sheets", "webhook", "notion", "airtable")
+SINKS = ("csv", "json", "ndjson", "sheets", "webhook", "notion", "airtable", "hubspot")
 
 
 def _as_dicts(leads) -> list[dict]:
@@ -147,7 +153,94 @@ def _export_airtable(leads, poster=None) -> dict:
     return {"ok": ok_n > 0, "sink": "airtable", "count": ok_n, "target": f"{base}/{table}"}
 
 
-def export(leads, sink: str = "csv", target: str | None = None, poster=None) -> dict:
+# --- HubSpot ----------------------------------------------------------------- #
+def hubspot_properties(lead: dict) -> dict:
+    """Map populated profile fields without clearing existing contact values."""
+    fields = {"first_name": "firstname", "last_name": "lastname", "organization": "company",
+              "title": "jobtitle", "phone": "phone", "website": "website",
+              "city": "city", "country": "country"}
+    return {dest: lead[src].strip() for src, dest in fields.items()
+            if isinstance(lead.get(src), str) and lead[src].strip()}
+
+
+class _HubSpotNoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Never forward the private app token or contact data to another URL.
+        return None
+
+
+def _hubspot_request(method, url, body, headers, requester=None):
+    try:
+        if requester is not None:
+            return requester(method, url, body, headers)
+        req = urllib.request.Request(url, data=body, headers=headers, method=method)
+        opener = urllib.request.build_opener(_HubSpotNoRedirect())
+        with opener.open(req, timeout=20) as response:
+            return response.status, response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+        exc.close()
+        return status, ""
+    except (OSError, ValueError):
+        # URLs contain email addresses; exception text and API bodies may contain PII.
+        return 0, ""
+
+
+def _hubspot_upsert(email, properties, headers, requester):
+    base = "https://api.hubapi.com/crm/v3/objects/contacts"
+    url = f"{base}/{urllib.parse.quote(email, safe='')}?idProperty=email"
+    body = json.dumps({"properties": properties}).encode("utf-8")
+    # PATCH changes only supplied fields; email batch upsert has different semantics.
+    # https://developers.hubspot.com/docs/api-reference/legacy/crm/objects/contacts/update-contact
+    status, text = _hubspot_request("PATCH", url, body, headers, requester)
+    if status == 404:
+        create = json.dumps({"properties": {**properties, "email": email}}).encode("utf-8")
+        status, text = _hubspot_request("POST", base, create, headers, requester)
+        if status == 409:  # Another writer may have created the contact in the meantime.
+            status, text = _hubspot_request("PATCH", url, body, headers, requester)
+    return status, text
+
+
+def _hubspot_error(status, text) -> str:
+    if status in (200, 201):
+        try:
+            contact = json.loads(text)
+        except (ValueError, TypeError):
+            contact = None
+        if (isinstance(contact, dict) and isinstance(contact.get("id"), str) and contact["id"].strip()
+                and not contact.get("archived") and contact.get("status") != "error"):
+            return ""
+        return "HubSpot did not confirm the contact; check HubSpot before retrying"
+    if status == 401:
+        return "HubSpot rejected hubspot_token"
+    if status == 403:
+        return "HubSpot denied access; check the token's crm.objects.contacts.write scope"
+    if status == 429:
+        return "HubSpot rate limit reached; retry later"
+    return "HubSpot request failed" + (f" (HTTP {status})" if status else " (network error)")
+
+
+def _export_hubspot(leads, requester=None) -> dict:
+    result = {"ok": False, "sink": "hubspot", "count": 0}
+    token = (settings.get("hubspot_token") or "").strip()
+    if not token:
+        return {**result, "error": "set hubspot_token first"}
+    dicts = _as_dicts(leads)
+    # Validate the whole input before writing any contacts.
+    for i, lead in enumerate(dicts, 1):
+        if not isinstance(lead.get("email"), str) or not lead["email"].strip():
+            return {**result, "error": f"HubSpot requires an email for lead {i}"}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    for i, lead in enumerate(dicts, 1):
+        status, text = _hubspot_upsert(lead["email"].strip(), hubspot_properties(lead), headers, requester)
+        error = _hubspot_error(status, text)
+        if error:
+            return {**result, "error": f"{error}; stopped at lead {i}, {result['count']} contacts confirmed"}
+        result["count"] += 1
+    return {**result, "ok": True}
+
+
+def export(leads, sink: str = "csv", target: str | None = None, poster=None, requester=None) -> dict:
     """Dispatch ``leads`` to ``sink``. Returns a result dict (never raises for a
     misconfigured optional sink)."""
     sink = (sink or "csv").lower()
@@ -161,4 +254,6 @@ def export(leads, sink: str = "csv", target: str | None = None, poster=None) -> 
         return _export_notion(leads, poster)
     if sink == "airtable":
         return _export_airtable(leads, poster)
+    if sink == "hubspot":
+        return _export_hubspot(leads, requester)
     return {"ok": False, "sink": sink, "error": f"unknown sink: {sink!r}"}

@@ -10,7 +10,7 @@ const GROUPS = {
   sending: ["Sending policy", "Deliverability guardrails: daily cap, warmup ramp, pacing, and whether risky addresses may be emailed."],
   ai: ["AI writing", "Optional free LLM (OpenRouter) for personalized drafts and plain-English queries."],
   discover: ["Discovery", "Optional keys that raise public API limits."],
-  integrations: ["Integrations", "Where exports and alerts go: webhooks, Notion, Airtable."],
+  integrations: ["Integrations", "Where exports and alerts go: webhooks, Notion, Airtable, HubSpot."],
   web: ["Dashboard", "This local web app."],
 };
 let ROOT = null;

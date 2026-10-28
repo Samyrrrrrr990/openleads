@@ -5,7 +5,7 @@
    ========================================================================= */
 import { $, $$, api, esc, fail, ico, router, toast } from "../core.js";
 
-const WF_SINKS = ["csv", "json", "ndjson", "sheets", "webhook", "notion", "airtable"];
+const WF_SINKS = ["csv", "json", "ndjson", "sheets", "webhook", "notion", "airtable", "hubspot"];
 const WF_TARGET_HINT = {
   csv: "File path, optional (defaults to ~/.openleads/exports)",
   json: "File path, optional", ndjson: "File path, optional",
@@ -13,6 +13,7 @@ const WF_TARGET_HINT = {
   webhook: "Webhook URL (n8n, Zapier, Make)",
   notion: "Uses notion_token and notion_database_id from Settings",
   airtable: "Uses your Airtable settings from Settings",
+  hubspot: "Uses hubspot_token from Settings; matches contacts by email",
 };
 const WF_SCHEDULES = ["weekdays 09:00", "daily 08:30", "every 2h", "mon,wed,fri 14:00", "0 9 * * 1-5"];
 const WF_W = 160, WF_H = 72;

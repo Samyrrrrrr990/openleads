@@ -99,10 +99,24 @@ openleads export sheets                       # a Google-Sheets-ready CSV + impo
 openleads export webhook --target https://hooks.example.com/leads
 openleads export notion                       # needs notion_token + notion_database_id
 openleads export airtable                     # needs airtable_token + airtable_base
+openleads export hubspot                      # needs hubspot_token; creates/updates contacts by email
 ```
 
-`csv` · `json` · `ndjson` · `sheets` · `webhook` are keyless; `notion` and
-`airtable` light up once you set their token in `openleads config`.
+`csv` · `json` · `ndjson` · `sheets` · `webhook` are keyless; `notion`, `airtable`
+and `hubspot` light up once you set their token in `openleads config`.
+
+For HubSpot, set `hubspot_token` in Settings → Integrations, or provide it through
+`HUBSPOT_TOKEN`. Use a private app token with `crm.objects.contacts.write`. No token
+means a clear error and no network request. Every lead needs an email; missing
+emails reject the export before any contacts are written.
+
+HubSpot exports name, company, job title, phone, website, city and country when
+present. Existing contacts are matched by email and only populated fields are
+updated; blank fields do not clear CRM values, and an existing primary email is
+left alone. New contacts receive the supplied email. Exports stop on the first
+failed request and report the number of confirmed contacts. A timeout or invalid
+response can leave the last write unconfirmed; check HubSpot before retrying.
+Rate limits are surfaced without automatic retries.
 
 ---
 
