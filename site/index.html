@@ -4,27 +4,20 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>OpenLeads: describe a customer, get the people</title>
-<meta name="description" content="OpenLeads is a free, open-source lead finder and cold email workspace. Describe who you want, get named people with labeled emails, then write, send, and automate it all from your own machine." />
-<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+<meta name="description" content="OpenLeads is a free, open-source lead finder and sales workspace. Describe who you want, get named people with every email labeled found, pattern or guessed, then run sequences, tasks and deals from your own machine." />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#131418" media="(prefers-color-scheme: dark)" />
 <link rel="canonical" href="https://samyrrrrrr990.github.io/openleads/" />
-
-<!-- social -->
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://samyrrrrrr990.github.io/openleads/" />
 <meta property="og:title" content="OpenLeads: describe a customer, get the people" />
-<meta property="og:description" content="Free, open-source lead finder and cold email workspace. Searches public sources, finds who to email, and tells you which addresses are guesses." />
+<meta property="og:description" content="Free, open-source lead finder and sales workspace. Every email is labeled found, pattern or guessed, and the nightly benchmark shows how often we guess." />
 <meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
-
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-<link rel="stylesheet" href="styles.css?v=8" />
-<script>document.documentElement.classList.add("js");</script>
+<link rel="preload" href="fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="styles.css?v=9" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"OpenLeads","applicationCategory":"BusinessApplication","operatingSystem":"macOS, Linux, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","url":"https://samyrrrrrr990.github.io/openleads/","downloadUrl":"https://pypi.org/project/openleads/"}
 </script>
@@ -33,474 +26,238 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
 
 <header class="nav" id="nav">
-  <a class="brand" href="#top" aria-label="OpenLeads home">
-    <span class="brand__mark" aria-hidden="true"></span>
-    <span class="brand__name">OpenLeads</span>
-  </a>
+  <a class="brand" href="#top" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
   <nav class="nav__links" aria-label="Primary">
+    <a href="#labels">How it labels</a>
     <a href="#benchmark">Benchmark</a>
-    <a href="#workflow">Workflows</a>
-    <a href="#workspace">Product</a>
-    <a href="#pricing">Pricing</a>
+    <a href="#workspace">Workspace</a>
     <a href="docs/index.html">Docs</a>
   </nav>
   <div class="nav__cta">
-    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener" aria-label="Star OpenLeads on GitHub">
-      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>
-      <span class="gh-btn__label">Star</span><span class="gh-btn__count" data-stars hidden></span>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" rel="noopener" aria-label="OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg><span>GitHub</span><span class="gh-btn__count" data-stars hidden></span>
     </a>
-    <a class="solid-btn" href="#install">Install</a>
   </div>
 </header>
 
 <main id="top">
 
-<!-- ============ HERO ============ -->
 <section class="hero">
   <div class="container">
-    <a class="announce intro" href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md" target="_blank" rel="noopener">
-      <b>New</b> Visual workflows and an MCP server <i class="ph ph-caret-right"></i>
-    </a>
-    <h1 class="hero__title intro">Describe a customer.<br /><span>Get the people.</span></h1>
-    <p class="hero__sub intro">The open-source lead workspace. OpenLeads searches free public sources, finds who to email, labels every address as found or guessed, then writes, sends, and repeats it on a schedule.</p>
-    <div class="hero__ctas intro">
-      <button class="copy" data-copy='pip install "openleads[all]"' aria-label='Copy install command: pip install "openleads[all]"'>
-        <span class="copy__prompt">$</span><code>pip install "openleads[all]"</code>
-        <span class="copy__ico" aria-hidden="true"><i class="ph ph-copy"></i><i class="ph ph-check"></i></span>
+    <h1>Describe a customer.<br />Get the people.</h1>
+    <p class="hero__sub">OpenLeads searches free public sources for the businesses and people you describe, finds their email addresses and tells you how it knows each one. It runs on your machine, with no API keys and nothing to pay.</p>
+    <div class="install">
+      <button class="cmd" type="button" data-copy='pip install "openleads[all]"' aria-label='Copy the install command'>
+        <span class="cmd__prompt" aria-hidden="true">$</span><code>pip install "openleads[all]"</code><span class="cmd__hint">Copy</span>
       </button>
-      <a class="text-link" href="docs/quickstart.html">Quickstart <i class="ph ph-caret-right"></i></a>
+      <p class="install__alt">Or run <code>npx openleads</code>. <a href="docs/quickstart.html">Quickstart</a></p>
     </div>
-    <ul class="hero__proof intro" aria-label="Highlights">
-      <li><i class="ph ph-key"></i>No API keys</li>
-      <li><i class="ph ph-laptop"></i>Runs on your machine</li>
-      <li><i class="ph ph-scales"></i>Open source, AGPL-3.0</li>
-    </ul>
 
-    <div class="spot-wrap intro">
-      <div class="spot" role="img" aria-labelledby="spot-label">
-        <div class="spot__bar">
-          <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
-          <span class="spot__q" id="spot-q">dentists in Austin</span>
-          <span class="spot__caret" aria-hidden="true"></span>
-        </div>
-        <div class="spot__body">
-          <div class="spot__tiles" id="spot-tiles" aria-hidden="true"><span class="tile" data-k="found"></span><span class="tile" data-k="found"></span><span class="tile" data-k="found"></span><span class="tile" data-k="found"></span><span class="tile" data-k="guessed"></span><span class="tile" data-k="guessed"></span><span class="tile" data-k="guessed"></span><span class="tile" data-k="guessed"></span><span class="tile" data-k="guessed"></span><span class="tile" data-k="guessed"></span></div>
-          <dl class="spot__meta" id="spot-meta">
-            <div><dt>Leads</dt><dd data-f="leads">10</dd></div>
-            <div><dt>Named people</dt><dd data-f="people">6</dd></div>
-            <div><dt>Emails found</dt><dd data-f="found">4</dd></div>
-            <div><dt>Time</dt><dd data-f="seconds">68s</dd></div>
-          </dl>
-        </div>
-        <div class="spot__legend" aria-hidden="true">
-          <span><i class="lg-found"></i>Found</span>
-          <span><i class="lg-pattern"></i>Domain pattern</span>
-          <span><i class="lg-guessed"></i>Guessed</span>
-          <span><i class="lg-none"></i>Not returned</span>
-        </div>
+    <figure class="result" id="result" aria-label="Example search results">
+      <div class="result__query"><span class="result__prompt">$ openleads find</span><span class="result__q" id="result-q">"dentists in Austin"</span><span class="result__meta" id="result-meta">10 leads in 41 s</span></div>
+      <table>
+        <tbody>
+          <tr><td><i class="ev ev--found ev--safe" title="Found, deliverable"></i></td><td class="who"><b>Maya Okafor</b> <span>Owner and lead dentist</span></td><td class="org">Northwind Dental</td><td class="addr">maya@northwind-dental.example</td><td class="how">found</td></tr>
+          <tr><td><i class="ev ev--pattern ev--safe" title="Pattern, deliverable"></i></td><td class="who"><b>Daniel Reyes</b> <span>Practice manager</span></td><td class="org">Northwind Dental</td><td class="addr">daniel.reyes@northwind-dental.example</td><td class="how">pattern</td></tr>
+          <tr><td><i class="ev ev--found ev--safe" title="Found, deliverable"></i></td><td class="who"><b>Priya Shah</b> <span>Orthodontist</span></td><td class="org">Lakeline Orthodontics</td><td class="addr">priya@lakeline-ortho.example</td><td class="how">found</td></tr>
+          <tr><td><i class="ev ev--guessed ev--risky" title="Guessed, risky"></i></td><td class="who"><b>Tom Brennan</b> <span>Office manager</span></td><td class="org">Barton Creek Family Dentistry</td><td class="addr">tom@bartoncreekdental.example</td><td class="how">guessed</td></tr>
+          <tr><td><i class="ev ev--found ev--safe" title="Found, deliverable"></i></td><td class="who"><b>Front desk</b> <span>Contact address</span></td><td class="org">South Congress Smiles</td><td class="addr">hello@socosmiles.example</td><td class="how">found</td></tr>
+          <tr><td><i class="ev ev--pattern ev--safe" title="Pattern, deliverable"></i></td><td class="who"><b>Elena Marsh</b> <span>Lead hygienist</span></td><td class="org">Mueller Dental Studio</td><td class="addr">emarsh@muellerdental.example</td><td class="how">pattern</td></tr>
+        </tbody>
+      </table>
+      <figcaption class="result__foot">
+        <span><i class="ev ev--found ev--safe"></i>Found</span>
+        <span><i class="ev ev--pattern ev--safe"></i>Pattern</span>
+        <span><i class="ev ev--guessed ev--safe"></i>Guessed</span>
+        <span><i class="dot dot--safe"></i>Deliverable</span>
+        <span><i class="dot dot--risky"></i>Risky</span>
+        <span class="note">An example. The people and domains are invented.</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="section" id="labels">
+  <div class="container section__grid">
+    <h2>Every address says how we know it.</h2>
+    <div class="section__body">
+      <p class="section__lead">Most finders give you one confidence score. OpenLeads tells you where each address came from, so you can decide what is worth sending.</p>
+      <div class="marks">
+        <div class="mark-row"><i class="ev ev--found ev--safe"></i><b>Found</b><p>Published on the company's site, in a public commit or a security.txt file, or confirmed by the mail server.</p></div>
+        <div class="mark-row"><i class="ev ev--pattern ev--safe"></i><b>Pattern</b><p>Built from an address format already seen at that company, like first.last or first initial plus last name.</p></div>
+        <div class="mark-row"><i class="ev ev--guessed ev--risky"></i><b>Guessed</b><p>The most common format for that name. Nothing confirms it, and the label says so.</p></div>
       </div>
-      <p class="spot__note" id="spot-label">Real counts from the nightly benchmark, run <span data-bench="date">7 Oct 2026</span>. Ten leads requested per search. <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/BENCHMARK.md" target="_blank" rel="noopener">See every search</a></p>
+      <p class="section__lead">The color answers a second question: will it deliver? Seven checks decide, and most of them work without port 25, which home internet providers block.</p>
+      <div class="tiers">
+        <span><i class="dot dot--safe"></i><b>Deliverable</b> sent by default</span>
+        <span><i class="dot dot--risky"></i><b>Risky</b> held for your review</span>
+        <span><i class="dot dot--bad"></i><b>Will bounce</b> dropped</span>
+      </div>
+      <ul class="checks">
+        <li>Mail servers <span>Two DNS-over-HTTPS resolvers must agree</span></li>
+        <li>SPF, DMARC and provider <span>From the domain's TXT records</span></li>
+        <li>Disposable, role and free mail <span>Checked against lists on your machine</span></li>
+        <li>Gravatar <span>A public profile means a real inbox</span></li>
+        <li>Published addresses <span>Harvested from sites, commits and security.txt</span></li>
+        <li>Learned patterns <span>Each run teaches the next one</span></li>
+        <li>SMTP and catch-all <span>Probed twice when port 25 is open</span></li>
+      </ul>
     </div>
   </div>
 </section>
 
-<!-- ============ BENCHMARK ============ -->
 <section class="section" id="benchmark">
-  <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">Live benchmark</p>
-      <h2 class="h2">We publish how often we guess.</h2>
-      <p class="lead">Every night, OpenLeads runs 12 real searches against live sources and commits the results to the repo.</p>
-    </div>
-    <div class="stats reveal">
-      <div class="stat"><p class="stat__n"><span data-bench="ok">12</span><small>/<span data-bench="queries">12</span></small></p><p>searches returned leads</p></div>
-      <div class="stat"><p class="stat__n"><span data-bench="fill">84</span><small>%</small></p><p>of requested leads delivered</p></div>
-      <div class="stat"><p class="stat__n"><span data-bench="evidence">32</span><small>%</small></p><p>of emails backed by evidence</p></div>
-      <div class="stat"><p class="stat__n"><span data-bench="junk">0</span><small>%</small></p><p>junk names in the results</p></div>
-    </div>
-    <div class="stats__foot reveal">
-      <span>Everything else is labeled a guess, so you decide what gets sent.</span>
-      <a class="text-link" href="https://github.com/Samyrrrrrr990/openleads/blob/main/BENCHMARK.md" target="_blank" rel="noopener">Full benchmark <i class="ph ph-caret-right"></i></a>
-    </div>
-  </div>
-</section>
-
-<!-- ============ WORKFLOW CANVAS ============ -->
-<section class="section section--tint" id="workflow">
-  <div class="container">
-    <div class="section__head section__head--center reveal">
-      <p class="eyebrow">Workflows</p>
-      <h2 class="h2">From one sentence to a sent email.</h2>
-      <p class="lead">Finding, verifying, writing, and sending usually take four paid tools. In OpenLeads they are nodes on one canvas. Build the flow once, then let it run every weekday at nine.</p>
-    </div>
-
-    <div class="canvas reveal" id="canvas" role="img" aria-label="Example workflow: a weekday trigger finds leads and verifies their emails. Safe addresses get drafts and are sent. Risky ones are held for review and exported.">
-      <div class="canvas__bar">
-        <span class="canvas__dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="canvas__title"><i class="ph ph-flow-arrow"></i>austin-dentists</span>
-        <span class="canvas__status" id="canvas-status"><i></i><span>Waiting for trigger</span></span>
-      </div>
-      <div class="canvas__stage" id="canvas-stage">
-        <svg class="canvas__edges" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden="true">
-          <path data-edge="trigger>find" />
-          <path data-edge="find>verify" />
-          <path data-edge="verify>write" />
-          <path data-edge="write>send" />
-          <path data-edge="verify>review" />
-          <path data-edge="review>export" />
-        </svg>
-        <span class="canvas__branch" style="left:58.7%;top:37%">safe</span>
-        <span class="canvas__branch canvas__branch--warn" style="left:58.7%;top:63%">risky</span>
-        <div class="node" data-node="trigger" data-x="14" data-y="164">
-          <span class="node__ico"><i class="ph ph-clock"></i></span>
-          <span class="node__txt"><b>Schedule</b><small>Weekdays 09:00</small></span>
-          <span class="node__badge"></span>
-        </div>
-        <div class="node" data-node="find" data-x="200" data-y="164">
-          <span class="node__ico node__ico--red"><i class="ph ph-magnifying-glass"></i></span>
-          <span class="node__txt"><b>Find leads</b><small id="node-find-q">dentists in Austin</small></span>
-          <span class="node__badge"></span>
-        </div>
-        <div class="node" data-node="verify" data-x="386" data-y="164">
-          <span class="node__ico"><i class="ph ph-seal-check"></i></span>
-          <span class="node__txt"><b>Verify emails</b><small>7 signals, 3 tiers</small></span>
-          <span class="node__badge"></span>
-        </div>
-        <div class="node" data-node="write" data-x="628" data-y="64">
-          <span class="node__ico"><i class="ph ph-pencil-simple-line"></i></span>
-          <span class="node__txt"><b>Write drafts</b><small>Spam-checked</small></span>
-          <span class="node__badge"></span>
-        </div>
-        <div class="node" data-node="send" data-x="826" data-y="64">
-          <span class="node__ico node__ico--ink"><i class="ph ph-paper-plane-tilt"></i></span>
-          <span class="node__txt"><b>Send</b><small>Warmup capped</small></span>
-          <span class="node__badge"></span>
-        </div>
-        <div class="node" data-node="review" data-x="628" data-y="264">
-          <span class="node__ico"><i class="ph ph-hand-palm"></i></span>
-          <span class="node__txt"><b>Review</b><small>Held, never sent</small></span>
-          <span class="node__badge"></span>
-        </div>
-        <div class="node" data-node="export" data-x="826" data-y="264">
-          <span class="node__ico"><i class="ph ph-table"></i></span>
-          <span class="node__txt"><b>Export</b><small>Sheets, Notion, CRM</small></span>
-          <span class="node__badge"></span>
-        </div>
-      </div>
-      <ol class="canvas__log" id="canvas-log" aria-hidden="true"></ol>
-    </div>
-
-    <div class="steps reveal">
-      <div><b>Trigger</b><span>A cron, a weekday time, or a message from Claude over MCP.</span></div>
-      <div><b>Find</b><span>Your sentence is routed to the sources that fit, then the people are found.</span></div>
-      <div><b>Verify</b><span>Seven signals score each address as safe, risky, or bad.</span></div>
-      <div><b>Write and send</b><span>Plain-text drafts, throttled sends, one-click unsubscribe.</span></div>
+  <div class="container section__grid">
+    <h2>We publish how often we guess.</h2>
+    <div class="section__body">
+      <p class="section__lead">Every night a GitHub Action runs the same real searches against the live sources, asks for ten leads each, and commits what came back. No cache, no cherry-picking, and the empty nights stay in.</p>
+      <table class="bench" id="bench">
+        <thead><tr><th>Search</th><th>Returned</th><th class="n">Leads</th><th class="n">Found</th><th class="n">Pattern</th><th class="n">Guessed</th><th class="n t">Time</th></tr></thead>
+        <tbody id="bench-rows">
+          <tr class="is-empty"><td class="q">dentists in Austin</td><td><span class="strip" aria-label="0 of 10 returned"><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n t">15 s</td></tr>
+          <tr><td class="q">marketing agencies in Miami</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--pattern"></i><i class="ev ev--pattern"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">4</td><td class="n">2</td><td class="n">4</td><td class="n t">48 s</td></tr>
+          <tr><td class="q">law firms in London</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">1</td><td class="n">0</td><td class="n">3</td><td class="n t">117 s</td></tr>
+          <tr><td class="q">accountants in Toronto</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">1</td><td class="n">0</td><td class="n">3</td><td class="n t">77 s</td></tr>
+          <tr><td class="q">software companies in Berlin</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">6</td><td class="n">0</td><td class="n">4</td><td class="n t">103 s</td></tr>
+          <tr><td class="q">gyms in Sydney</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">4</td><td class="n">0</td><td class="n">0</td><td class="n t">90 s</td></tr>
+          <tr><td class="q">fintech founders</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">2</td><td class="n">0</td><td class="n">8</td><td class="n t">18 s</td></tr>
+          <tr><td class="q">AI startup founders</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">5</td><td class="n">0</td><td class="n">5</td><td class="n t">17 s</td></tr>
+          <tr><td class="q">rust developers in Berlin</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">8</td><td class="n">0</td><td class="n">2</td><td class="n t">103 s</td></tr>
+          <tr><td class="q">machine learning researchers</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">3</td><td class="n">0</td><td class="n">7</td><td class="n t">51 s</td></tr>
+          <tr><td class="q">emails at stripe.com</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--pattern"></i><i class="ev ev--pattern"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">2</td><td class="n">2</td><td class="n">0</td><td class="n t">5 s</td></tr>
+          <tr><td class="q">real estate agents in Chicago</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">9</td><td class="n">0</td><td class="n">1</td><td class="n t">52 s</td></tr>
+        </tbody>
+      </table>
+      <p class="bench__sum" id="bench-sum">Run of <b data-bench="date">28 Oct 2026</b> on version <span data-bench="version">5.0.0</span>: <b data-bench="ok">11</b> of <span data-bench="queries">12</span> searches returned leads, <b data-bench="fill">72%</b> of the requested leads came back, and <b data-bench="evidence">57%</b> of the emails were found or built from a seen pattern. <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/BENCHMARK.md">Every night's results</a></p>
     </div>
   </div>
 </section>
 
-<!-- ============ WORKSPACE ============ -->
 <section class="section" id="workspace">
   <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">The workspace</p>
-      <h2 class="h2">Everything a sales tool does. On localhost.</h2>
-      <p class="lead">Run <code>openleads web</code> and you get a full sales workspace: people and company search with Apollo-style filters, lists, ICP scoring, multi-step sequences, a task queue, a deal pipeline, analytics and visual workflows. No account, no seat pricing, no data leaving your laptop. Just looking? <code>openleads demo</code>.</p>
-    </div>
-
-    <figure class="app-shot reveal">
-      <div class="app-shot__win" aria-hidden="true">
-        <div class="app-shot__side">
-          <span class="app-shot__brand"><i class="brand__mark"></i>OpenLeads</span>
-          <span class="is-on"><i class="ph ph-magnifying-glass"></i>Find people</span>
-          <span><i class="ph ph-users"></i>People</span>
-          <span><i class="ph ph-buildings"></i>Companies</span>
-          <span><i class="ph ph-list-numbers"></i>Sequences</span>
-          <span><i class="ph ph-check-square"></i>Tasks</span>
-          <span><i class="ph ph-kanban"></i>Deals</span>
-          <span><i class="ph ph-chart-line-up"></i>Analytics</span>
-        </div>
-        <div class="app-shot__main">
-          <div class="app-shot__search"><i class="ph ph-magnifying-glass"></i><span>law firms in London</span><b>Find</b></div>
-          <div class="app-shot__kpis">
-            <div><small>Leads</small><b>10</b></div><div><small>Safe</small><b>6</b></div>
-            <div><small>Replied</small><b>2</b></div><div><small>Bounced</small><b>0%</b></div>
-          </div>
-          <div class="app-shot__rows">
-            <div><span class="av">EH</span><b>Eleanor H.</b><span>Partner</span><em class="t-safe">safe 92</em></div>
-            <div><span class="av">MR</span><b>Marcus R.</b><span>Managing partner</span><em class="t-safe">safe 88</em></div>
-            <div><span class="av">PS</span><b>Priya S.</b><span>Head of operations</span><em class="t-risky">risky 61</em></div>
-            <div><span class="av">TO</span><b>Tom O.</b><span>Founder</span><em class="t-safe">safe 84</em></div>
-          </div>
-        </div>
+    <div class="section__grid">
+      <h2>A sales workspace on localhost.</h2>
+      <div class="section__body">
+        <p class="section__lead">Run <code>openleads web</code> and everything you find lands in one place: people and companies with Apollo-style filters, lists, sequences, tasks, deals and analytics. It is a single SQLite file in <code>~/.openleads</code>, and it never leaves your machine.</p>
+        <p class="section__lead">Want to look first? <code>openleads demo</code> opens it on an invented workspace.</p>
       </div>
-      <figcaption>An illustration of the local dashboard. The names are examples.</figcaption>
+    </div>
+    <figure class="shot" style="margin-top:48px">
+      <picture>
+        <source srcset="assets/dashboard-people-dark.webp" media="(prefers-color-scheme: dark)" />
+        <img src="assets/dashboard-people.webp" width="2160" height="1290" loading="lazy" decoding="async"
+             alt="The People page of the OpenLeads dashboard: a filter column, and a table of contacts with their title, company, email with its evidence mark, stage and last contact." />
+      </picture>
     </figure>
-
-    <div class="features">
-      <article class="feature reveal"><i class="ph ph-magnifying-glass"></i><h3>Natural language search</h3><p>Type "fintech founders" or "accountants in Toronto". Ten free sources, merged and de-duplicated.</p></article>
-      <article class="feature reveal"><i class="ph ph-upload-simple"></i><h3>Enrich any CSV</h3><p>Paste a list of companies or names. Every row comes back with an email and a label you can trust.</p></article>
-      <article class="feature reveal"><i class="ph ph-flow-arrow"></i><h3>Visual workflows</h3><p>Recipes drawn as a node canvas: trigger, find, verify, write, send, export. Run once or on a schedule.</p></article>
-      <article class="feature reveal"><i class="ph ph-users"></i><h3>People and companies</h3><p>Filter everyone you've found or imported by seniority, department, industry, size, tech stack, stage and fit. Lists, tags, notes, saved searches.</p></article>
-      <article class="feature reveal"><i class="ph ph-arrows-clockwise"></i><h3>Sequences</h3><p>Email, call, LinkedIn and task steps with A/B variants and same-thread follow-ups. People leave the moment they reply, bounce, or unsubscribe.</p></article>
-      <article class="feature reveal"><i class="ph ph-target"></i><h3>ICP scoring</h3><p>Describe your ideal customer as points; every contact gets a 0–100 fit score and an A–D grade, with a preview before you save.</p></article>
-      <article class="feature reveal"><i class="ph ph-kanban"></i><h3>Tasks and deals</h3><p>A focus-mode task queue for calls and follow-ups, and a drag-and-drop pipeline with a weighted forecast.</p></article>
-      <article class="feature reveal"><i class="ph ph-arrow-square-in"></i><h3>Bring your Apollo data</h3><p>Import Apollo, HubSpot or LinkedIn exports with columns mapped for you, and export back in their formats.</p></article>
-      <article class="feature reveal"><i class="ph ph-chart-line-up"></i><h3>Analytics</h3><p>Reply rate, bounce rate, and results by source and tier, computed from your own send log.</p></article>
-      <article class="feature reveal"><i class="ph ph-bell-ringing"></i><h3>Watchers</h3><p>Hear about it only when new leads match a niche you care about, delivered to a file or a webhook.</p></article>
-      <article class="feature reveal"><i class="ph ph-robot"></i><h3>MCP server</h3><p>Let Claude, Cursor, or any MCP client find leads, then save them to lists, set stages, create tasks and enroll people in sequences.</p></article>
-      <article class="feature reveal"><i class="ph ph-shield-check"></i><h3>Deliverability preflight</h3><p>SPF, DKIM, and DMARC graded before your first send. Warmup caps and throttling are on by default.</p></article>
-    </div>
-
-    <div class="integrations reveal">
-      <p>Sends through and exports to</p>
-      <div class="integrations__row">
-        <span><i class="ph ph-google-logo"></i>Gmail</span>
-        <span><i class="ph ph-microsoft-outlook-logo"></i>Outlook</span>
-        <span><i class="ph ph-envelope-simple"></i>Any SMTP</span>
-        <span><i class="ph ph-table"></i>Google Sheets</span>
-        <span><i class="ph ph-notion-logo"></i>Notion</span>
-        <span><i class="ph ph-grid-four"></i>Airtable</span>
-        <span><i class="ph ph-webhooks-logo"></i>Webhooks for n8n and Zapier</span>
-        <span><i class="ph ph-file-csv"></i>CSV and JSON</span>
-      </div>
-    </div>
+    <p class="shot-cap">The People page, on the demo workspace.</p>
+    <dl class="caps">
+      <div><dt>Find</dt><dd>Plain-English search across ten free sources. Company lookups with tech stack, socials and phone numbers. Enrich any CSV.</dd></div>
+      <div><dt>Verify</dt><dd>Found, pattern or guessed on every address, seven deliverability checks, and automatic suppression of bounces and unsubscribes.</dd></div>
+      <div><dt>Reach out</dt><dd>Drafts you edit before they send. Sequences with email, call, LinkedIn and task steps. Warmup caps and one-click unsubscribe.</dd></div>
+      <div><dt>Track</dt><dd>Stages that move on their own, ICP fit from A to D, a task queue, a deal pipeline with a weighted forecast, and analytics.</dd></div>
+      <div><dt>Automate</dt><dd>Recipes and watchers on a schedule, drawn as workflows. Exports to Sheets, Notion, Airtable, HubSpot and webhooks.</dd></div>
+      <div><dt>Bring your data</dt><dd>Import Apollo, HubSpot and LinkedIn exports with the columns mapped for you, and export back in their formats.</dd></div>
+    </dl>
   </div>
 </section>
 
-<!-- ============ DELIVERABILITY ============ -->
-<section class="section section--tint" id="deliver">
+<section class="section" id="run">
   <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">Deliverability</p>
-      <h2 class="h2">Checks that work without port&nbsp;25.</h2>
-      <p class="lead">Most free finders rely on one SMTP probe that home ISPs block. When it fails, every address quietly becomes a guess. OpenLeads cross-checks seven signals instead.</p>
-    </div>
-    <div class="bento">
-      <div class="cell cell--signals reveal">
-        <h3>Seven independent signals</h3>
-        <p>Most of them need no port 25 at all.</p>
-        <ul class="signals">
-          <li><i class="ph ph-check"></i><div><b>MX consensus</b><span>Two DNS-over-HTTPS resolvers must agree</span></div></li>
-          <li><i class="ph ph-check"></i><div><b>SPF, DMARC, and provider</b><span>TXT record lookups</span></div></li>
-          <li><i class="ph ph-check"></i><div><b>Disposable, role, and free-mail filters</b><span>Static lists, checked locally</span></div></li>
-          <li><i class="ph ph-check"></i><div><b>Gravatar existence</b><span>A real profile means a real inbox</span></div></li>
-          <li><i class="ph ph-check"></i><div><b>Published addresses</b><span>Harvested from commits and security.txt</span></div></li>
-          <li><i class="ph ph-check"></i><div><b>Learned domain patterns</b><span>Improve with every run</span></div></li>
-          <li><i class="ph ph-check"></i><div><b>SMTP RCPT and catch-all</b><span>Double-probed when port 25 is open</span></div></li>
-        </ul>
-      </div>
-      <div class="cell cell--tiers reveal">
-        <h3>Three tiers. Only one gets sent.</h3>
-        <p>Every address gets a 0 to 100 score and lands in a tier.</p>
-        <div class="tiers">
-          <div><b>Safe</b><span>Sent</span></div>
-          <div><b>Risky</b><span>Held for review</span></div>
-          <div class="t--bad"><b>Bad</b><span>Dropped</span></div>
-        </div>
-      </div>
-      <div class="cell cell--sources reveal">
-        <h3>Ten free sources. No API keys.</h3>
-        <p>You never pick one. Your search is routed to the sources that fit, then merged and de-duplicated.</p>
-        <div class="pills">
-          <span>OpenStreetMap</span><span>Y Combinator</span><span>Hacker News</span><span>Product Hunt</span>
-          <span>Wikidata</span><span>SEC EDGAR</span><span>GitHub</span><span>NPI</span><span>OpenAlex</span>
-          <span>Company domains</span><span class="pill--add">+ your own .py</span>
-        </div>
-      </div>
+    <h2>Use it from the terminal, the browser, Python or Claude.</h2>
+    <div class="ways">
+      <div class="way"><h3>Terminal</h3><p>Results print as a table, or as CSV and JSON you can pipe.</p>
+<pre class="code"><span class="c"># ten leads, every email labeled</span>
+openleads find "accountants in Toronto"
+openleads find "fintech founders" -f csv &gt; leads.csv</pre></div>
+      <div class="way"><h3>Browser</h3><p>The workspace on <code>127.0.0.1</code>, bound to your machine only.</p>
+<pre class="code">openleads web
+<span class="c"># or try it on invented data</span>
+openleads demo</pre></div>
+      <div class="way"><h3>Python</h3><p>One call returns leads you can loop over or save.</p>
+<pre class="code">import openleads
+
+leads = openleads.find("gyms in Sydney", count=20)
+leads.write("gyms.csv")</pre></div>
+      <div class="way"><h3>Claude and Cursor</h3><p>An MCP server that finds leads and works your lists, tasks and sequences.</p>
+<pre class="code">claude mcp add openleads -- openleads mcp
+<span class="c"># then ask:</span>
+<span class="c"># find 20 dentists in Austin and add them to a list</span></pre></div>
     </div>
   </div>
 </section>
 
-<!-- ============ COMPARE ============ -->
 <section class="section" id="compare">
-  <div class="container">
-    <div class="section__head section__head--center reveal">
-      <p class="eyebrow">Compare</p>
-      <h2 class="h2">Compared with free tiers.</h2>
-    </div>
-    <div class="compare reveal">
-      <table>
-        <thead><tr><td></td><th scope="col" class="us">OpenLeads</th><th scope="col">Apollo and Hunter, free</th></tr></thead>
+  <div class="container section__grid">
+    <h2>Compared with the free tiers.</h2>
+    <div class="section__body">
+      <table class="compare">
+        <thead><tr><th scope="col"><span class="sr-only">Feature</span></th><th scope="col">OpenLeads</th><th scope="col">Apollo and Hunter, free</th></tr></thead>
         <tbody>
-          <tr><td>Cost</td><td class="us">$0, with no credit limits</td><td>Credits, then paid</td></tr>
-          <tr><td>API key</td><td class="us">None</td><td>Required</td></tr>
-          <tr><td>Labels</td><td class="us">Found, pattern, or guessed on every address</td><td>One confidence score</td></tr>
-          <tr><td>Enrich your own list</td><td class="us">Paste a CSV, get each email labeled</td><td>Paid feature</td></tr>
-          <tr><td>Writes and sends</td><td class="us">Drafts, warmup, throttling, suppression</td><td>Upsell</td></tr>
-          <tr><td>Sequences, tasks, deals</td><td class="us">Included, unlimited</td><td>Limited, then paid plans</td></tr>
-          <tr><td>Workflows</td><td class="us">Visual recipes on a schedule</td><td>Paid plans</td></tr>
-          <tr><td>Where it runs</td><td class="us">Your machine</td><td>Their cloud</td></tr>
-          <tr><td>Source code</td><td class="us">Open source, AGPL-3.0</td><td>Closed</td></tr>
+          <tr><th scope="row">Cost</th><td class="us">$0, no credit limits</td><td class="them">Credits, then paid plans</td></tr>
+          <tr><th scope="row">API key</th><td class="us">None</td><td class="them">Required</td></tr>
+          <tr><th scope="row">Email labels</th><td class="us">Found, pattern or guessed on every address</td><td class="them">One confidence score</td></tr>
+          <tr><th scope="row">Your own list</th><td class="us">Paste a CSV, get every email labeled</td><td class="them">Paid feature</td></tr>
+          <tr><th scope="row">Sequences, tasks, deals</th><td class="us">Included, unlimited</td><td class="them">Limited, then paid</td></tr>
+          <tr><th scope="row">Where your data lives</th><td class="us">Your machine</td><td class="them">Their cloud</td></tr>
+          <tr><th scope="row">Source code</th><td class="us">Open, AGPL-3.0</td><td class="them">Closed</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
 
-<!-- ============ PRIVACY ============ -->
-<section class="privacy">
-  <div class="container reveal">
-    <i class="ph ph-lock-simple" aria-hidden="true"></i>
-    <h2>Nothing leaves your laptop.</h2>
-    <p>Leads, drafts, mailbox credentials, and your CRM live in one SQLite file under <code>~/.openleads</code>. The engine only talks to public sources and your mail server.</p>
-  </div>
-</section>
-
-<!-- ============ PRICING ============ -->
-<section class="section" id="pricing">
-  <div class="container">
-    <div class="section__head section__head--center reveal">
-      <p class="eyebrow">Pricing</p>
-      <h2 class="h2">Free means free.</h2>
-      <p class="lead">No credits, no seats, no trial that runs out. The whole product is open source. Companies that cannot ship AGPL code can buy a commercial license.</p>
-    </div>
-    <div class="plans">
-      <div class="plan reveal">
-        <h3>Community</h3>
-        <p class="plan__price">$0<small>forever</small></p>
-        <p class="plan__desc">The full product, self-hosted on your machine.</p>
-        <ul>
-          <li><i class="ph ph-check"></i>Unlimited searches and enrichment</li>
-          <li><i class="ph ph-check"></i>Dashboard, CRM, workflows, analytics</li>
-          <li><i class="ph ph-check"></i>Sending with warmup and suppression</li>
-          <li><i class="ph ph-check"></i>MCP server for Claude and Cursor</li>
-          <li><i class="ph ph-check"></i>Community support on GitHub</li>
-        </ul>
-        <a class="ghost-btn plan__cta" href="#install">Install free</a>
-      </div>
-      <div class="plan plan--feature reveal">
-        <span class="plan__tag">Most popular</span>
-        <h3>Supporter</h3>
-        <p class="plan__price">1 star<small>on GitHub</small></p>
-        <p class="plan__desc">Same product. You help the next person find it.</p>
-        <ul>
-          <li><i class="ph ph-check"></i>Everything in Community</li>
-          <li><i class="ph ph-check"></i>A vote on the roadmap in Discussions</li>
-          <li><i class="ph ph-check"></i>Releases in your GitHub feed</li>
-          <li><i class="ph ph-check"></i>A very happy maintainer</li>
-        </ul>
-        <a class="solid-btn plan__cta" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a>
-      </div>
-      <div class="plan reveal">
-        <h3>Commercial</h3>
-        <p class="plan__price">Custom</p>
-        <p class="plan__desc">For teams embedding OpenLeads in closed-source products.</p>
-        <ul>
-          <li><i class="ph ph-check"></i>Use without AGPL obligations</li>
-          <li><i class="ph ph-check"></i>Keep your own source adapters private</li>
-          <li><i class="ph ph-check"></i>Priority fixes and email support</li>
-          <li><i class="ph ph-check"></i>Invoice billing</li>
-        </ul>
-        <a class="ghost-btn plan__cta" href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md" target="_blank" rel="noopener">Read the license</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ FAQ ============ -->
-<section class="section section--tint" id="faq">
-  <div class="container faq">
-    <div class="faq__head reveal">
-      <p class="eyebrow">FAQ</p>
-      <h2 class="h2">Questions people ask.</h2>
-      <p class="lead">Something missing? <a class="text-link" href="https://github.com/Samyrrrrrr990/openleads/issues" target="_blank" rel="noopener">Open an issue <i class="ph ph-caret-right"></i></a></p>
-    </div>
-    <div class="faq__list reveal">
-      <details><summary>Is it really free? What is the catch?</summary>
-        <p>The engine only uses free public sources and your own mailbox, so there is nothing to meter. The code is AGPL-3.0. If you want to build it into a closed-source product, there is a commercial license.</p></details>
-      <details><summary>How accurate are the emails?</summary>
-        <p>Every address is labeled: found (published somewhere), pattern (matches the company's known format), or guessed. The nightly benchmark publishes how many of each we return, so you can check before you trust it.</p></details>
-      <details><summary>Will this get my domain flagged?</summary>
-        <p>Only safe-tier addresses are sent by default. Sends are throttled and capped during warmup, every email has one-click unsubscribe, and the preflight grades SPF, DKIM, and DMARC before the first send. Use a secondary domain for cold outreach.</p></details>
-      <details><summary>Is this legal?</summary>
-        <p>It depends on where you and your recipients are. OpenLeads ships suppression lists and one-click unsubscribe headers, and the <a href="docs/responsible-use.html">responsible use guide</a> covers CAN-SPAM, GDPR, and CASL. It is built for relevant, low-volume outreach, not bulk spam.</p></details>
-      <details><summary>How is it like n8n?</summary>
-        <p>Recipes are workflows: a trigger, a search, a verify step that branches on the result, then write, send, and export nodes. The dashboard draws them as a canvas you can edit and run. You can also push leads into n8n or Zapier with the webhook export.</p></details>
+<section class="section" id="faq">
+  <div class="container section__grid">
+    <h2>Questions people ask.</h2>
+    <div class="section__body faq">
+      <details><summary>Is it really free?</summary>
+        <p>Yes. It only uses free public sources and your own mailbox, so there is nothing to meter. The code is AGPL-3.0; if you want to build it into a closed-source product, there is a <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md">commercial license</a>.</p></details>
+      <details><summary>Where do the leads come from?</summary>
+        <p>OpenStreetMap for local businesses, Y Combinator and Hacker News for startups, Wikidata and SEC EDGAR for companies, GitHub, Hugging Face and OpenAlex for builders and researchers, the NPI registry for US clinicians, and company websites for the people behind them. You never pick one: your search goes to the sources that fit.</p></details>
+      <details><summary>Will it get my domain flagged?</summary>
+        <p>Only deliverable addresses are sent by default. Sends are throttled and capped while your mailbox warms up, every email carries one-click unsubscribe, and <code>openleads doctor</code> grades SPF, DKIM and DMARC before your first send. A secondary sending domain is still a good idea.</p></details>
+      <details><summary>Is cold email legal?</summary>
+        <p>It depends on where you and your recipients are. OpenLeads keeps suppression lists and unsubscribe headers for you, and the <a href="docs/responsible-use.html">responsible use guide</a> covers CAN-SPAM, GDPR and CASL.</p></details>
       <details><summary>Do I need to know Python?</summary>
-        <p>No. Install it with one command, or run <code>npx openleads</code> and type what you want in plain English. Python only matters if you want to add your own source.</p></details>
+        <p>No. Install it with one command and type what you want, in the terminal, in the dashboard or through Claude. Python only matters if you want to add your own source.</p></details>
     </div>
   </div>
 </section>
 
-<!-- ============ INSTALL ============ -->
-<section class="section" id="install">
-  <div class="container install">
-    <div class="section__head section__head--center reveal">
-      <h2 class="h2">Install in one line.</h2>
-      <p class="lead">Python 3.8 or newer. The npx wrapper runs the same CLI.</p>
-    </div>
-    <div class="reveal">
-      <div class="seg" role="tablist" aria-label="Install method" data-active="0">
-        <span class="seg__thumb" aria-hidden="true"></span>
-        <button role="tab" id="tab-py" aria-selected="true" aria-controls="panel-py">Python</button>
-        <button role="tab" id="tab-node" aria-selected="false" aria-controls="panel-node" tabindex="-1">Node</button>
-        <button role="tab" id="tab-mcp" aria-selected="false" aria-controls="panel-mcp" tabindex="-1">Claude</button>
-      </div>
-      <div class="code-card" id="panel-py" role="tabpanel" aria-labelledby="tab-py"><code><span class="c-com"># the engine and the local app</span>
-<span class="c-cmd">pip install "openleads[all]"</span>
-
-<span class="c-com"># describe who you want</span>
-<span class="c-cmd">openleads find "marketing agencies in Miami"</span>
-
-<span class="c-com"># or open the local dashboard</span>
-<span class="c-cmd">openleads web</span></code></div>
-      <div class="code-card" id="panel-node" role="tabpanel" aria-labelledby="tab-node" hidden><code><span class="c-com"># no install, wraps the Python CLI</span>
-<span class="c-cmd">npx openleads find "rust developers in Berlin"</span>
-
-<span class="c-com"># chat mode: just type what you want</span>
-<span class="c-cmd">npx openleads</span>
-
-<span class="c-com"># add your own source</span>
-<span class="c-cmd">cp lawyers.py ~/.openleads/sources/</span></code></div>
-      <div class="code-card" id="panel-mcp" role="tabpanel" aria-labelledby="tab-mcp" hidden><code><span class="c-com"># add OpenLeads to Claude Code as an MCP server</span>
-<span class="c-cmd">claude mcp add openleads -- openleads mcp</span>
-
-<span class="c-com"># then ask in plain English</span>
-<span class="c-cmd">find 20 accountants in Toronto and label their emails</span></code></div>
-    </div>
-    <div class="install-foot reveal">
-      <a class="solid-btn solid-btn--lg" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub<span class="star-count" data-stars hidden></span></a>
-      <a class="text-link" href="docs/index.html">Read the docs <i class="ph ph-caret-right"></i></a>
+<section class="close" id="install">
+  <div class="container">
+    <h2>Install it and describe your first customer.</h2>
+    <div class="install">
+      <button class="cmd" type="button" data-copy='pip install "openleads[all]"' aria-label='Copy the install command'>
+        <span class="cmd__prompt" aria-hidden="true">$</span><code>pip install "openleads[all]"</code><span class="cmd__hint">Copy</span>
+      </button>
+      <p class="install__alt">Python 3.8 or newer. <a href="docs/index.html">Read the docs</a></p>
     </div>
   </div>
 </section>
+
 </main>
 
 <footer class="footer">
-  <div class="container footer__inner">
-    <div class="footer__brand">
-      <span class="brand__mark" aria-hidden="true"></span>
-      <div>
-        <p class="brand__name">OpenLeads</p>
-        <p class="footer__tag">Lead finding and cold email, free and local.</p>
+  <div class="container">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a class="brand" href="#top"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+        <p>Lead finding and a sales workspace that run on your own machine.</p>
+      </div>
+      <div class="footer__cols">
+        <div><h4>Product</h4><a href="#labels">How it labels</a><a href="#benchmark">Benchmark</a><a href="#workspace">Workspace</a><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
+        <div><h4>Docs</h4><a href="docs/quickstart.html">Quickstart</a><a href="docs/finding.html">Finding leads</a><a href="docs/mcp.html">MCP server</a><a href="docs/web.html">Dashboard</a></div>
+        <div><h4>Project</h4><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a><a href="https://pypi.org/project/openleads/">PyPI</a><a href="https://www.npmjs.com/package/openleads">npm</a><a href="docs/responsible-use.html">Responsible use</a></div>
       </div>
     </div>
-    <div class="footer__cols">
-      <div><h4>Product</h4>
-        <a href="#workflow">Workflows</a>
-        <a href="#workspace">Dashboard</a>
-        <a href="#pricing">Pricing</a>
-        <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
-      <div><h4>Docs</h4>
-        <a href="docs/quickstart.html">Quickstart</a>
-        <a href="docs/deliverability.html">Deliverability</a>
-        <a href="docs/mcp.html">MCP server</a>
-        <a href="docs/web.html">Web dashboard</a></div>
-      <div><h4>Project</h4>
-        <a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a>
-        <a href="https://pypi.org/project/openleads/">PyPI</a>
-        <a href="https://www.npmjs.com/package/openleads">npm</a>
-        <a href="docs/responsible-use.html">Responsible use</a></div>
+    <div class="footer__legal">
+      <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
+      <span><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md">Commercial license</a></span>
     </div>
   </div>
-  <div class="container footer__legal">
-    <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0, commercial licenses available.</span>
-    <span>Made for anyone who has rage-quit a “request a demo” button.</span>
-  </div>
 </footer>
-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9" defer></script>
 </body>
 </html>
