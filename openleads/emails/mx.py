@@ -8,9 +8,8 @@ mail exchangers for a domain.
 from __future__ import annotations
 
 import json
-import urllib.request
 
-from openleads.config import USER_AGENT
+from openleads import _http
 
 # Each resolver formats its DoH JSON endpoint slightly differently.
 RESOLVERS = {
@@ -33,11 +32,9 @@ PROVIDER_SIGNATURES = (
 
 
 def _query(url: str, timeout: int = 15) -> dict:
-    req = urllib.request.Request(
-        url, headers={"User-Agent": USER_AGENT, "Accept": "application/dns-json"}
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.load(r)
+    """One DoH JSON query through the shared HTTP seam (retries + run deadline)."""
+    return json.loads(_http.request(url, headers={"Accept": "application/dns-json"},
+                                    timeout=timeout))
 
 
 def parse_mx(doh_json: dict) -> list[str]:

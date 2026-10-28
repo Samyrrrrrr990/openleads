@@ -14,9 +14,8 @@ from __future__ import annotations
 
 import hashlib
 import urllib.error
-import urllib.request
 
-from openleads.config import USER_AGENT
+from openleads import _http
 
 
 def email_hash(email: str) -> str:
@@ -37,14 +36,13 @@ def has_gravatar(email: str, cache=None, timeout: int = 10) -> bool | None:
         if hit is not None:
             return hit
     url = f"https://www.gravatar.com/avatar/{email_hash(email)}?d=404&s=80"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     result: bool | None
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            result = r.status == 200
+        _http.request(url, timeout=timeout)       # 200 → an avatar exists
+        result = True
     except urllib.error.HTTPError as e:
         result = False if e.code == 404 else None
-    except (urllib.error.URLError, OSError, ValueError):
+    except _http.FETCH_ERRORS:
         result = None
     if cache is not None and result is not None:
         cache.set("gravatar", email.lower(), result)
