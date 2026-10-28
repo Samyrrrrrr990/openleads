@@ -1,52 +1,48 @@
 {
   "version": "5.0.0",
-  "date": "2026-10-27",
+  "date": "2026-10-28",
   "count_per_query": 10,
   "totals": {
-    "leads": 92,
-    "people": 66,
-    "found": 43,
-    "pattern": 3,
-    "guessed": 46,
+    "leads": 86,
+    "people": 61,
+    "found": 45,
+    "pattern": 4,
+    "guessed": 37,
     "junk_names": 0,
     "queries": 12,
-    "queries_with_results": 12,
-    "fill_rate": 0.767,
-    "evidence_rate": 0.5,
+    "queries_with_results": 11,
+    "fill_rate": 0.717,
+    "evidence_rate": 0.57,
     "junk_rate": 0.0,
-    "median_seconds": 67.2
+    "median_seconds": 52.1
   },
   "queries": [
     {
       "query": "dentists in Austin",
-      "leads": 10,
-      "people": 7,
-      "found": 4,
+      "leads": 0,
+      "people": 0,
+      "found": 0,
       "pattern": 0,
-      "guessed": 6,
+      "guessed": 0,
       "junk_names": 0,
-      "seconds": 60.0,
+      "seconds": 15.3,
       "error": "",
-      "sample": [
-        " <downtown@austincosmetic.com> \u00b7 Austin Cosmetic Dentistry",
-        "Randy Kunik <randy.kunik@kunikorthodontics.com> \u00b7 Kunik Orthodontics",
-        " <riverside@aloha-dental.com> \u00b7 Aloha Dental"
-      ]
+      "sample": []
     },
     {
       "query": "marketing agencies in Miami",
-      "leads": 7,
-      "people": 6,
-      "found": 2,
-      "pattern": 0,
-      "guessed": 5,
+      "leads": 10,
+      "people": 8,
+      "found": 4,
+      "pattern": 2,
+      "guessed": 4,
       "junk_names": 0,
-      "seconds": 67.2,
+      "seconds": 47.6,
       "error": "",
       "sample": [
         " <support@kingzcreations.info> \u00b7 Kingz Creations",
-        "Dan Ross <dan.ross@cavmir.com> \u00b7 Cavmir",
-        "Sanjay Gupta <sanjay.gupta@cavmir.com> \u00b7 Cavmir"
+        "Dan Ross <dan@cavmir.com> \u00b7 Cavmir",
+        "Sanjay Gupta <sanjay@cavmir.com> \u00b7 Cavmir"
       ]
     },
     {
@@ -57,7 +53,7 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 154.1,
+      "seconds": 117.0,
       "error": "",
       "sample": [
         "George W. Cleary <george.cleary@clearygottlieb.com> \u00b7 Cleary Gottlieb Steen & Hamilton LLP",
@@ -73,7 +69,7 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 78.1,
+      "seconds": 77.0,
       "error": "",
       "sample": [
         "Samantha Marisa <samantha.marisa@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
@@ -89,7 +85,7 @@
       "pattern": 0,
       "guessed": 4,
       "junk_names": 0,
-      "seconds": 96.8,
+      "seconds": 103.2,
       "error": "",
       "sample": [
         " <kontakt@governikus.de> \u00b7 Governikus",
@@ -105,7 +101,7 @@
       "pattern": 0,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 93.3,
+      "seconds": 90.3,
       "error": "",
       "sample": [
         " <chippendale@steedfitness.com.au> \u00b7 Steed Fitness",
@@ -121,11 +117,11 @@
       "pattern": 0,
       "guessed": 8,
       "junk_names": 0,
-      "seconds": 47.1,
+      "seconds": 18.5,
       "error": "",
       "sample": [
-        "Eric Menees <eric.menees@fynncredit.com> \u00b7 Fynn",
-        "Vikas Choudhary <vikas.choudhary@theya.us> \u00b7 Theya",
+        "Daniel Aisen <daniel.aisen@prooftrading.com> \u00b7 Proof Trading",
+        "Ronit Jain <ronit@liquidcompute.com> \u00b7 Liquid Compute",
         "Bobby Mehta <bobby.mehta@sentilink.com> \u00b7 SentiLink"
       ]
     },
@@ -133,16 +129,16 @@
       "query": "AI startup founders",
       "leads": 10,
       "people": 7,
-      "found": 3,
+      "found": 5,
       "pattern": 0,
-      "guessed": 7,
+      "guessed": 5,
       "junk_names": 0,
-      "seconds": 15.0,
+      "seconds": 16.6,
       "error": "",
       "sample": [
-        "Jeff He <jeff.he@magicode.ai> \u00b7 MagiCode",
+        "Theo Kitsberg <theo.kitsberg@tryprism.com> \u00b7 Prism",
         " <customers@treat.health> \u00b7 Treat Health",
-        "Yash Sahota <yash.sahota@openintake.ai> \u00b7 OpenIntake"
+        "Jackie Wu <jackie@corvus-robotics.com> \u00b7 Corvus Robotics"
       ]
     },
     {
@@ -153,7 +149,7 @@
       "pattern": 0,
       "guessed": 2,
       "junk_names": 0,
-      "seconds": 107.3,
+      "seconds": 102.7,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
@@ -165,32 +161,32 @@
       "query": "machine learning researchers",
       "leads": 10,
       "people": 10,
-      "found": 2,
+      "found": 3,
       "pattern": 0,
-      "guessed": 8,
+      "guessed": 7,
       "junk_names": 0,
-      "seconds": 57.0,
+      "seconds": 50.8,
       "error": "",
       "sample": [
         "Jan Jakub\u016fv <jan.jakubuv@cvut.cz> \u00b7 Czech Technical University in Prague",
-        "Martin Suda <martin.suda@cvut.cz> \u00b7 Czech Technical University in Prague",
-        "Antoni Rogowski <antoni.rogowski@pw.edu.pl> \u00b7 Warsaw University of Technology"
+        "Zarathustra Goertzel <zarathustra.goertzel@cvut.cz> \u00b7 Czech Technical University in Prague",
+        "Cezary Kaliszyk <cezary.kaliszyk@uibk.ac.at> \u00b7 Universit\u00e4t Innsbruck"
       ]
     },
     {
       "query": "emails at stripe.com",
-      "leads": 3,
+      "leads": 4,
       "people": 3,
-      "found": 1,
+      "found": 2,
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 3.9,
+      "seconds": 4.8,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
-        "Patrick Collison <patrick.collison@stripe.com> \u00b7 stripe.com",
-        "John Collison <john.collison@stripe.com> \u00b7 stripe.com"
+        " <sales@stripe.com> \u00b7 stripe.com",
+        "Patrick Collison <patrick.collison@stripe.com> \u00b7 stripe.com"
       ]
     },
     {
@@ -198,14 +194,14 @@
       "leads": 10,
       "people": 3,
       "found": 9,
-      "pattern": 1,
-      "guessed": 0,
+      "pattern": 0,
+      "guessed": 1,
       "junk_names": 0,
-      "seconds": 55.7,
+      "seconds": 52.1,
       "error": "",
       "sample": [
         "Matt Garrison <mgarrison@r2.me> \u00b7 R2 Companies",
-        "Howard Marks <hmarks@r2.me> \u00b7 R2 Companies",
+        "Howard Marks <howard.marks@r2.me> \u00b7 R2 Companies",
         "Marc Garrison <mgarrison@r2.me> \u00b7 R2 Companies"
       ]
     }
