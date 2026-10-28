@@ -6,6 +6,10 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- Duplicate a workflow into an unsaved copy from the canvas toolbar. Copies keep
+  the current settings, receive an available name, and leave the original alone.
+
 ### Fixed
 - Windows `schedule status` replaces undecodable Task Scheduler output instead of emitting a UnicodeDecodeError traceback.
 
