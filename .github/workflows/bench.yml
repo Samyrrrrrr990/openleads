@@ -6,7 +6,12 @@ name: Live benchmark
 on:
   schedule:
     - cron: "17 6 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Commit the scoreboard to this branch (off: results are uploaded as an artifact only)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,7 +36,18 @@ jobs:
         run: |
           mkdir -p bench
           openleads bench --no-cache --json bench/latest.json --markdown BENCHMARK.md
+      - name: Print the scoreboard
+        if: always()
+        run: cat BENCHMARK.md || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bench
+          path: |
+            BENCHMARK.md
+            bench/latest.json
       - name: Commit scoreboard
+        if: github.event_name == 'schedule' || inputs.publish
         run: |
           git config user.name "openleads-bench"
           git config user.email "openleads-bench@users.noreply.github.com"
