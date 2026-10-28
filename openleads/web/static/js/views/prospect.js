@@ -45,8 +45,8 @@ function render() {
   ROOT.innerHTML = `
   <div class="prospect-hero">
     <div class="head" style="margin-bottom:14px"><div>
-      <div class="head__title"><h1>Find people</h1><span class="badge badge--accent">free · public data</span></div>
-      <p class="head__sub">Describe who you want. OpenLeads searches OpenStreetMap, Y Combinator, GitHub, OpenAlex, SEC EDGAR, Wikidata and company websites, finds the people, and grades every email. Everyone found is saved to <a class="link" href="#/people">People</a>.</p>
+      <div class="head__title"><h1>Find people</h1></div>
+      <p class="head__sub">Describe who you want. OpenLeads searches free public sources, finds the people and labels every email. Everyone found is saved to <a class="link" href="#/people">People</a>.</p>
     </div></div>
     <form class="bigsearch" data-form="search">
       ${ico("find")}
@@ -63,11 +63,18 @@ function render() {
 function results() {
   if (!P.leads.length && !P.running) {
     return P.done ? ui.empty("find", "No leads this time", esc(P.done.message || "Try a broader query, turn off Verified only, or pick another source."))
-      : `<div class="grid grid-3">${[
-        ["radar", "Local businesses", "Any category in any city, from OpenStreetMap — with websites, phones and published emails."],
-        ["users", "The people behind them", "Team and about pages turn a company into named decision-makers, with seniority and department."],
-        ["shield", "Honest email evidence", "Every address is marked found, pattern or guessed, then tiered safe / risky so you know what to send."],
-      ].map(([i, t, d]) => `<div class="card card--pad"><div class="row">${ico(i)}<h3>${t}</h3></div><p class="muted mt">${d}</p></div>`).join("")}</div>`;
+      : `<div class="find-intro">
+        <p class="muted">Every address gets a mark: its shape says how we know it, its color says whether it will deliver.</p>
+        <div class="ev-key mt">
+          <span>${ui.mark("found", "safe")} Found: published on the web or confirmed by the mail server</span>
+          <span>${ui.mark("pattern", "safe")} Pattern: built from an address format seen at that company</span>
+          <span>${ui.mark("guessed", "risky")} Guessed: a common format, nothing confirms it</span>
+        </div>
+        <div class="ev-key mt">
+          <span><i class="tier-dot tier-dot--safe"></i> Deliverable</span>
+          <span><i class="tier-dot tier-dot--risky"></i> Risky</span>
+          <span><i class="tier-dot tier-dot--bad"></i> Will bounce</span>
+        </div></div>`;
   }
   const safe = P.leads.filter((l) => l.tier === "safe").length;
   const fresh = P.leads.filter((l) => l.is_new).length;
@@ -104,10 +111,10 @@ function row(l, i) {
   const sel = P.selected.has(l.email);
   return `<tr class="${sel ? "is-selected" : ""} ${l._fresh ? "row-in" : ""} ${l.email ? "is-click" : ""}" data-i="${i}">
     <td class="col-check"><input type="checkbox" data-sel="${esc(l.email)}" ${sel ? "checked" : ""} ${l.email ? "" : "disabled"}/></td>
-    <td><div class="cell-person">${name ? ui.avatar(name, l.email) : ui.companyAvatar(l.organization)}
+    <td><div class="cell-person">
       <div><span class="name">${esc(name || l.organization || "—")}</span><span class="sub">${esc(l.title || "")}</span></div></div></td>
-    <td><div class="cell-email">${ui.tierDot(l.tier)}<span class="addr">${esc(l.email || "—")}</span>${ui.evidence(l.evidence)}${l.email ? ui.copy(l.email) : ""}</div></td>
-    <td><div class="t-strong ellipsis" style="max-width:200px">${esc(l.organization || "")}</div><div class="t-sub">${esc(l.industry || "")}</div></td>
+    <td><div class="cell-email">${l.email ? ui.mark(l.evidence, l.tier) : ""}<span class="addr">${esc(l.email || "—")}</span>${l.email ? ui.copy(l.email) : ""}</div></td>
+    <td><div class="ellipsis" style="max-width:200px">${esc(l.organization || "")}</div><div class="t-sub">${esc(l.industry || "")}</div></td>
     <td>${l.seniority ? `<span class="badge badge--outline">${esc(store.label("seniorities", l.seniority))}</span>` : '<span class="faint">—</span>'}</td>
     <td class="t-sub">${esc([l.city, l.country].filter(Boolean).join(", "))}</td>
     <td>${ui.grade(l.fit_score || 0)}</td>

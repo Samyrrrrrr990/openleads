@@ -67,7 +67,7 @@ export function render(cfg, filters, facets, open, { title = "Filters", extraTop
       const on = isActive(filters[c.key]);
       const isOpen = open.has(c.key) || (on && !open.has("!" + c.key));
       return `<div class="facet ${isOpen ? "is-open" : ""}" data-facet="${esc(c.key)}">
-        <button type="button" class="facet__head" data-ftoggle="${esc(c.key)}">${c.icon ? `<span class="faint">${ico(c.icon, "ico--sm")}</span>` : ""}${esc(c.label)}
+        <button type="button" class="facet__head" data-ftoggle="${esc(c.key)}">${esc(c.label)}
           ${on ? `<span class="facet__badge">${Array.isArray(filters[c.key]) ? filters[c.key].length : "1"}</span>` : ""}${ico("chevron", "ico--sm chev")}</button>
         <div class="facet__body">${isOpen ? body(c, filters, facets) : ""}</div></div>`;
     }).join("")}`;

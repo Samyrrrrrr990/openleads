@@ -205,7 +205,7 @@ export function modal({ title, body, actions, wide = false, onMount, onSubmit })
 
 export async function confirmDialog(message, { title = "Are you sure?", ok = "Confirm", danger = false } = {}) {
   const v = await modal({ title, body: `<p class="muted">${esc(message)}</p>`,
-    actions: [{ label: "Cancel", value: false }, { label: ok, value: true, kind: danger ? "accent" : "primary", submit: true }] });
+    actions: [{ label: "Cancel", value: false }, { label: ok, value: true, kind: danger ? "destroy" : "primary", submit: true }] });
   return v === true;
 }
 
@@ -277,6 +277,11 @@ export function drawer({ onClose } = {}) {
 }
 
 /* ------------------------------------------------------------ UI atoms */
+const EVIDENCE = {
+  found: ["Found", "Published on the web or confirmed by the mail server"],
+  pattern: ["Pattern", "Built from a real address format seen at this company"],
+  guessed: ["Guessed", "A common format with nothing confirming it"],
+};
 export const ui = {
   tierDot(tier) {
     const t = tier === "safe" || tier === "risky" ? tier : tier === "bad" ? "bad" : "unknown";
@@ -288,17 +293,21 @@ export const ui = {
     const [tone, label] = map[tier] || ["", "Unverified"];
     return `<span class="badge ${tone ? "badge--" + tone : ""}"><span class="dot"></span>${label}</span>`;
   },
-  evidence(ev) {
-    const map = { found: ["good", "Found", "Published on the web or confirmed by the mail server"],
-      pattern: ["info", "Pattern", "Built from a real address format seen at this company"],
-      guessed: ["", "Guessed", "A common format with nothing confirming it"] };
-    const m = map[ev];
-    return m ? `<span class="badge badge--sm ${m[0] ? "badge--" + m[0] : ""}" title="${m[2]}">${m[1]}</span>` : "";
+  evidence(ev, tier) {
+    const m = EVIDENCE[ev];
+    return m ? `<span class="ev-label" title="${m[1]}">${ui.mark(ev, tier)}${m[0]}</span>` : "";
+  },
+  /** The evidence mark: shape = how we know the address, color = will it deliver. */
+  mark(ev, tier) {
+    const m = EVIDENCE[ev] || ["Unverified", "Not checked yet"];
+    const t = tier === "safe" || tier === "risky" || tier === "bad" ? tier : "";
+    const word = { safe: "deliverable", risky: "risky", bad: "will bounce" }[t] || "unverified";
+    return `<span class="ev ${EVIDENCE[ev] ? "ev--" + ev : "ev--guessed"} ${t ? "ev--" + t : ""}" role="img" aria-label="${m[0]}, ${word}" title="${m[0]} (${word}): ${m[1]}"></span>`;
   },
   stage(key) {
     const s = store.stageOf(key || "new") || { label: key || "New", tone: "neutral" };
-    const tone = { neutral: "", info: "badge--info", good: "badge--good", warn: "badge--warn", bad: "badge--bad" }[s.tone] || "";
-    return `<span class="badge ${tone}">${esc(s.label)}</span>`;
+    const tone = ["good", "info", "warn", "bad"].includes(s.tone) ? s.tone : "";
+    return `<span class="stage ${tone ? "stage--" + tone : ""}"><i></i>${esc(s.label)}</span>`;
   },
   grade(score) {
     const s = Number(score) || 0;
@@ -309,8 +318,7 @@ export const ui = {
     const n = String(name || "").trim();
     const parts = n.split(/\s+/).filter(Boolean);
     const ini = (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] || "?").slice(0, 2)).toUpperCase();
-    let h = 0; for (const c of String(seed || n)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    return `<span class="avatar av-${h % 8} ${cls}" aria-hidden="true">${esc(ini)}</span>`;
+    return `<span class="avatar ${cls}" aria-hidden="true">${esc(ini)}</span>`;
   },
   companyAvatar(name, cls = "") {
     const ini = String(name || "?").replace(/[^A-Za-z0-9]/g, "").slice(0, 1).toUpperCase() || "?";
@@ -320,12 +328,12 @@ export const ui = {
     return `<button type="button" class="copy" data-copy="${esc(text)}" title="${esc(title)}">${ico("copy", "ico--sm")}</button>`;
   },
   empty(icon, title, text, action = "") {
-    return `<div class="empty"><div class="empty__icon">${ico(icon)}</div><h3>${esc(title)}</h3>
+    return `<div class="empty"><div class="empty__icon">${ico(icon, "ico--lg")}</div><h3>${esc(title)}</h3>
       ${text ? `<p>${text}</p>` : ""}${action ? `<div class="row mt" style="justify-content:center">${action}</div>` : ""}</div>`;
   },
   skeleton(rows = 6) {
     return `<div style="padding:16px;display:grid;gap:14px">${Array.from({ length: rows }, (_, i) =>
-      `<div class="row" style="gap:12px"><div class="skel" style="width:30px;height:30px;border-radius:50%"></div>
+      `<div class="row" style="gap:12px"><div class="skel" style="width:28px;height:28px;border-radius:50%"></div>
        <div class="skel" style="width:${30 + (i * 13) % 40}%"></div><div class="skel" style="width:14%;margin-left:auto"></div></div>`).join("")}</div>`;
   },
   switch(name, on, label, attrs = "") {

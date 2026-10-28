@@ -39,7 +39,7 @@ function groupHtml(g, i) {
       <span class="spacer"></span><button class="btn btn--sm btn--primary" data-act="merge" data-i="${i}">${ico("merge")} Merge into selected</button></div>
     ${g.map((r) => `<label class="dup-row ${r.email === keep ? "is-keep" : ""}">
       <input type="radio" name="keep-${i}" value="${esc(r.email)}" ${r.email === keep ? "checked" : ""} data-keep="${i}"/>
-      <div class="dup-row__main"><div class="row" style="gap:6px">${ui.tierDot(r.tier)}<span class="t-mono">${esc(r.email)}</span>${ui.evidence(r.evidence)}</div>
+      <div class="dup-row__main"><div class="row" style="gap:6px">${ui.mark(r.evidence, r.tier)}<span>${esc(r.email)}</span></div>
         <div class="hint">${esc(r.title || "No title")} · score ${fmt.num(r.score || 0)} · added ${esc(fmt.rel(r.created))}</div></div>
       ${ui.stage(r.stage)}
       ${r.email === keep ? `<span class="badge badge--good">Keep</span>` : `<span class="badge">Merge in</span>`}
@@ -52,7 +52,7 @@ function render() {
   const safe = h.total - (h.checks.find((c) => c.key === "unverified")?.count || 0);
   ROOT.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Data health</h1></div>
-      <p class="head__sub">Problems worth fixing before you send. Each check opens the matching people so you can verify, enrich, tag or remove them.</p></div></div>
+      <p class="head__sub">Fix these before you send. Each check opens the people it applies to.</p></div></div>
     <div class="grid grid-main-side">
       <div class="stack">
         <div class="card"><div class="card__head"><h3>Checks</h3><span class="faint">${fmt.plural(h.total, "contact")}</span></div>

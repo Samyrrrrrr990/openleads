@@ -72,8 +72,8 @@ export function openContact(email, { onClose, onChange } = {}) {
     const enr = data.enrollments || [];
     return `${data.suppressed ? `<div class="banner banner--bad mb">${ico("flag")}<div>Suppressed (${esc(data.suppressed)}). OpenLeads will never email this address.</div></div>` : ""}
       <div class="email-card">
-        <div class="email-card__addr">${ui.tierDot(c.tier)}${esc(c.email)}${ui.copy(c.email)}</div>
-        <div class="row row--wrap">${ui.tier(c.tier)}${ui.evidence(c.evidence)}${conf ? `<span class="hint">${esc(conf)}</span>` : ""}</div>
+        <div class="email-card__addr">${ui.mark(c.evidence, c.tier)}${esc(c.email)}${ui.copy(c.email)}</div>
+        <div class="row row--wrap">${ui.tier(c.tier)}${ui.evidence(c.evidence, c.tier)}${conf ? `<span class="hint">${esc(conf)}</span>` : ""}</div>
         ${data.reasons.length ? `<ul class="reasons">${data.reasons.slice(0, 6).map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
       </div>
       <div class="grid grid-2 mt">

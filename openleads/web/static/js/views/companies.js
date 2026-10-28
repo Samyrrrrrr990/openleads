@@ -44,8 +44,7 @@ async function load({ facets = true } = {}) {
 function shell() {
   ROOT.innerHTML = `<div class="page--flush" style="height:100%">
     <div style="padding:18px 22px 14px;border-bottom:1px solid var(--line);background:var(--panel)">
-      <div class="head" style="margin:0"><div><div class="head__title"><h1>Companies</h1><span class="badge" id="co-total">…</span></div>
-        <p class="head__sub">Accounts rolled up from your contacts and enriched from their websites — tech stack, socials, phone, size.</p></div>
+      <div class="head" style="margin:0"><div><div class="head__title"><h1>Companies</h1><span class="badge" id="co-total">…</span></div></div>
         <div class="head__actions">
           <button class="btn" data-act="enrich-all">${ico("spark")} Profile new companies</button>
           <button class="btn btn--primary" data-act="add">${ico("plus")} Add company</button></div></div></div>
@@ -79,7 +78,7 @@ function renderTable() {
     ${th("Company", "name")}${th("Industry", "industry")}${th("Size", "size")}<th>Location</th>${th("People", "people")}<th>Tech stack</th>${th("Stage", "stage")}<th>Phone</th></tr></thead>
     <tbody>${S.rows.map((r) => `<tr class="is-click ${S.selected.has(r.domain) ? "is-selected" : ""}" data-domain="${esc(r.domain)}">
       <td class="col-check"><input type="checkbox" data-sel="${esc(r.domain)}" ${S.selected.has(r.domain) ? "checked" : ""}/></td>
-      <td><div class="cell-person">${ui.companyAvatar(r.name || r.domain)}<div><span class="name">${esc(r.name || r.domain)}</span><span class="sub">${esc(r.domain)}</span></div></div></td>
+      <td><div class="cell-person"><div><span class="name">${esc(r.name || r.domain)}</span><span class="sub">${esc(r.domain)}</span></div></div></td>
       <td class="t-sub">${esc(r.industry || "—")}</td><td class="t-sub nowrap">${esc(r.company_size || "—")}</td>
       <td class="t-sub nowrap">${esc([r.city, r.state || r.country].filter(Boolean).join(", ") || "—")}</td>
       <td class="nowrap"><a class="link" href="#/people?domain=${encodeURIComponent(r.domain)}" data-stop>${fmt.num(r.people)}</a> <span class="faint">· ${fmt.num(r.safe)} safe</span></td>

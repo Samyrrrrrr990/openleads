@@ -103,8 +103,7 @@ function shell() {
   ROOT.innerHTML = `<div class="page--flush" style="height:100%">
     <div style="padding:18px 22px 14px;border-bottom:1px solid var(--line);background:var(--panel)">
       <div class="head" style="margin:0">
-        <div><div class="head__title"><h1>People</h1><span class="badge" id="ppl-total">…</span></div>
-          <p class="head__sub">Everyone you've found, imported or added. Filter, select, and act on them in bulk.</p></div>
+        <div><div class="head__title"><h1>People</h1><span class="badge" id="ppl-total">…</span></div></div>
         <div class="head__actions">
           <a class="btn" href="#/enrich/import">${ico("upload")} Import</a>
           <button class="btn" data-act="add">${ico("user-plus")} Add contact</button>
@@ -144,10 +143,10 @@ function renderFilters() {
 
 function cell(r, key) {
   switch (key) {
-    case "company": return `<td><div class="t-strong ellipsis" style="max-width:190px">${r.domain
+    case "company": return `<td><div class="ellipsis" style="max-width:190px">${r.domain
       ? `<a class="link" style="color:inherit" href="#/companies/${encodeURIComponent(r.domain)}" data-stop>${esc(r.organization || r.domain)}</a>` : esc(r.organization || "—")}</div>
       <div class="t-sub ellipsis" style="max-width:190px">${esc(r.domain || "")}</div></td>`;
-    case "email": return `<td><div class="cell-email">${ui.tierDot(r.tier)}<span class="addr">${esc(r.email)}</span>${ui.evidence(r.evidence)}${ui.copy(r.email)}</div></td>`;
+    case "email": return `<td><div class="cell-email">${ui.mark(r.evidence, r.tier)}<span class="addr">${esc(r.email)}</span>${ui.copy(r.email)}</div></td>`;
     case "stage": return `<td>${ui.stage(r.stage)}</td>`;
     case "fit": return `<td>${ui.grade(r.fit_score)}</td>`;
     case "seniority": return `<td>${r.seniority ? esc(store.label("seniorities", r.seniority)) : '<span class="faint">—</span>'}</td>`;
@@ -191,7 +190,7 @@ function renderTable() {
       const name = ui.name(r);
       return `<tr class="is-click ${S.selected.has(r.email) || S.allMatching ? "is-selected" : ""}" data-email="${esc(r.email)}">
         <td class="col-check"><input type="checkbox" data-sel="${esc(r.email)}" ${S.selected.has(r.email) || S.allMatching ? "checked" : ""}/></td>
-        <td><div class="cell-person">${name ? ui.avatar(name, r.email) : ui.companyAvatar(r.organization)}
+        <td><div class="cell-person">
           <div><span class="name">${esc(name || r.organization || r.email)}</span><span class="sub">${esc(r.title || (name ? "" : "Company address"))}</span></div></div></td>
         ${cols.map((c) => cell(r, c.key)).join("")}</tr>`;
     }).join("")}</tbody></table>`;

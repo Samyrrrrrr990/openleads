@@ -47,7 +47,7 @@ function results() {
     <div class="actions"><button class="btn btn--sm" data-act="write">${ico("compose")} Write to safe ones</button>
     <a class="btn btn--sm" href="#/people?sort=updated">${ico("users")} Open People</a></div></div>
     <div class="table-wrap"><table class="tbl tbl--compact"><thead><tr><th>Person</th><th>Email</th><th>Company</th><th>Tier</th></tr></thead><tbody>
-    ${E.leads.map((l) => `<tr><td class="t-strong">${esc(ui.name(l) || "—")}</td><td><div class="cell-email">${ui.tierDot(l.tier)}<span class="addr">${esc(l.email || "—")}</span>${ui.evidence(l.evidence)}</div></td>
+    ${E.leads.map((l) => `<tr><td class="t-strong">${esc(ui.name(l) || "—")}</td><td><div class="cell-email">${l.email ? ui.mark(l.evidence, l.tier) : ""}<span class="addr">${esc(l.email || "—")}</span></div></td>
       <td class="muted">${esc(l.organization || "")}</td><td>${ui.tier(l.tier)}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
 
@@ -56,7 +56,7 @@ function render() {
   const ext = tabs.find((t) => t.key === TAB);
   ROOT.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Import & enrich</h1></div>
-      <p class="head__sub">Bring contacts in from a spreadsheet, Apollo, HubSpot or LinkedIn, and find or verify their emails.</p></div></div>
+      <p class="head__sub">Import a spreadsheet, or find and verify emails for a list of people.</p></div></div>
     ${all.length > 1 ? `<div class="tabs" style="border-bottom:1px solid var(--line);margin-bottom:16px">${all.map(([k, l]) =>
       `<button type="button" class="${TAB === k ? "is-on" : ""}" data-act="tab" data-k="${k}">${esc(l)}</button>`).join("")}</div>` : ""}
     <div id="tab-body">${ext ? "" : enrichBody()}</div></section>`;
