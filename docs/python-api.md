@@ -28,7 +28,7 @@ and the run report.
 
 | Option | Default | Meaning |
 |---|---|---|
-| `count` | `10` | How many leads to return (1–1000). |
+| `count` | `None` | How many leads to return (1–1000). Default: the number in the query ("50 fintech founders"), else 10. |
 | `location` | `None` | A place, if it isn't in the words (`"Austin, TX"`). |
 | `source` | `None` | Pin one source (see `openleads sources`). By default the query is routed to the sources that fit it. |
 | `verified_only` | `False` | Keep only `safe`-tier (deliverable) addresses. |
@@ -40,6 +40,10 @@ and the run report.
 | `seniority` | `None` | Keep only these seniorities: a list or `"vp,director"`. Values: `owner, founder, c_suite, partner, vp, head, director, manager, senior, entry`. |
 | `department` | `None` | Keep only these departments, e.g. `["sales", "marketing"]`. |
 | `on_lead` | `None` | Called with each `Lead` as soon as it's found (for progress output). |
+
+Options you pass win over what the words say, but options left at their defaults
+never undo the words: `find("fintech founders, verified only")` is still
+verified-only.
 
 An unknown source or role filter raises `ValueError` with a suggestion:
 `unknown source 'locl' — did you mean 'local'?`.

@@ -79,3 +79,18 @@ def test_find_email_and_verify(monkeypatch):
     assert r.email == "ada.lovelace@apitest.example" and r.tier == "safe"
     v = openleads.verify("ada@apitest.example", use_cache=False)
     assert v.tier in ("safe", "risky") and v.email == "ada@apitest.example"
+
+
+def test_defaults_do_not_undo_the_words(monkeypatch):
+    seen = {}
+
+    def fake(q, cache=None, db=None, on_progress=None, report=None):
+        seen["q"] = q
+        return []
+    monkeypatch.setattr("openleads.engine.build_leads", fake)
+    openleads.find("50 fintech founders, verified only", use_cache=False)
+    assert seen["q"].count == 50 and seen["q"].verified_only is True
+    openleads.find("fintech founders", use_cache=False)
+    assert seen["q"].count == 10 and seen["q"].verified_only is False
+    openleads.find("50 fintech founders", count=5, use_cache=False)
+    assert seen["q"].count == 5

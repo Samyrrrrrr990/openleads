@@ -29,6 +29,9 @@ from openleads.runreport import SearchReport
 
 __all__ = ["find", "find_email", "verify", "SearchResult"]
 
+# Leads returned when neither ``count`` nor the query names a number.
+DEFAULT_COUNT = 10
+
 
 class SearchResult(list):
     """The leads a search found (a ``list`` of :class:`Lead`), plus how it went.
@@ -70,14 +73,19 @@ class SearchResult(list):
         return f"<SearchResult {summary}>"
 
 
-def find(query: str = "", *, count: int = 10, location: str | None = None,
+def find(query: str = "", *, count: int | None = None, location: str | None = None,
          source: str | None = None, verified_only: bool = False, budget: int = 60,
          deep: bool = False, people: bool = True, company_profile: bool = True,
          use_cache: bool = True, seniority=None, department=None,
          on_lead: Callable[[Lead], None] | None = None) -> SearchResult:
     """Find leads for a plain-English ``query`` ("marketing agencies in Miami").
 
-    :param count: how many leads to return (1–1000).
+    Options you pass win over what the words say; options you leave at their
+    defaults don't undo the words ("50 fintech founders, verified only" still means
+    50 and verified-only).
+
+    :param count: how many leads to return (1–1000); default: the number in the
+        query, else 10.
     :param location: a place, if it isn't in the words ("Austin, TX").
     :param source: pin one source (``openleads sources``); default: pick automatically.
     :param verified_only: keep only ``safe``-tier (deliverable) addresses.
@@ -96,10 +104,13 @@ def find(query: str = "", *, count: int = 10, location: str | None = None,
     from openleads.db import DB
     from openleads.engine import build_leads
 
+    if count is None and not intent._extract_count(query or ""):
+        count = DEFAULT_COUNT
     q = intent.build_query(query, count=count, location=location, source=source,
-                           verified_only=verified_only, budget=budget, deep=deep,
-                           discover=people, company_profile=company_profile,
-                           use_cache=use_cache, seniority=seniority, department=department)
+                           verified_only=True if verified_only else None, budget=budget,
+                           deep=True if deep else None, discover=people,
+                           company_profile=company_profile, use_cache=use_cache,
+                           seniority=seniority, department=department)
 
     def on_progress(kind, payload):
         if kind == "lead" and on_lead is not None:
