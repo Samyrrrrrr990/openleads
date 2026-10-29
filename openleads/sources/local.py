@@ -21,6 +21,7 @@ import re
 import urllib.parse
 from typing import Iterator
 
+from openleads import runreport
 from openleads._http import get_json
 from openleads.discover.geo import resolve_place, search_pois
 from openleads.emails.permute import domain_of, is_role_account
@@ -300,6 +301,8 @@ class LocalSource(Source):
         if data is None:
             # Every Overpass instance failed (they're often overloaded). Nominatim
             # returns fewer businesses, but it answers.
+            runreport.fallback("overpass→nominatim")
+            runreport.flag("overpass_fallback")
             elements = []
             for key, value in selectors:
                 if value != "*":

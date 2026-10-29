@@ -22,6 +22,7 @@ from openleads import __version__
 from openleads.discover.people import looks_like_person_name
 from openleads.engine import build_leads
 from openleads.intent import rule_parse
+from openleads.runreport import SearchReport
 
 # Spread across every source family: local businesses in several countries,
 # founders, developers, companies, researchers, a named domain.
@@ -53,20 +54,32 @@ class QueryScore:
     seconds: float = 0.0
     error: str = ""
     sample: list = field(default_factory=list)
+    notes: str = ""           # the run report's one-line summary (sources, stop reason)
+    sources: dict = field(default_factory=dict)   # source -> status
 
 
 def score_query(text: str, count: int = 10, budget: int = 60, cache=None, db=None) -> QueryScore:
-    """Run one query live and score the results."""
+    """Run one query live and score the results.
+
+    ``error`` is a crash, or — when nothing came back — the run report's best
+    explanation (a failed or timed-out source), so an empty row is never silent.
+    """
     q = rule_parse(text)
     q.count, q.budget = count, budget
     s = QueryScore(query=text)
+    rep = SearchReport()
     t0 = time.monotonic()
     try:
-        leads = build_leads(q, cache=cache, db=db)
+        leads = build_leads(q, cache=cache, db=db, report=rep)
     except Exception as e:  # a crash is a result too
         s.error = f"{type(e).__name__}: {e}"
         leads = []
     s.seconds = round(time.monotonic() - t0, 1)
+    if rep.stop_reason:
+        s.notes = rep.summary()
+        s.sources = {n: sr.status for n, sr in rep.sources.items()}
+        if not leads and not s.error:
+            s.error = rep.problem()
     s.leads = len(leads)
     for ld in leads:
         name = f"{ld.first_name} {ld.last_name}".strip()

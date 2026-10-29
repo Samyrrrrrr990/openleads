@@ -28,6 +28,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import NamedTuple
 
+from openleads import runreport
 from openleads._http import get_json
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
@@ -247,6 +248,7 @@ def resolve_place(place: str, cache=None) -> BBox | None:
     if not isinstance(data, list) or not data:
         _note("note", f"couldn't place '{place}' on the map"
               + (" (geocoder unreachable)" if data is None else ""))
+        _note("flag", "geocode_failed")
         return None
     bbox = bbox_from_result(data[0])
     if bbox is None:
@@ -260,11 +262,7 @@ def resolve_place(place: str, cache=None) -> BBox | None:
 
 def _note(kind: str, text: str) -> None:
     """Tell the active run report (if any) how geocoding went."""
-    try:
-        from openleads import runreport
-    except ImportError:          # pragma: no cover - report module optional
-        return
-    getattr(runreport, kind, lambda *_: None)(text)
+    getattr(runreport, kind)(text)
 
 
 # Nominatim's usage policy: at most one request per second.

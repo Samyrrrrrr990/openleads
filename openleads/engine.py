@@ -18,22 +18,27 @@ from __future__ import annotations
 
 import math
 import threading
+import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Callable
 
-from openleads import _concurrency, _http, federation
+from openleads import _concurrency, _http, federation, runreport
 from openleads.cache.store import MemoryCache
 from openleads.emails.permute import is_free_provider
 from openleads.emails.resolve import find_email
 from openleads.insights import companysize, phones, titles
 from openleads.insights.company import fetch_profile
 from openleads.models import EmailResult, Entity, Lead, Query
+from openleads.runreport import SearchReport
 from openleads.sources import get_source
 
 # Progress callback: (kind, payload). kinds:
 #   "phase" (str msg) · "lead" (Lead) · "scan" ({scanned, found, with_domain})
+#   v5.1 (additive): "source" (runreport.SourceReport, when a source finishes)
+#   · "report" (runreport.SearchReport, once at the end). Handlers ignore kinds
+#   they don't know.
 ProgressFn = Callable[[str, object], None]
 
 
@@ -150,7 +155,8 @@ def matches_filters(lead: Lead, query: Query) -> bool:
     return True
 
 
-def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _noop) -> list[Lead]:
+def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _noop, *,
+                report: SearchReport | None = None) -> list[Lead]:
     """Run the pipeline for ``query`` and return up to ``query.count`` leads.
 
     ``db`` (an :class:`openleads.db.DB`) enables persistent per-domain pattern
@@ -163,17 +169,33 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     ready. ``query.budget`` is a real deadline: every network call is clamped to
     it, and when it passes the run keeps whatever already finished (in stream
     order), cancels the rest and returns — about a second after the budget at most.
+
+    Pass ``report=SearchReport()`` to get the per-source run report filled in (also
+    emitted as ``("source", SourceReport)`` and ``("report", SearchReport)`` progress
+    events).
     """
     # Without a persistent cache (``--no-cache``, or none passed) a run-scoped memo
     # still makes each URL a single fetch per run; nothing is written to disk.
     use_cache = cache if (query.use_cache and cache is not None) else MemoryCache()
     _http.clear_errors()
     budget = getattr(query, "budget", 0) or 0
-    with _concurrency.deadline(budget), _http.run_scope():
-        return _run(query, use_cache, db, on_progress, budget)
+    rep = report if report is not None else SearchReport()
+    rep.query = runreport.query_dict(query)
+    rep.requested = query.count
+    rep.budget = budget
+    t0 = time.monotonic()
+    with _concurrency.deadline(budget), _http.run_scope(), \
+            runreport.activate(rep, listener=lambda sr: on_progress("source", sr)):
+        try:
+            leads = _run(query, use_cache, db, on_progress, budget, rep)
+        finally:
+            rep.seconds = round(time.monotonic() - t0, 2)
+    on_progress("report", rep)
+    return leads
 
 
-def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget) -> list[Lead]:
+def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget,
+         rep: SearchReport) -> list[Lead]:
     gen, label = _entity_stream(query, use_cache, db, on_progress)
     profiles: dict = {}
     plock = threading.Lock()
@@ -226,13 +248,21 @@ def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget) -> list[L
         if entity.domain:
             state["with_domain"] += 1
             if result.tier == "bad":   # no MX / disposable / unguessable
+                rep.dropped["undeliverable"] += 1
                 return
         if query.verified_only and result.tier != "safe":
+            rep.dropped["not_safe"] += 1
             return
         lead = apply_profile(entity_to_lead(entity, result), profile)
         if not matches_filters(lead, query):
+            rep.dropped["filtered"] += 1
             return
         leads.append(lead)
+        sr = rep.sources.get(entity.source)
+        if sr is None and len(rep.sources) == 1:
+            sr = next(iter(rep.sources.values()))
+        if sr is not None:
+            sr.leads += 1
         on_progress("lead", lead)
 
     def take_finished_head() -> None:
@@ -303,6 +333,9 @@ def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget) -> list[L
         turns.abort()             # a cancelled ticket must never block a running one
         pool.shutdown(wait=False)
         _close(gen)
+        rep.scanned = state["scanned"]
+        rep.leads = len(leads)
+        rep.finish(stop or "exhausted")
 
     _scan(on_progress, state, leads)
     if stop == "futility":
@@ -350,15 +383,22 @@ def _entity_stream(query: Query, cache, db, on_progress: ProgressFn):
     federation layer fans the query out across the sources that fit its shape and
     expands companies into real people — the "one box that just works" path.
     """
+    rep = runreport.current()
     if query.source and query.source != "auto":
         source = get_source(query.source)
         if source is None:
             raise ValueError(f"unknown source: {query.source!r}. Try `openleads sources`.")
         source.cache = cache
         on_progress("phase", f"source={source.name} ({source.vertical}) — searching…")
-        return source.search(query), source.name
+        if rep is not None:
+            rep.set_plan([source.name], {source.name: "pinned with --source"})
+        # Same wrapper as the federated path: errors and time attributed, a raising
+        # source ends its stream instead of the run.
+        return federation._instrument(source.name, source.search(query)), source.name
 
     names = federation.plan(query)
+    if rep is not None:
+        rep.set_plan(names, federation.plan_reasons(query, names))
     on_progress("phase", "federated search · " + " · ".join(names) + " …")
     gen = federation.search(query, cache=cache, db=db, on_progress=on_progress)
     return gen, "federated"

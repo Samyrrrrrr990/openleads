@@ -37,7 +37,7 @@ import zlib
 from collections import deque
 from contextlib import contextmanager
 
-from openleads import _concurrency
+from openleads import _concurrency, runreport
 from openleads._concurrency import BudgetExhausted
 from openleads.config import USER_AGENT
 
@@ -72,9 +72,14 @@ _lock = threading.Lock()
 FETCH_ERRORS = (urllib.error.URLError, OSError, ValueError, http.client.HTTPException)
 
 
-def _record(url: str, reason: str) -> None:
+def _record(url: str, reason: str, exc: BaseException | None = None) -> None:
+    """Remember a failed request (ring buffer) and report it to the current run."""
     with _lock:
         _errors.append((url, reason))
+    if isinstance(exc, BudgetExhausted):
+        runreport.deadline_hit()          # not an error: the run is out of time
+    else:
+        runreport.http_error(url, reason)
 
 
 def recent_errors() -> list:
@@ -227,9 +232,12 @@ def _stale(cache, ttl_ns, url):
     if cache is None or not ttl_ns or ttl_ns not in STALE_NAMESPACES:
         return None
     try:
-        return cache.get(ttl_ns, url, max_stale=STALE_SECONDS)
+        value = cache.get(ttl_ns, url, max_stale=STALE_SECONDS)
     except TypeError:       # a cache without stale support
         return None
+    if value is not None:
+        runreport.fallback("stale cache")
+    return value
 
 
 # Namespaces whose expired rows are still worth serving when the source is down.
@@ -276,7 +284,7 @@ def _fetch(url, headers, timeout, cache, ttl_ns, data, validate, retries, parse)
     try:
         value = parse(request(url, headers, timeout, data=data, retries=retries))
     except FETCH_ERRORS as e:
-        _record(url, _reason(e))
+        _record(url, _reason(e), e)
         if data is None and not is_transient(e) and not isinstance(e, BudgetExhausted):
             _dead(url, add=True)
         return _stale(cache, ttl_ns, url) if use_cache else None

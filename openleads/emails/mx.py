@@ -104,7 +104,7 @@ def lookup(domain: str, timeout: int = 15) -> dict:
         except Exception as e:  # noqa: BLE001 — any failure is "no answer"
             statuses[name], per_resolver[name] = "error", []
             errors.append(f"{name}: {_http._reason(e)}")
-            _http._record(url, _http._reason(e))
+            _http._record(url, _http._reason(e), e)
             continue
         statuses[name], per_resolver[name] = _answer(reply)
         if statuses[name] == "error":
