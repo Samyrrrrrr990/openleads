@@ -18,6 +18,7 @@ import re
 from typing import Iterator
 
 from openleads._http import get_json
+from openleads.config import api_headers
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
@@ -150,7 +151,7 @@ def _latest_thread_id(cache) -> str:
     """Find the newest 'Ask HN: Who is hiring?' story id (posted by whoishiring)."""
     data = get_json(
         f"{ALGOLIA}/search_by_date?tags=story,author_whoishiring&query=hiring&hitsPerPage=1",
-        cache=cache, ttl_ns="dataset")
+        headers=api_headers(), cache=cache, ttl_ns="dataset")
     hits = (data or {}).get("hits") or []
     return str(hits[0]["objectID"]) if hits else ""
 
@@ -166,7 +167,7 @@ class HNSource(Source):
         if not sid:
             return
         data = get_json(f"{ALGOLIA}/search?tags=comment,story_{sid}&hitsPerPage=100",
-                        cache=self.cache, ttl_ns="dataset")
+                        headers=api_headers(), cache=self.cache, ttl_ns="dataset")
         hits = (data or {}).get("hits") or []
         term = (query.keyword or query.industry or "").lower().strip()
         loc = (query.location or "").lower().strip()

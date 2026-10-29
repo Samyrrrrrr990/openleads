@@ -24,7 +24,7 @@ import re
 
 from openleads._concurrency import BudgetExhausted, ordered_map
 from openleads._http import get_json, get_text
-from openleads.config import USER_AGENT, github_token
+from openleads.config import api_headers, github_token
 
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
 _GH_NOREPLY = "users.noreply.github.com"
@@ -105,7 +105,7 @@ def harvest_from_github(login: str, cache=None, timeout: int = 15) -> list[str]:
     """Find real commit-author emails from a GitHub user's public push events."""
     if not login:
         return []
-    headers = {"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"}
+    headers = api_headers(Accept="application/vnd.github+json")
     tok = github_token()
     if tok:
         headers["Authorization"] = f"Bearer {tok}"

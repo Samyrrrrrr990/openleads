@@ -26,6 +26,7 @@ from typing import Iterator
 
 from openleads import _concurrency, runreport
 from openleads._http import get_json, recent_errors
+from openleads.config import APP_USER_AGENT
 from openleads.discover.geo import resolve_place, search_pois
 from openleads.emails.permute import domain_of, is_role_account
 from openleads.models import Entity, Query
@@ -42,8 +43,8 @@ OVERPASS_MIRRORS = (
 )
 # Patchable so tests never actually wait between mirror rounds.
 _sleep = time.sleep
-# Overpass rejects browser-like User-Agents (HTTP 406); send an identifying app UA.
-_UA = {"User-Agent": "openleads/4.5 (+https://github.com/Samyrrrrrr990/openleads)"}
+# Overpass rejects browser-like User-Agents (HTTP 406); send the identifying app UA.
+_UA = {"User-Agent": APP_USER_AGENT}
 
 # Keyword → OSM tag selectors. First matching keyword wins; each maps to one or
 # more (key, value) tag filters OR'd together in the Overpass query. Ordered so

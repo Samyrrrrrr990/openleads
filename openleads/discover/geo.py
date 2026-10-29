@@ -30,10 +30,11 @@ from typing import NamedTuple
 
 from openleads import runreport
 from openleads._http import get_json
+from openleads.config import APP_USER_AGENT
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 # Nominatim's usage policy asks for an identifying User-Agent with contact info.
-_UA = {"User-Agent": "openleads/4.5 (+https://github.com/Samyrrrrrr990/openleads)"}
+_UA = {"User-Agent": APP_USER_AGENT}
 GEOCODE_TIMEOUT = 8
 # Overpass gets slow (and times out) on boxes much larger than a city centre.
 MAX_RADIUS_KM = 25

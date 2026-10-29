@@ -16,6 +16,7 @@ from typing import Iterator
 
 from openleads._concurrency import ordered_map
 from openleads._http import get_json, get_text
+from openleads.config import api_headers
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
@@ -138,7 +139,8 @@ class YCSource(Source):
     description = "Founders/execs of ~6,000 YC startups via the open yc-oss dataset."
 
     def search(self, query: Query) -> Iterator[Entity]:
-        companies = get_json(YC_ALL, cache=self.cache, ttl_ns="dataset") or []
+        companies = get_json(YC_ALL, headers=api_headers(), cache=self.cache,
+                             ttl_ns="dataset") or []
         companies = filter_companies(companies, query)
 
         # Only companies we can actually turn into a lead (slug + real domain).

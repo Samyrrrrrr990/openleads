@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 
 from openleads import _http
+from openleads.config import api_headers
 
 # Each resolver formats its DoH JSON endpoint slightly differently.
 RESOLVERS = {
@@ -37,7 +38,7 @@ PROVIDER_SIGNATURES = (
 
 def _query(url: str, timeout: int = 15) -> dict:
     """One DoH JSON query through the shared HTTP seam (retries + run deadline)."""
-    return json.loads(_http.request(url, headers={"Accept": "application/dns-json"},
+    return json.loads(_http.request(url, headers=api_headers(Accept="application/dns-json"),
                                     timeout=timeout))
 
 

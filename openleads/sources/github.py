@@ -17,7 +17,7 @@ from typing import Iterator
 
 from openleads._concurrency import ordered_map
 from openleads._http import get_json
-from openleads.config import github_token
+from openleads.config import api_headers, github_token
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
@@ -150,7 +150,7 @@ class GitHubSource(Source):
 
 
 def _headers() -> dict:
-    h = {"Accept": "application/vnd.github+json"}
+    h = api_headers(Accept="application/vnd.github+json")
     tok = github_token()
     if tok:
         h["Authorization"] = f"Bearer {tok}"

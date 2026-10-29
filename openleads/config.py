@@ -6,6 +6,9 @@ The only *optional* env vars are:
 
 * ``OPENROUTER_API_KEY`` — unlocks free-form natural-language chat via a free LLM.
 * ``GITHUB_TOKEN``       — raises the GitHub source's rate limit (keyless works too).
+* ``OPENLEADS_CONTACT``  — an email/URL added to the API User-Agent (polite heavy use).
+* ``OPENLEADS_HTTP_RETRIES`` — retries per request on 429/5xx/timeouts (default 2).
+* ``OPENLEADS_OVERPASS_URLS`` — comma-separated Overpass endpoints to use instead.
 
 No env var is required for any core feature. OpenLeads runs at $0 with nothing set.
 """
@@ -14,17 +17,45 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from openleads import __version__  # set by the package __init__ before any import
+
 APP_NAME = "openleads"
 
 # Identity used in SMTP verification probes (HELO / MAIL FROM). No mail is sent.
 VERIFY_HELO = os.environ.get("OPENLEADS_HELO", "openleads.dev")
 VERIFY_FROM = os.environ.get("OPENLEADS_FROM", "verify@openleads.dev")
 
-# Polite, browser-like UA for public HTTP requests.
-USER_AGENT = (
+PROJECT_URL = "https://github.com/Samyrrrrrr990/openleads"
+# Optional contact (an email or URL) added to the API User-Agent, e.g. for heavy use
+# of Nominatim/Overpass whose usage policies ask for a way to reach you.
+CONTACT = os.environ.get("OPENLEADS_CONTACT", "").strip()
+
+# The one identifying User-Agent for every API we call (Nominatim, Overpass,
+# Wikidata, SEC, GitHub, Algolia, OpenAlex, NPI, DNS-over-HTTPS). Their usage
+# policies require an application name + a way to reach the operator, and
+# Overpass rejects browser-like UAs outright (HTTP 406).
+APP_USER_AGENT = f"openleads/{__version__} (+{PROJECT_URL}" + (f"; {CONTACT}" if CONTACT else "") + ")"
+
+# Company websites (homepage, /contact, /team …) are crawled with a browser-like UA
+# on purpose: many small-business sites sit behind WAFs that block unknown bots,
+# and those pages are written for browsers anyway. It still names openleads and
+# its version, so a site owner can tell what fetched the page.
+SITE_USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) openleads/2.0"
+    f"AppleWebKit/537.36 (KHTML, like Gecko) openleads/{__version__}"
 )
+# Back-compat name: the default UA of the shared HTTP helper (site crawls).
+USER_AGENT = SITE_USER_AGENT
+
+
+def api_headers(**extra) -> dict:
+    """Headers for an API request: the identifying :data:`APP_USER_AGENT` + ``extra``.
+
+    Keyword names use ``_`` for ``-`` (``api_headers(Accept="…")``).
+    """
+    h = {"User-Agent": APP_USER_AGENT}
+    h.update({k.replace("_", "-"): v for k, v in extra.items()})
+    return h
 
 
 def home() -> Path:

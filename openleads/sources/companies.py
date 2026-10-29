@@ -18,6 +18,7 @@ import urllib.parse
 from typing import Iterator
 
 from openleads._http import get_json
+from openleads.config import APP_USER_AGENT
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
@@ -25,8 +26,7 @@ from openleads.sources.base import Source
 WD_SEARCH = "https://www.wikidata.org/w/api.php"
 WD_SPARQL = "https://query.wikidata.org/sparql"
 # Wikidata asks for a descriptive UA with contact/project info.
-_UA = {"User-Agent": "openleads/4.5 (https://github.com/Samyrrrrrr990/openleads)",
-       "Accept": "application/sparql-results+json"}
+_UA = {"User-Agent": APP_USER_AGENT, "Accept": "application/sparql-results+json"}
 
 
 def resolve_entity(term: str, cache=None) -> str | None:
