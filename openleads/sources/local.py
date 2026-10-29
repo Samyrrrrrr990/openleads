@@ -365,8 +365,10 @@ def run_overpass(ql: str, cache=None, mirrors=None, timeout: int = 25,
                 return data
             BREAKER.failure(host)
             last = recent_errors()
-            why = last[-1][1] if last and last[-1][0] == url else problem
-            reasons.append(f"{host}: {why}")
+            if last and last[-1][0] == url:
+                reasons.append(f"{host}: {last[-1][1]}")
+            elif not any(r.startswith(f"{host}: ") for r in reasons):
+                reasons.append(f"{host}: {problem}")
         if round_no or not tried or _concurrency.remaining() <= RETRY_ROUND_MIN_SECONDS:
             break
         _sleep(RETRY_ROUND_DELAY)
@@ -424,7 +426,11 @@ class LocalSource(Source):
             why = (reasons[0].split(": ", 1)[-1] if reasons
                    else "all mirrors paused after recent failures")
             runreport.fallback(f"overpass→nominatim ({why})")
-            runreport.flag("overpass_fallback")
+            # "Busy" (429/5xx/timeouts/error remarks) vs "can't get there at all"
+            # (DNS, TLS, proxy refusals) need different advice.
+            unreachable = bool(reasons) and all("network error" in r and "timed out" not in r
+                                                for r in reasons)
+            runreport.flag("overpass_unreachable" if unreachable else "overpass_fallback")
             elements = []
             for key, value in selectors:
                 if value != "*":

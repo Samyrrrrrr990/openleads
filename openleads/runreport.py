@@ -232,6 +232,9 @@ class SearchReport:
                        "--location 'Austin, TX'")
         if "overpass_fallback" in self.flags:
             out.append("OpenStreetMap is busy right now — re-run in a minute or raise --budget")
+        if "overpass_unreachable" in self.flags:
+            out.append("couldn't reach OpenStreetMap's servers — check your connection or "
+                       "proxy, or point OPENLEADS_OVERPASS_URLS at a reachable mirror")
         if self.stop_reason == "budget":
             out.append(f"the {self.budget}s time budget ran out — raise it with --budget")
         if any("github" in e for sr in self.sources.values() for e in sr.errors):

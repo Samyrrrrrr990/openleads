@@ -155,3 +155,15 @@ def test_local_search_falls_back_to_nominatim_and_says_why(monkeypatch):
     assert sr.fallbacks[0].startswith("overpass→nominatim (HTTP 429")
     assert "overpass_fallback" in rep.flags and "gazetteer" in sr.note
 
+
+
+def test_unreachable_overpass_gets_a_different_hint(monkeypatch):
+    def fake(url, headers=None, timeout=None, data=None):
+        raise urllib.error.URLError("Tunnel connection failed: 403 Forbidden")
+    monkeypatch.setattr(_http, "_open", fake)
+    monkeypatch.setattr("openleads.discover.geo._throttle", lambda: None)
+    rep = runreport.SearchReport(requested=5)
+    with runreport.activate(rep), runreport.active_source("local"):
+        assert list(local.LocalSource().search(Query(keyword="dentist", location="Austin"))) == []
+    assert "overpass_unreachable" in rep.flags and "overpass_fallback" not in rep.flags
+    assert any("couldn't reach OpenStreetMap" in h for h in rep.hints())

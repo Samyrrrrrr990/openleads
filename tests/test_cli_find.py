@@ -86,7 +86,7 @@ def test_empty_result_explains_itself(capsys):
     assert code == 1
     assert json.loads(out) == []                 # pipes still get valid JSON
     assert "local" in err and "failed" in err
-    assert "OpenStreetMap is busy" in err        # a hint, not just a status
+    assert "couldn't reach OpenStreetMap" in err   # a hint, not just a status
     assert "No leads produced" in err
 
 
