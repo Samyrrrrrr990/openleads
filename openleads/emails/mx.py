@@ -111,6 +111,7 @@ def lookup(domain: str, timeout: int = 15) -> dict:
         if statuses[name] == "error":
             st = reply.get("Status") if isinstance(reply, dict) else "?"
             errors.append(f"{name}: DNS status {st}")
+            _http._record(url, f"DNS status {st} (no answer)")
 
     ok = {n: h for n, h in per_resolver.items() if h}
     # Merge preserving the first resolver's priority order, then append novel hosts.

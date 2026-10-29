@@ -1056,6 +1056,8 @@ def build_parser() -> argparse.ArgumentParser:
     cfg.set_defaults(func=cmd_config)
 
     dr = sub.add_parser("doctor", help="health-check finding + sending setup")
+    dr.add_argument("--sources", action="store_true",
+                    help="also probe every public source's endpoint (live network)")
     dr.set_defaults(func=cmd_doctor)
 
     wb = sub.add_parser("web", help="launch the local web dashboard")
