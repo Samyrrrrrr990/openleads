@@ -141,14 +141,13 @@ def call_tool(name: str, args: dict) -> dict:
     try:
         if name == "find_leads":
             from openleads.engine import build_leads
-            from openleads.intent import rule_parse
+            from openleads.intent import build_query
             text = str(args.get("query") or "").strip()
             if not text:
                 raise ValueError("query is required")
-            q = rule_parse(text)
-            q.count = max(1, min(int(args.get("count") or 10), 100))
-            q.verified_only = bool(args.get("verified_only", False))
-            q.budget = max(10, min(int(args.get("budget_seconds") or 90), 300))
+            q = build_query(text, count=max(1, min(int(args.get("count") or 10), 100)),
+                            verified_only=bool(args.get("verified_only", False)),
+                            budget=max(10, min(int(args.get("budget_seconds") or 90), 300)))
             leads = build_leads(q, cache=cache, db=db)
             out = {"query": text, "count": len(leads), "leads": [_lead_dict(x) for x in leads]}
             if args.get("save_to_list") and leads:

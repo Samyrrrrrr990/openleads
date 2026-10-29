@@ -29,32 +29,26 @@ from openleads.sources import get_source, list_sources
 # Query building                                                              #
 # --------------------------------------------------------------------------- #
 def _query_from_args(args) -> Query:
+    """Free text + flags → a validated Query (flags win; see intent.build_query)."""
     text = " ".join(getattr(args, "query", []) or []).strip()
-    q = intent.rule_parse(text) if text else Query()
-    for attr in ("source", "industry", "location", "title", "keyword", "format", "out"):
-        val = getattr(args, attr, None)
-        if val is not None:
-            setattr(q, "fmt" if attr == "format" else attr, val)
-    if getattr(args, "count", None) is not None:
-        q.count = args.count
-    if getattr(args, "verified_only", False):
-        q.verified_only = True
-    if getattr(args, "deep", False):
-        q.deep = True
-    if getattr(args, "no_people", False):
-        q.discover = False
-    if getattr(args, "max_companies", None) is not None:
-        q.max_companies = args.max_companies
-    if getattr(args, "budget", None) is not None:
-        q.budget = args.budget
-    if getattr(args, "no_company", False):
-        q.company_profile = False
-    for attr in ("seniority", "department"):
-        val = getattr(args, attr, None)
-        if val:
-            setattr(q, attr, [v.strip() for v in val.split(",") if v.strip()])
-    q.use_cache = not getattr(args, "no_cache", False)
-    return q
+
+    def flag(name):                 # store_true flags: only an explicit "on" overrides
+        return True if getattr(args, name, False) else None
+
+    return intent.build_query(
+        text,
+        source=getattr(args, "source", None), industry=getattr(args, "industry", None),
+        location=getattr(args, "location", None), title=getattr(args, "title", None),
+        keyword=getattr(args, "keyword", None), fmt=getattr(args, "format", None),
+        out=getattr(args, "out", None), count=getattr(args, "count", None),
+        verified_only=flag("verified_only"), deep=flag("deep"),
+        no_people=flag("no_people"), no_company=flag("no_company"),
+        max_companies=getattr(args, "max_companies", None),
+        budget=getattr(args, "budget", None),
+        seniority=getattr(args, "seniority", None) or None,
+        department=getattr(args, "department", None) or None,
+        use_cache=not getattr(args, "no_cache", False),
+    )
 
 
 def _read_leads_csv(path: str) -> list[dict]:
@@ -1011,7 +1005,11 @@ def main(argv=None) -> int:
     if not getattr(args, "func", None):
         parser.print_help()
         return 0
-    return args.func(args)
+    try:
+        return args.func(args)
+    except intent.QueryError as e:          # unknown source, bad --seniority, …
+        print(f"[!] {e}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

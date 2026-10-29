@@ -21,7 +21,7 @@ from dataclasses import asdict, dataclass, field
 from openleads import __version__
 from openleads.discover.people import looks_like_person_name
 from openleads.engine import build_leads
-from openleads.intent import rule_parse
+from openleads.intent import build_query
 from openleads.runreport import SearchReport
 
 # Spread across every source family: local businesses in several countries,
@@ -64,8 +64,7 @@ def score_query(text: str, count: int = 10, budget: int = 60, cache=None, db=Non
     ``error`` is a crash, or — when nothing came back — the run report's best
     explanation (a failed or timed-out source), so an empty row is never silent.
     """
-    q = rule_parse(text)
-    q.count, q.budget = count, budget
+    q = build_query(text, count=count, budget=budget)
     s = QueryScore(query=text)
     rep = SearchReport()
     t0 = time.monotonic()
