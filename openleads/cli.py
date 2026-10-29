@@ -194,19 +194,25 @@ def cmd_bench(args) -> int:
     """Run the live benchmark suite and print a scoreboard."""
     from openleads import bench
     queries = [" ".join(args.query)] if args.query else None
+    repeat = max(1, getattr(args, "repeat", 1) or 1)
     print(ui.c(f"  live benchmark · {len(queries or bench.SUITE)} queries · "
-               f"{args.count} leads each · {args.budget}s budget each\n", ui.FAINT))
+               f"{args.count} leads each · {args.budget}s budget each"
+               + (f" · {repeat} runs each (median shown)" if repeat > 1 else "") + "\n",
+               ui.FAINT))
 
     def on_result(s):
-        flag = ui.c("  ✗ " + s.error, ui.RED) if s.error else ""
-        print(f"  {s.query[:34]:<34} {s.leads:>3} leads  {s.people:>3} people  "
+        flag = ui.c("  ✗ " + s.error, ui.RED) if s.error else (
+            ui.c("  · " + s.problem, ui.FAINT) if s.problem else "")
+        spread = (f" [{s.leads_range[0]}–{s.leads_range[2]}]"
+                  if repeat > 1 and s.leads_range else "")
+        print(f"  {s.query[:34]:<34} {s.leads:>3} leads{spread}  {s.people:>3} people  "
               f"{s.found + s.pattern:>3} evidence  {s.junk_names:>2} junk  {s.seconds:>5}s{flag}")
 
     cache = None if args.no_cache else Cache()
     db = DB()     # pattern learning on, exactly like `openleads find`
     try:
         rep = bench.run(queries, count=args.count, budget=args.budget, cache=cache, db=db,
-                        on_result=on_result)
+                        on_result=on_result, repeat=repeat)
     finally:
         if cache:
             cache.close()
@@ -1016,6 +1022,8 @@ def build_parser() -> argparse.ArgumentParser:
     bn.add_argument("query", nargs="*", help="one query to score (default: the full suite)")
     bn.add_argument("-n", "--count", type=int, default=10, help="leads per query (default 10)")
     bn.add_argument("--budget", type=int, default=60, help="seconds per query (default 60)")
+    bn.add_argument("--repeat", type=int, default=1, metavar="N",
+                    help="run each query N times; report the median run and min–max")
     bn.add_argument("--json", help="write the full report as JSON")
     bn.add_argument("--markdown", help="write a Markdown scoreboard")
     bn.add_argument("--no-cache", action="store_true", help="bypass the cache")
