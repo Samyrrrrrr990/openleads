@@ -70,6 +70,8 @@ CSV_FIELDS = [
     # v5 additions: who the person is and what the company looks like.
     "Seniority", "Department", "Phone", "Company Size", "Company LinkedIn Url",
     "Twitter Url", "Facebook Url", "Technologies", "Company Description",
+    # v5.1 addition: is this row a named person or a company-level contact?
+    "Contact Type",
 ]
 
 
@@ -116,6 +118,15 @@ class Lead:
     technologies: list = field(default_factory=list)
     socials: dict = field(default_factory=dict)   # company profiles: linkedin, twitter, ...
     description: str = ""                   # company one-liner from its homepage
+    # v5.1: "person" (a named human) or "company" (a business / role address).
+    contact_type: str = ""
+
+    @property
+    def kind(self) -> str:
+        """``contact_type``, derived from the name when it wasn't set."""
+        if self.contact_type:
+            return self.contact_type
+        return "person" if (self.first_name or self.last_name) else "company"
 
     @property
     def domain(self) -> str:
@@ -162,6 +173,7 @@ class Lead:
             "Facebook Url": (self.socials or {}).get("facebook", ""),
             "Technologies": ", ".join(self.technologies or []),
             "Company Description": self.description,
+            "Contact Type": self.kind,
         }
 
     def to_dict(self) -> dict:
@@ -194,6 +206,7 @@ class Lead:
             "technologies": list(self.technologies or []),
             "socials": dict(self.socials or {}),
             "description": self.description,
+            "contact_type": self.kind,
         }
 
 
@@ -220,6 +233,9 @@ class Query:
     company_profile: bool = True    # read each company's homepage: tech, socials, phone
     seniority: list = field(default_factory=list)    # keep only these seniorities
     department: list = field(default_factory=list)   # keep only these departments
+    # Seed for sources that sample (YC). None = derived from the query text, so the
+    # same search returns the same companies run after run.
+    seed: int | None = None
 
     def replace(self, **changes) -> "Query":
         """Return a copy with the given fields changed (for chat refinement)."""

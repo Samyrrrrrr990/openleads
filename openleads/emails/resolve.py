@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 
+from openleads import _concurrency
 from openleads.emails import gravatar, groundtruth, netcheck, patterns, smtp_verify
 from openleads.emails import mx as mxmod
 from openleads.emails.permute import (
@@ -50,11 +51,33 @@ def _verify_key(full_name: str, domain: str) -> str:
     return f"{first or ''}|{last or ''}|{domain}"
 
 
+# Don't open an SMTP conversation with less time than this left in the run.
+SMTP_MIN_SECONDS = 3.0
+SMTP_TIMEOUT = 15
+
+
+def _smtp_probe(hosts: list, domain: str, candidates: list) -> dict:
+    """Probe up to two MX hosts, each bounded by the run's remaining time."""
+    probe = {"verified": None, "catch_all": False, "reachable": False}
+    for host in hosts[:2]:
+        left = _concurrency.remaining()
+        if left < SMTP_MIN_SECONDS:
+            break
+        probe = smtp_verify.probe(host, domain, candidates,
+                                  timeout=int(max(2, min(SMTP_TIMEOUT, left - 1))))
+        if probe["reachable"]:
+            break
+    return probe
+
+
 def _mx_lookup(domain: str, cache):
     info = cache.get("mx", domain) if cache else None
     if info is None:
         info = mxmod.lookup(domain)
-        if cache:
+        # Only real answers (MX found / no MX / no such domain) are cached. A failed
+        # lookup is retried next time — caching it marked every lead at the domain
+        # 'bad' for the cache's whole 7-day life.
+        if cache and not mxmod.is_unknown(info):
             cache.set("mx", domain, info)
     return info
 
@@ -97,9 +120,10 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
     if known and "@" in known and known.endswith("@" + domain):
         gmx = _mx_lookup(domain, cache)
         ghosts = gmx.get("hosts") or []
-        if ghosts and not is_disposable(domain):
+        unknown = mxmod.is_unknown(gmx)
+        if (ghosts or unknown) and not is_disposable(domain):
             gsig = {
-                "mx_exists": True,
+                "mx_exists": bool(ghosts),
                 "mx_resolvers_ok": gmx.get("resolvers_ok", 0),
                 "mx_agreement": gmx.get("agreement", False),
                 "disposable": False,
@@ -109,7 +133,10 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
                 "common_pattern": is_common_pattern(known, full_name) if full_name else False,
                 "mx_provider": mxmod.classify_provider(ghosts),
             }
-            gsig.update(mxmod.dns_health(domain, cache=cache))
+            if ghosts:
+                gsig.update(mxmod.dns_health(domain, cache=cache))
+            else:
+                gsig["mx_unknown"] = True     # published, but DNS couldn't be checked
             patterns.learn_from_email(db, known, full_name)
             return _emit(known, gsig)
 
@@ -125,6 +152,9 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
         "disposable": is_disposable(domain),
         "free_provider": is_free_provider(domain),
     }
+    if not hosts and mxmod.is_unknown(mx_info):
+        # The DNS lookup failed: that's "couldn't check", not "no mail server".
+        signals["mx_unknown"] = True
     if not hosts or signals["disposable"]:
         return _emit(ordered[0], signals)
 
@@ -190,12 +220,10 @@ def find_email(full_name: str, domain: str, cache=None, db=None,
         vkey = _verify_key(full_name, domain)
         probe = cache.get("verify", vkey) if cache else None
         if probe is None:
-            probe = {"verified": None, "catch_all": False, "reachable": False}
-            for host in hosts[:2]:
-                probe = smtp_verify.probe(host, domain, ordered)
-                if probe["reachable"]:
-                    break
-            if cache:
+            probe = _smtp_probe(hosts, domain, ordered)
+            # Only a server that answered is a verdict worth keeping for two weeks;
+            # an unreachable/timed-out probe is retried next run.
+            if cache and probe.get("reachable"):
                 cache.set("verify", vkey, probe)
 
         verified = probe.get("verified")
@@ -273,6 +301,8 @@ def verify_address(email: str, cache=None, db=None, deep: bool = False) -> Email
         "free_provider": is_free_provider(domain),
         "role_account": is_role_account(email),
     }
+    if not hosts and mxmod.is_unknown(mx_info):
+        signals["mx_unknown"] = True
     if not hosts or signals["disposable"]:
         return _emit(email, signals)
 
@@ -280,11 +310,7 @@ def verify_address(email: str, cache=None, db=None, deep: bool = False) -> Email
     signals["mx_provider"] = mxmod.classify_provider(hosts)
 
     if netcheck.port25_open():
-        probe = {"verified": None, "catch_all": False, "reachable": False}
-        for host in hosts[:2]:
-            probe = smtp_verify.probe(host, domain, [email])
-            if probe["reachable"]:
-                break
+        probe = _smtp_probe(hosts, domain, [email])
         signals["smtp_verified"] = bool(probe.get("verified"))
         signals["catch_all"] = probe.get("catch_all", False)
         signals["smtp_reachable"] = probe.get("reachable", False)

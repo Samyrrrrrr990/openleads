@@ -14,6 +14,7 @@ import urllib.parse
 from typing import Iterator
 
 from openleads._http import get_json
+from openleads.config import api_headers
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
@@ -136,7 +137,7 @@ class OpenAlexSource(Source):
             params = {"filter": f"openalex_id:{short}", "per_page": "50",
                       "select": "id,homepage_url", "mailto": MAILTO}
             data = get_json(f"{API}/institutions?" + urllib.parse.urlencode(params),
-                            cache=self.cache, ttl_ns="dataset")
+                            headers=api_headers(), cache=self.cache, ttl_ns="dataset")
             for inst in (data or {}).get("results", []) or []:
                 out[inst.get("id", "")] = inst.get("homepage_url") or ""
         return out
@@ -150,12 +151,12 @@ class OpenAlexSource(Source):
                       "filter": f"from_publication_date:{since}",
                       "sort": "cited_by_count:desc", "select": "title,authorships"}
             data = get_json(f"{API}/works?" + urllib.parse.urlencode(params),
-                            cache=self.cache, ttl_ns="dataset")
+                            headers=api_headers(), cache=self.cache, ttl_ns="dataset")
             candidates = parse_work_authors(data or {})
         else:
             params = {"per_page": str(min(max(query.count * 3, 25), 100)), "mailto": MAILTO}
             data = get_json(f"{API}/authors?" + urllib.parse.urlencode(params),
-                            cache=self.cache, ttl_ns="dataset")
+                            headers=api_headers(), cache=self.cache, ttl_ns="dataset")
             candidates = parse_authors(data or {})
         candidates = [e for e in candidates if _looks_like_person(e.full_name)]
         homes = self._homepages(e.extra.get("institution_id") for e in candidates

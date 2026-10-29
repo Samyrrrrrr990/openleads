@@ -23,4 +23,9 @@ def _no_live_http(monkeypatch):
     def refuse(url, *a, **kw):
         raise urllib.error.URLError(f"network disabled in tests: {url}")
     monkeypatch.setattr("openleads._http._open", refuse)
+    # Overpass mirror state is per process: start every test with closed breakers
+    # and never really pause between mirror rounds.
+    from openleads.sources import local
+    local.BREAKER.reset()
+    monkeypatch.setattr(local, "_sleep", lambda s: None)
     yield

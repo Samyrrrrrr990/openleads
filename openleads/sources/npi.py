@@ -16,6 +16,7 @@ import urllib.parse
 from typing import Iterator
 
 from openleads._http import get_json
+from openleads.config import api_headers
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
 
@@ -118,5 +119,5 @@ class NPISource(Source):
             else:
                 params["city"] = loc
         url = API + "?" + urllib.parse.urlencode(params)
-        data = get_json(url, cache=self.cache, ttl_ns="dataset")
+        data = get_json(url, headers=api_headers(), cache=self.cache, ttl_ns="dataset")
         yield from parse_results(data or {})

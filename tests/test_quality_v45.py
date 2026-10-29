@@ -53,7 +53,9 @@ def test_person_entity_uses_clean_name():
     company = Entity(full_name="", organization="Aloha Dental", domain="aloha-dental.com", title="Dentist")
     p = federation._person_entity(company, "Dr. Rohit Chaudhari", "Dr. Rohit Chaudhari")
     assert p.full_name == "Rohit Chaudhari"
-    assert p.title == "Dentist"          # name-as-title replaced by the company's
+    # v5.1: name-as-title is dropped, and the company's label (an OSM category, or
+    # "Hiring" from HN) is not a person's job title either.
+    assert p.title == "Team member"
 
 
 # --- routing ------------------------------------------------------------------ #

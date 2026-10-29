@@ -9,25 +9,36 @@ v3.1 makes it **fast and honest**: email resolution runs concurrently (so a batc
 of MX/SMTP probes overlaps instead of blocking one-by-one), the scan bails early
 when a source yields nothing usable (no more multi-minute silent waits), and any
 underlying HTTP failure is surfaced instead of vanishing.
+
+v5.1 makes the time budget **a real deadline**: entities are pulled lazily into a
+small in-order window, every network call is clamped to the deadline, and when it
+passes the run keeps what already finished and returns.
 """
 from __future__ import annotations
 
-import itertools
+import math
 import threading
 import time
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Callable
 
-from openleads import _http, federation
+from openleads import _concurrency, _http, federation, runreport
+from openleads.cache.store import MemoryCache
 from openleads.emails.permute import is_free_provider
 from openleads.emails.resolve import find_email
 from openleads.insights import companysize, phones, titles
 from openleads.insights.company import fetch_profile
 from openleads.models import EmailResult, Entity, Lead, Query
+from openleads.runreport import SearchReport
 from openleads.sources import get_source
 
 # Progress callback: (kind, payload). kinds:
 #   "phase" (str msg) · "lead" (Lead) · "scan" ({scanned, found, with_domain})
+#   v5.1 (additive): "source" (runreport.SourceReport, when a source finishes)
+#   · "report" (runreport.SearchReport, once at the end). Handlers ignore kinds
+#   they don't know.
 ProgressFn = Callable[[str, object], None]
 
 
@@ -74,6 +85,45 @@ def industry_for(entity: Entity) -> str:
     return _OSM_INDUSTRY.get(cat, cat.replace("_", " ").capitalize())
 
 
+# Location values that are not a city (job-board / profile placeholders).
+_NOT_A_CITY = {"remote", "onsite", "on-site", "hybrid", "anywhere", "worldwide", "global",
+               "earth", "internet", "online", "n/a", "na", "none"}
+
+
+def _country_words() -> frozenset:
+    from openleads.discover.geo import COUNTRY_NAMES
+    words = {n.lower() for names in COUNTRY_NAMES.values() for n in names}
+    return frozenset(words | {cc.lower() for cc in COUNTRY_NAMES})
+
+
+_COUNTRIES = _country_words()
+
+
+def city_of(entity: Entity) -> str:
+    """The lead's city: the source's own city field, else the first part of its
+    location — unless that part is really a country ("Germany") or a placeholder
+    ("Remote"), which used to land in the City column."""
+    city = str(entity.extra.get("city") or "").strip()
+    if city:
+        return city
+    first = (entity.location or "").split(",")[0].strip()
+    if not first:
+        return ""
+    low = first.lower().strip(".")
+    country = str(entity.extra.get("country") or "").strip().lower()
+    if low in _NOT_A_CITY or low == country or low in _COUNTRIES:
+        return ""
+    return first
+
+
+def vertical_of(entity: Entity) -> str:
+    """The source's vertical label for this entity (its own, else the source's)."""
+    if entity.extra.get("vertical"):
+        return str(entity.extra["vertical"])
+    src = get_source(entity.source) if entity.source else None
+    return getattr(src, "vertical", "") or ""
+
+
 def entity_to_lead(entity: Entity, email_result) -> Lead:
     """Flatten an Entity + EmailResult into an output-ready Lead."""
     name = entity.full_name.strip()
@@ -88,15 +138,15 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         title=entity.title,
         organization=entity.organization,
         industry=industry_for(entity),
-        employees=entity.extra.get("employees", ""),
+        employees=str(entity.extra.get("employees") or ""),
         linkedin_url=entity.links.get("linkedin", ""),
-        city=entity.extra.get("city", "") or entity.location,
+        city=city_of(entity),
         country=entity.extra.get("country", ""),
         website=entity.website,
         confidence=email_result.confidence,
         score=email_result.score,
         source=entity.source,
-        vertical=entity.extra.get("vertical", ""),
+        vertical=vertical_of(entity),
         tier=email_result.tier,
         reasons=email_result.reasons,
         signals=email_result.signals,
@@ -106,6 +156,7 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         phone=found_phones[0] if found_phones else "",
         company_size=companysize.bucket(entity.extra.get("employees", "")),
         socials=dict(entity.extra.get("socials") or {}),
+        contact_type="person" if name else "company",
     )
 
 
@@ -144,7 +195,8 @@ def matches_filters(lead: Lead, query: Query) -> bool:
     return True
 
 
-def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _noop) -> list[Lead]:
+def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _noop, *,
+                report: SearchReport | None = None) -> list[Lead]:
     """Run the pipeline for ``query`` and return up to ``query.count`` leads.
 
     ``db`` (an :class:`openleads.db.DB`) enables persistent per-domain pattern
@@ -152,15 +204,39 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     "deliverable only" — it keeps only ``safe``-tier leads the engine is confident
     won't bounce.
 
-    Email resolution runs concurrently in ordered windows; the scan stops early
-    when a source clearly can't satisfy the request, and HTTP failures surface.
-    """
-    use_cache = cache if query.use_cache else None
-    _http.clear_errors()
-    gen, label = _entity_stream(query, use_cache, db, on_progress)
+    Entities are pulled from the source stream lazily and resolved concurrently in
+    a small in-order window; a lead is emitted as soon as the head of the window is
+    ready. ``query.budget`` is a real deadline: every network call is clamped to
+    it, and when it passes the run keeps whatever already finished (in stream
+    order), cancels the rest and returns — about a second after the budget at most.
 
+    Pass ``report=SearchReport()`` to get the per-source run report filled in (also
+    emitted as ``("source", SourceReport)`` and ``("report", SearchReport)`` progress
+    events).
+    """
+    # Without a persistent cache (``--no-cache``, or none passed) a run-scoped memo
+    # still makes each URL a single fetch per run; nothing is written to disk.
+    use_cache = cache if (query.use_cache and cache is not None) else MemoryCache()
+    _http.clear_errors()
     budget = getattr(query, "budget", 0) or 0
-    deadline = time.monotonic() + budget if budget > 0 else None
+    rep = report if report is not None else SearchReport()
+    rep.query = runreport.query_dict(query)
+    rep.requested = query.count
+    rep.budget = budget
+    t0 = time.monotonic()
+    with _concurrency.deadline(budget), _http.run_scope(), \
+            runreport.activate(rep, listener=lambda sr: on_progress("source", sr)):
+        try:
+            leads = _run(query, use_cache, db, on_progress, budget, rep)
+        finally:
+            rep.seconds = round(time.monotonic() - t0, 2)
+    on_progress("report", rep)
+    return leads
+
+
+def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget,
+         rep: SearchReport) -> list[Lead]:
+    gen, label = _entity_stream(query, use_cache, db, on_progress)
     profiles: dict = {}
     plock = threading.Lock()
 
@@ -170,70 +246,174 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
         with plock:
             if domain in profiles:
                 return profiles[domain]
-        if deadline and deadline - time.monotonic() < PROFILE_RESERVE_SECONDS:
+        if _concurrency.remaining() < PROFILE_RESERVE_SECONDS:
             return None
         prof = fetch_profile(domain, cache=use_cache, timeout=PROFILE_TIMEOUT)
         with plock:
             profiles[domain] = prof
         return prof
 
-    def resolve(entity: Entity):
+    # People at the same domain resolve one at a time, in stream order: each one
+    # can teach the domain's email pattern to the next, so concurrent resolution
+    # made emails and evidence depend on thread timing. It also means the second
+    # person reuses the first one's MX / site fetches instead of racing them.
+    turns = _concurrency.KeyedTurns()
+
+    def resolve(entity: Entity, ticket: int):
         if entity.domain:
-            res = find_email(entity.full_name, entity.domain, cache=use_cache,
-                             db=db, links=entity.links, deep=query.deep,
-                             known_email=entity.extra.get("public_email"))
-            prof = profile_for(entity.domain) if res.tier != "bad" else None
+            with turns.turn(entity.domain, ticket):
+                res = find_email(entity.full_name, entity.domain, cache=use_cache,
+                                 db=db, links=entity.links, deep=query.deep,
+                                 known_email=entity.extra.get("public_email"))
+                prof = profile_for(entity.domain) if res.tier != "bad" else None
             return res, prof
         # Domain-less vertical (e.g. NPI): the public record is itself the value.
         return EmailResult(**_DOMAINLESS), None
 
     leads: list[Lead] = []
-    scanned = with_domain = 0
+    state = {"scanned": 0, "with_domain": 0}
     futility = max(25, query.count * 4)   # give up if nothing usable after this many
     workers = max(1, min(8, query.count))
     gen = iter(gen)
+    pool = ThreadPoolExecutor(max_workers=workers)
+    window: deque = deque()                # (entity, future), in stream order
+    pulled = 0
+    exhausted = False
+    stop = ""
 
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        while len(leads) < query.count and scanned < query.max_companies:
-            if deadline and time.monotonic() >= deadline:
-                on_progress("phase", f"time budget ({budget}s) reached — returning "
-                            f"{len(leads)} lead(s); raise it with --budget")
+    def take(entity: Entity, outcome) -> None:
+        """Fold one resolved entity into the results (tier gates, profile, filters)."""
+        state["scanned"] += 1
+        result, profile = outcome
+        if entity.domain:
+            state["with_domain"] += 1
+            if result.tier == "bad":   # no MX / disposable / unguessable
+                rep.dropped["undeliverable"] += 1
+                return
+        if query.verified_only and result.tier != "safe":
+            rep.dropped["not_safe"] += 1
+            return
+        lead = apply_profile(entity_to_lead(entity, result), profile)
+        if not matches_filters(lead, query):
+            rep.dropped["filtered"] += 1
+            return
+        leads.append(lead)
+        sr = rep.sources.get(entity.source)
+        if sr is None and len(rep.sources) == 1:
+            sr = next(iter(rep.sources.values()))
+        if sr is not None:
+            sr.leads += 1
+        on_progress("lead", lead)
+
+    def take_finished_head() -> None:
+        while window and window[0][1].done() and len(leads) < query.count:
+            entity, fut = window.popleft()
+            outcome = _outcome(fut)
+            if outcome is not None:
+                take(entity, outcome)
+            if state["scanned"] % workers == 0:
+                _scan(on_progress, state, leads)
+
+    try:
+        while True:
+            take_finished_head()
+            if len(leads) >= query.count:
+                stop = "count_reached"
                 break
-            batch = list(itertools.islice(gen, workers))
-            if not batch:
+            if not leads and state["scanned"] >= futility:
+                stop = "futility"
                 break
-            scanned += len(batch)
-            # Resolve the whole batch (threads) before touching the DB on this
-            # thread → no worker/main-thread SQLite overlap. Order is preserved.
-            results = list(pool.map(resolve, batch))
-            for entity, (result, profile) in zip(batch, results):
-                if entity.domain:
-                    with_domain += 1
-                    if result.tier == "bad":   # no MX / disposable / unguessable
-                        continue
-                if query.verified_only and result.tier != "safe":
-                    continue
-                lead = apply_profile(entity_to_lead(entity, result), profile)
-                if not matches_filters(lead, query):
-                    continue
-                leads.append(lead)
-                on_progress("lead", leads[-1])
+            if _concurrency.remaining() <= 0:
+                stop = "budget"
+                break
+            # Keep the window full: pull the next entity from the stream lazily.
+            if not exhausted and len(window) < workers * 2 and pulled < query.max_companies:
+                try:
+                    entity = next(gen)
+                except StopIteration:
+                    exhausted = True
+                except _concurrency.BudgetExhausted:
+                    exhausted = True
+                except Exception as e:  # noqa: BLE001 — a broken stream ends the scan, not the run
+                    exhausted = True
+                    on_progress("phase", f"note: {label} stopped early ({type(e).__name__}: {e})")
+                else:
+                    pulled += 1
+                    ticket = turns.ticket(entity.domain) if entity.domain else 0
+                    window.append((entity, _concurrency.submit(pool, resolve, entity, ticket)))
+                continue
+            if not window:
+                stop = "max_companies" if pulled >= query.max_companies else "exhausted"
+                if _concurrency.remaining() <= 0:
+                    stop = "budget"
+                break
+            # Nothing to pull right now: wait for the head of the window.
+            left = _concurrency.remaining()
+            try:
+                window[0][1].result(timeout=None if left == math.inf else max(0.0, left))
+            except FutureTimeout:
+                stop = "budget"
+                break
+            except Exception:  # noqa: BLE001 — a failed resolve is skipped when taken
+                pass
+        if stop == "budget":
+            # Keep the work that already finished, in stream order; drop the rest.
+            for entity, fut in list(window):
                 if len(leads) >= query.count:
                     break
-            on_progress("scan", {"scanned": scanned, "found": len(leads),
-                                  "with_domain": with_domain})
-            if not leads and scanned >= futility:
-                if with_domain == 0:
-                    on_progress("phase", f"{label}: these records carry no email "
-                                "domain — try a source with emails (local · hn · yc).")
-                else:
-                    on_progress("phase", f"{label}: no deliverable matches — try "
-                                "without 'verified only' or a broader query.")
-                break
+                if fut.done():
+                    outcome = _outcome(fut)
+                    if outcome is not None:
+                        take(entity, outcome)
+            on_progress("phase", f"time budget ({budget}s) reached — returning "
+                        f"{len(leads)} lead(s); raise it with --budget")
+    finally:
+        for _, fut in window:
+            fut.cancel()
+        turns.abort()             # a cancelled ticket must never block a running one
+        pool.shutdown(wait=False)
+        _close(gen)
+        rep.scanned = state["scanned"]
+        rep.leads = len(leads)
+        rep.finish(stop or "exhausted")
 
+    _scan(on_progress, state, leads)
+    if stop == "futility":
+        if state["with_domain"] == 0:
+            on_progress("phase", f"{label}: these records carry no email "
+                        "domain — try a source with emails (local · hn · yc).")
+        else:
+            on_progress("phase", f"{label}: no deliverable matches — try "
+                        "without 'verified only' or a broader query.")
     _surface_errors(label, leads, on_progress)
     on_progress("phase", f"done: {len(leads)} lead(s)")
     return leads
+
+
+def _outcome(fut):
+    """A finished resolve future's ``(EmailResult, profile)``, or None if it failed."""
+    if fut.cancelled():
+        return None
+    try:
+        return fut.result(timeout=0)
+    except Exception:  # noqa: BLE001 — one entity that can't resolve is skipped
+        return None
+
+
+def _close(gen) -> None:
+    """Close a source stream now (its finally blocks cancel pending fetches)."""
+    close = getattr(gen, "close", None)
+    if close is None:
+        return
+    try:
+        close()
+    except Exception:  # noqa: BLE001 — cleanup must never mask the result
+        pass
+
+
+def _scan(on_progress: ProgressFn, state: dict, leads: list) -> None:
+    on_progress("scan", {"scanned": state["scanned"], "found": len(leads),
+                         "with_domain": state["with_domain"]})
 
 
 def _entity_stream(query: Query, cache, db, on_progress: ProgressFn):
@@ -243,15 +423,22 @@ def _entity_stream(query: Query, cache, db, on_progress: ProgressFn):
     federation layer fans the query out across the sources that fit its shape and
     expands companies into real people — the "one box that just works" path.
     """
+    rep = runreport.current()
     if query.source and query.source != "auto":
         source = get_source(query.source)
         if source is None:
             raise ValueError(f"unknown source: {query.source!r}. Try `openleads sources`.")
         source.cache = cache
         on_progress("phase", f"source={source.name} ({source.vertical}) — searching…")
-        return source.search(query), source.name
+        if rep is not None:
+            rep.set_plan([source.name], {source.name: "pinned with --source"})
+        # Same wrapper as the federated path: errors and time attributed, a raising
+        # source ends its stream instead of the run.
+        return federation._instrument(source.name, source.search(query)), source.name
 
     names = federation.plan(query)
+    if rep is not None:
+        rep.set_plan(names, federation.plan_reasons(query, names))
     on_progress("phase", "federated search · " + " · ".join(names) + " …")
     gen = federation.search(query, cache=cache, db=db, on_progress=on_progress)
     return gen, "federated"

@@ -113,6 +113,72 @@ def report() -> dict:
             "preflight": preflight}
 
 
+# Live endpoint probes for `doctor --sources`: (source, label, url). Each is one
+# small GET with the identifying API User-Agent and no retries.
+SOURCE_PROBES = (
+    ("local", "Nominatim (geocoding)", "https://nominatim.openstreetmap.org/status?format=json"),
+    ("companies", "Wikidata", "https://www.wikidata.org/w/api.php?action=query&meta=siteinfo"
+                              "&format=json"),
+    ("edgar", "SEC EDGAR", "https://www.sec.gov/robots.txt"),
+    ("github", "GitHub API", "https://api.github.com/rate_limit"),
+    ("hn", "Hacker News (Algolia)", "https://hn.algolia.com/api/v1/search?query=hiring"
+                                    "&hitsPerPage=1"),
+    ("openalex", "OpenAlex", "https://api.openalex.org/works?per_page=1"),
+    ("npi", "NPI registry", "https://npiregistry.cms.hhs.gov/api/?version=2.1&limit=1"
+                            "&state=TX&taxonomy_description=Dentist"),
+    ("yc", "YC dataset (yc-oss)", "https://yc-oss.github.io/api/companies/all.json"),
+    ("email", "DNS-over-HTTPS (Google)", "https://dns.google/resolve?name=example.com&type=MX"),
+    ("email", "DNS-over-HTTPS (Cloudflare)",
+     "https://cloudflare-dns.com/dns-query?name=example.com&type=MX"),
+)
+
+
+def probe_sources(timeout: float = 6.0) -> list:
+    """Probe every public endpoint the sources use, concurrently (live network).
+
+    Returns ``[{source, name, url, status: ok|bad, detail, seconds}]``. Overpass
+    mirrors are probed through their ``/status`` page.
+    """
+    import time
+
+    from openleads import _http
+    from openleads._concurrency import ordered_map
+    from openleads.config import api_headers
+    from openleads.sources.local import overpass_mirrors
+
+    probes = [("local", f"Overpass ({_http_host(u)})", u.replace("/interpreter", "/status"))
+              for u in overpass_mirrors()] + list(SOURCE_PROBES)
+
+    def one(probe):
+        source, name, url = probe
+        t0 = time.monotonic()
+        try:
+            _http.request(url, headers=api_headers(), timeout=timeout, retries=0)
+            status, detail = "ok", "reachable"
+        except _http.FETCH_ERRORS as e:
+            status, detail = "bad", _http._reason(e)
+        secs = round(time.monotonic() - t0, 2)
+        return {"source": source, "name": name, "url": url, "status": status,
+                "detail": f"{detail} · {secs}s", "seconds": secs}
+
+    return list(ordered_map(one, probes, 8))
+
+
+def _http_host(url: str) -> str:
+    import urllib.parse
+    return urllib.parse.urlsplit(url).hostname or url
+
+
+def print_source_probes(results: list) -> None:
+    print("\nSources (live probes)")
+    for r in results:
+        _line(OK if r["status"] == "ok" else BAD, f"{r['source']:<10} {r['name']}", r["detail"])
+    bad = [r for r in results if r["status"] != "ok"]
+    if bad:
+        print("       → unreachable endpoints make their source come back empty or "
+              "'failed'; a proxy or firewall is the usual cause")
+
+
 def run(args=None) -> int:
     print("OpenLeads doctor\n" + "=" * 40)
 
@@ -161,6 +227,9 @@ def run(args=None) -> int:
         _line(OK if pf["ready"] else WARN, f"readiness grade {pf['grade']}", f"{pf['score']}/100")
         for fix in pf["fixes"]:
             print(f"       → {fix}")
+
+    if getattr(args, "sources", False):
+        print_source_probes(probe_sources())
 
     print("\nDone.")
     return 0

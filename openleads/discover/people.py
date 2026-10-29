@@ -21,10 +21,10 @@ from __future__ import annotations
 import html as ihtml
 import json
 import re
-from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
 
+from openleads._concurrency import BudgetExhausted, ordered_map
 from openleads._http import get_text
 
 # Pages most likely to list the team. Ordered by yield; fetched concurrently.
@@ -279,8 +279,9 @@ def find_people(domain: str, cache=None, timeout: int = 8, limit: int = 25) -> l
 
     found: list[dict] = []
     seen: set[str] = set()
-    with ThreadPoolExecutor(max_workers=min(6, len(TEAM_PATHS))) as ex:
-        for text in ex.map(fetch, TEAM_PATHS):
+    pages = ordered_map(fetch, TEAM_PATHS, min(6, len(TEAM_PATHS)))
+    try:
+        for text in pages:
             if not text:
                 continue
             for person in extract_people(text):
@@ -290,4 +291,8 @@ def find_people(domain: str, cache=None, timeout: int = 8, limit: int = 25) -> l
                     found.append(person)
             if len(found) >= limit:
                 break
+    except BudgetExhausted:
+        pass                      # out of time: keep the people already found
+    finally:
+        pages.close()             # cancels the remaining paths; never waits on them
     return found[:limit]

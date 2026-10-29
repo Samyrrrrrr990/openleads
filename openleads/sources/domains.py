@@ -19,9 +19,9 @@ cached page fetches the engine already knows how to make.
 from __future__ import annotations
 
 import re
-from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
+from openleads._concurrency import ordered_map
 from openleads.discover.people import find_people
 from openleads.emails import groundtruth
 from openleads.emails.permute import domain_of, is_probable_domain, is_role_account, local_tokens
@@ -91,26 +91,33 @@ class DomainsSource(Source):
             people = find_people(domain, cache=self.cache) if query.discover else []
             return domain, emails, people
 
-        with ThreadPoolExecutor(max_workers=min(8, len(domains))) as ex:
-            for domain, emails, people in ex.map(harvest, domains):
-                seen: set[str] = set()
-                names: set[str] = set()
-                # Real people (structured locals) first, then role/contact addresses.
-                for email in sorted(emails, key=lambda e: is_role_account(e)):
-                    if email in seen:
-                        continue
-                    seen.add(email)
-                    ent = address_to_entity(email, domain)
-                    names.add(ent.full_name.lower())
-                    yield ent
-                # Then named people from the team/about pages. The engine builds
-                # their address from the pattern the published ones revealed.
-                for p in people:
-                    if p["name"].lower() in names:
-                        continue
-                    names.add(p["name"].lower())
-                    yield Entity(
-                        full_name=p["name"], title=p["title"], organization=domain,
-                        domain=domain, website=f"https://{domain}", links={},
-                        extra={"vertical": "company contacts", "via": "team-page"},
-                        source="domains")
+        results = ordered_map(harvest, domains, min(8, len(domains)))
+        try:
+            for domain, emails, people in results:
+                yield from _domain_entities(domain, emails, people)
+        finally:
+            results.close()
+
+
+def _domain_entities(domain: str, emails: list, people: list) -> Iterator[Entity]:
+    seen: set[str] = set()
+    names: set[str] = set()
+    # Real people (structured locals) first, then role/contact addresses.
+    for email in sorted(emails, key=lambda e: is_role_account(e)):
+        if email in seen:
+            continue
+        seen.add(email)
+        ent = address_to_entity(email, domain)
+        names.add(ent.full_name.lower())
+        yield ent
+    # Then named people from the team/about pages. The engine builds their address
+    # from the pattern the published ones revealed.
+    for p in people:
+        if p["name"].lower() in names:
+            continue
+        names.add(p["name"].lower())
+        yield Entity(
+            full_name=p["name"], title=p["title"], organization=domain,
+            domain=domain, website=f"https://{domain}", links={},
+            extra={"vertical": "company contacts", "via": "team-page"},
+            source="domains")

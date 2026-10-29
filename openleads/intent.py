@@ -309,6 +309,144 @@ def _query_from_dict(d: dict) -> Query:
     return q
 
 
+# --------------------------------------------------------------------------- #
+# One query builder for every front end (CLI, web, MCP, chat, watch, bench,   #
+# the Python API): parse the words, then apply explicit overrides, validated. #
+# --------------------------------------------------------------------------- #
+class QueryError(ValueError):
+    """A search option that can't be honored (unknown source, bad count, …)."""
+
+
+COUNT_RANGE = (1, 1000)
+BUDGET_RANGE = (5, 3600)          # 0 (or less) means "no limit"
+_BOOL_FIELDS = ("verified_only", "deep", "discover", "use_cache", "company_profile")
+_TEXT_FIELDS = ("industry", "location", "title", "keyword", "out")
+_ALIASES = {"format": "fmt", "people": "discover", "no_people": "!discover",
+            "no_cache": "!use_cache", "no_company": "!company_profile",
+            "budget_seconds": "budget"}
+
+
+def clamp_count(n) -> int:
+    try:
+        n = int(n)
+    except (TypeError, ValueError):
+        raise QueryError(f"count must be a whole number, got {n!r}") from None
+    return max(COUNT_RANGE[0], min(COUNT_RANGE[1], n))
+
+
+def clamp_budget(seconds) -> int:
+    """0 = unlimited; anything else is held to 5…3600 seconds."""
+    try:
+        s = int(seconds)
+    except (TypeError, ValueError):
+        raise QueryError(f"budget must be a number of seconds, got {seconds!r}") from None
+    return 0 if s <= 0 else max(BUDGET_RANGE[0], min(BUDGET_RANGE[1], s))
+
+
+def check_source(name: str | None) -> str | None:
+    """``None`` for federated search ("auto"/blank), else a registered source name.
+
+    An unknown name raises ``ValueError`` with the closest match, e.g.
+    ``unknown source 'locl' — did you mean 'local'?``.
+    """
+    name = (name or "").strip().lower()
+    if not name or name == "auto":
+        return None
+    from openleads.sources import get_registry
+    names = sorted(get_registry())
+    if name in names:
+        return name
+    import difflib
+    close = difflib.get_close_matches(name, names, n=1, cutoff=0.5)
+    hint = f" — did you mean '{close[0]}'?" if close else ""
+    raise QueryError(f"unknown source '{name}'{hint} (see `openleads sources`)")
+
+
+def _label_list(field: str, value) -> list:
+    """Validate seniority/department values ("vp,director" or a list) against the labels."""
+    from openleads.insights.titles import DEPARTMENT_LABELS, SENIORITY_LABELS
+    allowed = SENIORITY_LABELS if field == "seniority" else DEPARTMENT_LABELS
+    if value is None:
+        return []
+    items = value.split(",") if isinstance(value, str) else list(value)
+    out = []
+    for v in items:
+        key = str(v).strip().lower().replace("-", "_").replace(" ", "_")
+        if not key:
+            continue
+        if key not in allowed:
+            import difflib
+            close = difflib.get_close_matches(key, list(allowed), n=1, cutoff=0.6)
+            hint = f" — did you mean '{close[0]}'?" if close else ""
+            raise QueryError(f"unknown {field} '{v}'{hint} (choose from "
+                             f"{', '.join(allowed)})")
+        if key not in out:
+            out.append(key)
+    return out
+
+
+def build_query(text: str = "", llm: bool = False, **overrides) -> Query:
+    """Turn free text + explicit options into a validated :class:`Query`.
+
+    The words are parsed first (:func:`rule_parse`, or :func:`parse` with the
+    optional LLM when ``llm=True``); every override that isn't ``None`` then wins.
+    Accepted overrides are the :class:`Query` fields plus friendly aliases:
+    ``format`` (→ fmt), ``people`` (→ discover), ``no_people``, ``no_cache``,
+    ``no_company`` and ``budget_seconds``.
+
+    * ``count`` is held to 1…1000 and ``budget`` to 0 (no limit) or 5…3600 s;
+    * ``source`` must be a registered source ("auto"/"" = federated); a typo
+      raises ``ValueError`` with a "did you mean …?" suggestion;
+    * ``seniority`` / ``department`` take a list or "a,b" and are checked against
+      :data:`openleads.insights.titles.SENIORITY_LABELS` / ``DEPARTMENT_LABELS``.
+
+    The original ``text`` is always kept on the query: the federation planner and
+    the local source route on it.
+    """
+    text = (text or "").strip()
+    if text:
+        q = parse(text, allow_llm=True)[0] if llm else rule_parse(text)
+    else:
+        q = Query()
+    q.text = text
+    valid = set(Query.__dataclass_fields__)
+    for key, value in overrides.items():
+        if value is None:
+            continue
+        target = _ALIASES.get(key, key)
+        if target.startswith("!"):                  # negative flags: no_cache=True …
+            if value:
+                setattr(q, target[1:], False)
+            continue
+        if target not in valid:
+            raise QueryError(f"unknown query option: {key!r}")
+        if target == "source":
+            q.source = check_source(value)
+        elif target == "count":
+            q.count = clamp_count(value)
+        elif target == "budget":
+            q.budget = clamp_budget(value)
+        elif target == "max_companies":
+            q.max_companies = max(1, int(value))
+        elif target in ("seniority", "department"):
+            setattr(q, target, _label_list(target, value))
+        elif target in _BOOL_FIELDS:
+            setattr(q, target, bool(value))
+        elif target in _TEXT_FIELDS:
+            setattr(q, target, str(value).strip() or None)
+        elif target == "fmt":
+            q.fmt = str(value)
+        elif target == "seed":
+            q.seed = int(value)
+        else:
+            setattr(q, target, value)
+    if q.source is not None:
+        q.source = check_source(q.source)
+    q.count = clamp_count(q.count)
+    q.budget = clamp_budget(q.budget)
+    return q
+
+
 def parse(text: str, allow_llm: bool = True) -> tuple[Query, str]:
     """Parse ``text`` into ``(Query, mode)`` where mode is ``"rule"`` or ``"llm"``.
 

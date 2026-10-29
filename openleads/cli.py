@@ -1,10 +1,10 @@
 """
 Command-line interface.
 
-Finding:   ``find`` · ``sources`` · ``verify`` · ``cache``
-Outreach:  ``write`` · ``send`` · ``run`` (find→verify→write→send) · ``inbox``
-Manage:    ``config`` · ``doctor`` · ``crm`` · ``web`` · ``chat``
-Workspace: ``people`` · ``companies`` (see :mod:`openleads.cli_workspace`)
+``openleads --help`` groups the commands by purpose (see :data:`COMMAND_GROUPS`):
+Find · Outreach · Automate · Workspace (:mod:`openleads.cli_workspace`) · Setup ·
+Legacy. ``find`` keeps stdout clean for data: with ``--format json``/``ndjson`` or
+``-o -`` every progress line goes to stderr.
 
 Running ``openleads`` with no arguments launches the chat REPL. Free-text queries
 are parsed by the rule-based intent parser; explicit flags always override.
@@ -22,6 +22,7 @@ from openleads.cache.store import Cache
 from openleads.db import DB
 from openleads.engine import build_leads
 from openleads.models import Query
+from openleads.runreport import SearchReport
 from openleads.sources import get_source, list_sources
 
 
@@ -29,32 +30,26 @@ from openleads.sources import get_source, list_sources
 # Query building                                                              #
 # --------------------------------------------------------------------------- #
 def _query_from_args(args) -> Query:
+    """Free text + flags → a validated Query (flags win; see intent.build_query)."""
     text = " ".join(getattr(args, "query", []) or []).strip()
-    q = intent.rule_parse(text) if text else Query()
-    for attr in ("source", "industry", "location", "title", "keyword", "format", "out"):
-        val = getattr(args, attr, None)
-        if val is not None:
-            setattr(q, "fmt" if attr == "format" else attr, val)
-    if getattr(args, "count", None) is not None:
-        q.count = args.count
-    if getattr(args, "verified_only", False):
-        q.verified_only = True
-    if getattr(args, "deep", False):
-        q.deep = True
-    if getattr(args, "no_people", False):
-        q.discover = False
-    if getattr(args, "max_companies", None) is not None:
-        q.max_companies = args.max_companies
-    if getattr(args, "budget", None) is not None:
-        q.budget = args.budget
-    if getattr(args, "no_company", False):
-        q.company_profile = False
-    for attr in ("seniority", "department"):
-        val = getattr(args, attr, None)
-        if val:
-            setattr(q, attr, [v.strip() for v in val.split(",") if v.strip()])
-    q.use_cache = not getattr(args, "no_cache", False)
-    return q
+
+    def flag(name):                 # store_true flags: only an explicit "on" overrides
+        return True if getattr(args, name, False) else None
+
+    return intent.build_query(
+        text,
+        source=getattr(args, "source", None), industry=getattr(args, "industry", None),
+        location=getattr(args, "location", None), title=getattr(args, "title", None),
+        keyword=getattr(args, "keyword", None), fmt=getattr(args, "format", None),
+        out=getattr(args, "out", None), count=getattr(args, "count", None),
+        verified_only=flag("verified_only"), deep=flag("deep"),
+        no_people=flag("no_people"), no_company=flag("no_company"),
+        max_companies=getattr(args, "max_companies", None),
+        budget=getattr(args, "budget", None),
+        seniority=getattr(args, "seniority", None) or None,
+        department=getattr(args, "department", None) or None,
+        use_cache=not getattr(args, "no_cache", False),
+    )
 
 
 def _read_leads_csv(path: str) -> list[dict]:
@@ -83,35 +78,87 @@ def _read_leads_csv(path: str) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Finding                                                                     #
 # --------------------------------------------------------------------------- #
+def _leads_to_stdout(q: Query) -> bool:
+    """True when the leads themselves are written to stdout (so UI must not be)."""
+    return q.out == "-" or (q.out is None and q.fmt in ("json", "ndjson"))
+
+
+def explain_plan(q: Query) -> list:
+    """Lines describing how a query was understood and where it will search."""
+    from openleads import federation
+    shown = {k: v for k, v in (
+        ("text", q.text), ("source", q.source or "auto"), ("count", q.count),
+        ("location", q.location), ("keyword", q.keyword), ("industry", q.industry),
+        ("title", q.title), ("verified_only", q.verified_only or None),
+        ("seniority", ",".join(q.seniority) or None),
+        ("department", ",".join(q.department) or None),
+        ("budget", f"{q.budget}s" if q.budget else "no limit"),
+        ("people", None if q.discover else "off"), ("deep", q.deep or None),
+    ) if v not in (None, "")}
+    lines = ["query    " + " · ".join(f"{k}={v!r}" if k == "text" else f"{k}={v}"
+                                     for k, v in shown.items())]
+    names = federation.plan(q)
+    reasons = federation.plan_reasons(q, names)
+    for i, name in enumerate(names):
+        lines.append(("plan     " if i == 0 else "         ") + f"{name:<10} {reasons.get(name, '')}")
+    return lines
+
+
+def _report_lines(report) -> list:
+    lines = [ui.c("  ◆ " + report.summary(), ui.FAINT)]
+    lines += ["    " + ln for ln in report.status_lines()]
+    for hint in report.hints():
+        lines.append(ui.c("  → " + hint, ui.GREY))
+    return lines
+
+
 def cmd_find(args) -> int:
     q = _query_from_args(args)
-    cache = Cache() if q.use_cache else None
-    db = DB()
-    from openleads.emails import netcheck
-    body = [
-        ui.c("find", ui.WHITE, ui.BOLD) + ui.c(f"  {q.count} leads", ui.GREY),
-        ui.status_line([
-            ("source", q.source or "auto"),
-            ("deliver", "safe only" if q.verified_only else "all tiers"),
-            ("format", q.fmt),
-        ]).strip(),
-        ui.status_line([
-            ("port 25", "open" if netcheck.port25_open() else "blocked → infra/ground-truth"),
-            ("mode", "deep" if q.deep else "fast"),
-        ]).strip(),
-    ]
-    print(ui.box(body, title="✦ openleads", width=64))
+    if q.fmt == "jsonl":
+        q.fmt = "ndjson"
+    to_stdout = _leads_to_stdout(q)
+    quiet = bool(getattr(args, "quiet", False))
+    explain = bool(getattr(args, "explain", False))
+    # When the leads go to stdout (json/ndjson, or -o -), every UI line goes to
+    # stderr so `openleads find … --format json | jq` gets clean JSON.
+    out = sys.stderr if to_stdout else sys.stdout
+
+    def say(text: str = "") -> None:
+        if not quiet:
+            print(text, file=out)
+
+    if explain:
+        for line in explain_plan(q):
+            print(ui.c("  " + line, ui.GREY), file=out)
+    if not quiet:
+        from openleads.emails import netcheck
+        body = [
+            ui.c("find", ui.WHITE, ui.BOLD) + ui.c(f"  {q.count} leads", ui.GREY),
+            ui.status_line([
+                ("source", q.source or "auto"),
+                ("deliver", "safe only" if q.verified_only else "all tiers"),
+                ("format", q.fmt),
+            ]).strip(),
+            ui.status_line([
+                ("port 25", "open" if netcheck.port25_open() else "blocked → infra/ground-truth"),
+                ("mode", "deep" if q.deep else "fast"),
+            ]).strip(),
+        ]
+        say(ui.box(body, title="✦ openleads", width=64))
     progress = {"n": 0}
 
     def on_progress(kind, payload):
         if kind == "phase":
-            print(ui.c(f"  ◆ {payload}", ui.FAINT))
+            say(ui.c(f"  ◆ {payload}", ui.FAINT))
         elif kind == "lead":
             progress["n"] += 1
-            print(ui.lead_line(payload, progress["n"], q.count))
+            say(ui.lead_line(payload, progress["n"], q.count))
 
+    report = SearchReport()
+    cache = Cache() if q.use_cache else None
+    db = DB()
     try:
-        leads = build_leads(q, cache=cache, db=db, on_progress=on_progress)
+        leads = build_leads(q, cache=cache, db=db, on_progress=on_progress, report=report)
     except ValueError as e:
         print(f"[!] {e}", file=sys.stderr)
         return 2
@@ -120,13 +167,26 @@ def cmd_find(args) -> int:
             cache.close()
         db.close()
 
+    if getattr(args, "report", None):
+        import json as _json
+        with open(args.report, "w", encoding="utf-8") as f:
+            _json.dump(report.to_dict(), f, indent=2, default=str)
+    # A short result always says why (per-source status + what to try), on stderr.
+    if explain or len(leads) < q.count:
+        stream = out if explain else sys.stderr
+        for line in _report_lines(report):
+            print(line, file=stream)
+
     if not leads:
-        print("[!] No leads produced. Try without --verified-only or a broader query.")
+        if to_stdout and q.fmt == "json":
+            print("[]")                        # keep pipes valid; exit code still says "none"
+        print("[!] No leads produced. Try without --verified-only or a broader query.",
+              file=sys.stderr)
         return 1
-    print(ui.summary_line(leads))
+    say(ui.summary_line(leads))
     writers.write(leads, fmt=q.fmt, path=q.out)
     dest = q.out or writers.DEFAULT_PATHS.get(q.fmt, "stdout")
-    print(ui.c(f"  ↳ wrote {len(leads)} leads → {dest}\n", ui.GREY))
+    say(ui.c(f"  ↳ wrote {len(leads)} leads → {dest}\n", ui.GREY))
     return 0
 
 
@@ -134,19 +194,25 @@ def cmd_bench(args) -> int:
     """Run the live benchmark suite and print a scoreboard."""
     from openleads import bench
     queries = [" ".join(args.query)] if args.query else None
+    repeat = max(1, getattr(args, "repeat", 1) or 1)
     print(ui.c(f"  live benchmark · {len(queries or bench.SUITE)} queries · "
-               f"{args.count} leads each · {args.budget}s budget each\n", ui.FAINT))
+               f"{args.count} leads each · {args.budget}s budget each"
+               + (f" · {repeat} runs each (median shown)" if repeat > 1 else "") + "\n",
+               ui.FAINT))
 
     def on_result(s):
-        flag = ui.c("  ✗ " + s.error, ui.RED) if s.error else ""
-        print(f"  {s.query[:34]:<34} {s.leads:>3} leads  {s.people:>3} people  "
+        flag = ui.c("  ✗ " + s.error, ui.RED) if s.error else (
+            ui.c("  · " + s.problem, ui.FAINT) if s.problem else "")
+        spread = (f" [{s.leads_range[0]}–{s.leads_range[2]}]"
+                  if repeat > 1 and s.leads_range else "")
+        print(f"  {s.query[:34]:<34} {s.leads:>3} leads{spread}  {s.people:>3} people  "
               f"{s.found + s.pattern:>3} evidence  {s.junk_names:>2} junk  {s.seconds:>5}s{flag}")
 
     cache = None if args.no_cache else Cache()
     db = DB()     # pattern learning on, exactly like `openleads find`
     try:
         rep = bench.run(queries, count=args.count, budget=args.budget, cache=cache, db=db,
-                        on_result=on_result)
+                        on_result=on_result, repeat=repeat)
     finally:
         if cache:
             cache.close()
@@ -176,7 +242,7 @@ def cmd_company(args) -> int:
     finally:
         if cache:
             cache.close()
-    if args.json:
+    if args.json or getattr(args, "format", None) == "json":
         print(_json.dumps({"profile": prof, "people": people}, indent=2))
         return 0 if not prof.get("error") else 1
     if prof.get("error"):
@@ -231,15 +297,26 @@ def cmd_sources(args) -> int:
 
 def cmd_verify(args) -> int:
     from openleads.emails.resolve import verify_address
+    from openleads.models import evidence_of
     cache = Cache()
+    results = []
     try:
         for email in args.emails:
             res = verify_address(email, cache=cache)
+            if getattr(args, "json", False):
+                results.append({"email": email, "tier": res.tier, "score": res.score,
+                                "confidence_pct": res.confidence_pct,
+                                "evidence": evidence_of(res.email, res.signals),
+                                "reasons": res.reasons})
+                continue
             tag = ui.TAGS.get(res.confidence, "  ?")
             print(f"{tag} {email:<34} {res.tier:<6} score {res.score:<3} "
                   f"{'· ' + res.reasons[0] if res.reasons else ''}")
     finally:
         cache.close()
+    if getattr(args, "json", False):
+        import json as _json
+        print(_json.dumps(results, indent=2))
     return 0
 
 
@@ -367,6 +444,9 @@ def cmd_send(args) -> int:
     try:
         out = pipeline.run(q, send=True, dry_run=not live, cache=cache, db=db,
                            on_progress=lambda k, p: None)
+    except ValueError as e:             # e.g. an unknown source, like `run`
+        print(f"[!] {e}", file=sys.stderr)
+        return 2
     finally:
         cache.close()
         db.close()
@@ -817,23 +897,96 @@ def _add_query_flags(p, with_output=True):
     p.add_argument("--no-company", action="store_true",
                    help="skip company profiles (tech stack, socials, phone) for speed")
     if with_output:
-        p.add_argument("--format", choices=["csv", "json", "ndjson", "apollo", "hubspot"],
-                       help="output format (apollo/hubspot: CRM-ready CSV columns)")
+        p.add_argument("--format", choices=["csv", "json", "ndjson", "jsonl", "apollo", "hubspot"],
+                       help="output format (json/ndjson go to stdout; apollo/hubspot: "
+                            "CRM-ready CSV columns)")
         p.add_argument("-o", "--out", help="output path ('-' for stdout)")
+
+
+# The top-level help lists commands by what they're for, not alphabetically.
+QUICK_START = (
+    ('openleads find "dentists in Austin"', "find people + verified emails"),
+    ('openleads find "fintech founders" -n 25 -o leads.csv', "save them as a CSV"),
+    ('openleads find "agencies in Miami" --format json | jq', "pipe clean JSON"),
+    ("openleads web", "the local dashboard"),
+    ("openleads", "chat: just type what you want"),
+)
+COMMAND_GROUPS = (
+    ("Find", ("find", "company", "verify", "enrich", "sources")),
+    ("Outreach", ("write", "run", "inbox", "drip")),
+    ("Automate", ("recipe", "watch", "schedule", "runs", "assistant")),
+    ("Workspace", ("people", "companies", "lists", "seq", "tasks", "deals", "import",
+                   "export", "dedupe", "stats", "backup", "demo")),
+    ("Setup", ("init", "config", "doctor", "cache", "web", "chat", "mcp", "bench")),
+    ("Legacy", ("send", "crm", "campaign")),
+)
+_LEGACY_NOTES = {"send": "= run", "campaign": "v2"}
+
+
+class _Registrar:
+    """Wraps ``add_subparsers()`` so commands carry their one-line help into the
+    grouped epilog instead of argparse's flat alphabetical list."""
+
+    def __init__(self, sub) -> None:
+        self._sub = sub
+        self.help: dict = {}
+        self.aliases: set = set()
+
+    def add_parser(self, name, **kw):
+        text = kw.pop("help", None)
+        if text:
+            self.help[name] = text
+            kw.setdefault("description", text[:1].upper() + text[1:] + ".")
+        self.aliases.update(kw.get("aliases", ()))
+        return self._sub.add_parser(name, **kw)
+
+    @property
+    def choices(self) -> dict:
+        return self._sub.choices
+
+
+def _grouped_help(helps: dict) -> str:
+    width = max(len(cmd) for cmd, _ in QUICK_START)
+    lines = ["quick start:"]
+    lines += [f"  {cmd:<{width}}  {what}" for cmd, what in QUICK_START]
+    listed = set()
+    for title, names in COMMAND_GROUPS:
+        lines += ["", f"{title.lower()}:"]
+        for name in names:
+            listed.add(name)
+            text = helps.get(name, "")
+            note = _LEGACY_NOTES.get(name)
+            if note:
+                text = f"{text} ({note})" if text else note
+            lines.append(f"  {name:<10} {text}")
+    extra = [n for n in helps if n not in listed]
+    if extra:                                  # anything registered later still shows
+        lines += ["", "more:"] + [f"  {n:<10} {helps[n]}" for n in extra]
+    lines += ["", "Run `openleads <command> --help` for a command's options."]
+    return "\n".join(lines)
 
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="openleads",
-        description="Free, open-source Apollo alternative — one search box fans out across "
-                    "public sources (local businesses, startups, companies, devs…), finds "
-                    "the people, verifies emails, and automates outreach. Keyless, local, $0.",
+        description="Free, open-source Apollo alternative — one search box fans out across\n"
+                    "public sources (local businesses, startups, companies, devs…), finds the\n"
+                    "people, verifies emails, and automates outreach. Keyless, local, $0.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--version", action="version", version=f"openleads {__version__}")
-    sub = p.add_subparsers(dest="command")
+    sub = _Registrar(p.add_subparsers(dest="command", metavar="<command>",
+                                      help="one of the commands listed below"))
 
     f = sub.add_parser("find", help="find + verify leads")
     _add_query_flags(f)
+    f.add_argument("-q", "--quiet", action="store_true",
+                   help="no progress output (errors and the short-result report still go to stderr)")
+    f.add_argument("--explain", action="store_true",
+                   help="show how the query was understood, which sources run and why, "
+                        "and the per-source report at the end")
+    f.add_argument("--report", metavar="FILE",
+                   help="write the run report (per-source status, timings, hints) as JSON")
     f.set_defaults(func=cmd_find)
 
     r = sub.add_parser("run", help="find → verify → write → send (dry-run unless --live)")
@@ -856,6 +1009,7 @@ def build_parser() -> argparse.ArgumentParser:
     co = sub.add_parser("company", help="look up a company: tech stack, socials, phones, people")
     co.add_argument("domain", help="company domain, e.g. acme.com")
     co.add_argument("--json", action="store_true", help="print JSON")
+    co.add_argument("--format", choices=["text", "json"], help="output format (json = --json)")
     co.add_argument("--people", type=int, default=10, help="max people from the team page")
     co.add_argument("--no-people", action="store_true", help="skip the team-page crawl")
     co.add_argument("--no-cache", action="store_true", help="refetch instead of using the cache")
@@ -868,6 +1022,8 @@ def build_parser() -> argparse.ArgumentParser:
     bn.add_argument("query", nargs="*", help="one query to score (default: the full suite)")
     bn.add_argument("-n", "--count", type=int, default=10, help="leads per query (default 10)")
     bn.add_argument("--budget", type=int, default=60, help="seconds per query (default 60)")
+    bn.add_argument("--repeat", type=int, default=1, metavar="N",
+                    help="run each query N times; report the median run and min–max")
     bn.add_argument("--json", help="write the full report as JSON")
     bn.add_argument("--markdown", help="write a Markdown scoreboard")
     bn.add_argument("--no-cache", action="store_true", help="bypass the cache")
@@ -880,6 +1036,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     v = sub.add_parser("verify", help="verify one or more concrete email addresses")
     v.add_argument("emails", nargs="+")
+    v.add_argument("--json", action="store_true", help="print JSON (one object per address)")
     v.set_defaults(func=cmd_verify)
 
     ib = sub.add_parser("inbox", help="scan IMAP for replies & bounces (optional)")
@@ -899,6 +1056,8 @@ def build_parser() -> argparse.ArgumentParser:
     cfg.set_defaults(func=cmd_config)
 
     dr = sub.add_parser("doctor", help="health-check finding + sending setup")
+    dr.add_argument("--sources", action="store_true",
+                    help="also probe every public source's endpoint (live network)")
     dr.set_defaults(func=cmd_doctor)
 
     wb = sub.add_parser("web", help="launch the local web dashboard")
@@ -981,12 +1140,14 @@ def build_parser() -> argparse.ArgumentParser:
     it = sub.add_parser("init", help="friendly first-run setup (identity, mailbox, first search)")
     it.set_defaults(func=cmd_init)
 
-    cp = sub.add_parser("campaign", help="(v2) cold-email companion")
+    cp = sub.add_parser("campaign", help="cold-email companion")
     cp.add_argument("rest", nargs=argparse.REMAINDER)
     cp.set_defaults(func=cmd_campaign)
 
     from openleads import cli_workspace
     cli_workspace.register(sub)
+    p.epilog = _grouped_help(sub.help)
+    p._registrar = sub          # for tests / tooling: every registered command
     return p
 
 
@@ -1011,7 +1172,11 @@ def main(argv=None) -> int:
     if not getattr(args, "func", None):
         parser.print_help()
         return 0
-    return args.func(args)
+    try:
+        return args.func(args)
+    except intent.QueryError as e:          # unknown source, bad --seniority, …
+        print(f"[!] {e}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

@@ -378,17 +378,22 @@ def _run_assistant(text: str, sess: Session, console):
 
 def _run_search(text: str, sess: Session, console):
     base = sess.base_query()
-    parsed, mode = intent.parse(text)
-    # Merge: parsed text wins for fields it set; session provides sticky defaults.
-    q = Query(
-        source=parsed.source or base.source,
-        count=parsed.count if parsed.count != 20 else base.count,
-        industry=parsed.industry, location=parsed.location,
-        title=parsed.title, keyword=parsed.keyword,
-        verified_only=parsed.verified_only or base.verified_only,
-        deep=base.deep,
-        fmt=base.fmt,
-    )
+    mode = "llm" if openrouter_key() else "rule"
+    try:
+        # One builder for every front end: it keeps the original words (the
+        # planner and local search route on them — "dentists in Austin" used to
+        # lose them here and search generic businesses), role filters included.
+        q = intent.build_query(text, llm=True)
+    except ValueError as e:
+        _say(console, f"  [red]{e}[/]")
+        return
+    # Session settings are sticky defaults; what the words said wins.
+    q.source = q.source or base.source
+    if q.count == Query().count:
+        q.count = base.count
+    q.verified_only = q.verified_only or base.verified_only
+    q.deep = base.deep
+    q.fmt = base.fmt
     label = f"{q.source or 'auto'}"
     _say(console, f"  [dim]plan[/] source=[cyan]{label}[/] count={q.count} "
                   f"verified_only={q.verified_only} parser={mode}")

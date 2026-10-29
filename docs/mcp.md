@@ -44,10 +44,31 @@ No Python on the PATH? Use the npm wrapper instead:
 
 | Tool | What it does |
 |---|---|
-| `find_leads` | Plain-English search ("fintech founders", "law firms in London"). Returns people and companies with an email, a deliverability tier (`safe`/`risky`) and evidence (`found`, `pattern`, `guessed`). Takes `count`, `verified_only`, `budget_seconds`, and `save_to_list` to also save the results into a workspace list. |
+| `find_leads` | Plain-English search ("fintech founders", "law firms in London"). Returns people and companies with an email, a deliverability tier (`safe`/`risky`) and evidence (`found`, `pattern`, `guessed`). Takes `count`, `verified_only`, `budget_seconds` (default 45), optional `location`, `source`, `seniority` and `department` filters, and `save_to_list` to also save the results into a workspace list. |
 | `find_email` | A name plus a company domain gives the most likely address, with evidence. |
 | `verify_email` | Checks one address: `safe`, `risky` or `bad`, and why. |
 | `list_sources` | Lists what OpenLeads can search. |
+
+### `find_leads` in detail
+
+- **Time limit.** `budget_seconds` is a hard limit: the search returns whatever it
+  has found by then. The default, 45 seconds, fits inside the 60-second tool-call
+  timeout most clients use; raise it (up to 300) only if your client waits longer.
+- **Filters.** `location` ("Austin, TX") when the place isn't in the query;
+  `source` to pin one source (an unknown name comes back as an error with the
+  closest match); `seniority` (`owner, founder, c_suite, partner, vp, head,
+  director, manager, senior, entry`) and `department` (e.g. `sales,marketing`),
+  comma-separated.
+- **Stable shape.** Every lead always has `first_name`, `last_name`, `email`,
+  `title`, `organization`, `website`, `city`, `country`, `tier`,
+  `confidence_pct`, `evidence`, `contact_type` (`person` or `company`) and
+  `source`, even when empty; other fields appear when known.
+- **Short results explain themselves.** When fewer leads come back than asked,
+  the result adds a compact `report` — a one-line `summary`, the `stop_reason`
+  (`exhausted`, `budget`, …) and each source's `status` (`ok`, `degraded`,
+  `empty`, `failed`, `timeout`, `skipped`) with its first problem — and a `hint`
+  such as "OpenStreetMap is busy right now — re-run in a minute or raise
+  --budget". An assistant can pass that on instead of guessing.
 
 ### Workspace tools
 

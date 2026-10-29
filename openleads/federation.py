@@ -21,11 +21,12 @@ unchanged; everything downstream (email waterfall, scoring, output) is reused.
 from __future__ import annotations
 
 import re
-from collections import deque
-from concurrent.futures import ThreadPoolExecutor
+import time
 from dataclasses import replace as _dc_replace
 from typing import Iterator
 
+from openleads import _concurrency, runreport
+from openleads._concurrency import BudgetExhausted, ordered_map
 from openleads.discover.people import find_people
 from openleads.emails import groundtruth
 from openleads.emails.permute import is_role_account
@@ -61,6 +62,9 @@ MAX_SOURCES = 4
 # Companies expanded into people at once. Each expansion fetches a handful of team
 # pages, so doing them one at a time made local searches take minutes.
 EXPAND_WORKERS = 6
+# Below this share of the time budget, expansion keeps published addresses and
+# skips team-page people discovery.
+DEGRADE_AT = 0.4
 
 _HONORIFIC_RE = re.compile(r"^(?:dr|mr|mrs|ms|mx|prof)\.?\s+", re.I)
 # Post-nominals and generational suffixes ("K.C.", "MD", "Jr.", "PhD", "DDS").
@@ -132,6 +136,45 @@ def plan(query: Query) -> list[str]:
     return picks[:MAX_SOURCES]
 
 
+def _first_hit(text: str, words) -> str:
+    low = f" {text.lower()} "
+    return next((w.strip() for w in words if w in low), "")
+
+
+def plan_reasons(query: Query, names: list | None = None) -> dict:
+    """Why each planned source was picked, in plain words (for ``--explain`` and reports)."""
+    names = plan(query) if names is None else list(names)
+    if query.source and query.source not in ("auto",):
+        return {n: "pinned with --source" for n in names}
+    text = (query.text
+            or " ".join(filter(None, [query.keyword, query.industry, query.title]))).strip()
+    loc = (query.location or "").strip()
+    groups = (_LOCAL, _HEALTH, _DEV, _RESEARCH, _STARTUP, _COMPANY)
+    matched_any = any(_has(text, g) for g in groups) or bool(query.industry)
+    out = {}
+    for n in names:
+        if n == "local":
+            what = _first_hit(text, _HEALTH + _LOCAL)
+            out[n] = (f"a place ({loc}) + a local category ('{what}')" if what
+                      else f"a place ({loc}) with no developer/researcher target")
+        elif n == "npi":
+            out[n] = f"health terms ('{_first_hit(text, _HEALTH)}') and no place"
+        elif n == "github":
+            out[n] = f"developer terms ('{_first_hit(text, _DEV)}')"
+        elif n == "openalex":
+            out[n] = f"researcher terms ('{_first_hit(text, _RESEARCH)}')"
+        elif n in ("yc", "hn") and _has(text, _STARTUP):
+            out[n] = f"startup terms ('{_first_hit(text, _STARTUP)}')"
+        elif n in ("companies", "edgar") and (_has(text, _COMPANY) or query.industry):
+            hit = _first_hit(text, _COMPANY)
+            out[n] = f"company/industry terms ('{hit or query.industry}')"
+        elif not matched_any:
+            out[n] = "default mix (no specific signal in the query)"
+        else:
+            out[n] = "matched the query's keywords"
+    return out
+
+
 def _person_entity(company: Entity, name: str, title: str) -> Entity:
     """Clone a company Entity into a person Entity (keeps org/domain/site/location)."""
     name = clean_person_name(name)
@@ -140,7 +183,9 @@ def _person_entity(company: Entity, name: str, title: str) -> Entity:
     return _dc_replace(
         company,
         full_name=name,
-        title=title or company.title or "Team member",
+        # Never the company's label: an OSM category ("Dentist") or a source tag
+        # ("Hiring") on a person reads as their job title.
+        title=title or "Team member",
         links=dict(company.links),
         extra={**company.extra, "via": "team-page", "public_email": ""},
     )
@@ -191,17 +236,96 @@ def expand_company(ent: Entity, cache=None, discover: bool = True,
 
 
 def _roundrobin(streams) -> Iterator:
-    """Yield from each iterable in turn so results stay diverse as they arrive."""
+    """Yield from each iterable in turn so results stay diverse as they arrive.
+
+    A stream that raises is dropped (the others keep going): one broken source
+    must never end the whole search.
+    """
     streams = [iter(s) for s in streams]
     while streams:
         nxt = []
         for s in streams:
             try:
-                yield next(s)
-                nxt.append(s)
+                item = next(s)
             except StopIteration:
                 continue
+            except BudgetExhausted:
+                return
+            except Exception:  # noqa: BLE001 — isolate a failing source
+                continue
+            yield item
+            nxt.append(s)
         streams = nxt
+
+
+def _instrument(name: str, stream) -> Iterator[Entity]:
+    """Run one source's stream under its own name in the run report.
+
+    While the source's code runs (each ``next()``), it is the *active source*, so
+    its HTTP errors, fallbacks and notes are attributed to it. Entities and time
+    are counted; an exception or the time budget ends this stream only — the other
+    sources keep going. An entity without a ``source`` gets this one's name.
+    """
+    rep = runreport.current()
+    sr = rep.source(name) if rep is not None else None
+    it = iter(stream)
+    try:
+        while True:
+            if sr is not None:
+                sr.started = True
+            t0 = time.monotonic()
+            token = runreport.SOURCE.set(name)
+            ent, failure = None, None
+            try:
+                ent = next(it)
+            except StopIteration:
+                failure = "done"
+            except BudgetExhausted:
+                failure = "deadline"
+            except Exception as e:  # noqa: BLE001 — isolate a failing source
+                failure = f"{type(e).__name__}: {e}"
+            finally:
+                runreport.SOURCE.reset(token)
+                if sr is not None:
+                    sr.seconds += time.monotonic() - t0
+            if failure is not None:
+                if sr is not None:
+                    if failure == "deadline":
+                        sr.hit_deadline = True
+                    else:
+                        if failure != "done":
+                            rep.add_error(sr, failure)
+                        rep.source_done(sr)
+                return
+            if sr is not None:
+                sr.entities += 1
+            if isinstance(ent, Entity) and not ent.source:
+                ent.source = name
+            yield ent
+    finally:
+        close = getattr(it, "close", None)
+        if close is not None:
+            try:
+                close()
+            except Exception:  # noqa: BLE001 — cleanup only
+                pass
+
+
+def key_for(cand: Entity) -> tuple:
+    """Dedupe key: one row per person, or per published address for company contacts.
+
+    Keyed on the name alone, a company's second contact address (``sales@`` after
+    ``info@``) collapsed into the first.
+    """
+    who = (cand.full_name or "").lower().strip()
+    if not who:
+        who = str(cand.extra.get("public_email") or "").lower().strip()
+    return (cand.domain, who)
+
+
+def _tagged(name: str, stream) -> Iterator[tuple]:
+    for ent in stream:
+        yield name, ent
 
 
 def search(query: Query, cache=None, db=None, discover_people: bool | None = None,
@@ -210,52 +334,71 @@ def search(query: Query, cache=None, db=None, discover_people: bool | None = Non
     on_progress = on_progress or (lambda *_: None)
     discover = query.discover if discover_people is None else discover_people
     names = plan(query)
+    rep = runreport.current()
+    if rep is not None and not rep.plan:
+        rep.set_plan(names, plan_reasons(query, names))
     streams = []
     for name in names:
         src = get_source(name)
         if src is None:
+            if rep is not None:
+                rep.source(name).note = "no such source installed"
             continue
         src.cache = cache
-        streams.append(src.search(query))
+        try:
+            stream = src.search(query)
+        except Exception as e:  # noqa: BLE001 — a plugin's search() may raise eagerly
+            if rep is not None:
+                sr = rep.source(name)
+                sr.started = True
+                rep.add_error(sr, f"{type(e).__name__}: {e}")
+                rep.source_done(sr)
+            continue
+        streams.append(_tagged(name, _instrument(name, stream)))
     if not streams:
         return
 
-    def expand(ent: Entity) -> list[Entity]:
+    degraded: set = set()
+
+    def expand(item) -> tuple:
+        name, ent = item
+        disc = discover
+        # Late in the budget, team-page crawls (up to a dozen pages per company)
+        # cost more than they return: keep the published addresses, skip people.
+        if disc and _concurrency.fraction_left() < DEGRADE_AT:
+            disc = False
+            if name not in degraded:
+                degraded.add(name)
+                with runreport.active_source(name):
+                    runreport.note("people discovery skipped (budget)")
         try:
-            return expand_company(ent, cache=cache, discover=discover)
+            return name, expand_company(ent, cache=cache, discover=disc)
         except Exception:               # one bad site never sinks the whole search
-            return [ent]
+            return name, [ent]
 
     seen: set[tuple] = set()
-    for group in _ordered_parallel(expand, _roundrobin(streams), EXPAND_WORKERS):
-        for cand in group:
-            key = (cand.domain, (cand.full_name or "").lower().strip())
-            if key in seen:
-                continue
-            seen.add(key)
-            yield cand
-
-
-def _ordered_parallel(fn, items, workers: int) -> Iterator:
-    """``map(fn, items)`` on a thread pool, in order, pulling ``items`` lazily.
-
-    At most ``workers * 2`` calls are in flight, so a consumer that stops early
-    (enough leads, time budget hit) doesn't leave dozens of site crawls running.
-    """
-    it = iter(items)
-    pending: deque = deque()
-    ex = ThreadPoolExecutor(max_workers=max(1, workers))
+    groups = ordered_map(expand, _roundrobin(streams), EXPAND_WORKERS)
     try:
-        for item in it:
-            pending.append(ex.submit(fn, item))
-            if len(pending) >= workers * 2:
-                break
-        while pending:
-            yield pending.popleft().result()
-            nxt = next(it, None)
-            if nxt is not None:
-                pending.append(ex.submit(fn, nxt))
+        for name, group in groups:
+            for cand in group:
+                if key_for(cand) in seen:
+                    continue
+                seen.add(key_for(cand))
+                if rep is not None:
+                    rep.source(name).expanded += 1
+                yield cand
+    except BudgetExhausted:
+        return
     finally:
-        for f in pending:
-            f.cancel()
-        ex.shutdown(wait=False)
+        groups.close()
+        for s in streams:
+            close = getattr(s, "close", None)
+            if close is not None:
+                try:
+                    close()
+                except Exception:  # noqa: BLE001 — cleanup only
+                    pass
+
+
+# Back-compat name (tests and plugins import it from here).
+_ordered_parallel = ordered_map

@@ -11,10 +11,12 @@ import html as ihtml
 import json
 import random
 import re
-from concurrent.futures import ThreadPoolExecutor
+import zlib
 from typing import Iterator
 
+from openleads._concurrency import ordered_map
 from openleads._http import get_json, get_text
+from openleads.config import api_headers
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
@@ -116,8 +118,18 @@ def filter_companies(companies, query: Query):
             if industry.lower() not in blob:
                 continue
         out.append(c)
-    random.shuffle(out)
+    # Shuffled so repeat searches don't all start at "A…", but seeded from the query
+    # so the same search samples the same companies every run (stable results).
+    random.Random(sample_seed(query)).shuffle(out)
     return out
+
+
+def sample_seed(query: Query) -> int:
+    """``query.seed`` if set, else a stable hash of the query's words."""
+    if getattr(query, "seed", None) is not None:
+        return int(query.seed)
+    text = (query.text or query.keyword or query.industry or "").strip().lower()
+    return zlib.crc32(text.encode("utf-8"))
 
 
 class YCSource(Source):
@@ -127,7 +139,8 @@ class YCSource(Source):
     description = "Founders/execs of ~6,000 YC startups via the open yc-oss dataset."
 
     def search(self, query: Query) -> Iterator[Entity]:
-        companies = get_json(YC_ALL, cache=self.cache, ttl_ns="dataset") or []
+        companies = get_json(YC_ALL, headers=api_headers(), cache=self.cache,
+                             ttl_ns="dataset") or []
         companies = filter_companies(companies, query)
 
         # Only companies we can actually turn into a lead (slug + real domain).
@@ -144,15 +157,12 @@ class YCSource(Source):
                             cache=self.cache, ttl_ns="dataset")
             return c, domain, page
 
-        # Fetch founder pages concurrently, but in bounded chunks so an early stop
-        # (engine has enough leads) doesn't fetch the entire 400-company tail. The
-        # chunk scales with the request so a small ``count`` doesn't over-fetch a
-        # big tail. The old sequential 30 s-timeout fetch per company was the stall.
-        chunk = min(12, max(4, query.count * 2))
-        for start in range(0, len(usable), chunk):
-            window = usable[start:start + chunk]
-            with ThreadPoolExecutor(max_workers=8) as ex:
-                pages = list(ex.map(fetch_page, window))
+        # Fetch founder pages concurrently but lazily (a bounded in-order window), so
+        # an early stop (enough leads, time budget) neither fetches the 400-company
+        # tail nor waits for in-flight pages. The window scales with the request.
+        workers = min(6, max(2, query.count))
+        pages = ordered_map(fetch_page, usable, workers)
+        try:
             for c, domain, page in pages:
                 exec_ = pick_exec(parse_founders(page or ""))
                 if not exec_:
@@ -168,8 +178,10 @@ class YCSource(Source):
                     links={"linkedin": exec_.get("linkedin_url", "")},
                     extra={
                         "industry": c.get("industry", ""),
-                        "employees": str(c.get("team_size", "")),
+                        "employees": str(c.get("team_size") or ""),
                         "city": city, "country": country,
                     },
                     source=self.name,
                 )
+        finally:
+            pages.close()

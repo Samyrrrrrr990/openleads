@@ -13,11 +13,11 @@ Keyless works (60 req/hr); set ``GITHUB_TOKEN`` for 5,000/hr and bigger pulls.
 from __future__ import annotations
 
 import re
-from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
+from openleads._concurrency import ordered_map
 from openleads._http import get_json
-from openleads.config import github_token
+from openleads.config import api_headers, github_token
 from openleads.emails.permute import domain_of
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
@@ -137,16 +137,20 @@ class GitHubSource(Source):
             return get_json(f"{API}/users/{login}", headers=_headers(),
                             cache=self.cache, ttl_ns="dataset")
 
-        # Fetch profiles concurrently (much faster than the old sequential + sleep).
-        with ThreadPoolExecutor(max_workers=6) as ex:
-            for profile in ex.map(fetch, logins):
+        # Fetch profiles concurrently and lazily: closing this generator (enough
+        # leads, time budget) cancels the queued fetches instead of waiting on them.
+        profiles = ordered_map(fetch, logins, 6)
+        try:
+            for profile in profiles:
                 ent = parse_user(profile or {})
                 if ent:
                     yield ent
+        finally:
+            profiles.close()
 
 
 def _headers() -> dict:
-    h = {"Accept": "application/vnd.github+json"}
+    h = api_headers(Accept="application/vnd.github+json")
     tok = github_token()
     if tok:
         h["Authorization"] = f"Bearer {tok}"

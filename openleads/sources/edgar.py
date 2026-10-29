@@ -19,13 +19,16 @@ import re
 from typing import Iterator
 
 from openleads._http import get_json
+from openleads.config import APP_USER_AGENT, CONTACT
 from openleads.emails.permute import is_probable_domain
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
 
 TICKERS = "https://www.sec.gov/files/company_tickers.json"
 # SEC's fair-access policy asks for a declared, identifying User-Agent.
-_UA = {"User-Agent": "openleads research admin@openleads.dev"}
+# SEC fair-access policy: a UA naming the app *and* a contact email.
+_UA = {"User-Agent": APP_USER_AGENT if "@" in CONTACT
+       else f"{APP_USER_AGENT} admin@openleads.dev"}
 
 # Corporate suffixes stripped before guessing a domain.
 _SUFFIX_RE = re.compile(

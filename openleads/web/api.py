@@ -34,37 +34,29 @@ Emit = Callable[[dict], None]
 # Helpers                                                                      #
 # --------------------------------------------------------------------------- #
 def _query_from_payload(payload: dict) -> Query:
-    """Build a Query the way the CLI does: parse free text, then apply overrides."""
+    """Build a Query the way the CLI does (intent.build_query), with the dashboard's
+    tighter caps: at most 200 leads and a 10–600s budget per search."""
     text = (payload.get("query") or "").strip()
-    q = intent.rule_parse(text) if text else Query()
-    for attr in ("source", "industry", "location", "title", "keyword"):
-        val = payload.get(attr)
-        if val:
-            setattr(q, attr, val)
-    if payload.get("count") is not None:
+
+    def number(key, lo, hi):
         try:
-            q.count = max(1, min(int(payload["count"]), 200))
+            return max(lo, min(int(payload[key]), hi)) if payload.get(key) is not None else None
         except (TypeError, ValueError):
-            pass
-    if payload.get("verified_only"):
-        q.verified_only = True
-    if payload.get("deep"):
-        q.deep = True
-    for attr in ("seniority", "department"):
-        val = payload.get(attr)
-        if isinstance(val, str):
-            val = [v.strip() for v in val.split(",") if v.strip()]
-        if val:
-            setattr(q, attr, list(val))
-    if payload.get("no_company"):
-        q.company_profile = False
-    if payload.get("budget") is not None:
-        try:
-            q.budget = max(10, min(int(payload["budget"]), 600))
-        except (TypeError, ValueError):
-            pass
-    q.use_cache = not payload.get("no_cache", False)
-    return q
+            return None                       # a junk number is ignored, as before
+
+    return intent.build_query(
+        text,
+        source=payload.get("source") or None, industry=payload.get("industry") or None,
+        location=payload.get("location") or None, title=payload.get("title") or None,
+        keyword=payload.get("keyword") or None,
+        count=number("count", 1, 200), budget=number("budget", 10, 600),
+        verified_only=True if payload.get("verified_only") else None,
+        deep=True if payload.get("deep") else None,
+        seniority=payload.get("seniority") or None,
+        department=payload.get("department") or None,
+        no_company=bool(payload.get("no_company")),
+        use_cache=not payload.get("no_cache", False),
+    )
 
 
 def _draft_from_dict(d: dict) -> Draft:
@@ -190,7 +182,11 @@ def find(payload: dict, emit: Emit) -> None:
     """Find + verify leads, streaming each lead as it lands. Persists to CRM."""
     from openleads.engine import build_leads
     from openleads.workspace import activity, scoring
-    q = _query_from_payload(payload)
+    try:
+        q = _query_from_payload(payload)
+    except ValueError as e:                  # unknown source, bad role filter, …
+        emit({"type": "error", "message": str(e)})
+        return
     cache = Cache() if q.use_cache else None
     db = DB()
     leads_out: list[dict] = []
@@ -206,6 +202,10 @@ def find(payload: dict, emit: Emit) -> None:
             d["is_new"] = db.upsert_lead(d)
             new += 1 if d["is_new"] else 0
             emit({"type": "lead", "lead": d, "n": len(leads_out)})
+        elif kind == "source":       # v5.1, additive: one source finished (or stopped)
+            emit({"type": "source", "source": p.to_dict()})
+        elif kind == "report":       # v5.1, additive: the whole run, once, before "done"
+            emit({"type": "report", "report": p.to_dict()})
 
     try:
         emit({"type": "phase", "message": f"searching {q.source or 'auto'}…"})
@@ -459,7 +459,11 @@ def analytics(params: dict | None = None) -> dict:
 def run_pipeline(payload: dict, emit: Emit) -> None:
     """The full 4-click pipeline in one shot: find → write → send (dry-run/live)."""
     from openleads.automate import pipeline
-    q = _query_from_payload(payload)
+    try:
+        q = _query_from_payload(payload)
+    except ValueError as e:
+        emit({"type": "error", "message": str(e)})
+        return
     q.verified_only = True
     live = bool(payload.get("live"))
     cache = Cache()

@@ -72,11 +72,10 @@ def run_watcher(spec: dict, db=None, cache=None, dry_run: bool = True,
         db, own_db = dbmod.DB(), True
     try:
         from openleads import intent
-        q, _ = intent.parse(spec.get("query", ""))
-        q = q if isinstance(q, Query) else Query()
-        q.count = int(spec.get("count", 25))
         from openleads.automate.recipes import BACKGROUND_BUDGET
-        q.budget = BACKGROUND_BUDGET
+        q = intent.build_query(spec.get("query", ""), llm=True,
+                               count=int(spec.get("count", 25)), budget=BACKGROUND_BUDGET)
+        q = q if isinstance(q, Query) else Query()
         leads = build_leads(q, cache=cache, db=db, on_progress=on_progress)
         seen = set(spec.get("seen", []))
         new, domains = diff_new(leads, seen)

@@ -1,4 +1,4 @@
 """SQLite-backed cache so domains/mailservers/datasets aren't re-probed each run."""
-from openleads.cache.store import Cache
+from openleads.cache.store import Cache, MemoryCache
 
-__all__ = ["Cache"]
+__all__ = ["Cache", "MemoryCache"]
