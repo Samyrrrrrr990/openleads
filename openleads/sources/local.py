@@ -17,25 +17,31 @@ Nominatim + Overpass fetches.
 """
 from __future__ import annotations
 
+import os
 import re
+import threading
+import time
 import urllib.parse
 from typing import Iterator
 
-from openleads import runreport
-from openleads._http import get_json
+from openleads import _concurrency, runreport
+from openleads._http import get_json, recent_errors
 from openleads.discover.geo import resolve_place, search_pois
 from openleads.emails.permute import domain_of, is_role_account
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
 
 OVERPASS = "https://overpass-api.de/api/interpreter"
-# The main Overpass instance is often overloaded (HTTP 504/429). A public mirror
-# runs the same API, so a failed query falls through to it, then to Nominatim.
-# Two tries keeps the worst case under a minute.
+# The main Overpass instance is often overloaded (HTTP 504/429). Public mirrors run
+# the same API, so a failed query moves on to the next one, then to Nominatim.
+# Override (comma-separated) with OPENLEADS_OVERPASS_URLS.
 OVERPASS_MIRRORS = (
     OVERPASS,
     "https://overpass.private.coffee/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
 )
+# Patchable so tests never actually wait between mirror rounds.
+_sleep = time.sleep
 # Overpass rejects browser-like User-Agents (HTTP 406); send an identifying app UA.
 _UA = {"User-Agent": "openleads/4.5 (+https://github.com/Samyrrrrrr990/openleads)"}
 
@@ -148,25 +154,29 @@ def _name_filter(term: str) -> str:
     return " ".join(words[:3])
 
 
+# One regex key filter instead of six statements per selector: any of these tags
+# makes a business reachable (a site to crawl, or a published address).
+CONTACT_TAGS = ("website", "contact:website", "email", "contact:email")
+_CONTACT_FILTER = '[~"^(' + "|".join(CONTACT_TAGS) + ')$"~"."]'
+
+
 def build_overpass_query(selectors, bbox_clause: str, name_filter: str = "",
-                         limit: int = 60) -> str:
-    """Build an Overpass QL query for businesses matching selectors in a bbox."""
+                         limit: int = 60, timeout: int = 20) -> str:
+    """Build an Overpass QL query for businesses matching selectors in a bbox.
+
+    One ``nwr`` statement per selector (nodes, ways and relations at once), with a
+    single regex key filter for "has a website or an email" — a sixth of the
+    statements the old node/way × three-tags expansion sent, so the query is
+    cheaper for the (often overloaded) public servers. ``timeout`` is the server-side
+    limit in seconds.
+    """
+    name_clause = f'["name"~"{re.escape(name_filter)}",i]' if name_filter else ""
     parts = []
-    name_clause = ""
-    if name_filter:
-        # Case-insensitive substring on the name tag.
-        name_clause = f'["name"~"{re.escape(name_filter)}",i]'
     for key, value in selectors:
-        if value == "*":
-            tag = f'["{key}"]'
-        else:
-            tag = f'["{key}"="{value}"]'
-        for typ in ("node", "way"):
-            parts.append(f'  {typ}{tag}{name_clause}["website"]{bbox_clause};')
-            parts.append(f'  {typ}{tag}{name_clause}["contact:website"]{bbox_clause};')
-            parts.append(f'  {typ}{tag}{name_clause}["contact:email"]{bbox_clause};')
+        tag = f'["{key}"]' if value == "*" else f'["{key}"="{value}"]'
+        parts.append(f"  nwr{tag}{name_clause}{_CONTACT_FILTER}{bbox_clause};")
     body = "\n".join(parts)
-    return f"[out:json][timeout:20];\n(\n{body}\n);\nout tags center {limit};"
+    return f"[out:json][timeout:{int(timeout)}];\n(\n{body}\n);\nout tags center {int(limit)};"
 
 
 def _tag(tags: dict, *keys: str) -> str:
@@ -259,16 +269,120 @@ def osm_socials(tags: dict) -> dict:
     return out
 
 
-def run_overpass(ql: str, cache=None, mirrors=OVERPASS_MIRRORS, timeout: int = 25):
-    """Run an Overpass QL query, falling through the public mirrors on failure."""
-    qs = urllib.parse.urlencode({"data": ql})
-    for base in mirrors:
-        data = get_json(f"{base}?{qs}", headers=_UA, cache=cache, ttl_ns="dataset",
-                        timeout=timeout)
-        remark = str((data or {}).get("remark", "")).lower() if isinstance(data, dict) else ""
-        if isinstance(data, dict) and "elements" in data and "error" not in remark:
-            return data
+class CircuitBreaker:
+    """Skip a host for ``cooldown`` seconds after ``threshold`` failures in a row.
+
+    Public Overpass servers fail in streaks (overload, maintenance). Once one has
+    failed twice, the next searches in this process go straight to the mirrors
+    instead of spending their budget on it again.
+    """
+
+    def __init__(self, threshold: int = 2, cooldown: float = 120.0) -> None:
+        self.threshold = threshold
+        self.cooldown = cooldown
+        self._lock = threading.Lock()
+        self._fails: dict = {}
+        self._open_until: dict = {}
+
+    def allow(self, host: str) -> bool:
+        with self._lock:
+            return time.monotonic() >= self._open_until.get(host, 0.0)
+
+    def failure(self, host: str) -> None:
+        with self._lock:
+            n = self._fails.get(host, 0) + 1
+            if n >= self.threshold:
+                self._open_until[host] = time.monotonic() + self.cooldown
+                n = 0
+            self._fails[host] = n
+
+    def success(self, host: str) -> None:
+        with self._lock:
+            self._fails.pop(host, None)
+            self._open_until.pop(host, None)
+
+    def reset(self) -> None:
+        with self._lock:
+            self._fails.clear()
+            self._open_until.clear()
+
+
+BREAKER = CircuitBreaker()
+# Pause before the single second round over the mirrors, and the time that must be
+# left in the run for that round to be worth it.
+RETRY_ROUND_DELAY = 2.0
+RETRY_ROUND_MIN_SECONDS = 20.0
+
+
+def overpass_mirrors() -> tuple:
+    """Overpass endpoints to try, in order (``OPENLEADS_OVERPASS_URLS`` overrides)."""
+    raw = os.environ.get("OPENLEADS_OVERPASS_URLS", "").strip()
+    if raw:
+        urls = tuple(u.strip() for u in re.split(r"[,\s]+", raw) if u.strip())
+        if urls:
+            return urls
+    return OVERPASS_MIRRORS
+
+
+def overpass_problem(data) -> str | None:
+    """Why an Overpass reply is unusable (None if it's a real result)."""
+    if not isinstance(data, dict) or "elements" not in data:
+        return "not an Overpass result"
+    remark = str(data.get("remark") or "")
+    if "error" in remark.lower():
+        return f"overpass remark: {remark[:80]}"
     return None
+
+
+def run_overpass(ql: str, cache=None, mirrors=None, timeout: int = 25,
+                 reasons: list | None = None):
+    """Run an Overpass QL query across the public mirrors; None if all fail.
+
+    Each mirror gets one attempt (a 429/504 moves straight on to the next one
+    instead of backing off on a server that is shedding load), mirrors whose
+    breaker is open are skipped, and only if every mirror failed *and* more than
+    20s of the run remain is there one more round after a short pause. Error
+    remarks are rejected (and never cached). Pass a list as ``reasons`` to collect
+    why each mirror failed.
+    """
+    mirrors = tuple(mirrors or overpass_mirrors())
+    qs = urllib.parse.urlencode({"data": ql})
+    reasons = reasons if reasons is not None else []
+    for round_no in (0, 1):
+        tried = False
+        for base in mirrors:
+            host = urllib.parse.urlsplit(base).hostname or base
+            if not BREAKER.allow(host):
+                continue
+            tried = True
+            url = f"{base}?{qs}"
+            data = get_json(url, headers=_UA, cache=cache, ttl_ns="dataset",
+                            timeout=timeout, retries=0, validate=overpass_problem)
+            problem = overpass_problem(data)
+            if problem is None:
+                BREAKER.success(host)
+                return data
+            BREAKER.failure(host)
+            last = recent_errors()
+            why = last[-1][1] if last and last[-1][0] == url else problem
+            reasons.append(f"{host}: {why}")
+        if round_no or not tried or _concurrency.remaining() <= RETRY_ROUND_MIN_SECONDS:
+            break
+        _sleep(RETRY_ROUND_DELAY)
+    return None
+
+
+def rank_elements(elements: list) -> list:
+    """Businesses that publish an email first, then by OSM id (stable across runs)."""
+    def key(el):
+        tags = el.get("tags") or {}
+        has_email = bool(_tag(tags, "email", "contact:email"))
+        try:
+            oid = int(el.get("id") or 0)
+        except (TypeError, ValueError):
+            oid = 0
+        return (0 if has_email else 1, oid)
+    return sorted(elements or [], key=key)
 
 
 class LocalSource(Source):
@@ -295,20 +409,27 @@ class LocalSource(Source):
             return
         selectors = category_selectors(term)
         name_filter = _name_filter(term) if selectors is _FALLBACK_SELECTORS else ""
-        limit = max(query.count * 3, 30)
-        ql = build_overpass_query(selectors, bbox.as_overpass(), name_filter, limit)
-        data = run_overpass(ql, cache=self.cache)
+        limit = max(query.count * 5, 50)
+        # The server-side timeout leaves room for the transfer inside the run budget.
+        left = _concurrency.remaining()
+        server_timeout = 25 if left == float("inf") else int(max(5, min(25, left - 3)))
+        ql = build_overpass_query(selectors, bbox.as_overpass(), name_filter, limit,
+                                  timeout=server_timeout)
+        reasons: list = []
+        data = run_overpass(ql, cache=self.cache, timeout=server_timeout + 5, reasons=reasons)
         if data is None:
             # Every Overpass instance failed (they're often overloaded). Nominatim
             # returns fewer businesses, but it answers.
-            runreport.fallback("overpass→nominatim")
+            why = (reasons[0].split(": ", 1)[-1] if reasons
+                   else "all mirrors paused after recent failures")
+            runreport.fallback(f"overpass→nominatim ({why})")
             runreport.flag("overpass_fallback")
             elements = []
             for key, value in selectors:
                 if value != "*":
                     elements += search_pois(key, value, place, cache=self.cache, bbox=bbox)
             data = {"elements": elements}
-        for ent in extract_businesses(data or {}):
+        for ent in extract_businesses({"elements": rank_elements(data.get("elements"))}):
             if not ent.extra.get("city") and place:
                 ent.extra["city"] = place.split(",")[0].strip()
                 if not ent.location:

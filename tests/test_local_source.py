@@ -29,7 +29,8 @@ def test_category_selectors_known_and_fallback():
 def test_build_overpass_query_includes_tags_and_bbox():
     q = local.build_overpass_query([("amenity", "dentist")], "(1,2,3,4)", limit=10)
     assert '["amenity"="dentist"]' in q
-    assert '["website"]' in q and '["contact:email"]' in q
+    # v5.1: one regex key filter covers website / contact:website / email / contact:email.
+    assert '[~"^(website|contact:website|email|contact:email)$"~"."]' in q
     assert "(1,2,3,4)" in q
     assert "out tags center 10" in q
 
