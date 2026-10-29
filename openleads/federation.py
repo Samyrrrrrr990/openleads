@@ -25,7 +25,7 @@ import time
 from dataclasses import replace as _dc_replace
 from typing import Iterator
 
-from openleads import runreport
+from openleads import _concurrency, runreport
 from openleads._concurrency import BudgetExhausted, ordered_map
 from openleads.discover.people import find_people
 from openleads.emails import groundtruth
@@ -60,6 +60,9 @@ MAX_SOURCES = 4
 # Companies expanded into people at once. Each expansion fetches a handful of team
 # pages, so doing them one at a time made local searches take minutes.
 EXPAND_WORKERS = 6
+# Below this share of the time budget, expansion keeps published addresses and
+# skips team-page people discovery.
+DEGRADE_AT = 0.4
 
 _HONORIFIC_RE = re.compile(r"^(?:dr|mr|mrs|ms|mx|prof)\.?\s+", re.I)
 # Post-nominals and generational suffixes ("K.C.", "MD", "Jr.", "PhD", "DDS").
@@ -176,7 +179,9 @@ def _person_entity(company: Entity, name: str, title: str) -> Entity:
     return _dc_replace(
         company,
         full_name=name,
-        title=title or company.title or "Team member",
+        # Never the company's label: an OSM category ("Dentist") or a source tag
+        # ("Hiring") on a person reads as their job title.
+        title=title or "Team member",
         links=dict(company.links),
         extra={**company.extra, "via": "team-page", "public_email": ""},
     )
@@ -302,6 +307,18 @@ def _instrument(name: str, stream) -> Iterator[Entity]:
                 pass
 
 
+def key_for(cand: Entity) -> tuple:
+    """Dedupe key: one row per person, or per published address for company contacts.
+
+    Keyed on the name alone, a company's second contact address (``sales@`` after
+    ``info@``) collapsed into the first.
+    """
+    who = (cand.full_name or "").lower().strip()
+    if not who:
+        who = str(cand.extra.get("public_email") or "").lower().strip()
+    return (cand.domain, who)
+
+
 def _tagged(name: str, stream) -> Iterator[tuple]:
     for ent in stream:
         yield name, ent
@@ -337,10 +354,21 @@ def search(query: Query, cache=None, db=None, discover_people: bool | None = Non
     if not streams:
         return
 
+    degraded: set = set()
+
     def expand(item) -> tuple:
         name, ent = item
+        disc = discover
+        # Late in the budget, team-page crawls (up to a dozen pages per company)
+        # cost more than they return: keep the published addresses, skip people.
+        if disc and _concurrency.fraction_left() < DEGRADE_AT:
+            disc = False
+            if name not in degraded:
+                degraded.add(name)
+                with runreport.active_source(name):
+                    runreport.note("people discovery skipped (budget)")
         try:
-            return name, expand_company(ent, cache=cache, discover=discover)
+            return name, expand_company(ent, cache=cache, discover=disc)
         except Exception:               # one bad site never sinks the whole search
             return name, [ent]
 
@@ -349,10 +377,9 @@ def search(query: Query, cache=None, db=None, discover_people: bool | None = Non
     try:
         for name, group in groups:
             for cand in group:
-                key = (cand.domain, (cand.full_name or "").lower().strip())
-                if key in seen:
+                if key_for(cand) in seen:
                     continue
-                seen.add(key)
+                seen.add(key_for(cand))
                 if rep is not None:
                     rep.source(name).expanded += 1
                 yield cand

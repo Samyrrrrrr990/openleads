@@ -176,7 +176,7 @@ class YCSource(Source):
                     links={"linkedin": exec_.get("linkedin_url", "")},
                     extra={
                         "industry": c.get("industry", ""),
-                        "employees": str(c.get("team_size", "")),
+                        "employees": str(c.get("team_size") or ""),
                         "city": city, "country": country,
                     },
                     source=self.name,

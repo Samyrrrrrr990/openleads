@@ -85,6 +85,45 @@ def industry_for(entity: Entity) -> str:
     return _OSM_INDUSTRY.get(cat, cat.replace("_", " ").capitalize())
 
 
+# Location values that are not a city (job-board / profile placeholders).
+_NOT_A_CITY = {"remote", "onsite", "on-site", "hybrid", "anywhere", "worldwide", "global",
+               "earth", "internet", "online", "n/a", "na", "none"}
+
+
+def _country_words() -> frozenset:
+    from openleads.discover.geo import COUNTRY_NAMES
+    words = {n.lower() for names in COUNTRY_NAMES.values() for n in names}
+    return frozenset(words | {cc.lower() for cc in COUNTRY_NAMES})
+
+
+_COUNTRIES = _country_words()
+
+
+def city_of(entity: Entity) -> str:
+    """The lead's city: the source's own city field, else the first part of its
+    location — unless that part is really a country ("Germany") or a placeholder
+    ("Remote"), which used to land in the City column."""
+    city = str(entity.extra.get("city") or "").strip()
+    if city:
+        return city
+    first = (entity.location or "").split(",")[0].strip()
+    if not first:
+        return ""
+    low = first.lower().strip(".")
+    country = str(entity.extra.get("country") or "").strip().lower()
+    if low in _NOT_A_CITY or low == country or low in _COUNTRIES:
+        return ""
+    return first
+
+
+def vertical_of(entity: Entity) -> str:
+    """The source's vertical label for this entity (its own, else the source's)."""
+    if entity.extra.get("vertical"):
+        return str(entity.extra["vertical"])
+    src = get_source(entity.source) if entity.source else None
+    return getattr(src, "vertical", "") or ""
+
+
 def entity_to_lead(entity: Entity, email_result) -> Lead:
     """Flatten an Entity + EmailResult into an output-ready Lead."""
     name = entity.full_name.strip()
@@ -99,15 +138,15 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         title=entity.title,
         organization=entity.organization,
         industry=industry_for(entity),
-        employees=entity.extra.get("employees", ""),
+        employees=str(entity.extra.get("employees") or ""),
         linkedin_url=entity.links.get("linkedin", ""),
-        city=entity.extra.get("city", "") or entity.location,
+        city=city_of(entity),
         country=entity.extra.get("country", ""),
         website=entity.website,
         confidence=email_result.confidence,
         score=email_result.score,
         source=entity.source,
-        vertical=entity.extra.get("vertical", ""),
+        vertical=vertical_of(entity),
         tier=email_result.tier,
         reasons=email_result.reasons,
         signals=email_result.signals,
@@ -117,6 +156,7 @@ def entity_to_lead(entity: Entity, email_result) -> Lead:
         phone=found_phones[0] if found_phones else "",
         company_size=companysize.bucket(entity.extra.get("employees", "")),
         socials=dict(entity.extra.get("socials") or {}),
+        contact_type="person" if name else "company",
     )
 
 
