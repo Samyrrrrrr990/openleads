@@ -149,7 +149,7 @@ def plan_reasons(query: Query, names: list | None = None) -> dict:
     text = (query.text
             or " ".join(filter(None, [query.keyword, query.industry, query.title]))).strip()
     loc = (query.location or "").strip()
-    groups = (_LOCAL, _HEALTH, _DEV, _RESEARCH, _STARTUP, _COMPANY)
+    groups = (_LOCAL, _HEALTH, _DEV, _RESEARCH, _ML, _STARTUP, _COMPANY)
     matched_any = any(_has(text, g) for g in groups) or bool(query.industry)
     out = {}
     for n in names:
@@ -163,6 +163,8 @@ def plan_reasons(query: Query, names: list | None = None) -> dict:
             out[n] = f"developer terms ('{_first_hit(text, _DEV)}')"
         elif n == "openalex":
             out[n] = f"researcher terms ('{_first_hit(text, _RESEARCH)}')"
+        elif n == "huggingface":
+            out[n] = f"ML builder terms ('{_first_hit(text, _ML)}')"
         elif n in ("yc", "hn") and _has(text, _STARTUP):
             out[n] = f"startup terms ('{_first_hit(text, _STARTUP)}')"
         elif n in ("companies", "edgar") and (_has(text, _COMPANY) or query.industry):

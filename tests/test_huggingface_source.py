@@ -60,7 +60,8 @@ def test_search_uses_arrays_overview_cache_and_deduplicated_authors():
     source.cache = object()
 
     def response(url, **kwargs):
-        assert kwargs == {"cache": source.cache, "ttl_ns": "dataset"}
+        assert kwargs["cache"] is source.cache and kwargs["ttl_ns"] == "dataset"
+        assert kwargs["headers"]["User-Agent"].startswith("openleads/")
         parsed = urlsplit(url)
         if parsed.path in {"/api/models", "/api/datasets"}:
             assert parse_qs(parsed.query)["search"] == ["bert & vision"]
@@ -74,7 +75,9 @@ def test_search_uses_arrays_overview_cache_and_deduplicated_authors():
     with patch("openleads.sources.huggingface.get_json", side_effect=response) as fetch:
         result = list(source.search(Query(keyword="bert & vision", count=1)))
     assert [e.full_name for e in result] == ["Alice Example"]
-    assert fetch.call_count == 4
+    # Two catalogs and Alice's profile; Bob's may already be in flight when the
+    # source stops at count=1, but nothing beyond that is fetched.
+    assert 3 <= fetch.call_count <= 4
 
 
 def test_profile_requests_and_results_are_bounded():
@@ -87,7 +90,10 @@ def test_profile_requests_and_results_are_bounded():
     with patch("openleads.sources.huggingface.get_json", side_effect=response) as fetch:
         result = list(HuggingFaceSource().search(Query(keyword="bert", count=2)))
     assert len(result) == 2
-    assert fetch.call_count == 22  # two catalogs plus the bounded 20 profiles
+    # Two catalogs, then profiles are fetched lazily (8 in flight, plus one refill
+    # per person handed back) and the source stops as soon as it has two people:
+    # never the full 20.
+    assert 4 <= fetch.call_count <= 2 + 8 + 2
 
 
 @pytest.mark.parametrize("query", [Query(), Query(keyword="bert", count=0)])

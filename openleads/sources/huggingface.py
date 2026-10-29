@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import re
 import urllib.parse
-from concurrent.futures import ThreadPoolExecutor
 from typing import Iterator
 
+from openleads import _concurrency
 from openleads._http import get_json
+from openleads.config import api_headers
 from openleads.models import Entity, Query
 from openleads.sources.base import Source
 from openleads.sources.github import _usable_domain
@@ -110,21 +111,25 @@ class HuggingFaceSource(Source):
         params = urllib.parse.urlencode({"search": term, "limit": str(limit)})
         authors: dict[str, str] = {}
         for kind in ("models", "datasets"):
-            data = get_json(f"{API}/{kind}?{params}", cache=self.cache, ttl_ns="dataset")
+            data = get_json(f"{API}/{kind}?{params}", headers=api_headers(),
+                            cache=self.cache, ttl_ns="dataset")
             for author in parse_models(data):
                 authors.setdefault(author.casefold(), author)
 
         def fetch(username: str) -> Entity | None:
             profile = get_json(
                 f"{API}/users/{urllib.parse.quote(username, safe='')}/overview",
-                cache=self.cache, ttl_ns="dataset",
+                headers=api_headers(), cache=self.cache, ttl_ns="dataset",
             )
             return parse_profile(username, profile)
 
         # Bound both requests and workers; never follow an API-supplied request URL.
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            yielded = 0
-            for entity in pool.map(fetch, list(authors.values())[:limit]):
-                if entity is not None and yielded < query.count:
-                    yield entity
-                    yielded += 1
+        # ordered_map pulls lazily and never waits on in-flight fetches once the
+        # engine has enough leads or runs out of time.
+        yielded = 0
+        for entity in _concurrency.ordered_map(fetch, list(authors.values())[:limit], 4):
+            if entity is not None:
+                yield entity
+                yielded += 1
+                if yielded >= query.count:
+                    return

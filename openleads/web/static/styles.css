@@ -687,6 +687,13 @@ details > summary { cursor: pointer; }
 
 /* ---------------------------------------------------------- find people */
 .find-intro { padding: 28px 0 8px; max-width: 760px; }
+.find-report { margin: 0 auto 8px; padding: 16px; max-width: 760px; font-size: 13.5px; color: var(--muted); }
+.card > .find-report { margin: 0; max-width: none; border-bottom: 1px solid var(--line); }
+.find-report b { color: var(--text); font-weight: 600; }
+.find-report ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.find-report__sources li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.find-report__sources .stage { min-width: 120px; }
+.find-report__hints li::before { content: "–"; margin-right: 8px; color: var(--faint); }
 .find-intro .ev-key { display: grid; gap: 8px; justify-content: start; }
 .find-intro .ev-key + .ev-key { display: flex; gap: 18px; }
 .prospect-hero { padding: 32px 36px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }

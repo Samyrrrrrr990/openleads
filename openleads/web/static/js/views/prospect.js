@@ -60,9 +60,27 @@ function render() {
   <div class="page page--full" id="results">${results()}</div>`;
 }
 
+const SOURCE_TONE = { ok: "good", degraded: "warn", failed: "bad", timeout: "bad", empty: "", skipped: "", pending: "" };
+const SOURCE_WORD = { ok: "answered", degraded: "answered, with problems", failed: "failed", timeout: "ran out of time",
+  empty: "found nothing", skipped: "not needed", pending: "didn't start" };
+
+/** Which sources ran, what each one did, and what to try next. Shown when a search comes back short. */
+function reportBlock(r) {
+  if (!r || (r.requested && r.leads >= r.requested)) return "";
+  const rows = Object.values(r.sources || {}).map((sr) => {
+    const why = (sr.errors && sr.errors[0]) || (sr.fallbacks && sr.fallbacks[0]) || sr.note || "";
+    const counts = sr.entities ? `${fmt.plural(sr.entities, "record")}, ${fmt.plural(sr.leads, "lead")}` : "";
+    return `<li><span class="stage ${SOURCE_TONE[sr.status] ? "stage--" + SOURCE_TONE[sr.status] : ""}"><i></i><b>${esc(sr.name)}</b></span>
+      <span>${esc(SOURCE_WORD[sr.status] || sr.status)}${counts ? `, ${counts}` : ""}</span>${why ? `<span class="faint">${esc(why)}</span>` : ""}</li>`;
+  }).join("");
+  const hints = (r.hints || []).map((h) => `<li>${esc(h)}</li>`).join("");
+  return `<div class="find-report"><p><b>${fmt.num(r.leads)} of ${fmt.num(r.requested)}</b> found in ${Math.round(r.seconds || 0)}s. Here is what each source did:</p>
+    <ul class="find-report__sources">${rows}</ul>${hints ? `<p class="mt"><b>Try this</b></p><ul class="find-report__hints">${hints}</ul>` : ""}</div>`;
+}
+
 function results() {
   if (!P.leads.length && !P.running) {
-    return P.done ? ui.empty("find", "No leads this time", esc(P.done.message || "Try a broader query, turn off Verified only, or pick another source."))
+    return P.done ? ui.empty("find", "No leads this time", P.report ? "" : esc(P.done.message || "Try a broader query, turn off Verified only, or pick another source.")) + reportBlock(P.report)
       : `<div class="find-intro">
         <p class="muted">Every address gets a mark: its shape says how we know it, its color says whether it will deliver.</p>
         <div class="ev-key mt">
@@ -96,6 +114,7 @@ function results() {
       <button class="btn" data-act="b-write">${ico("compose")} Write emails</button>
       <button class="btn" data-act="b-export">${ico("download")} Export</button>
       <span class="spacer"></span><button class="btn" data-act="b-clear">Clear</button></div>` : ""}
+    ${P.running ? "" : reportBlock(P.report)}
     <div class="console ${P.showLog ? "" : "hidden"}" id="p-log" style="margin:12px 16px;border-radius:10px">${P.log.join("")}</div>
     <div class="table-wrap" style="max-height:none">
       <table class="tbl"><thead><tr>
@@ -127,7 +146,7 @@ function refreshResults() { const r = $("#results", ROOT); if (r) r.innerHTML = 
 async function run() {
   if (P.running) return;
   if (!P.query.trim()) { toast("Describe who you're looking for first.", "err"); $("input[name=q]", ROOT)?.focus(); return; }
-  Object.assign(P, { leads: [], selected: new Set(), running: true, log: [], done: null });
+  Object.assign(P, { leads: [], selected: new Set(), running: true, log: [], done: null, report: null });
   const log = (h) => { P.log.push(`<div>${h}</div>`); const el = $("#p-log", ROOT); if (el) { el.insertAdjacentHTML("beforeend", `<div>${h}</div>`); el.scrollTop = el.scrollHeight; } };
   render();
   log(`<span class="c-mut">$</span> openleads find "${esc(P.query)}" -n ${P.count}`);
@@ -147,6 +166,12 @@ async function run() {
         P.done = ev;
         log(`<span class="c-mut">→</span> done: <span class="c-ok">${ev.safe} safe</span>, ${ev.risky} risky, ${ev.count} total, ${ev.new} new`);
         P.leads.filter((l) => l.tier === "safe" && l.email).forEach((l) => P.selected.add(l.email));
+      } else if (ev.type === "report") {
+        P.report = ev.report;
+        (ev.report.hints || []).forEach((h) => log(`<span class="c-mut">hint</span> ${esc(h)}`));
+      } else if (ev.type === "source") {
+        const sr = ev.source || {};
+        log(`<span class="c-mut">${esc(sr.name)}</span> ${esc(sr.status)}${sr.entities ? `, ${sr.entities} records` : ""}`);
       } else if (ev.type === "error") { log(`<span class="c-red">[!] ${esc(ev.message)}</span>`); toast(ev.message, "err"); }
     });
   } catch (e) { fail(e); }
