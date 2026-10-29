@@ -30,6 +30,36 @@ Streams are interleaved so results stay diverse, then de-duplicated by
 `(domain, person)`. You can always pin one source with `--source <name>` (or
 `/source` in chat), which skips federation entirely.
 
+## Time budget, output and "why so few?"
+
+`--budget SECONDS` (default 90, `0` = no limit) is a real deadline: every network
+call is clamped to it, and when it runs out the search returns what already
+finished instead of waiting on slow sites. Late in the budget, company expansion
+keeps published addresses and skips team-page crawls. Transient failures
+(HTTP 429/5xx, timeouts) are retried briefly; OpenStreetMap queries move on to
+the next public Overpass mirror, then to Nominatim.
+
+```bash
+openleads find "agencies in Miami" --format json | jq '.[].email'   # stdout is pure JSON
+openleads find "agencies in Miami" -q -o leads.csv                  # no progress output
+openleads find "dentists in Austin" --explain                       # plan, reasons, report
+openleads find "dentists in Austin" --report run.json               # the report as JSON
+```
+
+* With `--format json`/`ndjson` (`jsonl`) or `-o -`, the leads go to stdout and
+  all progress goes to stderr, so pipes get clean data. `-q` hides progress.
+* `--explain` prints how the query was understood, which sources run and why, and
+  the per-source report at the end.
+* Whenever a search returns fewer leads than asked, it prints one status line per
+  source (`ok`, `degraded`, `empty`, `failed`, `timeout`, `skipped`) and a hint —
+  e.g. "OpenStreetMap is busy right now — re-run in a minute or raise --budget".
+  `--report FILE` saves the same report as JSON.
+* Common cities ("Austin, TX", "NYC", "London", "München", ~190 metros) are placed
+  on the map offline; anything else is geocoded with OpenStreetMap's Nominatim.
+
+The same report is available from Python (`openleads.find(...).report`, see
+[Python API](./python-api.md)) and from the MCP server.
+
 ## From companies to people
 
 Many sources return *companies* (a name + a domain) rather than people. OpenLeads
