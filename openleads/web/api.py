@@ -202,6 +202,10 @@ def find(payload: dict, emit: Emit) -> None:
             d["is_new"] = db.upsert_lead(d)
             new += 1 if d["is_new"] else 0
             emit({"type": "lead", "lead": d, "n": len(leads_out)})
+        elif kind == "source":       # v5.1, additive: one source finished (or stopped)
+            emit({"type": "source", "source": p.to_dict()})
+        elif kind == "report":       # v5.1, additive: the whole run, once, before "done"
+            emit({"type": "report", "report": p.to_dict()})
 
     try:
         emit({"type": "phase", "message": f"searching {q.source or 'auto'}…"})

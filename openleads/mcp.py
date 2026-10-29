@@ -29,6 +29,12 @@ import traceback
 from openleads import __version__
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
+# Most MCP clients give a tool call ~60s; a search returns well inside that.
+DEFAULT_BUDGET = 45
+# Lead keys always present (even when empty), so clients can rely on the shape.
+CORE_LEAD_KEYS = ("first_name", "last_name", "email", "title", "organization", "website",
+                  "city", "country", "tier", "confidence_pct", "evidence", "contact_type",
+                  "source")
 
 TOOLS = [
     {
@@ -47,7 +53,19 @@ TOOLS = [
                 "verified_only": {"type": "boolean", "default": False,
                                   "description": "Only return deliverable (safe-tier) emails."},
                 "budget_seconds": {"type": "integer", "minimum": 10, "maximum": 300,
-                                   "default": 90},
+                                   "default": DEFAULT_BUDGET,
+                                   "description": "Hard time limit: the search returns what it "
+                                                  "has by then. The default fits the common "
+                                                  "60-second tool-call timeout."},
+                "location": {"type": "string",
+                             "description": "A place, if it isn't in the query ('Austin, TX')."},
+                "source": {"type": "string",
+                           "description": "Pin one source (see list_sources); default: automatic."},
+                "seniority": {"type": "string",
+                              "description": "Comma-separated: owner, founder, c_suite, partner, "
+                                             "vp, head, director, manager, senior, entry."},
+                "department": {"type": "string",
+                               "description": "Comma-separated, e.g. 'sales,marketing'."},
                 "save_to_list": {"type": "string",
                                  "description": "Also save the results to your workspace, in "
                                                 "this list (created if new)."},
@@ -96,10 +114,21 @@ def all_tools() -> list:
 
 
 def _lead_dict(ld) -> dict:
+    """A lead for the model: the core keys always, other fields only when set."""
     d = ld.to_dict()
     d.pop("signals", None)
     d.pop("score", None)
-    return {k: v for k, v in d.items() if v not in ("", None, [])}
+    return {k: v for k, v in d.items()
+            if k in CORE_LEAD_KEYS or v not in ("", None, [], {})}
+
+
+def _compact_report(rep) -> dict:
+    """Just enough of the run report for a model to explain a short result."""
+    return {"summary": rep.summary(), "stop_reason": rep.stop_reason,
+            "sources": {n: {"status": sr.status, "leads": sr.leads,
+                            **({"problem": (sr.errors or sr.fallbacks)[0]}
+                               if (sr.errors or sr.fallbacks) else {})}
+                        for n, sr in rep.sources.items()}}
 
 
 def _email_dict(r, checking: bool = False) -> dict:
@@ -140,16 +169,28 @@ def call_tool(name: str, args: dict) -> dict:
     cache, db = Cache(), DB()
     try:
         if name == "find_leads":
+            from openleads import runreport
             from openleads.engine import build_leads
             from openleads.intent import build_query
             text = str(args.get("query") or "").strip()
             if not text:
                 raise ValueError("query is required")
+            budget = max(10, min(int(args.get("budget_seconds") or DEFAULT_BUDGET), 300))
             q = build_query(text, count=max(1, min(int(args.get("count") or 10), 100)),
                             verified_only=bool(args.get("verified_only", False)),
-                            budget=max(10, min(int(args.get("budget_seconds") or 90), 300)))
-            leads = build_leads(q, cache=cache, db=db)
+                            budget=budget, location=args.get("location") or None,
+                            source=args.get("source") or None,
+                            seniority=args.get("seniority") or None,
+                            department=args.get("department") or None)
+            with runreport.capture() as cap:
+                leads = build_leads(q, cache=cache, db=db)
             out = {"query": text, "count": len(leads), "leads": [_lead_dict(x) for x in leads]}
+            rep = cap.report
+            if rep is not None and len(leads) < q.count:
+                out["report"] = _compact_report(rep)
+                hints = rep.hints()
+                if hints:
+                    out["hint"] = hints[0]
             if args.get("save_to_list") and leads:
                 out["saved"] = _save_found(db, leads, str(args["save_to_list"]))
             return out
@@ -193,6 +234,8 @@ def handle(msg: dict) -> dict | None:
             "instructions": ("Use find_leads with a plain-English description of the "
                              "people or businesses wanted. Emails marked evidence="
                              "'guessed' are unconfirmed; prefer tier 'safe' for sending. "
+                             "When find_leads returns fewer leads than asked, its 'report' "
+                             "says what each source did and 'hint' what to try next. "
                              "The workspace tools (search_contacts, get_contact, "
                              "search_companies, list_tasks, pipeline, …) read the user's "
                              "saved CRM; save_contacts stores find_leads results in a "
