@@ -33,7 +33,7 @@ NAV = [
         ("web", "Web dashboard", "The local app: search, CRM, workflows, and analytics in your browser."),
     ]),
     ("Guides", [
-        ("finding", "Finding leads", "How one sentence is routed across ten free sources."),
+        ("finding", "Finding leads", "How one sentence is routed across the free sources, and what to do when a search comes back short."),
         ("workspace", "Workspace", "People, companies, lists, tasks, deals and data health."),
         ("sequences", "Sequences", "Multi-step email, call and LinkedIn cadences that run themselves."),
         ("from-apollo", "Moving from Apollo", "Bring your contacts, lists and stages over from Apollo."),
@@ -43,6 +43,7 @@ NAV = [
         ("timed-runs", "Timed runs", "Cron and weekday schedules for searches and campaigns."),
         ("automation", "Automation and assistant", "Describe a campaign in one line and let your machine run it."),
         ("mcp", "Claude, Cursor, and MCP", "Use OpenLeads as a tool from any MCP client."),
+        ("python-api", "Python API", "openleads.find() and the run report, from your own code."),
         ("sources", "Add a source", "Add a new vertical with a single Python file."),
     ]),
     ("Reference", [

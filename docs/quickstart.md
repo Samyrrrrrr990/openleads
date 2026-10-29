@@ -14,7 +14,7 @@ mailbox, and send it safely. Every sending step is **dry-run by default**.
 
 ```bash
 pip install "openleads[all]"     # engine + chat TUI + sending niceties
-openleads --version              # → openleads 5.0.0
+openleads --version              # → openleads 5.1.0
 openleads init                   # friendly first-run setup (optional)
 ```
 

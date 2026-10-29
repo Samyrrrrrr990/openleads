@@ -6,20 +6,112 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
-### Added
-- Duplicate a workflow into an unsaved copy from the canvas toolbar. Copies keep
-  the current settings, receive an available name, and leave the original alone.
-- Optional `hubspot` export sink: create or update contacts by email using a
-  private app token (`hubspot_token` / `HUBSPOT_TOKEN`). Populated profile fields
-  update existing contacts without clearing blanks; failures report confirmed
-  progress. Available from the CLI, recipes, watchers and workflow export menus.
+## [5.1.0] - 2026-10-29
+
+**Consistent results, a calmer workspace.** The nightly benchmark showed the same
+local search returning 10 leads one night and 4 or 0 the next. 5.1 finds out why
+and fixes it: requests that fail transiently are retried, the time budget is a real
+deadline that keeps finished work, common cities never depend on a geocoder being
+up, and a failed DNS lookup no longer reads as "this domain has no mail server".
+Every search now explains itself. The dashboard and the website are redesigned to
+be quieter and easier to read.
+
+### Engine: consistency
+- **Retries.** HTTP 429/502/503/504, timeouts and dropped connections are retried
+  with a short, deterministic backoff that honors `Retry-After`
+  (`OPENLEADS_HTTP_RETRIES`, default 2). Other errors fail fast. POSTs are never
+  replayed.
+- **The time budget is a deadline.** Every network call is clamped to the time
+  left, sources are pulled lazily, and when the budget runs out the search keeps
+  what already finished (in order) and returns, about a second later at most.
+  Before, the first batch could run far past the budget and then be thrown away.
+  Near the end of the budget, people discovery steps aside so companies still come
+  back with their published addresses.
+- **Geocoding without a single point of failure.** About 200 metros ship with the
+  package (`Austin, TX`, `NYC`, `London, UK`, …), so common places resolve
+  offline; others go to Nominatim with retries and a 90-day cache. Huge metro
+  areas are clamped so OpenStreetMap queries don't time out.
+- **OpenStreetMap.** Leaner Overpass queries, three public mirrors
+  (`OPENLEADS_OVERPASS_URLS`), a circuit breaker that skips a host after it fails
+  twice, and a different hint for "busy" than for "can't reach it".
+- **Nothing bad gets cached.** Error responses, Overpass timeouts and bot-challenge
+  pages are never stored. If the network fails, recent cached data (up to 7 days)
+  is used and the report says so.
+- **A DNS error is not "no MX".** A failed lookup used to mark every address at that
+  domain as undeliverable for a week. It is now *risky* ("couldn't check the mail
+  server") and isn't cached; only a real NXDOMAIN or missing MX is.
+- **Same input, same output.** People at the same company resolve in order, so the
+  email pattern learned from one is used for the next; with `--no-cache` each URL is
+  still fetched once per run; Y Combinator results are shuffled with a seed instead
+  of at random.
+- One source failing no longer stops the others. Lead fields are consistent
+  across sources (city, vertical, team size), people found on team pages no longer
+  inherit the company's label as a title, and a second contact address at the same
+  company is no longer dropped as a duplicate.
+- One identifying User-Agent with the version for public APIs (`OPENLEADS_CONTACT`
+  adds an email, as Nominatim's policy asks).
+
+### Engine: easier to use
+- **Every search explains itself.** A per-source report says which sources ran, how
+  many records each found, what failed or fell back, why the search stopped, and
+  what to try next. `openleads find --explain` prints the plan and the report,
+  `--report FILE` saves it as JSON, and a short result always prints it.
+- **Python API.** `openleads.find("dentists in Austin")` returns a list of leads
+  that carries `.report` and `.write("leads.csv")`, plus `openleads.find_email()`
+  and `openleads.verify()`. See [docs/python-api.md](./docs/python-api.md).
+- **One query builder** for the CLI, dashboard, MCP, chat, watchers and the
+  benchmark, with clear errors ("unknown source 'locl', did you mean 'local'?").
+  Chat no longer loses the words of your search.
+- **CLI.** `openleads --help` groups commands by what they're for. With
+  `--format json|jsonl|csv` only the results go to stdout, so pipes stay clean;
+  `-q/--quiet` silences progress. Also `company --format json`, `verify --json`,
+  `bench --repeat N` and `doctor --sources` (checks each source is reachable).
+- **MCP.** `find_leads` keeps to a 45-second budget by default, takes `location`,
+  `source`, `seniority` and `department`, and returns the report and a hint when it
+  comes back short.
+- Exports gain a "Contact Type" column (person or company) at the end.
+
+### Dashboard
+- **Redesigned to be quieter.** Ink on paper with one accent for focus and
+  selection, color only where it means something (deliverable, risky, bounced,
+  overdue), no card shadows, no colored avatars, no all-caps labels, shorter page
+  copy, and a Home page that leads with what's due today.
+- **The evidence mark.** Every email carries one small mark: its shape says how we
+  know the address (found, pattern, guessed) and its color says whether it will
+  deliver.
+- Ships its own typeface, Atkinson Hyperlegible, drawn so characters like `l`, `I`
+  and `1` can't be confused (it matters when you read email addresses). Still no
+  external requests from the page.
+- Find people shows what each source did when a search comes back short.
+- Duplicate a workflow into an unsaved copy from the canvas toolbar (#23, thanks
+  @harrisonoconnorhover).
+
+### Sources and exports
 - `huggingface` source: authors of public Hugging Face models and datasets, with
   their personal site's domain for the email search. Searches for ML builders
-  ("ML engineers", "hugging face model authors") include it automatically.
+  ("ML engineers", "hugging face model authors") include it automatically (#24,
+  thanks @xmejl).
+- Optional `hubspot` export sink: create or update contacts by email with a
+  private app token (`hubspot_token` / `HUBSPOT_TOKEN`), from the CLI, recipes,
+  watchers and workflows (#22, thanks @harrisonoconnorhover).
+- New benchmark case: plumbers in Denver (#28, thanks @Shalinipks).
+
+### Website and docs
+- A new landing page and docs site in the same design, with no third-party fonts,
+  icons or scripts. The benchmark section shows every search's results, empty
+  nights included.
+- Windows PowerShell quickstart (#27, thanks @xmejl), a Python API guide, and
+  updated finding, MCP and dashboard guides.
 
 ### Fixed
 - Windows `schedule on`, `schedule off` and `schedule status` replace undecodable
-  Task Scheduler output instead of failing with a UnicodeDecodeError.
+  Task Scheduler output instead of failing with a UnicodeDecodeError (#26, thanks
+  @xmejl).
+
+### Release
+- npm publishes with Trusted Publishing (OIDC) when configured, and re-running a
+  release skips versions that are already published.
+- The live benchmark can run on demand without committing its scoreboard.
 
 ## [5.0.0] - 2026-10-15
 

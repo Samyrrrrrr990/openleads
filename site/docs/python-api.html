@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Use it from Python · OpenLeads docs</title>
+<meta name="description" content="openleads.find() and the run report, from your own code. OpenLeads documentation." />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#131418" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="Use it from Python · OpenLeads docs" />
+<meta property="og:description" content="openleads.find() and the run report, from your own code. OpenLeads documentation." />
+<meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preload" href="../fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../styles.css?v=10" />
+<link rel="stylesheet" href="docs.css?v=10" />
+</head>
+<body class="docs">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol><symbol id="i-search" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.75" cy="8.75" r="5.25"/><path d="m12.75 12.75 4 4"/></symbol><symbol id="i-menu" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h13M3.5 10h13M3.5 14h13"/></symbol><symbol id="i-close" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 5 10 10M15 5 5 15"/></symbol><symbol id="i-arrow-left" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H4m5-5-5 5 5 5"/></symbol><symbol id="i-arrow-right" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12m-5-5 5 5-5 5"/></symbol><symbol id="i-external" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13 13 7M8 7h5v5"/></symbol></svg>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="../index.html#labels">How it labels</a>
+    <a href="../index.html#benchmark">Benchmark</a>
+    <a href="../index.html#workspace">Workspace</a>
+    <a href="index.html" class="is-active">Docs</a>
+  </nav>
+  <div class="nav__cta">
+    <button class="dsearch" type="button" data-search-open aria-label="Search the docs" aria-keyshortcuts="Meta+K Control+K /"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg><span class="dsearch__label">Search</span><kbd data-mod-k>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" rel="noopener" aria-label="OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg><span class="gh-btn__label">GitHub</span><span class="gh-btn__count" data-stars hidden></span>
+    </a>
+    <button class="dmenu" id="dsbToggle" type="button" aria-label="Open the docs menu" aria-controls="dsb" aria-expanded="false"><svg class="ico ico--open" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><svg class="ico ico--close" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+  </div>
+</header>
+<div class="docs__shell">
+<div class="docs__rail"><nav class="dsb" id="dsb" aria-label="Docs">
+<ul class="dsb__list"><li><a class="dsb__link" href="index.html">Overview</a></li></ul>
+<p class="dsb__sec" id="dsb-get-started">Get started</p><ul class="dsb__list" aria-labelledby="dsb-get-started"><li><a class="dsb__link" href="quickstart.html">Quickstart</a></li><li><a class="dsb__link" href="web.html">Web dashboard</a></li></ul>
+<p class="dsb__sec" id="dsb-guides">Guides</p><ul class="dsb__list" aria-labelledby="dsb-guides"><li><a class="dsb__link" href="finding.html">Finding leads</a></li><li><a class="dsb__link" href="workspace.html">Workspace</a></li><li><a class="dsb__link" href="sequences.html">Sequences</a></li><li><a class="dsb__link" href="from-apollo.html">Moving from Apollo</a></li><li><a class="dsb__link" href="workflows.html">Workflows</a></li><li><a class="dsb__link" href="deliverability.html">Deliverability</a></li><li><a class="dsb__link" href="sending.html">Sending</a></li><li><a class="dsb__link" href="timed-runs.html">Timed runs</a></li><li><a class="dsb__link" href="automation.html">Automation and assistant</a></li><li><a class="dsb__link" href="mcp.html">Claude, Cursor, and MCP</a></li><li><a class="dsb__link" href="python-api.html" aria-current="page">Python API</a></li><li><a class="dsb__link" href="sources.html">Add a source</a></li></ul>
+<p class="dsb__sec" id="dsb-reference">Reference</p><ul class="dsb__list" aria-labelledby="dsb-reference"><li><a class="dsb__link" href="architecture.html">Architecture</a></li><li><a class="dsb__link" href="how-it-works.html">Email engine</a></li><li><a class="dsb__link" href="responsible-use.html">Responsible use</a></li><li><a class="dsb__link" href="licensing.html">Licensing</a></li></ul>
+<p class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" rel="noopener">Ask the community<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" rel="noopener">Report an issue<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p>
+</nav></div>
+<div class="docs__body">
+<main class="docs__main" id="main" tabindex="-1"><article class="prose">
+<div class="dmeta"><nav class="dmeta__crumb" aria-label="Breadcrumb"><a href="index.html">Docs</a><span aria-hidden="true">/</span><span>Guides</span></nav><span class="dmeta__time">4 min read</span></div><h1 id="use-it-from-python">Use it from Python</h1>
+<p class="lede">Everything the CLI does is one import away. The library is standard-library only, runs locally, and shares the CLI's cache and learned email patterns (under <code>~/.openleads</code>, or wherever <code>OPENLEADS_HOME</code> points).</p>
+<div class="codeblock"><pre class="code"><code>import openleads
+
+leads = openleads.find(&quot;dentists in Austin&quot;, count=10)
+for lead in leads:
+    print(lead.email, lead.tier, lead.evidence, lead.organization)
+
+print(leads.report.summary())
+# 10/10 leads in 31.4s · local ok
+
+leads.write(&quot;dentists.csv&quot;)        # or .json / .jsonl</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p><code>import openleads</code> stays light: the engine is only imported the first time you call <code>find</code>, <code>find_email</code> or <code>verify</code>.</p>
+<h2 id="openleads-find" class="anchored"><a class="hlink" href="#openleads-find">#</a><code>openleads.find(query, **options)</code></h2>
+<p>Takes the same plain-English query as <code>openleads find</code> and returns a <code>SearchResult</code> — a <code>list</code> of <code>Lead</code> objects that also carries the parsed query and the run report.</p>
+<div class="tablewrap"><table><thead><tr><th>Option</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><code>count</code></td><td><code>None</code></td><td>How many leads to return (1–1000). Default: the number in the query ("50 fintech founders"), else 10.</td></tr><tr><td><code>location</code></td><td><code>None</code></td><td>A place, if it isn't in the words (<code>&quot;Austin, TX&quot;</code>).</td></tr><tr><td><code>source</code></td><td><code>None</code></td><td>Pin one source (see <code>openleads sources</code>). By default the query is routed to the sources that fit it.</td></tr><tr><td><code>verified_only</code></td><td><code>False</code></td><td>Keep only <code>safe</code>-tier (deliverable) addresses.</td></tr><tr><td><code>budget</code></td><td><code>60</code></td><td>Seconds before the search returns what it has. <code>0</code> = no limit; otherwise held to 5–3600. The budget is a real deadline: every network call is clamped to it.</td></tr><tr><td><code>deep</code></td><td><code>False</code></td><td>Slower, more thorough ground-truth harvesting.</td></tr><tr><td><code>people</code></td><td><code>True</code></td><td>Expand companies into named people from their team pages.</td></tr><tr><td><code>company_profile</code></td><td><code>True</code></td><td>Read each company's homepage (tech stack, socials, phone).</td></tr><tr><td><code>use_cache</code></td><td><code>True</code></td><td>Reuse cached lookups and save new ones. With <code>False</code> nothing is written to the cache, but each URL is still fetched only once per search.</td></tr><tr><td><code>seniority</code></td><td><code>None</code></td><td>Keep only these seniorities: a list or <code>&quot;vp,director&quot;</code>. Values: <code>owner, founder, c_suite, partner, vp, head, director, manager, senior, entry</code>.</td></tr><tr><td><code>department</code></td><td><code>None</code></td><td>Keep only these departments, e.g. <code>[&quot;sales&quot;, &quot;marketing&quot;]</code>.</td></tr><tr><td><code>on_lead</code></td><td><code>None</code></td><td>Called with each <code>Lead</code> as soon as it's found (for progress output).</td></tr></tbody></table></div>
+<p>Options you pass win over what the words say, but options left at their defaults never undo the words: <code>find(&quot;fintech founders, verified only&quot;)</code> is still verified-only.</p>
+<p>An unknown source or role filter raises <code>ValueError</code> with a suggestion: <code>unknown source &#x27;locl&#x27; — did you mean &#x27;local&#x27;?</code>.</p>
+<h3 id="searchresult" class="anchored"><a class="hlink" href="#searchresult">#</a><code>SearchResult</code></h3>
+<ul><li>It is a <code>list</code>: index it, loop over it, <code>len()</code> it.</li><li><code>.query</code> — the <code>Query</code> that ran (the parsed words plus your options).</li><li><code>.report</code> — what happened, per source (see below).</li><li><code>.to_dicts()</code> / <code>.to_json()</code> — the same shape as <code>openleads find --format json</code>.</li><li><code>.write(path, fmt=None)</code> — <code>csv</code>, <code>json</code> or <code>jsonl</code> (<code>ndjson</code>), picked from the file extension unless you pass <code>fmt</code>. Returns the path.</li></ul>
+<h3 id="lead" class="anchored"><a class="hlink" href="#lead">#</a><code>Lead</code></h3>
+<p>The fields of the CSV export, as attributes: <code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>title</code>, <code>organization</code>, <code>industry</code>, <code>employees</code>, <code>linkedin_url</code>, <code>city</code>, <code>country</code>, <code>website</code>, <code>phone</code>, <code>seniority</code>, <code>department</code>, <code>company_size</code>, <code>technologies</code>, <code>socials</code>, <code>description</code>, <code>source</code>, <code>vertical</code> — plus</p>
+<ul><li><code>tier</code> — <code>safe</code> (send), <code>risky</code> (plausible, unconfirmed) or <code>bad</code>;</li><li><code>confidence_pct</code> — a calibrated 0–100 deliverability likelihood;</li><li><code>evidence</code> — <code>found</code> (published or confirmed by the mail server), <code>pattern</code> (built from an address shape seen at that domain), <code>guessed</code>, or <code>none</code>;</li><li><code>reasons</code> — a short human explanation of the tier;</li><li><code>contact_type</code> — <code>person</code> (a named human) or <code>company</code> (a business or role address like <code>info@</code>).</li></ul>
+<h3 id="the-run-report" class="anchored"><a class="hlink" href="#the-run-report">#</a>The run report</h3>
+<p><code>leads.report</code> is a <code>SearchReport</code>:</p>
+<div class="codeblock"><pre class="code"><code>rep = leads.report
+rep.summary()          # &quot;4/10 leads in 60.8s · time budget reached · local ok · yc timeout&quot;
+rep.status_lines()     # one line per source
+rep.hints()            # what to try next when a search came up short
+rep.stop_reason        # count_reached | exhausted | budget | futility | max_companies
+rep.dropped            # {&quot;undeliverable&quot;: 3, &quot;not_safe&quot;: 0, &quot;filtered&quot;: 2}
+rep.sources[&quot;local&quot;]   # SourceReport: status, entities, expanded, leads, seconds,
+                       #               fallbacks, errors, note, reason
+rep.to_dict()          # JSON-ready</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p>A source's <code>status</code> is one of:</p>
+<div class="tablewrap"><table><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><code>ok</code></td><td>Returned results without trouble.</td></tr><tr><td><code>degraded</code></td><td>Returned results, but hit errors or used a fallback (e.g. OpenStreetMap's Overpass was busy, so it used Nominatim).</td></tr><tr><td><code>empty</code></td><td>Answered, but had nothing for this query.</td></tr><tr><td><code>failed</code></td><td>Errored and returned nothing (the errors say which host and why).</td></tr><tr><td><code>timeout</code></td><td>Still working when the time budget ran out.</td></tr><tr><td><code>skipped</code></td><td>Never needed (enough leads came from the others).</td></tr></tbody></table></div>
+<h2 id="openleads-findemail" class="anchored"><a class="hlink" href="#openleads-findemail">#</a><code>openleads.find_email(name, domain)</code></h2>
+<div class="codeblock"><pre class="code"><code>r = openleads.find_email(&quot;Ada Lovelace&quot;, &quot;acme.com&quot;)
+r.email, r.tier, r.confidence_pct, r.reasons</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p>Returns an <code>EmailResult</code> with the most likely address and its evidence. Options: <code>deep=False</code>, <code>use_cache=True</code>.</p>
+<h2 id="openleads-verify" class="anchored"><a class="hlink" href="#openleads-verify">#</a><code>openleads.verify(email)</code></h2>
+<div class="codeblock"><pre class="code"><code>openleads.verify(&quot;ada@acme.com&quot;).tier      # &quot;safe&quot; | &quot;risky&quot; | &quot;bad&quot;</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p>A failed DNS lookup is reported as <code>risky</code> ("couldn't check the mail server"), never as "no mail server".</p>
+<h2 id="lower-level" class="anchored"><a class="hlink" href="#lower-level">#</a>Lower level</h2>
+<p><code>openleads.engine.build_leads(query, cache=None, db=None, on_progress=None, *, report=None)</code> is what <code>find</code> wraps. Build the <code>Query</code> with <code>openleads.intent.build_query(text, **options)</code> — the same validated builder the CLI, the dashboard and the MCP server use. <code>on_progress(kind, payload)</code> receives <code>&quot;phase&quot;</code> (a message), <code>&quot;lead&quot;</code> (a <code>Lead</code>), <code>&quot;scan&quot;</code> (counts), <code>&quot;source&quot;</code> (a <code>SourceReport</code>, when a source finishes) and <code>&quot;report&quot;</code> (the <code>SearchReport</code>, at the end); ignore kinds you don't use.</p>
+<h2 id="environment" class="anchored"><a class="hlink" href="#environment">#</a>Environment</h2>
+<div class="tablewrap"><table><thead><tr><th>Variable</th><th>Effect</th></tr></thead><tbody><tr><td><code>OPENLEADS_HOME</code></td><td>Where the cache and database live (default <code>~/.openleads</code>).</td></tr><tr><td><code>OPENLEADS_HTTP_RETRIES</code></td><td>Retries per request on HTTP 429/502/503/504, timeouts and dropped connections (default <code>2</code>, max <code>5</code>).</td></tr><tr><td><code>OPENLEADS_OVERPASS_URLS</code></td><td>Comma-separated Overpass endpoints to use instead of the public mirrors.</td></tr><tr><td><code>OPENLEADS_CONTACT</code></td><td>An email or URL added to the User-Agent sent to public APIs (Nominatim, Overpass, Wikidata, SEC…), as their usage policies ask for heavy use.</td></tr><tr><td><code>GITHUB_TOKEN</code></td><td>Higher GitHub API limits for developer searches.</td></tr></tbody></table></div>
+<nav class="prevnext" aria-label="Previous and next page"><a class="pn pn--prev" href="mcp.html" rel="prev"><span class="pn__dir"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Previous</span><span class="pn__title">Claude, Cursor, and MCP</span></a><a class="pn pn--next" href="sources.html" rel="next"><span class="pn__dir">Next<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-right"/></svg></span><span class="pn__title">Add a source</span></a></nav>
+</article></main>
+<nav class="dtoc" aria-label="On this page"><p class="dtoc__h">On this page</p><ul class="dtoc__list"><li><a class="dtoc__l2" href="#openleads-find">openleads.find(query, options)</a></li><li><a class="dtoc__l3" href="#searchresult">SearchResult</a></li><li><a class="dtoc__l3" href="#lead">Lead</a></li><li><a class="dtoc__l3" href="#the-run-report">The run report</a></li><li><a class="dtoc__l2" href="#openleads-findemail">openleads.find_email(name, domain)</a></li><li><a class="dtoc__l2" href="#openleads-verify">openleads.verify(email)</a></li><li><a class="dtoc__l2" href="#lower-level">Lower level</a></li><li><a class="dtoc__l2" href="#environment">Environment</a></li></ul><p class="dtoc__edit"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/python-api.md" rel="noopener">Edit this page<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p></nav>
+<footer class="footer dfoot">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a class="brand" href="../index.html"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+      <p>Lead finding and a sales workspace that run on your own machine.</p>
+    </div>
+    <div class="footer__cols">
+      <div><h4>Product</h4><a href="../index.html#labels">How it labels</a><a href="../index.html#benchmark">Benchmark</a><a href="../index.html#workspace">Workspace</a><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
+      <div><h4>Project</h4><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a><a href="https://pypi.org/project/openleads/">PyPI</a><a href="https://www.npmjs.com/package/openleads">npm</a><a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></div>
+    </div>
+  </div>
+  <div class="footer__legal">
+    <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md">Commercial license</a></span>
+  </div>
+</footer>
+</div>
+</div>
+<div class="search" id="search" hidden>
+  <div class="search__backdrop" data-search-close></div>
+  <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
+    <div class="search__field"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+      <input id="searchInput" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="searchResults" aria-autocomplete="list" />
+      <button class="search__esc" type="button" data-search-close aria-label="Close search"><span>Esc</span><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+    </div>
+    <ul class="search__results" id="searchResults" role="listbox" aria-label="Results"></ul>
+    <p class="search__empty" id="searchEmpty" role="status" hidden></p>
+    <p class="search__foot"><span><kbd>↑</kbd> <kbd>↓</kbd> to move</span><span><kbd>Enter</kbd> to open</span><span><kbd>Esc</kbd> to close</span></p>
+  </div>
+</div>
+<script src="docs.js?v=10" defer></script>
+</body>
+</html>

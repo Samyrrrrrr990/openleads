@@ -42,7 +42,7 @@ Waiting on you:
 
 Releasing:
 - [ ] Merge the 5.0 PR into `main` once CI is green.
-- [ ] Tag it: `git tag v5.0.0 && git push origin v5.0.0` — or, without git, run
+- [ ] Tag it: `git tag v5.1.0 && git push origin v5.1.0` — or, without git, run
       **Actions → Tag release → Run workflow** on `main`, which tags the version in
       `pyproject.toml` and starts the Release workflow for it. The release workflow checks
       that the tag, `pyproject.toml`, `openleads/__init__.py` and `npm/package.json`
@@ -52,7 +52,7 @@ Releasing:
       `PYPI_TRUSTED_PUBLISHING=true`) or a `PYPI_API_TOKEN` secret is set.
 - [ ] npm publishes from it if an `NPM_TOKEN` secret is set; otherwise
       `cd npm && npm publish --access public` by hand (2FA in the browser).
-- [ ] `mcp-registry.yml` republishes `server.json` (now 5.0.0) after the release.
+- [ ] `mcp-registry.yml` republishes `server.json` (now 5.1.0) after the release.
 
 Announcing (each in its own words, as above):
 - [ ] Discussions: a 5.0 announcement — the workspace, `openleads demo`, the Apollo
