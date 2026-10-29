@@ -5,99 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Timed runs · OpenLeads docs</title>
 <meta name="description" content="Cron and weekday schedules for searches and campaigns. OpenLeads documentation." />
-<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#131418" media="(prefers-color-scheme: dark)" />
 <meta property="og:title" content="Timed runs · OpenLeads docs" />
 <meta property="og:description" content="Cron and weekday schedules for searches and campaigns. OpenLeads documentation." />
 <meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-<link rel="stylesheet" href="../styles.css?v=6" />
-<link rel="stylesheet" href="docs.css?v=6" />
+<link rel="preload" href="../fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../styles.css?v=10" />
+<link rel="stylesheet" href="docs.css?v=10" />
 </head>
 <body class="docs">
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol><symbol id="i-search" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.75" cy="8.75" r="5.25"/><path d="m12.75 12.75 4 4"/></symbol><symbol id="i-menu" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h13M3.5 10h13M3.5 14h13"/></symbol><symbol id="i-close" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 5 10 10M15 5 5 15"/></symbol><symbol id="i-arrow-left" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H4m5-5-5 5 5 5"/></symbol><symbol id="i-arrow-right" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12m-5-5 5 5-5 5"/></symbol><symbol id="i-external" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13 13 7M8 7h5v5"/></symbol></svg>
+<a class="skip" href="#main">Skip to content</a>
 <header class="nav" id="nav">
-  <button class="dsb-toggle" id="dsbToggle" aria-label="Open the docs menu" aria-expanded="false"><i class="ph ph-list"></i></button>
   <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
-  <span class="nav__docs-tag">Docs</span>
   <nav class="nav__links" aria-label="Primary">
-    <a href="../index.html#workflow">Workflows</a>
-    <a href="../index.html#workspace">Product</a>
-    <a href="../index.html#pricing">Pricing</a>
+    <a href="../index.html#labels">How it labels</a>
+    <a href="../index.html#benchmark">Benchmark</a>
+    <a href="../index.html#workspace">Workspace</a>
     <a href="index.html" class="is-active">Docs</a>
   </nav>
   <div class="nav__cta">
-    <button class="search-btn" type="button" data-search-open aria-label="Search the docs"><i class="ph ph-magnifying-glass"></i><span>Search</span><kbd>⌘K</kbd></button>
-    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener" aria-label="Star OpenLeads on GitHub">
-      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>
-      <span class="gh-btn__label">Star</span><span class="gh-btn__count" data-stars hidden></span>
+    <button class="dsearch" type="button" data-search-open aria-label="Search the docs" aria-keyshortcuts="Meta+K Control+K /"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg><span class="dsearch__label">Search</span><kbd data-mod-k>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" rel="noopener" aria-label="OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg><span class="gh-btn__label">GitHub</span><span class="gh-btn__count" data-stars hidden></span>
     </a>
+    <button class="dmenu" id="dsbToggle" type="button" aria-label="Open the docs menu" aria-controls="dsb" aria-expanded="false"><svg class="ico ico--open" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><svg class="ico ico--close" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
   </div>
 </header>
 <div class="docs__shell">
-<nav class="dsb" id="dsb" aria-label="Docs">
-<button class="dsb__search" type="button" data-search-open><i class="ph ph-magnifying-glass"></i>Search<kbd>⌘K</kbd></button>
-<a class="dsb__link dsb__home" href="index.html"><i class="ph ph-house"></i>Overview</a>
-<p class="dsb__sec">Get started</p>
-<a class="dsb__link" href="quickstart.html"><i class="ph ph-rocket-launch"></i>Quickstart</a>
-<a class="dsb__link" href="web.html"><i class="ph ph-browser"></i>Web dashboard</a>
-<p class="dsb__sec">Guides</p>
-<a class="dsb__link" href="finding.html"><i class="ph ph-magnifying-glass"></i>Finding leads</a>
-<a class="dsb__link" href="workspace.html"><i class="ph ph-address-book"></i>Workspace</a>
-<a class="dsb__link" href="sequences.html"><i class="ph ph-list-numbers"></i>Sequences</a>
-<a class="dsb__link" href="from-apollo.html"><i class="ph ph-arrow-square-in"></i>Moving from Apollo</a>
-<a class="dsb__link" href="workflows.html"><i class="ph ph-flow-arrow"></i>Workflows</a>
-<a class="dsb__link" href="deliverability.html"><i class="ph ph-seal-check"></i>Deliverability</a>
-<a class="dsb__link" href="sending.html"><i class="ph ph-paper-plane-tilt"></i>Sending</a>
-<a class="dsb__link is-active" href="timed-runs.html" aria-current="page"><i class="ph ph-clock"></i>Timed runs</a>
-<a class="dsb__link" href="automation.html"><i class="ph ph-robot"></i>Automation and assistant</a>
-<a class="dsb__link" href="mcp.html"><i class="ph ph-plugs-connected"></i>Claude, Cursor, and MCP</a>
-<a class="dsb__link" href="sources.html"><i class="ph ph-puzzle-piece"></i>Add a source</a>
-<p class="dsb__sec">Reference</p>
-<a class="dsb__link" href="architecture.html"><i class="ph ph-tree-structure"></i>Architecture</a>
-<a class="dsb__link" href="how-it-works.html"><i class="ph ph-envelope-open"></i>Email engine</a>
-<a class="dsb__link" href="responsible-use.html"><i class="ph ph-scales"></i>Responsible use</a>
-<a class="dsb__link" href="licensing.html"><i class="ph ph-certificate"></i>Licensing</a>
-<div class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" target="_blank" rel="noopener"><i class="ph ph-chats-circle"></i>Ask the community</a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" target="_blank" rel="noopener"><i class="ph ph-bug"></i>Report an issue</a></div>
-</nav>
-<main class="docs__main" id="main"><article class="prose">
-<div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Guides</span><i class="ph ph-caret-right"></i><span>Timed runs</span></div>
-<div class="dhead"><span class="dhead__sec"><i class="ph ph-clock"></i>Guides</span><span class="dhead__meta">3 min read</span></div><h1 id="timed-runs">Timed runs</h1>
+<div class="docs__rail"><nav class="dsb" id="dsb" aria-label="Docs">
+<ul class="dsb__list"><li><a class="dsb__link" href="index.html">Overview</a></li></ul>
+<p class="dsb__sec" id="dsb-get-started">Get started</p><ul class="dsb__list" aria-labelledby="dsb-get-started"><li><a class="dsb__link" href="quickstart.html">Quickstart</a></li><li><a class="dsb__link" href="web.html">Web dashboard</a></li></ul>
+<p class="dsb__sec" id="dsb-guides">Guides</p><ul class="dsb__list" aria-labelledby="dsb-guides"><li><a class="dsb__link" href="finding.html">Finding leads</a></li><li><a class="dsb__link" href="workspace.html">Workspace</a></li><li><a class="dsb__link" href="sequences.html">Sequences</a></li><li><a class="dsb__link" href="from-apollo.html">Moving from Apollo</a></li><li><a class="dsb__link" href="workflows.html">Workflows</a></li><li><a class="dsb__link" href="deliverability.html">Deliverability</a></li><li><a class="dsb__link" href="sending.html">Sending</a></li><li><a class="dsb__link" href="timed-runs.html" aria-current="page">Timed runs</a></li><li><a class="dsb__link" href="automation.html">Automation and assistant</a></li><li><a class="dsb__link" href="mcp.html">Claude, Cursor, and MCP</a></li><li><a class="dsb__link" href="sources.html">Add a source</a></li></ul>
+<p class="dsb__sec" id="dsb-reference">Reference</p><ul class="dsb__list" aria-labelledby="dsb-reference"><li><a class="dsb__link" href="architecture.html">Architecture</a></li><li><a class="dsb__link" href="how-it-works.html">Email engine</a></li><li><a class="dsb__link" href="responsible-use.html">Responsible use</a></li><li><a class="dsb__link" href="licensing.html">Licensing</a></li></ul>
+<p class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" rel="noopener">Ask the community<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" rel="noopener">Report an issue<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p>
+</nav></div>
+<div class="docs__body">
+<main class="docs__main" id="main" tabindex="-1"><article class="prose">
+<div class="dmeta"><nav class="dmeta__crumb" aria-label="Breadcrumb"><a href="index.html">Docs</a><span aria-hidden="true">/</span><span>Guides</span></nav><span class="dmeta__time">3 min read</span></div><h1 id="timed-runs">Timed runs</h1>
 <p class="lede">Save a search once and let your machine run it on a schedule: find new leads, draft emails, send them inside your daily cap, export the results, and send follow-ups. Nothing runs in the cloud.</p>
 <h2 id="1-give-a-recipe-a-schedule" class="anchored"><a class="hlink" href="#1-give-a-recipe-a-schedule">#</a>1. Give a recipe a schedule</h2>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads recipe add miami &quot;marketing agencies in Miami&quot; --every &quot;weekdays 9am&quot; --send
+<div class="codeblock"><pre class="code"><code>openleads recipe add miami &quot;marketing agencies in Miami&quot; --every &quot;weekdays 9am&quot; --send
 openleads recipe add devs  &quot;rust developers in Berlin&quot;   --every &quot;every 6h&quot; --export csv --target devs.csv
-openleads recipe add weekly &quot;fintech founders&quot; -n 50     --every &quot;mon 08:30&quot;</code></pre></div>
+openleads recipe add weekly &quot;fintech founders&quot; -n 50     --every &quot;mon 08:30&quot;</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <p><code>--every</code> understands plain English and cron:</p>
 <div class="tablewrap"><table><thead><tr><th>You write</th><th>It runs</th></tr></thead><tbody><tr><td><code>daily 09:00</code> · <code>9am</code> · <code>every day at 9:30pm</code></td><td>once a day</td></tr><tr><td><code>weekdays 8:30</code> · <code>weekends 10am</code></td><td>Mon–Fri / Sat–Sun</td></tr><tr><td><code>mon,wed,fri 14:00</code> · <code>tuesdays 7pm</code></td><td>on those days</td></tr><tr><td><code>hourly</code> · <code>every 2h</code> · <code>every 30m</code> · <code>every 90 minutes</code></td><td>on an interval</td></tr><tr><td><code>0 9 * * 1-5</code></td><td>standard 5-field cron</td></tr></tbody></table></div>
 <p><code>openleads recipe list</code> shows each recipe's schedule. A bad schedule is rejected when you save it, not when it should have run.</p>
 <p>Watchers ("tell me when new leads match") take the same flag. Without one they run once a day at 09:00:</p>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads watch add new-clinics &quot;dentists in Austin&quot; --every &quot;every 12h&quot; --sink webhook</code></pre></div>
+<div class="codeblock"><pre class="code"><code>openleads watch add new-clinics &quot;dentists in Austin&quot; --every &quot;every 12h&quot; --sink webhook</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <h2 id="2-arm-this-machine-once" class="anchored"><a class="hlink" href="#2-arm-this-machine-once">#</a>2. Arm this machine once</h2>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads schedule on        # install the agent
+<div class="codeblock"><pre class="code"><code>openleads schedule on        # install the agent
 openleads schedule status    # is it installed, and when does each recipe run next?
-openleads schedule off       # remove it</code></pre></div>
+openleads schedule off       # remove it</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <p><code>schedule on</code> installs one small agent that wakes every 15 minutes and runs <code>openleads drip --live</code>. Each wake-up runs whatever is due, so one agent serves every schedule. It uses what your OS already has:</p>
 <div class="tablewrap"><table><thead><tr><th>OS</th><th>Mechanism</th></tr></thead><tbody><tr><td>macOS</td><td>a launchd agent in <code>~/Library/LaunchAgents/dev.openleads.drip.plist</code></td></tr><tr><td>Linux</td><td>one crontab line, marked <code># OpenLeads drip heartbeat</code></td></tr><tr><td>Windows</td><td>a Task Scheduler task named <code>OpenLeads Drip</code></td></tr></tbody></table></div>
 <p>Change the wake-up interval with <code>--every-minutes 5</code>. The old fixed daily mode (<code>openleads schedule 09:00</code>) still works.</p>
 <p>If the machine is asleep or off when a run was due, the run happens at the next wake-up. It runs once, even if several slots were missed.</p>
 <h2 id="3-see-what-happened" class="anchored"><a class="hlink" href="#3-see-what-happened">#</a>3. See what happened</h2>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads runs          # the last 20 runs
-openleads runs -n 100</code></pre></div>
-<div class="codeblock"><div class="codeblock__bar"><span>text</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>  ✓ 2026-10-07T09:00:12  recipe     miami             41.2s  found 18 · sent 12
+<div class="codeblock"><pre class="code"><code>openleads runs          # the last 20 runs
+openleads runs -n 100</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<div class="codeblock"><pre class="code"><code>  ✓ 2026-10-07T09:00:12  recipe     miami             41.2s  found 18 · sent 12
   ✗ 2026-10-07T09:00:54  watcher    new-clinics        3.1s  URLError: network unreachable
-  ✓ 2026-10-07T09:15:03  follow-ups default            0.4s  due 0 · sent 0</code></pre></div>
+  ✓ 2026-10-07T09:15:03  follow-ups default            0.4s  due 0 · sent 0</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <p>History lives in <code>~/.openleads/runs.jsonl</code>. When a run fails, the other jobs still run and you get told about it:</p>
 <ul><li>a desktop notification on macOS and Linux, and</li><li>a JSON <code>POST</code> to <code>notify_webhook</code>, if you set one. Slack, Discord, ntfy and Zapier webhooks all accept it:</li></ul>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads config set notify_webhook https://hooks.slack.com/services/…</code></pre></div>
+<div class="codeblock"><pre class="code"><code>openleads config set notify_webhook https://hooks.slack.com/services/…</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <h2 id="run-it-in-github-actions-instead" class="anchored"><a class="hlink" href="#run-it-in-github-actions-instead">#</a>Run it in GitHub Actions instead</h2>
 <p>If you'd rather not keep a laptop awake, the OpenLeads GitHub Action runs a search on GitHub's schedule and attaches the CSV to the run:</p>
-<div class="codeblock"><div class="codeblock__bar"><span>yaml</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>on:
+<div class="codeblock"><pre class="code"><code>on:
   schedule: [{ cron: &quot;0 13 * * 1&quot; }]
 jobs:
   leads:
@@ -107,34 +85,44 @@ jobs:
         id: leads
         with: { query: &quot;marketing agencies in Miami&quot;, count: 50 }
       - uses: actions/upload-artifact@v4
-        with: { name: leads, path: &quot;${{ steps.leads.outputs.file }}&quot; }</code></pre></div>
+        with: { name: leads, path: &quot;${{ steps.leads.outputs.file }}&quot; }</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <p>See <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/examples/github-action/weekly-leads.yml"><code>examples/github-action/weekly-leads.yml</code></a>. Sending from CI isn't supported; the action finds leads.</p>
 <h2 id="safety" class="anchored"><a class="hlink" href="#safety">#</a>Safety</h2>
 <ul><li>Recipes that <strong>send</strong>, and follow-ups, only go out inside the send window: weekdays, 08:00–11:00 and 13:00–16:00 local time. A sending recipe due at 7pm waits and runs at the next wake-up inside the window. Recipes that only find or export run at their exact time.</li><li><code>openleads drip</code> without <code>--live</code> is a dry run and doesn't use up a slot.</li><li>Sends always respect the daily cap, warmup ramp, send-time windows and suppression list from <a href="sending.html">Sending</a>.</li><li>Anyone who replies or bounces is dropped from follow-ups.</li></ul>
-<nav class="prevnext" aria-label="Previous and next page">
-<a class="pn pn--prev" href="sending.html"><span><i class="ph ph-arrow-left"></i>Previous</span><b>Sending</b></a>
-<a class="pn pn--next" href="automation.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Automation and assistant</b></a>
-</nav>
+<nav class="prevnext" aria-label="Previous and next page"><a class="pn pn--prev" href="sending.html" rel="prev"><span class="pn__dir"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Previous</span><span class="pn__title">Sending</span></a><a class="pn pn--next" href="automation.html" rel="next"><span class="pn__dir">Next<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-right"/></svg></span><span class="pn__title">Automation and assistant</span></a></nav>
 </article></main>
-<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#1-give-a-recipe-a-schedule">1. Give a recipe a schedule</a><a class="toc__l2" href="#2-arm-this-machine-once">2. Arm this machine once</a><a class="toc__l2" href="#3-see-what-happened">3. See what happened</a><a class="toc__l2" href="#run-it-in-github-actions-instead">Run it in GitHub Actions instead</a><a class="toc__l2" href="#safety">Safety</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/timed-runs.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
-</div>
-<footer class="footer docs-footer">
-  <div class="container footer__legal">
+<nav class="dtoc" aria-label="On this page"><p class="dtoc__h">On this page</p><ul class="dtoc__list"><li><a class="dtoc__l2" href="#1-give-a-recipe-a-schedule">1. Give a recipe a schedule</a></li><li><a class="dtoc__l2" href="#2-arm-this-machine-once">2. Arm this machine once</a></li><li><a class="dtoc__l2" href="#3-see-what-happened">3. See what happened</a></li><li><a class="dtoc__l2" href="#run-it-in-github-actions-instead">Run it in GitHub Actions instead</a></li><li><a class="dtoc__l2" href="#safety">Safety</a></li></ul><p class="dtoc__edit"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/timed-runs.md" rel="noopener">Edit this page<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p></nav>
+<footer class="footer dfoot">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a class="brand" href="../index.html"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+      <p>Lead finding and a sales workspace that run on your own machine.</p>
+    </div>
+    <div class="footer__cols">
+      <div><h4>Product</h4><a href="../index.html#labels">How it labels</a><a href="../index.html#benchmark">Benchmark</a><a href="../index.html#workspace">Workspace</a><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
+      <div><h4>Project</h4><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a><a href="https://pypi.org/project/openleads/">PyPI</a><a href="https://www.npmjs.com/package/openleads">npm</a><a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></div>
+    </div>
+  </div>
+  <div class="footer__legal">
     <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
-    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a> · <a href="https://www.npmjs.com/package/openleads">npm</a> · <a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md">Commercial license</a></span>
   </div>
 </footer>
-
+</div>
+</div>
 <div class="search" id="search" hidden>
   <div class="search__backdrop" data-search-close></div>
   <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
-    <label class="search__field"><i class="ph ph-magnifying-glass"></i>
-      <input id="searchInput" type="search" placeholder="Search the docs" autocomplete="off" spellcheck="false" />
-      <kbd data-search-close>Esc</kbd></label>
-    <ul class="search__results" id="searchResults" role="listbox"></ul>
-    <p class="search__foot"><span><kbd>↑</kbd><kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span></p>
+    <div class="search__field"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+      <input id="searchInput" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="searchResults" aria-autocomplete="list" />
+      <button class="search__esc" type="button" data-search-close aria-label="Close search"><span>Esc</span><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+    </div>
+    <ul class="search__results" id="searchResults" role="listbox" aria-label="Results"></ul>
+    <p class="search__empty" id="searchEmpty" role="status" hidden></p>
+    <p class="search__foot"><span><kbd>↑</kbd> <kbd>↓</kbd> to move</span><span><kbd>Enter</kbd> to open</span><span><kbd>Esc</kbd> to close</span></p>
   </div>
 </div>
-<script src="docs.js?v=6"></script>
+<script src="docs.js?v=10" defer></script>
 </body>
 </html>

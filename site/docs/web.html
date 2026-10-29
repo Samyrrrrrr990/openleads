@@ -5,77 +5,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>The local web dashboard · OpenLeads docs</title>
 <meta name="description" content="The local app: search, CRM, workflows, and analytics in your browser. OpenLeads documentation." />
-<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#131418" media="(prefers-color-scheme: dark)" />
 <meta property="og:title" content="The local web dashboard · OpenLeads docs" />
 <meta property="og:description" content="The local app: search, CRM, workflows, and analytics in your browser. OpenLeads documentation." />
 <meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-<link rel="stylesheet" href="../styles.css?v=6" />
-<link rel="stylesheet" href="docs.css?v=6" />
+<link rel="preload" href="../fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../styles.css?v=10" />
+<link rel="stylesheet" href="docs.css?v=10" />
 </head>
 <body class="docs">
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol><symbol id="i-search" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.75" cy="8.75" r="5.25"/><path d="m12.75 12.75 4 4"/></symbol><symbol id="i-menu" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h13M3.5 10h13M3.5 14h13"/></symbol><symbol id="i-close" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 5 10 10M15 5 5 15"/></symbol><symbol id="i-arrow-left" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H4m5-5-5 5 5 5"/></symbol><symbol id="i-arrow-right" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12m-5-5 5 5-5 5"/></symbol><symbol id="i-external" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13 13 7M8 7h5v5"/></symbol></svg>
+<a class="skip" href="#main">Skip to content</a>
 <header class="nav" id="nav">
-  <button class="dsb-toggle" id="dsbToggle" aria-label="Open the docs menu" aria-expanded="false"><i class="ph ph-list"></i></button>
   <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
-  <span class="nav__docs-tag">Docs</span>
   <nav class="nav__links" aria-label="Primary">
-    <a href="../index.html#workflow">Workflows</a>
-    <a href="../index.html#workspace">Product</a>
-    <a href="../index.html#pricing">Pricing</a>
+    <a href="../index.html#labels">How it labels</a>
+    <a href="../index.html#benchmark">Benchmark</a>
+    <a href="../index.html#workspace">Workspace</a>
     <a href="index.html" class="is-active">Docs</a>
   </nav>
   <div class="nav__cta">
-    <button class="search-btn" type="button" data-search-open aria-label="Search the docs"><i class="ph ph-magnifying-glass"></i><span>Search</span><kbd>⌘K</kbd></button>
-    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener" aria-label="Star OpenLeads on GitHub">
-      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>
-      <span class="gh-btn__label">Star</span><span class="gh-btn__count" data-stars hidden></span>
+    <button class="dsearch" type="button" data-search-open aria-label="Search the docs" aria-keyshortcuts="Meta+K Control+K /"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg><span class="dsearch__label">Search</span><kbd data-mod-k>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" rel="noopener" aria-label="OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg><span class="gh-btn__label">GitHub</span><span class="gh-btn__count" data-stars hidden></span>
     </a>
+    <button class="dmenu" id="dsbToggle" type="button" aria-label="Open the docs menu" aria-controls="dsb" aria-expanded="false"><svg class="ico ico--open" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><svg class="ico ico--close" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
   </div>
 </header>
 <div class="docs__shell">
-<nav class="dsb" id="dsb" aria-label="Docs">
-<button class="dsb__search" type="button" data-search-open><i class="ph ph-magnifying-glass"></i>Search<kbd>⌘K</kbd></button>
-<a class="dsb__link dsb__home" href="index.html"><i class="ph ph-house"></i>Overview</a>
-<p class="dsb__sec">Get started</p>
-<a class="dsb__link" href="quickstart.html"><i class="ph ph-rocket-launch"></i>Quickstart</a>
-<a class="dsb__link is-active" href="web.html" aria-current="page"><i class="ph ph-browser"></i>Web dashboard</a>
-<p class="dsb__sec">Guides</p>
-<a class="dsb__link" href="finding.html"><i class="ph ph-magnifying-glass"></i>Finding leads</a>
-<a class="dsb__link" href="workspace.html"><i class="ph ph-address-book"></i>Workspace</a>
-<a class="dsb__link" href="sequences.html"><i class="ph ph-list-numbers"></i>Sequences</a>
-<a class="dsb__link" href="from-apollo.html"><i class="ph ph-arrow-square-in"></i>Moving from Apollo</a>
-<a class="dsb__link" href="workflows.html"><i class="ph ph-flow-arrow"></i>Workflows</a>
-<a class="dsb__link" href="deliverability.html"><i class="ph ph-seal-check"></i>Deliverability</a>
-<a class="dsb__link" href="sending.html"><i class="ph ph-paper-plane-tilt"></i>Sending</a>
-<a class="dsb__link" href="timed-runs.html"><i class="ph ph-clock"></i>Timed runs</a>
-<a class="dsb__link" href="automation.html"><i class="ph ph-robot"></i>Automation and assistant</a>
-<a class="dsb__link" href="mcp.html"><i class="ph ph-plugs-connected"></i>Claude, Cursor, and MCP</a>
-<a class="dsb__link" href="sources.html"><i class="ph ph-puzzle-piece"></i>Add a source</a>
-<p class="dsb__sec">Reference</p>
-<a class="dsb__link" href="architecture.html"><i class="ph ph-tree-structure"></i>Architecture</a>
-<a class="dsb__link" href="how-it-works.html"><i class="ph ph-envelope-open"></i>Email engine</a>
-<a class="dsb__link" href="responsible-use.html"><i class="ph ph-scales"></i>Responsible use</a>
-<a class="dsb__link" href="licensing.html"><i class="ph ph-certificate"></i>Licensing</a>
-<div class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" target="_blank" rel="noopener"><i class="ph ph-chats-circle"></i>Ask the community</a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" target="_blank" rel="noopener"><i class="ph ph-bug"></i>Report an issue</a></div>
-</nav>
-<main class="docs__main" id="main"><article class="prose">
-<div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Get started</span><i class="ph ph-caret-right"></i><span>Web dashboard</span></div>
-<div class="dhead"><span class="dhead__sec"><i class="ph ph-browser"></i>Get started</span><span class="dhead__meta">5 min read</span></div><h1 id="the-local-web-dashboard">The local web dashboard</h1>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads web                 # → http://127.0.0.1:8787
+<div class="docs__rail"><nav class="dsb" id="dsb" aria-label="Docs">
+<ul class="dsb__list"><li><a class="dsb__link" href="index.html">Overview</a></li></ul>
+<p class="dsb__sec" id="dsb-get-started">Get started</p><ul class="dsb__list" aria-labelledby="dsb-get-started"><li><a class="dsb__link" href="quickstart.html">Quickstart</a></li><li><a class="dsb__link" href="web.html" aria-current="page">Web dashboard</a></li></ul>
+<p class="dsb__sec" id="dsb-guides">Guides</p><ul class="dsb__list" aria-labelledby="dsb-guides"><li><a class="dsb__link" href="finding.html">Finding leads</a></li><li><a class="dsb__link" href="workspace.html">Workspace</a></li><li><a class="dsb__link" href="sequences.html">Sequences</a></li><li><a class="dsb__link" href="from-apollo.html">Moving from Apollo</a></li><li><a class="dsb__link" href="workflows.html">Workflows</a></li><li><a class="dsb__link" href="deliverability.html">Deliverability</a></li><li><a class="dsb__link" href="sending.html">Sending</a></li><li><a class="dsb__link" href="timed-runs.html">Timed runs</a></li><li><a class="dsb__link" href="automation.html">Automation and assistant</a></li><li><a class="dsb__link" href="mcp.html">Claude, Cursor, and MCP</a></li><li><a class="dsb__link" href="sources.html">Add a source</a></li></ul>
+<p class="dsb__sec" id="dsb-reference">Reference</p><ul class="dsb__list" aria-labelledby="dsb-reference"><li><a class="dsb__link" href="architecture.html">Architecture</a></li><li><a class="dsb__link" href="how-it-works.html">Email engine</a></li><li><a class="dsb__link" href="responsible-use.html">Responsible use</a></li><li><a class="dsb__link" href="licensing.html">Licensing</a></li></ul>
+<p class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" rel="noopener">Ask the community<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" rel="noopener">Report an issue<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p>
+</nav></div>
+<div class="docs__body">
+<main class="docs__main" id="main" tabindex="-1"><article class="prose">
+<div class="dmeta"><nav class="dmeta__crumb" aria-label="Breadcrumb"><a href="index.html">Docs</a><span aria-hidden="true">/</span><span>Get started</span></nav><span class="dmeta__time">5 min read</span></div><h1 id="the-local-web-dashboard">The local web dashboard</h1>
+<div class="codeblock"><pre class="code"><code>openleads web                 # → http://127.0.0.1:8787
 openleads web --port 9000     # custom port
 openleads web --no-open       # don&#x27;t auto-open a browser
-openleads demo                # the same dashboard on an invented demo workspace</code></pre></div>
+openleads demo                # the same dashboard on an invented demo workspace</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <p>A full sales workspace in your browser — prospecting, a people and company database, lists, sequences, tasks, deals, templates, analytics and workflows — running on the same engine and the same local database as the CLI.</p>
 <hr/>
 <h2 id="local-first-by-construction" class="anchored"><a class="hlink" href="#local-first-by-construction">#</a>Local-first, by construction</h2>
-<ul><li><strong>stdlib only.</strong> The server is a <code>ThreadingHTTPServer</code> from Python's standard library (<code>openleads/web/server.py</code>). No Flask, no Node, no build step.</li><li><strong>Bound to localhost.</strong> It listens on <code>127.0.0.1</code>, not reachable from your network.</li><li><strong>Pre-built UI.</strong> The app is plain ES modules and CSS committed under <code>openleads/web/static/</code> and shipped in the wheel. End users need <strong>no toolchain</strong>.</li><li><strong>No external requests from the page.</strong> A strict same-origin Content-Security-Policy blocks third-party scripts, styles and fonts. System fonts, no CDN, no analytics: nothing phones home.</li></ul>
+<ul><li><strong>stdlib only.</strong> The server is a <code>ThreadingHTTPServer</code> from Python's standard library (<code>openleads/web/server.py</code>). No Flask, no Node, no build step.</li><li><strong>Bound to localhost.</strong> It listens on <code>127.0.0.1</code>, not reachable from your network.</li><li><strong>Pre-built UI.</strong> The app is plain ES modules and CSS committed under <code>openleads/web/static/</code> and shipped in the wheel. End users need <strong>no toolchain</strong>.</li><li><strong>No external requests from the page.</strong> A strict same-origin Content-Security-Policy blocks third-party scripts, styles and fonts. The typeface ships inside the package, and there is no CDN and no analytics: nothing phones home.</li></ul>
 <h2 id="the-pages" class="anchored"><a class="hlink" href="#the-pages">#</a>The pages</h2>
 <div class="tablewrap"><table><thead><tr><th>Group</th><th>Page</th><th>What</th></tr></thead><tbody><tr><td>Workspace</td><td><strong>Home</strong></td><td>KPIs with trends (contacts, sends, reply rate, pipeline), a sends chart, the stage funnel, today's tasks, active sequences, recent activity and a setup checklist</td></tr><tr><td></td><td><strong>Find people</strong></td><td>Plain-English search across every free source; results stream in, already scored and saved</td></tr><tr><td></td><td><strong>People</strong></td><td>The contact database: filter sidebar with live counts, saved searches, configurable columns, bulk actions on a selection or every matching row, and a full contact record</td></tr><tr><td></td><td><strong>Companies</strong></td><td>Accounts with tech stack, size, industry and stage; profile any company from its website</td></tr><tr><td></td><td><strong>Lists</strong></td><td>People and company lists as cards; open, enroll, export</td></tr><tr><td>Engage</td><td><strong>Sequences</strong></td><td>Step timeline editor with A/B variants, live preview, contacts and Run now (<a href="sequences.html">guide</a>)</td></tr><tr><td></td><td><strong>Tasks</strong></td><td>Overdue / Today / Upcoming queue and a one-at-a-time focus mode</td></tr><tr><td></td><td><strong>Templates</strong></td><td>Reusable emails with variables, spintax and a live preview</td></tr><tr><td></td><td><strong>Compose &amp; send</strong></td><td>One-off drafts for a set of people, edited inline, dry-run or live</td></tr><tr><td>Pipeline</td><td><strong>Deals</strong></td><td>Drag-and-drop board with weighted forecast and deal records</td></tr><tr><td></td><td><strong>Analytics</strong></td><td>Sending, replies and conversion over time</td></tr><tr><td></td><td><strong>Activity</strong></td><td>The workspace-wide feed, grouped by day, filterable</td></tr><tr><td>Automate</td><td><strong>Workflows</strong></td><td>Recipes drawn as a node canvas (<a href="workflows.html">guide</a>)</td></tr><tr><td></td><td><strong>Recipes &amp; watchers</strong></td><td>Scheduled searches, alerts and run history</td></tr><tr><td></td><td><strong>Import &amp; enrich</strong></td><td>Import a CSV with column mapping; find and verify emails for a list</td></tr><tr><td>Settings</td><td><strong>Settings</strong></td><td>Sender, mailbox, sending policy, AI, integrations, <strong>ICP scoring</strong>, and <strong>Data &amp; backup</strong></td></tr><tr><td></td><td><strong>Data health</strong></td><td>What to fix before sending, and duplicate merge</td></tr><tr><td></td><td><strong>Doctor</strong></td><td>The <code>openleads doctor</code> checks</td></tr></tbody></table></div>
 <p>The <a href="workspace.html">workspace guide</a> covers what each of these does with your data.</p>
@@ -85,44 +63,58 @@ openleads demo                # the same dashboard on an invented demo workspace
 <p>Press <strong>⌘K</strong> (Ctrl+K) or <strong>/</strong> anywhere to search people and companies, jump to a page, or run an action (new task, deal, sequence, template or list; import a CSV; start the task queue; find new people for what you typed).</p>
 <div class="tablewrap"><table><thead><tr><th>Keys</th><th>Does</th></tr></thead><tbody><tr><td>⌘K · /</td><td>Command palette</td></tr><tr><td>G then H, F, P, C, L, S, T, M, D, A, V, W, I</td><td>Go to Home, Find, People, Companies, Lists, Sequences, Tasks, Templates, Deals, Analytics, Activity, Workflows, Import</td></tr><tr><td>N</td><td>The page's New button</td></tr><tr><td>T</td><td>Toggle dark mode</td></tr><tr><td>?</td><td>List every shortcut</td></tr><tr><td>Enter · S · Z</td><td>In the task queue: complete, skip, snooze</td></tr><tr><td>[ · ]</td><td>On a focused deal card: move it a stage back or forward</td></tr></tbody></table></div>
 <p>Shortcuts never fire while you're typing or inside a dialog.</p>
+<h3 id="reading-an-email-address" class="anchored"><a class="hlink" href="#reading-an-email-address">#</a>Reading an email address</h3>
+<p>Every address carries one small mark. Its <strong>shape</strong> says how OpenLeads knows the address, and its <strong>color</strong> says whether it will deliver:</p>
+<div class="tablewrap"><table><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>filled square</td><td><strong>Found</strong>: published on the web or confirmed by the mail server</td></tr><tr><td>half-filled square</td><td><strong>Pattern</strong>: built from an address format seen at that company</td></tr><tr><td>outlined square</td><td><strong>Guessed</strong>: a common format with nothing confirming it</td></tr><tr><td>green, amber, red</td><td>Deliverable, risky, will bounce</td></tr></tbody></table></div>
+<p>Hover a mark for the full reason; the contact record lists every check. The same marks appear in tables, records, search results and exports.</p>
 <h3 id="light-and-dark" class="anchored"><a class="hlink" href="#light-and-dark">#</a>Light and dark</h3>
-<p>The interface follows your system theme; the moon/sun button (or <strong>T</strong>) pins one. It respects <code>prefers-reduced-motion</code> and works down to phone width.</p>
+<p>The interface follows your system theme; the moon/sun button (or <strong>T</strong>) pins one. It uses Atkinson Hyperlegible, a typeface drawn so that characters like <code>l</code>, <code>I</code> and <code>1</code> can't be mistaken for each other, which matters when you're reading email addresses. It respects <code>prefers-reduced-motion</code> and works down to phone width.</p>
 <h2 id="the-json-api" class="anchored"><a class="hlink" href="#the-json-api">#</a>The JSON API</h2>
 <p>The server exposes a JSON API that the UI uses and you can script against. Long-running actions stream <strong>newline-delimited JSON</strong> so progress renders live.</p>
 <div class="tablewrap"><table><thead><tr><th>Area</th><th>Endpoints</th></tr></thead><tbody><tr><td>Engine</td><td><code>GET /api/state</code> · <code>GET /api/sources</code> · <code>POST /api/find</code> (stream) · <code>/api/verify</code> · <code>/api/write</code> · <code>/api/send</code> (stream) · <code>/api/run</code> (stream) · <code>/api/enrich</code> (stream)</td></tr><tr><td>Workspace</td><td><code>GET /api/meta</code> · <code>/api/home</code> · <code>/api/health</code> · <code>/api/activity</code></td></tr><tr><td>People</td><td><code>POST /api/people/search</code> · <code>/facets</code> · <code>/create</code> · <code>/update</code> · <code>/tags</code> · <code>/bulk</code> · <code>/export</code> · <code>GET /api/people/get</code></td></tr><tr><td>Companies</td><td><code>POST /api/companies/search</code> · <code>/create</code> · <code>/update</code> · <code>/bulk</code> · <code>/profile</code> · <code>/enrich</code> (stream) · <code>GET /api/companies/get</code></td></tr><tr><td>Lists, tags, notes</td><td><code>GET /api/lists</code> · <code>POST /api/lists/save</code> · <code>/add</code> · <code>/remove</code> · <code>/delete</code> · <code>GET /api/tags</code> · <code>POST /api/notes/add</code> · …</td></tr><tr><td>Sequences</td><td><code>GET /api/sequences</code> · <code>/get</code> · <code>POST /api/sequences/save</code> · <code>/status</code> · <code>/enroll</code> · <code>/unenroll</code> · <code>/pause</code> · <code>/preview</code> · <code>/run</code> (stream)</td></tr><tr><td>Tasks, deals</td><td><code>GET /api/tasks</code> · <code>POST /api/tasks/save</code> · <code>/complete</code> · <code>/skip</code> · <code>/reopen</code> · <code>GET /api/deals</code> · <code>POST /api/deals/save</code> · <code>/move</code></td></tr><tr><td>Templates</td><td><code>GET /api/templates</code> · <code>POST /api/templates/save</code> · <code>/preview</code> · <code>/delete</code></td></tr><tr><td>Data</td><td><code>POST /api/import/preview</code> · <code>/api/import</code> · <code>GET /api/duplicates</code> · <code>POST /api/duplicates/merge</code> · <code>GET /api/scoring</code> · <code>POST /api/scoring/save</code> · <code>/preview</code> · <code>/explain</code></td></tr><tr><td>Settings</td><td><code>GET/POST /api/settings</code> · <code>GET /api/doctor</code></td></tr></tbody></table></div>
 <p>Errors come back as JSON with an <code>error</code> message and a 4xx status; the server never sends a traceback to the client.</p>
 <p>Stream events look like:</p>
-<div class="codeblock"><div class="codeblock__bar"><span>json</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>{&quot;type&quot;:&quot;phase&quot;,&quot;message&quot;:&quot;searching yc…&quot;}
+<div class="codeblock"><pre class="code"><code>{&quot;type&quot;:&quot;phase&quot;,&quot;message&quot;:&quot;searching yc…&quot;}
 {&quot;type&quot;:&quot;lead&quot;,&quot;lead&quot;:{&quot;email&quot;:&quot;ada@acme.ai&quot;,&quot;tier&quot;:&quot;safe&quot;,&quot;score&quot;:96, ...}}
-{&quot;type&quot;:&quot;done&quot;,&quot;count&quot;:41,&quot;safe&quot;:41,&quot;risky&quot;:9,&quot;leads&quot;:[...]}</code></pre></div>
+{&quot;type&quot;:&quot;done&quot;,&quot;count&quot;:41,&quot;safe&quot;:41,&quot;risky&quot;:9,&quot;leads&quot;:[...]}</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <h2 id="security" class="anchored"><a class="hlink" href="#security">#</a>Security</h2>
 <p>The dashboard can send email from your mailbox, so it treats every other website open in your browser as hostile:</p>
 <ul><li><strong>Localhost only.</strong> It binds <code>127.0.0.1</code> and refuses any request whose <code>Host</code> header isn't a loopback name, which stops DNS-rebinding attacks. Add names with <code>OPENLEADS_ALLOWED_HOSTS=myhost.lan</code> if you put it behind your own proxy.</li><li><strong>No cross-site requests.</strong> Requests marked cross-site by the browser (<code>Sec-Fetch-Site</code>), or carrying an <code>Origin</code> other than the dashboard's own (including <code>Origin: null</code> from sandboxed frames and <code>file://</code> pages), get <code>403</code>.</li><li><strong>JSON only.</strong> Every write must be <code>Content-Type: application/json</code> (<code>415</code> otherwise), which a plain HTML form on another site can't send. Bodies over 25 MB get <code>413</code>; malformed JSON gets <code>400</code>.</li><li><strong>Can't be framed.</strong> <code>X-Frame-Options: DENY</code> and <code>frame-ancestors &#x27;none&#x27;</code>.</li><li><strong>Strict headers.</strong> Same-origin CSP with no inline scripts, <code>nosniff</code>, <code>Referrer-Policy: no-referrer</code>, same-origin opener and resource policies.</li><li><strong>Secrets stay put.</strong> Stored <code>chmod 600</code> on disk, shown masked in the UI, never sent back to the browser in full. Static files are path-traversal guarded.</li></ul>
 <p>If you want it beyond localhost (e.g. a home server), put it behind your own authenticated reverse proxy and allow its host name. OpenLeads deliberately ships no login because it's built to run on the machine you're sitting at.</p>
-<nav class="prevnext" aria-label="Previous and next page">
-<a class="pn pn--prev" href="quickstart.html"><span><i class="ph ph-arrow-left"></i>Previous</span><b>Quickstart</b></a>
-<a class="pn pn--next" href="finding.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Finding leads</b></a>
-</nav>
+<nav class="prevnext" aria-label="Previous and next page"><a class="pn pn--prev" href="quickstart.html" rel="prev"><span class="pn__dir"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Previous</span><span class="pn__title">Quickstart</span></a><a class="pn pn--next" href="finding.html" rel="next"><span class="pn__dir">Next<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-right"/></svg></span><span class="pn__title">Finding leads</span></a></nav>
 </article></main>
-<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#local-first-by-construction">Local-first, by construction</a><a class="toc__l2" href="#the-pages">The pages</a><a class="toc__l3" href="#records-and-deep-links">Records and deep links</a><a class="toc__l3" href="#command-palette-and-shortcuts">Command palette and shortcuts</a><a class="toc__l3" href="#light-and-dark">Light and dark</a><a class="toc__l2" href="#the-json-api">The JSON API</a><a class="toc__l2" href="#security">Security</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/web.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
-</div>
-<footer class="footer docs-footer">
-  <div class="container footer__legal">
+<nav class="dtoc" aria-label="On this page"><p class="dtoc__h">On this page</p><ul class="dtoc__list"><li><a class="dtoc__l2" href="#local-first-by-construction">Local-first, by construction</a></li><li><a class="dtoc__l2" href="#the-pages">The pages</a></li><li><a class="dtoc__l3" href="#records-and-deep-links">Records and deep links</a></li><li><a class="dtoc__l3" href="#command-palette-and-shortcuts">Command palette and shortcuts</a></li><li><a class="dtoc__l3" href="#reading-an-email-address">Reading an email address</a></li><li><a class="dtoc__l3" href="#light-and-dark">Light and dark</a></li><li><a class="dtoc__l2" href="#the-json-api">The JSON API</a></li><li><a class="dtoc__l2" href="#security">Security</a></li></ul><p class="dtoc__edit"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/web.md" rel="noopener">Edit this page<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p></nav>
+<footer class="footer dfoot">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a class="brand" href="../index.html"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+      <p>Lead finding and a sales workspace that run on your own machine.</p>
+    </div>
+    <div class="footer__cols">
+      <div><h4>Product</h4><a href="../index.html#labels">How it labels</a><a href="../index.html#benchmark">Benchmark</a><a href="../index.html#workspace">Workspace</a><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
+      <div><h4>Project</h4><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a><a href="https://pypi.org/project/openleads/">PyPI</a><a href="https://www.npmjs.com/package/openleads">npm</a><a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></div>
+    </div>
+  </div>
+  <div class="footer__legal">
     <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
-    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a> · <a href="https://www.npmjs.com/package/openleads">npm</a> · <a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md">Commercial license</a></span>
   </div>
 </footer>
-
+</div>
+</div>
 <div class="search" id="search" hidden>
   <div class="search__backdrop" data-search-close></div>
   <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
-    <label class="search__field"><i class="ph ph-magnifying-glass"></i>
-      <input id="searchInput" type="search" placeholder="Search the docs" autocomplete="off" spellcheck="false" />
-      <kbd data-search-close>Esc</kbd></label>
-    <ul class="search__results" id="searchResults" role="listbox"></ul>
-    <p class="search__foot"><span><kbd>↑</kbd><kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span></p>
+    <div class="search__field"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+      <input id="searchInput" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="searchResults" aria-autocomplete="list" />
+      <button class="search__esc" type="button" data-search-close aria-label="Close search"><span>Esc</span><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+    </div>
+    <ul class="search__results" id="searchResults" role="listbox" aria-label="Results"></ul>
+    <p class="search__empty" id="searchEmpty" role="status" hidden></p>
+    <p class="search__foot"><span><kbd>↑</kbd> <kbd>↓</kbd> to move</span><span><kbd>Enter</kbd> to open</span><span><kbd>Esc</kbd> to close</span></p>
   </div>
 </div>
-<script src="docs.js?v=6"></script>
+<script src="docs.js?v=10" defer></script>
 </body>
 </html>

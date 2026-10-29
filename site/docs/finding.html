@@ -5,74 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Finding leads: the federated engine · OpenLeads docs</title>
 <meta name="description" content="How one sentence is routed across ten free sources. OpenLeads documentation." />
-<meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#131418" media="(prefers-color-scheme: dark)" />
 <meta property="og:title" content="Finding leads: the federated engine · OpenLeads docs" />
 <meta property="og:description" content="How one sentence is routed across ten free sources. OpenLeads documentation." />
 <meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-<link rel="stylesheet" href="../styles.css?v=6" />
-<link rel="stylesheet" href="docs.css?v=6" />
+<link rel="preload" href="../fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../styles.css?v=10" />
+<link rel="stylesheet" href="docs.css?v=10" />
 </head>
 <body class="docs">
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol><symbol id="i-search" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.75" cy="8.75" r="5.25"/><path d="m12.75 12.75 4 4"/></symbol><symbol id="i-menu" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h13M3.5 10h13M3.5 14h13"/></symbol><symbol id="i-close" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 5 10 10M15 5 5 15"/></symbol><symbol id="i-arrow-left" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H4m5-5-5 5 5 5"/></symbol><symbol id="i-arrow-right" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12m-5-5 5 5-5 5"/></symbol><symbol id="i-external" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13 13 7M8 7h5v5"/></symbol></svg>
+<a class="skip" href="#main">Skip to content</a>
 <header class="nav" id="nav">
-  <button class="dsb-toggle" id="dsbToggle" aria-label="Open the docs menu" aria-expanded="false"><i class="ph ph-list"></i></button>
   <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
-  <span class="nav__docs-tag">Docs</span>
   <nav class="nav__links" aria-label="Primary">
-    <a href="../index.html#workflow">Workflows</a>
-    <a href="../index.html#workspace">Product</a>
-    <a href="../index.html#pricing">Pricing</a>
+    <a href="../index.html#labels">How it labels</a>
+    <a href="../index.html#benchmark">Benchmark</a>
+    <a href="../index.html#workspace">Workspace</a>
     <a href="index.html" class="is-active">Docs</a>
   </nav>
   <div class="nav__cta">
-    <button class="search-btn" type="button" data-search-open aria-label="Search the docs"><i class="ph ph-magnifying-glass"></i><span>Search</span><kbd>⌘K</kbd></button>
-    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener" aria-label="Star OpenLeads on GitHub">
-      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>
-      <span class="gh-btn__label">Star</span><span class="gh-btn__count" data-stars hidden></span>
+    <button class="dsearch" type="button" data-search-open aria-label="Search the docs" aria-keyshortcuts="Meta+K Control+K /"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg><span class="dsearch__label">Search</span><kbd data-mod-k>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" rel="noopener" aria-label="OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg><span class="gh-btn__label">GitHub</span><span class="gh-btn__count" data-stars hidden></span>
     </a>
+    <button class="dmenu" id="dsbToggle" type="button" aria-label="Open the docs menu" aria-controls="dsb" aria-expanded="false"><svg class="ico ico--open" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><svg class="ico ico--close" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
   </div>
 </header>
 <div class="docs__shell">
-<nav class="dsb" id="dsb" aria-label="Docs">
-<button class="dsb__search" type="button" data-search-open><i class="ph ph-magnifying-glass"></i>Search<kbd>⌘K</kbd></button>
-<a class="dsb__link dsb__home" href="index.html"><i class="ph ph-house"></i>Overview</a>
-<p class="dsb__sec">Get started</p>
-<a class="dsb__link" href="quickstart.html"><i class="ph ph-rocket-launch"></i>Quickstart</a>
-<a class="dsb__link" href="web.html"><i class="ph ph-browser"></i>Web dashboard</a>
-<p class="dsb__sec">Guides</p>
-<a class="dsb__link is-active" href="finding.html" aria-current="page"><i class="ph ph-magnifying-glass"></i>Finding leads</a>
-<a class="dsb__link" href="workspace.html"><i class="ph ph-address-book"></i>Workspace</a>
-<a class="dsb__link" href="sequences.html"><i class="ph ph-list-numbers"></i>Sequences</a>
-<a class="dsb__link" href="from-apollo.html"><i class="ph ph-arrow-square-in"></i>Moving from Apollo</a>
-<a class="dsb__link" href="workflows.html"><i class="ph ph-flow-arrow"></i>Workflows</a>
-<a class="dsb__link" href="deliverability.html"><i class="ph ph-seal-check"></i>Deliverability</a>
-<a class="dsb__link" href="sending.html"><i class="ph ph-paper-plane-tilt"></i>Sending</a>
-<a class="dsb__link" href="timed-runs.html"><i class="ph ph-clock"></i>Timed runs</a>
-<a class="dsb__link" href="automation.html"><i class="ph ph-robot"></i>Automation and assistant</a>
-<a class="dsb__link" href="mcp.html"><i class="ph ph-plugs-connected"></i>Claude, Cursor, and MCP</a>
-<a class="dsb__link" href="sources.html"><i class="ph ph-puzzle-piece"></i>Add a source</a>
-<p class="dsb__sec">Reference</p>
-<a class="dsb__link" href="architecture.html"><i class="ph ph-tree-structure"></i>Architecture</a>
-<a class="dsb__link" href="how-it-works.html"><i class="ph ph-envelope-open"></i>Email engine</a>
-<a class="dsb__link" href="responsible-use.html"><i class="ph ph-scales"></i>Responsible use</a>
-<a class="dsb__link" href="licensing.html"><i class="ph ph-certificate"></i>Licensing</a>
-<div class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" target="_blank" rel="noopener"><i class="ph ph-chats-circle"></i>Ask the community</a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" target="_blank" rel="noopener"><i class="ph ph-bug"></i>Report an issue</a></div>
-</nav>
-<main class="docs__main" id="main"><article class="prose">
-<div class="docs__crumb"><a href="index.html">Docs</a><i class="ph ph-caret-right"></i><span>Guides</span><i class="ph ph-caret-right"></i><span>Finding leads</span></div>
-<div class="dhead"><span class="dhead__sec"><i class="ph ph-magnifying-glass"></i>Guides</span><span class="dhead__meta">3 min read</span></div><h1 id="finding-leads-the-federated-engine">Finding leads: the federated engine</h1>
+<div class="docs__rail"><nav class="dsb" id="dsb" aria-label="Docs">
+<ul class="dsb__list"><li><a class="dsb__link" href="index.html">Overview</a></li></ul>
+<p class="dsb__sec" id="dsb-get-started">Get started</p><ul class="dsb__list" aria-labelledby="dsb-get-started"><li><a class="dsb__link" href="quickstart.html">Quickstart</a></li><li><a class="dsb__link" href="web.html">Web dashboard</a></li></ul>
+<p class="dsb__sec" id="dsb-guides">Guides</p><ul class="dsb__list" aria-labelledby="dsb-guides"><li><a class="dsb__link" href="finding.html" aria-current="page">Finding leads</a></li><li><a class="dsb__link" href="workspace.html">Workspace</a></li><li><a class="dsb__link" href="sequences.html">Sequences</a></li><li><a class="dsb__link" href="from-apollo.html">Moving from Apollo</a></li><li><a class="dsb__link" href="workflows.html">Workflows</a></li><li><a class="dsb__link" href="deliverability.html">Deliverability</a></li><li><a class="dsb__link" href="sending.html">Sending</a></li><li><a class="dsb__link" href="timed-runs.html">Timed runs</a></li><li><a class="dsb__link" href="automation.html">Automation and assistant</a></li><li><a class="dsb__link" href="mcp.html">Claude, Cursor, and MCP</a></li><li><a class="dsb__link" href="sources.html">Add a source</a></li></ul>
+<p class="dsb__sec" id="dsb-reference">Reference</p><ul class="dsb__list" aria-labelledby="dsb-reference"><li><a class="dsb__link" href="architecture.html">Architecture</a></li><li><a class="dsb__link" href="how-it-works.html">Email engine</a></li><li><a class="dsb__link" href="responsible-use.html">Responsible use</a></li><li><a class="dsb__link" href="licensing.html">Licensing</a></li></ul>
+<p class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" rel="noopener">Ask the community<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" rel="noopener">Report an issue<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p>
+</nav></div>
+<div class="docs__body">
+<main class="docs__main" id="main" tabindex="-1"><article class="prose">
+<div class="dmeta"><nav class="dmeta__crumb" aria-label="Breadcrumb"><a href="index.html">Docs</a><span aria-hidden="true">/</span><span>Guides</span></nav><span class="dmeta__time">3 min read</span></div><h1 id="finding-leads-the-federated-engine">Finding leads: the federated engine</h1>
 <p class="lede">In v4, you don't pick a data source. You describe who you want, and OpenLeads <strong>federates</strong> the query across the public sources that fit it, finds the people behind each company, verifies their email, and merges the results. This is how the big tools feel like "one box that just works", done free, keyless, and locally.</p>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads find &quot;marketing agencies in Miami&quot;
+<div class="codeblock"><pre class="code"><code>openleads find &quot;marketing agencies in Miami&quot;
 openleads find &quot;fintech founders, verified only&quot;
 openleads find &quot;dentists in Austin&quot;
-openleads find &quot;rust developers in Berlin&quot;</code></pre></div>
+openleads find &quot;rust developers in Berlin&quot;</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <h2 id="how-a-query-is-routed" class="anchored"><a class="hlink" href="#how-a-query-is-routed">#</a>How a query is routed</h2>
 <p>The planner reads the <em>shape</em> of your request:</p>
 <div class="tablewrap"><table><thead><tr><th>Your query looks like…</th><th>Federates across</th></tr></thead><tbody><tr><td>a place + a business category ("agencies in Miami", "law firms in London")</td><td><code>local</code> (OpenStreetMap)</td></tr><tr><td>founders / startups ("fintech founders", "YC companies")</td><td><code>yc</code> + <code>hn</code></td></tr><tr><td>an industry / companies ("video game companies in Japan")</td><td><code>companies</code> (Wikidata) + <code>edgar</code></td></tr><tr><td>developers ("rust developers")</td><td><code>github</code></td></tr><tr><td>researchers ("ML researchers")</td><td><code>openalex</code></td></tr><tr><td>doctors / clinics ("dentists in Austin")</td><td><code>npi</code> + <code>local</code></td></tr><tr><td>a typed domain ("emails at stripe.com")</td><td><code>domains</code></td></tr></tbody></table></div>
@@ -85,49 +63,62 @@ openleads find &quot;rust developers in Berlin&quot;</code></pre></div>
 <p><code>openleads sources</code> lists them; <code>openleads sources info &lt;name&gt;</code> shows one. You can add your own by dropping a <code>*.py</code> file in <code>~/.openleads/sources/</code>. See <a href="sources.html">Add a source</a>.</p>
 <h2 id="bring-your-own-list-enrichment" class="anchored"><a class="hlink" href="#bring-your-own-list-enrichment">#</a>Bring your own list: enrichment</h2>
 <p>Already have names, companies, or domains? Run the same waterfall over your list:</p>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads enrich my_list.csv -o enriched.csv</code></pre></div>
+<div class="codeblock"><pre class="code"><code>openleads enrich my_list.csv -o enriched.csv</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <p>Headers are matched forgivingly (<code>First Name</code>, <code>company</code>, <code>Domain</code>, <code>Email</code>, …). A row with an email is verified; a row with a name + domain is resolved and verified; a row with only a domain is harvested + expanded into people. Every row comes back tiered (<code>safe</code>/<code>risky</code>/<code>bad</code>) and is saved to your local CRM.</p>
 <h2 id="make-it-hands-free-recipes-watchers" class="anchored"><a class="hlink" href="#make-it-hands-free-recipes-watchers">#</a>Make it hands-free: recipes &amp; watchers</h2>
 <p>A <strong>recipe</strong> saves an ICP + message + schedule + export and runs itself:</p>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads recipe add growth &quot;marketing agencies in Miami&quot; \
+<div class="codeblock"><pre class="code"><code>openleads recipe add growth &quot;marketing agencies in Miami&quot; \
   --at 09:00 --send --context &quot;our local-SEO service&quot; --export sheets
 openleads recipe run growth          # dry-run now
-openleads schedule --at 09:00        # arm the on-device daily drip</code></pre></div>
+openleads schedule --at 09:00        # arm the on-device daily drip</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <p>The daily drip syncs your inbox (replies/bounces stop sequences), runs due recipes, fires watchers, then sends follow-ups. A <strong>watcher</strong> delivers only <em>new</em> matches each run:</p>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads watch add new-miami &quot;marketing agencies in Miami&quot; --sink webhook</code></pre></div>
+<div class="codeblock"><pre class="code"><code>openleads watch add new-miami &quot;marketing agencies in Miami&quot; --sink webhook</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
 <h2 id="export-anywhere" class="anchored"><a class="hlink" href="#export-anywhere">#</a>Export anywhere</h2>
-<div class="codeblock"><div class="codeblock__bar"><span>bash</span><button class="codeblock__copy" type="button" aria-label="Copy code"><i class="ph ph-copy"></i><span>Copy</span></button></div><pre class="code"><code>openleads export csv --target leads.csv
+<div class="codeblock"><pre class="code"><code>openleads export csv --target leads.csv
 openleads export sheets                       # a Google-Sheets-ready CSV + import hint
 openleads export webhook --target https://hooks.example.com/leads
 openleads export notion                       # needs notion_token + notion_database_id
-openleads export airtable                     # needs airtable_token + airtable_base</code></pre></div>
-<p><code>csv</code> · <code>json</code> · <code>ndjson</code> · <code>sheets</code> · <code>webhook</code> are keyless; <code>notion</code> and <code>airtable</code> light up once you set their token in <code>openleads config</code>.</p>
+openleads export airtable                     # needs airtable_token + airtable_base
+openleads export hubspot                      # needs hubspot_token; creates/updates contacts by email</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p><code>csv</code> · <code>json</code> · <code>ndjson</code> · <code>sheets</code> · <code>webhook</code> are keyless; <code>notion</code>, <code>airtable</code> and <code>hubspot</code> light up once you set their token in <code>openleads config</code>.</p>
+<p>For HubSpot, set <code>hubspot_token</code> in Settings → Integrations, or provide it through <code>HUBSPOT_TOKEN</code>. Use a private app token with <code>crm.objects.contacts.write</code>. No token means a clear error and no network request. Every lead needs an email; missing emails reject the export before any contacts are written.</p>
+<p>HubSpot exports name, company, job title, phone, website, city and country when present. Existing contacts are matched by email and only populated fields are updated; blank fields do not clear CRM values, and an existing primary email is left alone. New contacts receive the supplied email. Exports stop on the first failed request and report the number of confirmed contacts. A timeout or invalid response can leave the last write unconfirmed; check HubSpot before retrying. Rate limits are surfaced without automatic retries.</p>
 <hr/>
 <p>Next: <a href="how-it-works.html">Email engine</a> · <a href="deliverability.html">Deliverability</a> · <a href="automation.html">Automation &amp; assistant</a> · <a href="web.html">Web dashboard</a>.</p>
-<nav class="prevnext" aria-label="Previous and next page">
-<a class="pn pn--prev" href="web.html"><span><i class="ph ph-arrow-left"></i>Previous</span><b>Web dashboard</b></a>
-<a class="pn pn--next" href="workspace.html"><span>Next<i class="ph ph-arrow-right"></i></span><b>Workspace</b></a>
-</nav>
+<nav class="prevnext" aria-label="Previous and next page"><a class="pn pn--prev" href="web.html" rel="prev"><span class="pn__dir"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Previous</span><span class="pn__title">Web dashboard</span></a><a class="pn pn--next" href="workspace.html" rel="next"><span class="pn__dir">Next<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-right"/></svg></span><span class="pn__title">Workspace</span></a></nav>
 </article></main>
-<aside class="dtoc"><p class="dtoc__h">On this page</p><a class="toc__l2" href="#how-a-query-is-routed">How a query is routed</a><a class="toc__l2" href="#from-companies-to-people">From companies to people</a><a class="toc__l2" href="#the-sources">The sources</a><a class="toc__l2" href="#bring-your-own-list-enrichment">Bring your own list: enrichment</a><a class="toc__l2" href="#make-it-hands-free-recipes-watchers">Make it hands-free: recipes &amp; watchers</a><a class="toc__l2" href="#export-anywhere">Export anywhere</a><div class="dtoc__links"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/finding.md" target="_blank" rel="noopener"><i class="ph ph-pencil-simple"></i>Edit this page</a><a href="https://github.com/Samyrrrrrr990/openleads" target="_blank" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg>Star on GitHub</a></div></aside>
-</div>
-<footer class="footer docs-footer">
-  <div class="container footer__legal">
+<nav class="dtoc" aria-label="On this page"><p class="dtoc__h">On this page</p><ul class="dtoc__list"><li><a class="dtoc__l2" href="#how-a-query-is-routed">How a query is routed</a></li><li><a class="dtoc__l2" href="#from-companies-to-people">From companies to people</a></li><li><a class="dtoc__l2" href="#the-sources">The sources</a></li><li><a class="dtoc__l2" href="#bring-your-own-list-enrichment">Bring your own list: enrichment</a></li><li><a class="dtoc__l2" href="#make-it-hands-free-recipes-watchers">Make it hands-free: recipes &amp; watchers</a></li><li><a class="dtoc__l2" href="#export-anywhere">Export anywhere</a></li></ul><p class="dtoc__edit"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/finding.md" rel="noopener">Edit this page<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p></nav>
+<footer class="footer dfoot">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a class="brand" href="../index.html"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+      <p>Lead finding and a sales workspace that run on your own machine.</p>
+    </div>
+    <div class="footer__cols">
+      <div><h4>Product</h4><a href="../index.html#labels">How it labels</a><a href="../index.html#benchmark">Benchmark</a><a href="../index.html#workspace">Workspace</a><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
+      <div><h4>Project</h4><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a><a href="https://pypi.org/project/openleads/">PyPI</a><a href="https://www.npmjs.com/package/openleads">npm</a><a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></div>
+    </div>
+  </div>
+  <div class="footer__legal">
     <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
-    <span><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a> · <a href="https://pypi.org/project/openleads/">PyPI</a> · <a href="https://www.npmjs.com/package/openleads">npm</a> · <a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md">Commercial license</a></span>
   </div>
 </footer>
-
+</div>
+</div>
 <div class="search" id="search" hidden>
   <div class="search__backdrop" data-search-close></div>
   <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
-    <label class="search__field"><i class="ph ph-magnifying-glass"></i>
-      <input id="searchInput" type="search" placeholder="Search the docs" autocomplete="off" spellcheck="false" />
-      <kbd data-search-close>Esc</kbd></label>
-    <ul class="search__results" id="searchResults" role="listbox"></ul>
-    <p class="search__foot"><span><kbd>↑</kbd><kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span></p>
+    <div class="search__field"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+      <input id="searchInput" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="searchResults" aria-autocomplete="list" />
+      <button class="search__esc" type="button" data-search-close aria-label="Close search"><span>Esc</span><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+    </div>
+    <ul class="search__results" id="searchResults" role="listbox" aria-label="Results"></ul>
+    <p class="search__empty" id="searchEmpty" role="status" hidden></p>
+    <p class="search__foot"><span><kbd>↑</kbd> <kbd>↓</kbd> to move</span><span><kbd>Enter</kbd> to open</span><span><kbd>Esc</kbd> to close</span></p>
   </div>
 </div>
-<script src="docs.js?v=6"></script>
+<script src="docs.js?v=10" defer></script>
 </body>
 </html>
