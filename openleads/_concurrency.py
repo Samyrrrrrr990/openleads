@@ -29,6 +29,10 @@ from typing import Iterator
 DEADLINE: contextvars.ContextVar = contextvars.ContextVar("openleads_deadline", default=None)
 # The run's total budget in seconds (0 = unlimited); lets callers ask "how much is left?".
 BUDGET: contextvars.ContextVar = contextvars.ContextVar("openleads_budget", default=0.0)
+# The run's own deadline, kept while a step runs inside a shorter time window, so
+# running out of the window isn't mistaken for running out of the run's budget.
+RUN_DEADLINE: contextvars.ContextVar = contextvars.ContextVar("openleads_run_deadline",
+                                                              default=None)
 
 # How long past the deadline an in-order consumer waits for a task already running
 # before giving up on it. Network calls are clamped to the deadline, so this only
@@ -54,6 +58,30 @@ def fraction_left() -> float:
     if DEADLINE.get() is None or total <= 0:
         return 1.0
     return max(0.0, min(1.0, remaining() / total))
+
+
+def run_out() -> bool:
+    """True when the *run's* deadline has passed, not just a step's time window."""
+    dl = RUN_DEADLINE.get()
+    if dl is None:
+        dl = DEADLINE.get()
+    return dl is not None and time.monotonic() >= dl
+
+
+@contextmanager
+def window(seconds):
+    """Give one step at most ``seconds`` (and never past the run's deadline).
+
+    Network calls inside are clamped to the window; when it closes they are skipped
+    like at the end of a run, but the run itself carries on with its own budget.
+    """
+    keep = RUN_DEADLINE.get()
+    tok = RUN_DEADLINE.set(keep if keep is not None else DEADLINE.get())
+    try:
+        with deadline(seconds) as at:
+            yield at
+    finally:
+        RUN_DEADLINE.reset(tok)
 
 
 @contextmanager

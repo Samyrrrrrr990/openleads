@@ -313,6 +313,12 @@ BREAKER = CircuitBreaker()
 # left in the run for that round to be worth it.
 RETRY_ROUND_DELAY = 2.0
 RETRY_ROUND_MIN_SECONDS = 20.0
+# Overpass gets a slice of the run's budget, never all of it: when every mirror
+# is down or slow, the Nominatim fallback (and people discovery after it) still
+# needs time. A healthy Overpass answers a clamped city bbox in a few seconds.
+OVERPASS_SHARE = 0.45
+OVERPASS_MIN_SECONDS = 8.0
+OVERPASS_MAX_SECONDS = 30.0
 
 
 def overpass_mirrors() -> tuple:
@@ -413,13 +419,20 @@ class LocalSource(Source):
         selectors = category_selectors(term)
         name_filter = _name_filter(term) if selectors is _FALLBACK_SELECTORS else ""
         limit = max(query.count * 5, 50)
-        # The server-side timeout leaves room for the transfer inside the run budget.
+        # Overpass gets at most a share of what is left of the budget, and one slow
+        # mirror at most half of that, so a night when the main instance returns
+        # 502s or hangs still leaves time for the Nominatim fallback below.
         left = _concurrency.remaining()
-        server_timeout = 25 if left == float("inf") else int(max(5, min(25, left - 3)))
+        window = (OVERPASS_MAX_SECONDS if left == float("inf") else
+                  min(OVERPASS_MAX_SECONDS,
+                      max(min(OVERPASS_MIN_SECONDS, left * 0.6), left * OVERPASS_SHARE)))
+        per_mirror = max(6.0, window / 2)
+        server_timeout = int(max(5, min(25, per_mirror - 2)))
         ql = build_overpass_query(selectors, bbox.as_overpass(), name_filter, limit,
                                   timeout=server_timeout)
         reasons: list = []
-        data = run_overpass(ql, cache=self.cache, timeout=server_timeout + 5, reasons=reasons)
+        with _concurrency.window(window):
+            data = run_overpass(ql, cache=self.cache, timeout=per_mirror, reasons=reasons)
         if data is None:
             # Every Overpass instance failed (they're often overloaded). Nominatim
             # returns fewer businesses, but it answers.

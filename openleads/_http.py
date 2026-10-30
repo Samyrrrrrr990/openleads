@@ -77,7 +77,10 @@ def _record(url: str, reason: str, exc: BaseException | None = None) -> None:
     with _lock:
         _errors.append((url, reason))
     if isinstance(exc, BudgetExhausted):
-        runreport.deadline_hit()          # not an error: the run is out of time
+        # Not an error. Only the run's own deadline counts as "ran out of time";
+        # a step's shorter window closing (e.g. the Overpass slice) does not.
+        if _concurrency.run_out():
+            runreport.deadline_hit()
     else:
         runreport.http_error(url, reason)
 

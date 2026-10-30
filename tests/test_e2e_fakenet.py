@@ -77,3 +77,46 @@ def test_doctor_probes_every_source_endpoint(monkeypatch, capsys):
     doctor.print_source_probes(results)
     out = capsys.readouterr().out
     assert "Sources (live probes)" in out and "proxy or firewall" in out
+
+
+NOMINATIM_AUSTIN_DENTISTS = [
+    {"osm_id": 7700001, "name": "Barton Creek Dental", "category": "amenity", "type": "dentist",
+     "extratags": {"website": "https://bartoncreekdental.example"},
+     "address": {"city": "Austin", "country_code": "us"}},
+    {"osm_id": 7700002, "name": "Mueller Dental Studio", "category": "amenity", "type": "dentist",
+     "extratags": {"website": "https://muellerdental.example"},
+     "address": {"city": "Austin", "country_code": "us"}},
+]
+
+
+def test_overpass_outage_still_leaves_time_for_the_nominatim_fallback(monkeypatch):
+    """Every Overpass mirror hangs (the night the main instance returned 502s and the
+    mirrors timed out): Overpass may use only part of the budget, so the Nominatim
+    fallback still runs and the search returns leads within its budget."""
+    import json
+    import socket
+    import time
+
+    from openleads import _http
+
+    n = fakenet.install(monkeypatch)
+
+    def transport(url, headers=None, timeout=None, data=None):
+        if "overpass" in url:              # hangs until the client gives up
+            time.sleep(timeout)
+            raise socket.timeout("timed out")
+        return n(url, headers=headers, timeout=timeout, data=data)
+    monkeypatch.setattr(_http, "_open", transport)
+    n.add(r"nominatim\.openstreetmap\.org/search", json.dumps(NOMINATIM_AUSTIN_DENTISTS))
+    n.add(r"type=MX", fakenet.doh_mx())
+    n.add(r"type=TXT", fakenet.DOH_TXT_SPF_DMARC)
+    n.add(r"gravatar\.com", fakenet.status(404))
+    n.add(r"\.example(/|$)", fakenet.business_site)
+    t0 = time.monotonic()
+    res = openleads.find("dentists in Austin", count=2, budget=12, use_cache=False)
+    elapsed = time.monotonic() - t0
+    assert elapsed < 12 + 1.5
+    assert {ld.organization for ld in res} == {"Barton Creek Dental", "Mueller Dental Studio"}
+    local = res.report.sources["local"]
+    assert local.status == "degraded"
+    assert any(f.startswith("overpass→nominatim") for f in local.fallbacks)

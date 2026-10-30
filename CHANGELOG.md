@@ -33,7 +33,9 @@ be quieter and easier to read.
   areas are clamped so OpenStreetMap queries don't time out.
 - **OpenStreetMap.** Leaner Overpass queries, three public mirrors
   (`OPENLEADS_OVERPASS_URLS`), a circuit breaker that skips a host after it fails
-  twice, and a different hint for "busy" than for "can't reach it".
+  twice, and a different hint for "busy" than for "can't reach it". Overpass gets
+  at most part of the time budget (one slow mirror at most half of that), so on a
+  night when every mirror is down the Nominatim fallback still runs.
 - **Nothing bad gets cached.** Error responses, Overpass timeouts and bot-challenge
   pages are never stored. If the network fails, recent cached data (up to 7 days)
   is used and the report says so.
