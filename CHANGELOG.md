@@ -6,6 +6,12 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-10-30
+
+### Fixed
+- Restore the `mcp-name` line in the README that the MCP Registry uses to verify
+  the PyPI package, so 5.1 can be listed there. A test now keeps it in place.
+
 ## [5.1.0] - 2026-10-29
 
 **Consistent results, a calmer workspace.** The nightly benchmark showed the same

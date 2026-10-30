@@ -166,7 +166,7 @@ openleads runs             # what ran, what it found, what failed
 Sheets, Notion, Airtable, HubSpot or any webhook. There is also a GitHub Action:
 
 ```yaml
-- uses: Samyrrrrrr990/openleads@v5.1.0
+- uses: Samyrrrrrr990/openleads@v5.1.1
   with: { query: "marketing agencies in Miami", count: 50 }
 ```
 
@@ -265,3 +265,5 @@ SEC EDGAR, Wikidata, Gravatar, and the US Social Security Administration for its
 given-name data. The dashboard and website use
 [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) by the Braille
 Institute.
+
+<!-- mcp-name: io.github.Samyrrrrrr990/openleads -->

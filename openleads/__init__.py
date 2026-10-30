@@ -25,7 +25,7 @@ Public API:
 on first call, so ``import openleads`` stays light.
 """
 
-__version__ = "5.1.0"
+__version__ = "5.1.1"
 
 from openleads.models import EmailResult, Entity, Lead, Query, SourceInfo
 

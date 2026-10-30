@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openleads"
-version = "5.1.0"
+version = "5.1.1"
 description = "A free, local-first Apollo alternative: find B2B leads with honest email evidence from public sources (no API keys), then work them in a local CRM with lists, ICP scoring, multi-step sequences, tasks, a deal pipeline, a web dashboard and an MCP server for AI tools. $0."
 readme = "README.md"
 requires-python = ">=3.8"

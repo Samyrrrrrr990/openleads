@@ -1,6 +1,6 @@
 {
   "name": "openleads",
-  "version": "5.1.0",
+  "version": "5.1.1",
   "description": "Find B2B leads with verified emails from free public sources, no API keys. One search box (\"dentists in Austin\", \"fintech founders\") → real people + emails, plus a local CRM with sequences, tasks and deals, timed outreach, and an MCP server for Claude/Cursor. npx wrapper around the Python CLI.",
   "bin": {
     "openleads": "bin/openleads.js"
