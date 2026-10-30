@@ -1,4 +1,4 @@
-```python
+
 from openleads.sources.pypi import parse_results
 
 
@@ -54,4 +54,3 @@ def test_shared_hosting_domain_is_not_used():
 
     assert len(results) == 1
     assert results[0].domain == ""
-```
