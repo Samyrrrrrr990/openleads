@@ -125,6 +125,18 @@ SCHEMA: tuple[Setting, ...] = (
             "sending", "Maximum seconds between sends."),
     Setting("include_risky", (), False, "bool", False,
             "sending", "Allow sending to 'risky' (unverified) addresses. Off = safer."),
+    # Cold-email legality check (Precleared) before the first email to each address.
+    Setting("precleared_mode", ("PRECLEARED_MODE",), False, "str", "hold",
+            "sending", "Ask precleared.dev whether a cold email to each new address is legal "
+            "before the first one goes. hold = send only when it is ok to email; "
+            "warn = record the verdict and send anyway; off = no check.",
+            choices=("hold", "warn", "off")),
+    Setting("precleared_api_key", ("PRECLEARED_API_KEY",), True, "str", "",
+            "sending", "Precleared API key (optional). A free key raises the daily "
+            "check allowance: https://precleared.dev/get-key"),
+    Setting("precleared_sender_country", ("PRECLEARED_SENDER_COUNTRY",), False, "str", "GB",
+            "sending", "Where your business is based (GB, US or AE); decides which "
+            "cold-email law applies to you.", choices=("GB", "US", "AE")),
     # Web dashboard
     Setting("web_port", ("OPENLEADS_WEB_PORT",), False, "int", 8787,
             "web", "Port for the local web dashboard (openleads web)."),

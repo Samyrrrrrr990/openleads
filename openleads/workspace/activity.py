@@ -34,6 +34,7 @@ KINDS = {
     "email_sent": ("Email sent", "send"),
     "email_error": ("Email failed", "x"),
     "email_skipped": ("Email skipped", "x"),
+    "precleared": ("Cold-email check", "flag"),
     "replied": ("Replied", "reply"),
     "bounced": ("Bounced", "x"),
     "merged": ("Merged duplicate", "merge"),
