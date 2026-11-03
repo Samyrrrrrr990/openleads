@@ -528,6 +528,34 @@ def templates_preview(db, p):
                                                    + (p.get("body") or ""))}
 
 
+@route(POST, "/api/templates/generate")
+def templates_generate(db, p):
+    """Write a reusable step with {{variables}}: ``{angle, step, tone, final}``."""
+    from openleads.writing import generate_template
+    step = max(1, _int(p.get("step"), 1) or 1)
+    return generate_template(angle=p.get("angle") or None, step=step,
+                             tone=p.get("tone") or None, final=bool(p.get("final")),
+                             settings={"sender_context": p["context"]} if p.get("context") else None)
+
+
+@route(POST, "/api/templates/improve")
+def templates_improve(db, p):
+    """Fix what the quality gate flags in a subject/body, keeping its {{variables}}."""
+    from openleads.writing import improve_template
+    return improve_template(p.get("subject") or "", p.get("body") or "",
+                            llm=bool(p.get("llm")))
+
+
+@route(GET, "/api/writing/meta")
+def writing_meta(db, p):
+    """Angles, tones and rewrite modes for the writer's controls."""
+    from openleads.writing import library
+    from openleads.writing.llm import config as llm_config
+    cfg = llm_config()
+    return {"angles": list(library.ANGLES), "tones": list(library.TONES),
+            "rewrites": list(library.REWRITES), "llm": cfg.label if cfg else ""}
+
+
 @route(GET, "/api/sequences")
 def sequences_all(db, p):
     from openleads.workspace import sequences
@@ -623,7 +651,7 @@ def sequences_preview(db, p):
         return {"type": step["type"], "note": step.get("note", "")}
     draft, variant, missing = sequences._draft_for(db, seq, step, enr, lead or _SAMPLE)
     return {"type": step["type"], "draft": draft.to_dict(), "variant": variant,
-            "missing": missing, "sample": lead is None}
+            "missing": missing, "sample": lead is None, "quality": draft.quality}
 
 
 @route(STREAM, "/api/sequences/run")

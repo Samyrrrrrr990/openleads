@@ -91,6 +91,8 @@ _GET_API = {
 _POST_JSON = {
     "/api/verify": api.verify,
     "/api/write": api.write,
+    "/api/write/rewrite": api.write_rewrite,
+    "/api/write/brief": api.write_brief,
     "/api/settings": api.update_settings,
     "/api/crm": api.crm,
     "/api/recipes/save": api.recipes_save,
