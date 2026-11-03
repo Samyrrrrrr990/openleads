@@ -70,12 +70,28 @@ def due(db, campaign: str = "default", sequence=DEFAULT_SEQUENCE) -> list[dict]:
 
 
 def followup_draft(lead: dict, step: int, sender: str = "", sequence=DEFAULT_SEQUENCE) -> Draft:
-    """Build a short bump for ``step`` (2+) using the sequence's template."""
+    """Build a short follow-up for ``step`` (2+).
+
+    The built-in bump/breakup steps are written by :func:`openleads.writing.write_email`
+    (same thread, new information, a polite last email); a custom ``body`` is rendered
+    as before. Company inboxes are never greeted by the company's first word.
+    """
+    from openleads.writing import write_email
+    from openleads.writing.brief import build_brief
     spec = sequence[step - 1]
-    first = lead.get("first_name") or lead.get("name", "").split(" ")[0] or "there"
+    default = next((d for d in DEFAULT_SEQUENCE if d.get("name") == spec.get("name")), None)
+    if spec.get("body") is None or (default and spec.get("body") == default.get("body")):
+        final = step == len(sequence) and step >= 3
+        d = write_email(lead, step=step, final=final, settings={"sender_name": sender} if sender else None,
+                        thread_subject=lead.get("last_subject") or "", llm=False)
+        d.model = "sequence"
+        return d
+    first = build_brief(lead).first_name or "there"
     body = spec.get("body", "Hey {first},\n\nJust following up.\n\nBest,\n{sender}")
     body = body.format(first=first, sender=sender or "Me")
-    subject = "re: " + (lead.get("last_subject") or f"quick note for {lead.get('organization', '')}").strip()
+    org = (lead.get("organization") or "").strip()
+    last = lead.get("last_subject") or (f"quick note for {org}" if org else "quick note")
+    subject = "re: " + last.strip()
     return Draft(email=lead["email"], subject=subject, body=body,
                  first_name=first, organization=lead.get("organization", ""),
                  model="sequence")
