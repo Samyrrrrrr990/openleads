@@ -119,10 +119,13 @@ class Cache:
         return {"path": self.path, "counts": {ns: c for ns, c in rows}}
 
     def close(self) -> None:
-        try:
-            self._conn.close()
-        except Exception:
-            pass
+        # Under the lock, so a resolver thread still finishing after the run can't
+        # be inside a query while the connection goes away (a hard crash).
+        with self._lock:
+            try:
+                self._conn.close()
+            except Exception:
+                pass
 
 
 class MemoryCache:
