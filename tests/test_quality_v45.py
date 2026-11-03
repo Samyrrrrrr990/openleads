@@ -80,18 +80,18 @@ def test_npi_taxonomy_from_free_text():
 def test_run_overpass_falls_through_mirrors(monkeypatch):
     calls = []
 
-    def fake(url, **kw):
+    def fake(url, headers=None, timeout=None, data=None):
         calls.append(url)
-        return None if len(calls) == 1 else {"elements": [{"id": 1}]}
+        return "not json" if len(calls) == 1 else '{"elements": [{"id": 1}]}'
 
-    monkeypatch.setattr(local, "get_json", fake)
+    monkeypatch.setattr("openleads._http._open", fake)
     assert local.run_overpass("q", mirrors=("https://a/x", "https://b/x")) == {"elements": [{"id": 1}]}
     assert len(calls) == 2
 
 
 def test_run_overpass_treats_runtime_error_remark_as_failure(monkeypatch):
-    monkeypatch.setattr(local, "get_json", lambda url, **kw: {
-        "elements": [], "remark": "runtime error: Query timed out"})
+    monkeypatch.setattr("openleads._http._open", lambda url, **kw: (
+        '{"elements": [], "remark": "runtime error: Query timed out"}'))
     assert local.run_overpass("q", mirrors=("https://a/x",)) is None
 
 
