@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 
-from openleads import _http
+from openleads import _concurrency, _http
 from openleads.config import api_headers
 
 # Each resolver formats its DoH JSON endpoint slightly differently.
@@ -98,14 +98,24 @@ def lookup(domain: str, timeout: int = 15) -> dict:
     per_resolver: dict[str, list[str]] = {}
     statuses: dict[str, str] = {}
     errors: list[str] = []
-    for name, tmpl in RESOLVERS.items():
-        url = tmpl.format(name=domain)
+
+    def ask(url: str):
         try:
-            reply = _query(url, timeout)
+            return _query(url, timeout), None
         except Exception as e:  # noqa: BLE001 — any failure is "no answer"
+            return None, e
+
+    # The resolvers are independent: ask them all at once (one round trip, not
+    # one per resolver), then read the answers in the fixed resolver order.
+    urls = [tmpl.format(name=domain) for tmpl in RESOLVERS.values()]
+    answers = _concurrency.gather(
+        [lambda u=u: ask(u) for u in urls],
+        default=(None, _concurrency.BudgetExhausted("time budget reached")))
+    for name, url, (reply, exc) in zip(RESOLVERS, urls, answers):
+        if exc is not None:
             statuses[name], per_resolver[name] = "error", []
-            errors.append(f"{name}: {_http._reason(e)}")
-            _http._record(url, _http._reason(e), e)
+            errors.append(f"{name}: {_http._reason(exc)}")
+            _http._record(url, _http._reason(exc), exc)
             continue
         statuses[name], per_resolver[name] = _answer(reply)
         if statuses[name] == "error":
@@ -201,10 +211,16 @@ def dns_health(domain: str, cache=None, timeout: int = 15) -> dict:
             return []
         return parse_txt(reply)
 
-    for txt in txt_records(domain):
+    # SPF and DMARC live on different names: look both up at once.
+    spf, dmarc = _concurrency.gather([lambda: txt_records(domain),
+                                      lambda: txt_records(f"_dmarc.{domain}")], default=None)
+    if spf is None or dmarc is None:       # still running at the deadline: unknown
+        failed = True
+        spf, dmarc = spf or [], dmarc or []
+    for txt in spf:
         if txt.lower().startswith("v=spf1"):
             spf_present = True
-    for txt in txt_records(f"_dmarc.{domain}"):
+    for txt in dmarc:
         low = txt.lower()
         if low.startswith("v=dmarc1"):
             dmarc_present = True

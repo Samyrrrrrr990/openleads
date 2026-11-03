@@ -74,6 +74,8 @@ FETCH_ERRORS = (urllib.error.URLError, OSError, ValueError, http.client.HTTPExce
 
 def _record(url: str, reason: str, exc: BaseException | None = None) -> None:
     """Remember a failed request (ring buffer) and report it to the current run."""
+    if _concurrency.stopped():
+        return      # leftover work of a run that already returned: not news to anyone
     with _lock:
         _errors.append((url, reason))
     if isinstance(exc, BudgetExhausted):
