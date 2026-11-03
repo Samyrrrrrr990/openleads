@@ -7,6 +7,8 @@ enroll people in sequences.
 
 Read tools carry ``readOnlyHint``; write tools change only the local
 workspace (nothing here sends email — sequences send on their own schedule).
+The one exception is ``run_workflow``, which test-runs a workflow by default and
+sends only when called with ``mode="run"`` and ``live=true``.
 """
 from __future__ import annotations
 
@@ -414,6 +416,71 @@ HANDLERS.update({
     "complete_task": complete_task, "create_deal": create_deal, "move_deal": move_deal,
     "enroll_in_sequence": enroll_in_sequence,
 })
+
+
+# --------------------------------------------------------------------------- #
+# Workflows (node graphs). Runs are test runs unless asked otherwise.          #
+# --------------------------------------------------------------------------- #
+WORKFLOW_TOOLS = [
+    {"name": "list_workflows", "annotations": {**_RO, "title": "List workflows"},
+     "description": ("Your automation workflows (node graphs: triggers, find leads, filters, "
+                     "write, send, export…) and recipes, with whether each is active, live, "
+                     "when it runs and how many items are waiting."),
+     "inputSchema": _obj({})},
+    {"name": "run_workflow",
+     "annotations": {"readOnlyHint": False, "destructiveHint": True, "openWorldHint": True,
+                     "title": "Run a workflow"},
+     "description": ("Run one workflow and report what each node did (items in/out, notes, "
+                     "errors). By default this is a TEST RUN: it searches and drafts but never "
+                     "sends, exports, notifies or changes the workspace. mode='run' does a real "
+                     "run (workspace changes and exports happen; Send only previews). Only "
+                     "live=true with mode='run' sends real email, inside the warmup cap. "
+                     "Never set live=true unless the user explicitly asked to send."),
+     "inputSchema": _obj({"name": _S,
+                          "mode": {"type": "string", "enum": ["test", "run"], "default": "test"},
+                          "live": {"type": "boolean", "default": False}}, ["name"])},
+]
+TOOLS += WORKFLOW_TOOLS
+
+
+def list_workflows(db, args: dict) -> dict:
+    from openleads.automate.workflow import store
+    out = []
+    for g in store.list_all(db):
+        row = store.describe(g)
+        if g.get("kind") == "workflow":
+            row["waiting"] = store.waiting(db, g["name"])["count"]
+        item = _compact(row, ("name", "kind", "description", "nodes", "when", "last_run_at",
+                              "waiting"))
+        item.update(active=row["active"], live=row["live"])
+        out.append(item)
+    return {"workflows": out}
+
+
+def run_workflow(db, args: dict) -> dict:
+    from openleads.automate.workflow import executor, nodes, store
+    from openleads.automate.workflow.runtime import RUN, TEST
+    g = store.get(db, str(args.get("name") or ""))
+    if not g:
+        raise ValueError(f"no workflow named '{args.get('name')}'")
+    mode = RUN if args.get("mode") == "run" else TEST
+    res = executor.run(g, db=db, mode=mode, live=bool(args.get("live")) and mode == RUN,
+                       trigger_label="mcp")
+    steps = []
+    for r in res["nodes"]:
+        if r["status"] == "skipped":
+            continue
+        t = nodes.get_type(r["type"])
+        steps.append(_compact({"node": r["id"], "type": t.label if t else r["type"],
+                               "status": r["status"], "in": r["in"], "out": r["out"],
+                               "notes": r.get("notes"), "error": r.get("error")},
+                              ("node", "type", "status", "in", "out", "notes", "error")))
+    return {"workflow": res["workflow"], "mode": res["mode"], "live": res["live"],
+            "status": res["status"], "error": res["error"] or None, "summary": res["summary"],
+            "steps": steps}
+
+
+HANDLERS.update({"list_workflows": list_workflows, "run_workflow": run_workflow})
 
 
 def call(name: str, args: dict) -> dict:
