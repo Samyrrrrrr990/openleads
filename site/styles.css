@@ -314,3 +314,81 @@ pre.code .c { color: var(--faint); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ============================================================ motion
+   Everything below only animates when app.js has armed it (html.js-motion),
+   so the page is complete at rest without JavaScript or with reduced motion. */
+
+/* hero: the map of places behind the search */
+.hero { position: relative; overflow: hidden; }
+.hero > .container { position: relative; z-index: 1; }
+.hero__map { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+  -webkit-mask-image: radial-gradient(120% 90% at 85% 40%, #000 30%, transparent 75%);
+          mask-image: radial-gradient(120% 90% at 85% 40%, #000 30%, transparent 75%); }
+
+/* headline: words rise once */
+.js-motion .hero h1 .w { display: inline-block; opacity: 0; transform: translateY(.42em) rotate(2deg);
+  animation: rise .9s var(--ease-out) forwards; animation-delay: calc(var(--d) * 70ms + 80ms); }
+@keyframes rise { to { opacity: 1; transform: none; } }
+.js-motion .hero__sub, .js-motion .install { opacity: 0; animation: fadein .8s var(--ease-out) .55s forwards; }
+@keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* sources light up while the search fans out */
+.result__sources { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 22px; border-bottom: 1px solid var(--line);
+  font-size: 13.5px; color: var(--faint); }
+.result__sources span { display: inline-flex; align-items: center; gap: 7px; position: relative; transition: color .3s; }
+.result__sources span::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong);
+  transition: background .3s, box-shadow .3s; }
+.result__sources span.is-on { color: var(--text); }
+.result__sources span.is-on::before { background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+.result__sources span.is-busy::before { background: var(--warn); animation: blink .6s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+
+/* rows land, then each address resolves to its evidence */
+.ev--pending { border-style: dashed !important; background: transparent !important; color: var(--faint) !important;
+  animation: spinmark 1s linear infinite; }
+@keyframes spinmark { to { transform: rotate(360deg); } }
+.ev.is-resolved { animation: pop .45s var(--ease-out); }
+@keyframes pop { 0% { transform: scale(.2) rotate(-90deg); } 60% { transform: scale(1.35); } 100% { transform: none; } }
+.result .how.is-typing { color: var(--faint); }
+.result tr.is-in td { animation: rowlight 1.2s var(--ease-out); }
+@keyframes rowlight { from { background: var(--accent-wash); } to { background: transparent; } }
+
+/* labels: the three marks draw themselves */
+.js-motion .marks.is-armed .mark-row { opacity: 0; transform: translateX(-12px); }
+.js-motion .marks.is-armed.is-in .mark-row { opacity: 1; transform: none; transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
+  transition-delay: calc(var(--i) * 180ms); }
+.js-motion .marks.is-armed.is-in .mark-row .ev { animation: pop .6s var(--ease-out) both; animation-delay: calc(var(--i) * 180ms + 200ms); }
+
+/* benchmark: every square fills in, row by row */
+.bench.is-armed .strip .ev { opacity: 0; transform: scale(.2); }
+.bench.is-armed.is-in .strip .ev { opacity: 1; transform: none; transition: opacity .35s var(--ease-out), transform .45s cubic-bezier(.3, 1.6, .5, 1);
+  transition-delay: calc(var(--r) * 70ms + var(--i) * 28ms); }
+
+/* workspace screenshot tilts up into place as you scroll */
+.shot.is-tilt { transform: perspective(1600px) rotateX(calc(var(--tilt, 0) * 16deg)) scale(calc(1 - var(--tilt, 0) * .06));
+  transform-origin: 50% 100%; will-change: transform; }
+
+/* workflow canvas */
+.flow-wrap { margin-top: 44px; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background-color: var(--bg-2);
+  background-image: radial-gradient(circle at 1px 1px, var(--line-2) 1px, transparent 0); background-size: 22px 22px; }
+.flow { display: block; width: 100%; min-width: 760px; height: auto; font-family: var(--body); }
+.flow__edges path { fill: none; stroke: var(--line-strong); stroke-width: 1.5; }
+.flow__edges path.is-live { stroke: var(--text); }
+.flow__branch { font-size: 12.5px; fill: var(--good); font-weight: 600; }
+.flow__branch--risky { fill: var(--warn); }
+.flow__node rect { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; transition: stroke .25s, stroke-width .25s; }
+.flow__node text { font-size: 15px; font-weight: 600; fill: var(--text); }
+.flow__node text.sub { font-size: 12.5px; font-weight: 400; fill: var(--muted); }
+.flow__node text.n { font-size: 13px; font-weight: 700; fill: var(--text); text-anchor: end; font-variant-numeric: tabular-nums; }
+.flow__node.is-on rect { stroke: var(--text); stroke-width: 2; }
+.flow__node.is-on { animation: nodepulse .5s var(--ease-out); transform-box: fill-box; }
+@keyframes nodepulse { 50% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 45%, transparent)); } }
+.flow__dots circle { fill: var(--text); }
+.flow__dots circle.is-risky { fill: var(--warn); }
+.flow__dots circle.is-safe { fill: var(--good); }
+
+@media (prefers-reduced-motion: reduce) {
+  .js-motion .hero h1 .w, .js-motion .hero__sub, .js-motion .install { opacity: 1; transform: none; animation: none; }
+  .shot.is-tilt { transform: none; }
+}

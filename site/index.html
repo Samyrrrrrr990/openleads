@@ -17,7 +17,7 @@
 <meta name="twitter:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="preload" href="fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="styles.css?v=9" />
+<link rel="stylesheet" href="styles.css?v=10" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"OpenLeads","applicationCategory":"BusinessApplication","operatingSystem":"macOS, Linux, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","url":"https://samyrrrrrr990.github.io/openleads/","downloadUrl":"https://pypi.org/project/openleads/"}
 </script>
@@ -31,6 +31,7 @@
     <a href="#labels">How it labels</a>
     <a href="#benchmark">Benchmark</a>
     <a href="#workspace">Workspace</a>
+    <a href="#automate">Workflows</a>
     <a href="docs/index.html">Docs</a>
   </nav>
   <div class="nav__cta">
@@ -43,6 +44,7 @@
 <main id="top">
 
 <section class="hero">
+  <canvas class="hero__map" id="hero-map" aria-hidden="true"></canvas>
   <div class="container">
     <h1>Describe a customer.<br />Get the people.</h1>
     <p class="hero__sub">OpenLeads searches free public sources for the businesses and people you describe, finds their email addresses and tells you how it knows each one. It runs on your machine, with no API keys and nothing to pay.</p>
@@ -55,6 +57,9 @@
 
     <figure class="result" id="result" aria-label="Example search results">
       <div class="result__query"><span class="result__prompt">$ openleads find</span><span class="result__q" id="result-q">"dentists in Austin"</span><span class="result__meta" id="result-meta">10 leads in 41 s</span></div>
+      <div class="result__sources" id="result-sources" aria-hidden="true">
+        <span>OpenStreetMap</span><span>Company websites</span><span>Mail servers</span><span>Learned patterns</span>
+      </div>
       <table>
         <tbody>
           <tr><td><i class="ev ev--found ev--safe" title="Found, deliverable"></i></td><td class="who"><b>Maya Okafor</b> <span>Owner and lead dentist</span></td><td class="org">Northwind Dental</td><td class="addr">maya@northwind-dental.example</td><td class="how">found</td></tr>
@@ -114,21 +119,22 @@
       <table class="bench" id="bench">
         <thead><tr><th>Search</th><th>Returned</th><th class="n">Leads</th><th class="n">Found</th><th class="n">Pattern</th><th class="n">Guessed</th><th class="n t">Time</th></tr></thead>
         <tbody id="bench-rows">
-          <tr class="is-empty"><td class="q">dentists in Austin</td><td><span class="strip" aria-label="0 of 10 returned"><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n t">15 s</td></tr>
-          <tr><td class="q">marketing agencies in Miami</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--pattern"></i><i class="ev ev--pattern"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">4</td><td class="n">2</td><td class="n">4</td><td class="n t">48 s</td></tr>
-          <tr><td class="q">law firms in London</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">1</td><td class="n">0</td><td class="n">3</td><td class="n t">117 s</td></tr>
-          <tr><td class="q">accountants in Toronto</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">1</td><td class="n">0</td><td class="n">3</td><td class="n t">77 s</td></tr>
-          <tr><td class="q">software companies in Berlin</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">6</td><td class="n">0</td><td class="n">4</td><td class="n t">103 s</td></tr>
-          <tr><td class="q">gyms in Sydney</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">4</td><td class="n">0</td><td class="n">0</td><td class="n t">90 s</td></tr>
-          <tr><td class="q">fintech founders</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">2</td><td class="n">0</td><td class="n">8</td><td class="n t">18 s</td></tr>
-          <tr><td class="q">AI startup founders</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">5</td><td class="n">0</td><td class="n">5</td><td class="n t">17 s</td></tr>
-          <tr><td class="q">rust developers in Berlin</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">8</td><td class="n">0</td><td class="n">2</td><td class="n t">103 s</td></tr>
-          <tr><td class="q">machine learning researchers</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">3</td><td class="n">0</td><td class="n">7</td><td class="n t">51 s</td></tr>
-          <tr><td class="q">emails at stripe.com</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--pattern"></i><i class="ev ev--pattern"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">2</td><td class="n">2</td><td class="n">0</td><td class="n t">5 s</td></tr>
-          <tr><td class="q">real estate agents in Chicago</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">9</td><td class="n">0</td><td class="n">1</td><td class="n t">52 s</td></tr>
+          <tr><td class="q">dentists in Austin</td><td><span class="strip" aria-label="8 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">8</td><td class="n">8</td><td class="n">0</td><td class="n">0</td><td class="n t">48 s</td></tr>
+          <tr><td class="q">marketing agencies in Miami</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">4</td><td class="n">0</td><td class="n">6</td><td class="n t">52 s</td></tr>
+          <tr><td class="q">law firms in London</td><td><span class="strip" aria-label="6 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--pattern"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">6</td><td class="n">5</td><td class="n">1</td><td class="n">0</td><td class="n t">60 s</td></tr>
+          <tr><td class="q">accountants in Toronto</td><td><span class="strip" aria-label="7 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--pattern"></i><i class="ev ev--pattern"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">7</td><td class="n">5</td><td class="n">2</td><td class="n">0</td><td class="n t">42 s</td></tr>
+          <tr><td class="q">software companies in Berlin</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">9</td><td class="n">0</td><td class="n">1</td><td class="n t">60 s</td></tr>
+          <tr><td class="q">gyms in Sydney</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">7</td><td class="n">0</td><td class="n">3</td><td class="n t">47 s</td></tr>
+          <tr><td class="q">fintech founders</td><td><span class="strip" aria-label="4 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">4</td><td class="n">1</td><td class="n">0</td><td class="n">3</td><td class="n t">38 s</td></tr>
+          <tr><td class="q">AI startup founders</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">6</td><td class="n">0</td><td class="n">4</td><td class="n t">29 s</td></tr>
+          <tr><td class="q">rust developers in Berlin</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">8</td><td class="n">0</td><td class="n">2</td><td class="n t">52 s</td></tr>
+          <tr><td class="q">machine learning researchers</td><td><span class="strip" aria-label="10 of 10 returned"><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i></span></td><td class="n">10</td><td class="n">0</td><td class="n">0</td><td class="n">10</td><td class="n t">55 s</td></tr>
+          <tr><td class="q">emails at stripe.com</td><td><span class="strip" aria-label="3 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--pattern"></i><i class="ev ev--pattern"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">3</td><td class="n">1</td><td class="n">2</td><td class="n">0</td><td class="n t">5 s</td></tr>
+          <tr><td class="q">real estate agents in Chicago</td><td><span class="strip" aria-label="5 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">5</td><td class="n">5</td><td class="n">0</td><td class="n">0</td><td class="n t">53 s</td></tr>
+          <tr><td class="q">plumbers in Denver</td><td><span class="strip" aria-label="8 of 10 returned"><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--found"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--guessed"></i><i class="ev ev--none"></i><i class="ev ev--none"></i></span></td><td class="n">8</td><td class="n">5</td><td class="n">0</td><td class="n">3</td><td class="n t">60 s</td></tr>
         </tbody>
       </table>
-      <p class="bench__sum" id="bench-sum">Run of <b data-bench="date">28 Oct 2026</b> on version <span data-bench="version">5.0.0</span>: <b data-bench="ok">11</b> of <span data-bench="queries">12</span> searches returned leads, <b data-bench="fill">72%</b> of the requested leads came back, and <b data-bench="evidence">57%</b> of the emails were found or built from a seen pattern. <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/BENCHMARK.md">Every night's results</a></p>
+      <p class="bench__sum" id="bench-sum">Run of <b data-bench="date">1 Nov 2026</b> on version <span data-bench="version">5.1.1</span>: <b data-bench="ok">13</b> of <span data-bench="queries">13</span> searches returned leads, <b data-bench="fill">78%</b> of the requested leads came back, and <b data-bench="evidence">68%</b> of the emails were found or built from a seen pattern. <a href="https://github.com/Samyrrrrrr990/openleads/blob/main/BENCHMARK.md">Every night's results</a></p>
     </div>
   </div>
 </section>
@@ -158,6 +164,41 @@
       <div><dt>Automate</dt><dd>Recipes and watchers on a schedule, drawn as workflows. Exports to Sheets, Notion, Airtable, HubSpot and webhooks.</dd></div>
       <div><dt>Bring your data</dt><dd>Import Apollo, HubSpot and LinkedIn exports with the columns mapped for you, and export back in their formats.</dd></div>
     </dl>
+  </div>
+</section>
+
+<section class="section" id="automate">
+  <div class="container">
+    <div class="section__grid">
+      <h2>Draw it once. It runs every weekday.</h2>
+      <div class="section__body">
+        <p class="section__lead">Workflows are nodes on a canvas: a trigger, a search, a check that splits deliverable from risky, an email written from what OpenLeads learned about each lead, and where the results go. Test runs never send. When it looks right, switch it on and it runs from your machine.</p>
+      </div>
+    </div>
+    <div class="flow-wrap">
+      <svg class="flow" id="flow" viewBox="0 0 960 300" role="img" aria-labelledby="flow-title">
+        <title id="flow-title">Example workflow: every weekday at 9:00, find dentists in Austin, verify their emails, write and send to the deliverable ones, and hold risky ones for review before exporting them to Google Sheets.</title>
+        <g class="flow__edges">
+          <path id="e1" d="M170 150 H200" />
+          <path id="e2" d="M350 150 H380" />
+          <path id="e3" d="M530 150 C560 150 560 68 590 68" />
+          <path id="e4" d="M530 150 C560 150 560 232 590 232" />
+          <path id="e5" d="M740 68 H790" />
+          <path id="e6" d="M740 232 H790" />
+        </g>
+        <text class="flow__branch" x="570" y="86" text-anchor="end">deliverable</text>
+        <text class="flow__branch flow__branch--risky" x="570" y="224" text-anchor="end">risky</text>
+        <g class="flow__dots" id="flow-dots"></g>
+        <g class="flow__node" data-node="trigger" transform="translate(20 122)"><rect width="150" height="56" rx="10"/><text x="16" y="25">Every weekday</text><text class="sub" x="16" y="43">9:00</text><text class="n" x="138" y="25"></text></g>
+        <g class="flow__node" data-node="find" transform="translate(200 122)"><rect width="150" height="56" rx="10"/><text x="16" y="25">Find leads</text><text class="sub" x="16" y="43">dentists in Austin</text><text class="n" x="138" y="25"></text></g>
+        <g class="flow__node" data-node="verify" transform="translate(380 122)"><rect width="150" height="56" rx="10"/><text x="16" y="25">Verify emails</text><text class="sub" x="16" y="43">seven checks</text><text class="n" x="138" y="25"></text></g>
+        <g class="flow__node" data-node="write" transform="translate(590 40)"><rect width="150" height="56" rx="10"/><text x="16" y="25">Write email</text><text class="sub" x="16" y="43">from each lead's brief</text><text class="n" x="138" y="25"></text></g>
+        <g class="flow__node" data-node="send" transform="translate(790 40)"><rect width="150" height="56" rx="10"/><text x="16" y="25">Send</text><text class="sub" x="16" y="43">within the warmup cap</text><text class="n" x="138" y="25"></text></g>
+        <g class="flow__node" data-node="review" transform="translate(590 204)"><rect width="150" height="56" rx="10"/><text x="16" y="25">Hold for review</text><text class="sub" x="16" y="43">never sent</text><text class="n" x="138" y="25"></text></g>
+        <g class="flow__node" data-node="export" transform="translate(790 204)"><rect width="150" height="56" rx="10"/><text x="16" y="25">Export</text><text class="sub" x="16" y="43">Google Sheets</text><text class="n" x="138" y="25"></text></g>
+      </svg>
+    </div>
+    <p class="shot-cap">An illustration of a workflow run. Build your own in the dashboard, or start from a template with <code>openleads workflow new</code>.</p>
   </div>
 </section>
 
@@ -258,6 +299,6 @@ leads.write("gyms.csv")</pre></div>
   </div>
 </footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js?v=9" defer></script>
+<script src="app.js?v=10" defer></script>
 </body>
 </html>
