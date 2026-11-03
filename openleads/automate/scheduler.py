@@ -309,6 +309,8 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
     1. **inbox sync** — mark replies/bounces (so sequences self-stop) if IMAP is set.
     2. **recipes** — run every recipe whose schedule is due (find → write → send → export).
     3. **watchers** — run every watcher whose schedule is due; deliver new matches.
+       Then **workflows**: parked Wait items whose time has come continue, and active
+       workflow graphs whose triggers are due run (see :mod:`.workflow.runner`).
     4. **follow-ups** — send due sequence steps to leads who haven't replied/bounced.
     5. **workspace sequences** — send due automatic emails (inside the send window)
        and turn due manual steps into tasks.
@@ -380,6 +382,18 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
                 if name in current:
                     current[name] = mark_ran(current[name], now)
                     db.kv_set(watch.KV_KEY, current)
+
+        # 3b) workflows — wake parked items, then fire due triggers of active graphs.
+        from openleads.automate.workflow import runner as wfrunner
+        try:
+            wf = wfrunner.tick(db, cache=cache, dry_run=dry_run, now=_as_datetime(now),
+                               on_progress=on_progress)
+        except Exception as e:  # noqa: BLE001 — never break the drip
+            wf = {"run": 0, "failed": 1, "sent": 0, "waits": {}, "error": str(e)}
+            history.record("workflow", "tick", False, 0, error=f"{type(e).__name__}: {e}")
+        summary["workflows"] = wf
+        summary["workflows_run"] = wf.get("run", 0)
+        summary["failed"] += wf.get("failed", 0)
 
         # 4) sequence follow-ups
         def followups():
