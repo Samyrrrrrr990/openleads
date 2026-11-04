@@ -6,6 +6,11 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+### Added
+- `pypi` source: maintainers of Python packages for a topic (a curated package
+  list per topic, or an exact package name), with their published email when the
+  package lists one (#29, thanks @Shalinipks).
+
 ## [5.2.0] - 2026-11-04
 
 **Faster searches, real workflows, better emails.** Searches start every source at
