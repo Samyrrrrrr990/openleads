@@ -39,7 +39,7 @@ class Setting:
     key: str
     env: tuple[str, ...]          # env var name(s) that override the store (first wins)
     secret: bool                  # stored in secrets.json (0600) and masked in listings
-    type: str                     # "str" | "int" | "bool"
+    type: str                     # "str" | "text" (multi-line str) | "int" | "bool"
     default: Any
     group: str                    # for grouping in `config` / web Settings
     description: str
@@ -48,12 +48,32 @@ class Setting:
 
 # --- the schema: the single source of truth for every setting ----------------- #
 SCHEMA: tuple[Setting, ...] = (
+    # AI writing (openleads.writing): keyless by default, an LLM when one is set up.
+    Setting("writing_tone", (), False, "str", "plain", "ai",
+            "Default tone for drafts: plain, warm, direct or casual.",
+            choices=("plain", "warm", "direct", "casual")),
+    Setting("writing_examples", (), False, "text", "", "ai",
+            "Paste one to three emails you've written. An LLM copies their voice "
+            "(never their facts); the built-in writer ignores them."),
+    Setting("writing_llm", (), False, "str", "auto", "ai",
+            "auto = draft with an LLM when one is configured (falls back to the built-in "
+            "writer on any problem); off = always use the built-in writer.",
+            choices=("auto", "off")),
     # LLM (free) — used for drafting + natural-language understanding (optional).
     Setting("openrouter_api_key", ("OPENROUTER_API_KEY",), True, "str", "",
             "ai", "OpenRouter API key — unlocks free-LLM email drafting & NL parsing."),
     Setting("openrouter_model", ("OPENROUTER_MODEL",), False, "str",
             "openai/gpt-oss-120b:free", "ai",
             "Free OpenRouter model id used for drafting."),
+    Setting("ai_base_url", ("OPENLEADS_AI_BASE_URL",), False, "str", "", "ai",
+            "Any OpenAI-compatible endpoint, e.g. http://localhost:11434/v1 for Ollama. "
+            "Blank = OpenRouter."),
+    Setting("ai_api_key", ("OPENLEADS_AI_API_KEY",), True, "str", "", "ai",
+            "Key for that endpoint (blank = the OpenRouter key, or none for local models)."),
+    Setting("ai_model", ("OPENLEADS_AI_MODEL",), False, "str", "", "ai",
+            "Model name for that endpoint (blank = the OpenRouter model above)."),
+    Setting("ai_timeout", (), False, "int", 20, "ai",
+            "Seconds to wait for the LLM before using the built-in writer instead."),
     # Discovery
     Setting("github_token", ("GITHUB_TOKEN",), True, "str", "",
             "discover", "GitHub token — raises API rate limits & enables commit-email ground truth."),
@@ -64,6 +84,11 @@ SCHEMA: tuple[Setting, ...] = (
             "sender", "Who you represent (used to frame drafts)."),
     Setting("sender_context", ("CAMPAIGN_CONTEXT",), False, "str", "",
             "sender", "A few lines pitching what you're reaching out about."),
+    Setting("sender_offer", (), False, "str", "",
+            "sender", "The next step you offer, e.g. 'a 15-minute walkthrough'. Drafts ask for it."),
+    Setting("sender_proof", (), False, "str", "",
+            "sender", "One line of proof, e.g. 'Northside Dental filled 40 more slots a month'. "
+            "Used as written; drafts never invent proof."),
     # Mailbox (SMTP) — credentials are secret
     Setting("smtp_provider", (), False, "str", "custom",
             "mailbox", "Mailbox provider preset.",

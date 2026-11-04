@@ -72,11 +72,16 @@ def _draft_from_dict(d: dict) -> Draft:
     )
 
 
+def _llm_configured() -> bool:
+    from openleads.writing.llm import config as llm_config
+    return llm_config() is not None
+
+
 def _identity_flags() -> dict:
     """Quick booleans the UI uses to nudge setup (no secrets leave the box)."""
     return {
         "mailbox_configured": bool(settings.get("smtp_user")),
-        "llm_configured": bool(settings.get("openrouter_api_key")),
+        "llm_configured": _llm_configured(),
         "github_configured": bool(settings.get("github_token")),
         "include_risky": bool(settings.get("include_risky")),
         "sender_name": settings.get("sender_name") or "",
@@ -252,18 +257,91 @@ def verify(payload: dict) -> dict:
     return {"results": out}
 
 
+def _writer_lead(db, ld: dict) -> dict:
+    """The payload's lead, filled in from the workspace when it's a saved contact."""
+    email = (ld.get("email") or "").strip().lower()
+    row = db.get_lead(email) if email else None
+    if not row:
+        return ld
+    return {**row, **{k: v for k, v in ld.items() if v not in (None, "", [], {})}}
+
+
+def _writer_kwargs(payload: dict) -> dict:
+    llm = payload.get("llm")
+    return {"angle": payload.get("angle") or None, "tone": payload.get("tone") or None,
+            "variants": max(1, min(int(payload.get("variants") or 1), 5)),
+            "step": max(1, int(payload.get("step") or 1)),
+            "llm": None if llm in (None, "", "auto") else bool(llm)}
+
+
 def write(payload: dict) -> dict:
-    """Draft personalized emails for the supplied leads (LLM if configured)."""
-    from openleads.outreach import compose
+    """Draft personalized emails for the supplied leads (LLM if configured).
+
+    Optional: ``angle``, ``tone``, ``variants`` (A/B), ``step``, ``llm`` (true/false/auto).
+    Each draft carries ``quality`` (0–100 + reasons), ``brief`` and ``explain``.
+    """
+    from openleads.writing import write_email
+    from openleads.writing.llm import config as llm_config
     leads = payload.get("leads") or []
     overrides = payload.get("overrides") or None
+    kw = _writer_kwargs(payload)
     drafts = []
-    for ld in leads:
-        if not ld.get("email"):
-            continue
-        d = compose.draft(ld, overrides)
-        drafts.append(d.to_dict())
-    return {"drafts": drafts, "llm": bool(settings.get("openrouter_api_key"))}
+    db = DB()
+    try:
+        for ld in leads[:200]:
+            if not ld.get("email"):
+                continue
+            d = write_email(_writer_lead(db, ld), settings=dict(overrides or {}), **kw)
+            drafts.append(d.to_dict())
+    finally:
+        db.close()
+    return {"drafts": drafts, "llm": llm_config(overrides) is not None}
+
+
+def write_rewrite(payload: dict) -> dict:
+    """Rewrite one draft: ``{draft: {subject, body, email}, mode}`` → ``{draft}``.
+
+    ``mode`` is shorter | warmer | more direct | more casual.
+    """
+    from openleads.writing import rewrite
+    d = payload.get("draft") or {}
+    db = DB()
+    try:
+        lead = _writer_lead(db, payload.get("lead") or {"email": d.get("email", "")})
+    finally:
+        db.close()
+    llm = payload.get("llm")
+    out = rewrite(d, payload.get("mode") or "", lead,
+                  settings=payload.get("overrides") or None,
+                  llm=None if llm in (None, "", "auto") else bool(llm))
+    return {"draft": out.to_dict()}
+
+
+def write_score(payload: dict) -> dict:
+    """Score an edited draft: ``{subject, body, email, step}`` → ``{quality}``."""
+    from openleads.writing import brief_for, score_draft
+    db = DB()
+    try:
+        lead = _writer_lead(db, payload.get("lead") or {"email": payload.get("email") or ""})
+    finally:
+        db.close()
+    try:
+        step = max(1, int(payload.get("step") or 1))
+    except (TypeError, ValueError):
+        step = 1
+    return {"quality": score_draft(payload.get("subject") or "", payload.get("body") or "",
+                                   brief_for(lead), step=step)}
+
+
+def write_brief(payload: dict) -> dict:
+    """The research brief for one lead (or saved contact ``email``)."""
+    from openleads.writing import brief_for
+    db = DB()
+    try:
+        lead = _writer_lead(db, payload.get("lead") or {"email": payload.get("email") or ""})
+    finally:
+        db.close()
+    return {"brief": brief_for(lead, payload.get("overrides") or None).to_dict()}
 
 
 def send(payload: dict, emit: Emit) -> None:

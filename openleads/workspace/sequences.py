@@ -10,8 +10,9 @@ unsubscribe (see ``DB._after_status``).
 
 Email steps can have A/B **variants** (each contact gets one, deterministically),
 can reply **in the same thread** as the first email, and can be **AI-written**
-(the free-LLM composer, falling back to the template drafter). Sends go through the
-normal sender, so the warmup cap, suppression list, business-hours window and
+(:func:`openleads.writing.write_email`: the keyless writer, or an LLM when one is
+configured; later steps follow up instead of re-introducing, the last one closes the
+loop). Sends go through the normal sender, so the warmup cap, suppression list, business-hours window and
 dry-run default all apply.
 
 :func:`process` is called by the scheduler heartbeat (``openleads drip``) and by the
@@ -50,6 +51,8 @@ DEFAULT_SETTINGS = {
     "context": "",               # this sequence's pitch ({{sender_context}} / AI steps)
 }
 MAX_ERRORS = 3
+# Angles an AI-written step may ask the writer for (see openleads.writing).
+WRITER_ANGLES = ("mutual-signal", "compliment", "curiosity", "pain", "short-ask")
 
 
 # --- definitions ------------------------------------------------------------- #
@@ -89,6 +92,8 @@ def normalize_steps(steps) -> list:
                     clean.append({"subject": subj, "body": body})
             step["ai"] = bool(raw.get("ai"))
             step["thread"] = bool(raw.get("thread", i > 0))
+            if raw.get("angle") in WRITER_ANGLES:
+                step["angle"] = raw["angle"]
             if not clean and not step["ai"] and typ == "auto_email":
                 raise ValueError(f"step {i + 1}: an automatic email needs a subject and body "
                                  "(or turn on AI writing)")
@@ -391,20 +396,35 @@ def task_closed(db, task: dict) -> None:
         _advance(db, enr, seq, time.time())
 
 
+def _email_position(seq: dict, step: dict) -> tuple:
+    """``(n, is_last)``: this step is the n-th email of the sequence (1-based)."""
+    emails = [s for s in seq["steps"] if s.get("type") in ("auto_email", "manual_email")]
+    ids = [s.get("id") for s in emails]
+    n = ids.index(step.get("id")) + 1 if step.get("id") in ids else 1
+    return n, n == len(emails)
+
+
 def _draft_for(db, seq: dict, step: dict, enr: dict, lead: dict):
     """``(Draft, variant_index, missing_vars)`` for one auto-email step."""
-    from openleads.outreach import compose
+    from openleads.writing import write_email
     context = seq["settings"].get("context") or ""
     sender = {"sender_context": context} if context else None
     variant = pick_variant(step, enr["email"])
     variants = step.get("variants") or []
+    n, last = _email_position(seq, step)
     if step.get("ai") and not variants:
-        overrides = {"sender_context": context} if context else None
-        draft, missing = compose.draft(lead, overrides), []
+        # The writer knows which email this is: step 1 opens, later steps follow up in
+        # the same thread with something new, and the last of 3+ closes the loop.
+        draft = write_email(lead, step=n, final=last and n >= 3, angle=step.get("angle") or None,
+                            settings=dict(sender or {}),
+                            thread_subject=enr.get("thread_subject") or "")
+        missing = []
+        if n > 1 and not step.get("thread") and draft.subject.lower().startswith("re: "):
+            draft.subject = draft.subject[4:]
     else:
         v = variants[variant] if variants else {"subject": "", "body": ""}
         draft, missing = tplmod.render_draft(v["subject"], v["body"], lead, sender,
-                                             seed=f"{enr['email']}:{step['id']}")
+                                             seed=f"{enr['email']}:{step['id']}", step=n)
     if step.get("thread") and enr.get("thread_subject"):
         base = enr["thread_subject"]
         while base.lower().startswith("re:"):

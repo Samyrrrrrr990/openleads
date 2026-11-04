@@ -268,14 +268,27 @@ class Draft:
     first_name: str = ""
     organization: str = ""
     lint: dict = field(default_factory=dict)   # spam-lint report (score + warnings)
-    model: str = ""                 # which generator produced it ("template" or model id)
+    model: str = ""                 # which generator produced it ("writer", "template" or model id)
+    # v5.2 (openleads.writing): optional, filled by the writer and the quality gate.
+    quality: dict = field(default_factory=dict)    # 0–100 score + reasons
+    brief: dict = field(default_factory=dict)      # the facts the draft could use
+    angle: str = ""                 # mutual-signal | compliment | curiosity | pain | short-ask | inbox | …
+    step: int = 0                   # 1 = first email, 2+ = follow-ups
+    variants: list = field(default_factory=list)   # A/B alternatives: [{subject, body, angle, quality}]
+    explain: list = field(default_factory=list)    # why each line was chosen
+    subject_options: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
-        return {
+        out = {
             "email": self.email, "subject": self.subject, "body": self.body,
             "first_name": self.first_name, "organization": self.organization,
             "lint": self.lint, "model": self.model,
         }
+        for key in ("quality", "brief", "angle", "step", "variants", "explain", "subject_options"):
+            val = getattr(self, key)
+            if val:
+                out[key] = val
+        return out
 
 
 @dataclass

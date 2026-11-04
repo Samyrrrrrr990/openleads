@@ -85,6 +85,7 @@ the steps, which then run on their own schedule inside your warmup cap.
 | `pipeline` | Deals by stage with open, weighted, won and win-rate totals. |
 | `list_sequences` | Sequences with their steps, status and reply numbers. |
 | `workspace_stats` | Contacts, sends, reply rate, tasks, pipeline, fit grades and data issues at a glance. |
+| `draft_email` | Write (never send) a first email or follow-up for a saved contact or a `find_leads` lead. Returns subject, body, a 0-100 quality score with reasons, the research brief it used, and A/B variants. |
 | `save_contacts` | Save people (e.g. `find_leads` results) into the workspace, optionally into a list with tags. Existing contacts are updated without blanking fields. |
 | `add_to_list` · `set_stage` · `tag_contacts` · `add_note` | Organize people: lists, stages, tags, notes. |
 | `create_task` · `complete_task` | Follow-ups with natural due dates (`tomorrow`, `+3d`, `fri`). |

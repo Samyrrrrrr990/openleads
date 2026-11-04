@@ -3,6 +3,9 @@ Output writers: CSV (v1-compatible), JSON (array), NDJSON (one lead per line), p
 CRM-shaped CSVs: ``apollo`` (Apollo's export column names, so import mappings built
 for Apollo files work unchanged) and ``hubspot`` (HubSpot's contact import headers).
 
+:func:`write_email` (bottom) is the public entry point for drafting a cold email;
+it delegates to :mod:`openleads.writing`.
+
 A single module (not an ``output/`` package) on purpose — ``output/`` is
 gitignored for scraped data, and writers are small enough to live together.
 """
@@ -139,3 +142,15 @@ def write(leads: list[Lead], fmt: str = "csv", path: str | None = None) -> None:
     if path is None:
         path = DEFAULT_PATHS.get(fmt)
     writer(leads, path)
+
+
+# --- cold email ------------------------------------------------------------------ #
+def write_email(lead, *, angle=None, step=1, settings=None, variants=1, llm=None, **kw):
+    """Write one cold email for ``lead`` → :class:`~openleads.models.Draft`.
+
+    The stable public entry point for drafting (workflows, recipes, scripts). See
+    :func:`openleads.writing.write_email` for every option and ``docs/writing.md``.
+    """
+    from openleads.writing import write_email as _write_email
+    return _write_email(lead, angle=angle, step=step, settings=settings, variants=variants,
+                        llm=llm, **kw)

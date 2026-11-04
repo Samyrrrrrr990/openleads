@@ -4,7 +4,23 @@
    preview rendered for a real contact (with spam score and blank-variable
    warnings) on the right. #/templates/<id> opens one.
    ========================================================================= */
-import { $, api, confirmDialog, debounce, esc, fail, fmt, ico, onAct, router, store, toast, ui } from "../core.js";
+import { $, api, confirmDialog, debounce, esc, fail, fmt, ico, menu, onAct, router, store, toast, ui } from "../core.js";
+
+/* What "Generate" can write: [label, angle, step, final]. */
+export const GENERATE = [
+  ["First email: curiosity question", "curiosity", 1, false],
+  ["First email: common pain", "pain", 1, false],
+  ["First email: short ask", "short-ask", 1, false],
+  ["Follow-up with something new", "", 2, false],
+  ["Yes/no nudge", "", 3, false],
+  ["Breakup (last email)", "", 3, true],
+];
+export const generateItems = () => GENERATE.map(([label], i) => ({ label, value: String(i), icon: "spark" }));
+export async function generateTemplate(i, context) {
+  const [, angle, step, final] = GENERATE[+i];
+  return api.post("/api/templates/generate", { angle: angle || undefined, step, final, context: context || undefined });
+}
+const qTone = (s) => (s >= 80 ? "good" : s >= 60 ? "warn" : "bad");
 
 const S = { list: [], cur: null, draft: null, dirty: false, q: "", cat: "", people: [], email: "" };
 let ROOT = null;
@@ -38,7 +54,10 @@ function editorHtml() {
         <datalist id="tpl-cats">${cats().map((c) => `<option value="${esc(c)}">`).join("")}</datalist></div>
       <div class="field"><label>Subject</label><input class="input input--sm" name="subject" value="${esc(t.subject)}" placeholder="quick question about {{company}}"/></div>
     </div>
-    <div class="field"><label>Body</label><textarea class="textarea tpl-body" name="body" rows="14">${esc(t.body)}</textarea></div>
+    <div class="field"><div class="row"><label style="flex:1">Body</label>
+        <button type="button" class="btn btn--xs" data-act="generate" title="Write a starting point from your pitch">${ico("spark", "ico--sm")} Generate</button>
+        <button type="button" class="btn btn--xs" data-act="improve" title="Fix spam words, missing fallbacks, links, length and a missing ask">${ico("check", "ico--sm")} Improve</button></div>
+      <textarea class="textarea tpl-body" name="body" rows="14">${esc(t.body)}</textarea></div>
     <div><div class="hint mb-sm">Insert a variable. Use <code>{{first_name|there}}</code> for a fallback and <code>{Hi|Hey}</code> to vary wording per person</div>
       <div class="var-chips">${(store.meta?.template_variables || []).map((v) =>
         `<button type="button" data-insert="{{${v.key}}}" title="${esc(v.label)} — e.g. ${esc(v.example)}">{{${v.key}}}</button>`).join("")}</div></div>
@@ -65,16 +84,19 @@ async function refreshPreview() {
     const r = await api.post("/api/templates/preview", { subject: S.draft.subject, body: S.draft.body, email: S.email });
     const d = r.draft, lint = d.lint || { score: 0, warnings: [], ok: true };
     const words = (d.body.match(/\w+/g) || []).length;
+    const q = d.quality || null;
+    const reasons = q ? (q.reasons || []).map((x) => x.message) : lint.warnings;
     box.innerHTML = `<div class="email-preview">
         <div class="hint">To ${esc(d.email)}${r.sample ? " (sample)" : ""}</div>
         <div class="email-preview__subject">${esc(d.subject) || '<span class="faint">(no subject)</span>'}</div>
         <div class="email-preview__body">${esc(d.body)}</div></div>
       <div class="row row--wrap" style="gap:6px">
-        <span class="badge ${lint.ok ? "badge--good" : "badge--warn"}" title="0 is clean, 35+ risks the spam folder">spam score ${lint.score}</span>
+        ${q ? `<span class="badge badge--${qTone(q.score)}" title="0 to 100: spam words, length, reading level, how personal it is, links, blanks">Quality ${q.score}</span>` : ""}
+        <span class="badge ${lint.ok ? "badge--outline" : "badge--warn"}" title="0 is clean, 35+ risks the spam folder">spam score ${lint.score}</span>
         <span class="badge">${fmt.plural(words, "word")}</span>
         ${(r.missing || []).map((m) => `<span class="badge badge--warn" title="Blank for this contact — add a fallback like {{${esc(m)}|…}}">{{${esc(m)}}} blank</span>`).join("")}
         ${(r.unknown || []).map((m) => `<span class="badge badge--bad" title="Not a known variable">{{${esc(m)}}} unknown</span>`).join("")}</div>
-      ${lint.warnings.length ? `<ul class="lint-list">${lint.warnings.map((w) => `<li>${ico("flag", "ico--sm")} ${esc(w)}</li>`).join("")}</ul>` : ""}`;
+      ${reasons.length ? `<ul class="lint-list">${reasons.map((w) => `<li>${ico("flag", "ico--sm")} ${esc(w)}</li>`).join("")}</ul>` : ""}`;
   } catch (err) { box.innerHTML = `<p class="muted">${esc(err.message)}</p>`; }
 }
 const queuePreview = debounce(refreshPreview, 250);
@@ -163,7 +185,28 @@ router.register("templates", {
         render();
       } catch (err) { fail(err); }
     });
+    const setText = (subject, body) => {
+      Object.assign(S.draft, { subject, body }); S.dirty = true;
+      rerenderEditor(); queuePreview();
+    };
     onAct(root, {
+      generate: (el) => menu(el, generateItems(), async (v) => {
+        if (S.draft.body.replace(/\{\{[^}]+\}\}|\s|Hi|,/g, "") && !(await confirmDialog("Replace the subject and body with a generated version?", { ok: "Replace" }))) return;
+        try {
+          const r = await generateTemplate(v);
+          if (!S.draft.category) S.draft.category = GENERATE[+v][2] > 1 ? "follow-up" : "intro";
+          setText(r.subject, r.body);
+          toast(r.note || "Generated from your pitch in Settings");
+        } catch (err) { fail(err); }
+      }),
+      improve: async () => {
+        try {
+          const r = await api.post("/api/templates/improve", { subject: S.draft.subject, body: S.draft.body });
+          if (!r.changes.length) { toast("Nothing to fix"); return; }
+          setText(r.subject, r.body);
+          toast(`${fmt.plural(r.changes.length, "fix", "fixes")}: ${r.changes.slice(0, 2).join(", ")}${r.changes.length > 2 ? "…" : ""}`);
+        } catch (err) { fail(err); }
+      },
       new: async () => { if (!(await confirmLeave())) return; S.draft = blank(); S.dirty = false; router.go("templates", "", null, { replace: true }); render(); },
       revert: () => { S.dirty = false; select(S.draft.id, { push: false }); },
       duplicate: async () => {

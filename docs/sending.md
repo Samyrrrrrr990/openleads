@@ -86,15 +86,23 @@ the `include_risky` setting (off is safer).
 
 ## 5. Drafting
 
-`outreach/compose.py` writes each email from the lead's facts:
+The writer (`openleads.writing`) builds a **research brief** from what a search
+already found about each lead (company, stack, hiring/YC/GitHub signals, the
+person's role) and writes a short email that uses it:
 
-- With `OPENROUTER_API_KEY` set, a **free LLM** drafts a personalized subject + body
-  (retried until placeholder-free).
-- Without a key, a **deterministic template** is used.
+- With nothing configured, the **built-in writer** composes it from a phrase
+  library, deterministically per lead, and never mentions a fact the brief lacks.
+- With an OpenRouter key or any OpenAI-compatible endpoint, an **LLM** writes from
+  the same brief; its draft is facts-checked and the built-in writer takes over on
+  any problem.
 
-Either way the draft is **spam-linted** (spammy-word score, link count, caps ratio,
-length) and stripped of stray placeholders and em-dash tells. You can edit any draft
-before sending, in the web Compose page; your edits are exactly what's sent.
+Every draft gets a **0-100 quality score** with reasons (spam words, length,
+reading level, how personal it is, links, unfilled variables). Shared inboxes
+(`info@`) get a "who should I talk to" email. You can edit any draft before
+sending, in the web Compose page; your edits are exactly what's sent.
+
+See [writing.md](writing.md) for angles, tones, variants, rewrites, the LLM
+settings and before/after examples.
 
 ## 6. Sequences, follow-ups & reply detection
 
@@ -118,6 +126,7 @@ openleads run  "<query>"          # find → write → send (dry-run)
 openleads run  "<query>" --live   # …for real
 openleads send "<query>" --live   # same pipeline, terse output
 openleads write "<query>" -o drafts.json   # stop after drafting
+openleads write --to ann@acme.com --explain --variants 2   # a saved contact, with the brief
 ```
 
 ## Safety defaults, in one place

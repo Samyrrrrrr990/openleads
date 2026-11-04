@@ -71,6 +71,19 @@ def _read_leads_csv(path: str) -> list[dict]:
                 "country": (row.get("Country") or "").strip(),
                 "linkedin_url": (row.get("LinkedIn Url") or "").strip(),
                 "tier": (row.get("Email Tier") or "safe").strip(),
+                # v5 columns the writer uses (absent in older CSVs → blank).
+                "website": (row.get("Website") or "").strip(),
+                "employees": (row.get("# Employees") or "").strip(),
+                "company_size": (row.get("Company Size") or "").strip(),
+                "seniority": (row.get("Seniority") or "").strip(),
+                "department": (row.get("Department") or "").strip(),
+                "technologies": [t.strip() for t in (row.get("Technologies") or "").split(",")
+                                 if t.strip()],
+                "description": (row.get("Company Description") or "").strip(),
+                "source": (row.get("Source") or "").strip(),
+                "vertical": (row.get("Vertical") or "").strip(),
+                "evidence": (row.get("Email Evidence") or "").strip(),
+                "contact_type": (row.get("Contact Type") or "").strip(),
             })
     return out
 
@@ -399,11 +412,40 @@ def cmd_run(args) -> int:
     return 0
 
 
+def _writer_opts(args) -> dict:
+    """``write`` flags → keyword arguments for :func:`openleads.writing.write_email`."""
+    llm = None
+    if getattr(args, "no_llm", False):
+        llm = False
+    elif getattr(args, "llm", False):
+        llm = True
+    angle = getattr(args, "angle", None)
+    return {"angle": None if angle in (None, "auto") else angle,
+            "variants": max(1, min(getattr(args, "variants", 1) or 1, 5)),
+            "tone": getattr(args, "tone", None), "llm": llm,
+            "step": max(1, getattr(args, "step", 1) or 1)}
+
+
 def cmd_write(args) -> int:
-    from openleads.outreach import compose
+    from openleads.writing import write_email
+    opts = _writer_opts(args)
+    if opts["llm"] is True:
+        from openleads.writing.llm import config as llm_config
+        if llm_config() is None:
+            print("[!] --llm: no LLM is configured (set an OpenRouter key or an OpenAI-compatible "
+                  "endpoint in `openleads config`); using the built-in writer.", file=sys.stderr)
     db = DB()
     try:
-        if args.from_file:
+        if args.to:
+            leads = []
+            for email in args.to:
+                row = db.get_lead(email)
+                if not row:
+                    print(f"[!] {email} isn't a saved contact (see `openleads people`).",
+                          file=sys.stderr)
+                    continue
+                leads.append(row)
+        elif args.from_file:
             leads = _read_leads_csv(args.from_file)
         else:
             from openleads.automate import pipeline
@@ -412,21 +454,60 @@ def cmd_write(args) -> int:
             cache = Cache()
             out = pipeline.run(q, send=False, cache=cache, db=db)
             cache.close()
-            drafts = out["drafts"]
-            return _emit_drafts(drafts, args)
-        drafts = [compose.draft(ld) for ld in leads if ld.get("email")]
+            by_email = {ld.email: ld for ld in out.get("leads") or []}
+            leads = [by_email.get(d.email) or {"email": d.email, "first_name": d.first_name,
+                                                "organization": d.organization}
+                     for d in out["drafts"]]
+        drafts = [write_email(ld, **opts) for ld in leads
+                  if (ld.get("email") if isinstance(ld, dict) else ld.email)]
         return _emit_drafts(drafts, args)
     finally:
         db.close()
+
+
+def _print_brief(brief: dict) -> None:
+    who = " ".join(p for p in (brief.get("first_name"), brief.get("last_name")) if p)
+    kind = "shared inbox" if brief.get("kind") == "company" else "person"
+    print(f"  brief: {who or '(no name)'} ({kind})"
+          + (f", {brief['title']}" if brief.get("title") else "")
+          + (f" at {brief['company']}" if brief.get("company") else ""))
+    for f in brief.get("facts") or []:
+        if f.get("weight", 0) >= 1:
+            src = f" [{f['source']}]" if f.get("source") else ""
+            print(f"    {f['label']}: {f['value']}{src}")
+    if brief.get("topic"):
+        print(f"    Your pitch is about: {brief.get('topic_object')}")
+    for g in brief.get("gaps") or []:
+        print(f"    note: {g}")
 
 
 def _emit_drafts(drafts, args) -> int:
     if not drafts:
         print("[!] nothing to write — no deliverable leads found.")
         return 1
+    explain = getattr(args, "explain", False)
     for d in drafts:
-        flag = "" if d.lint.get("ok") else f"  [spam-lint {d.lint.get('score')}!]"
-        print(f"\n── {d.email} ─{flag}\nSubject: {d.subject}\n{d.body}")
+        q = d.quality or {}
+        score = f"quality {q['score']}/100" if q else ""
+        flag = "" if d.lint.get("ok", True) else f"  [spam-lint {d.lint.get('score')}!]"
+        angle = f", {d.angle}" if d.angle else ""
+        print(f"\n── {d.email} ── {score}{angle}{flag}")
+        if explain and d.brief:
+            _print_brief(d.brief)
+        print(f"Subject: {d.subject}\n{d.body}")
+        if q.get("reasons"):
+            print("  to improve: " + "; ".join(r["message"] for r in q["reasons"][:4]))
+        if explain:
+            for x in d.explain or []:
+                quoted = x.get("text") and x["slot"] not in ("angle", "writer")
+                short = x.get("text", "")[:80] + ("…" if len(x.get("text", "")) > 80 else "")
+                text = f' "{short}"' if quoted else (f" {x['text']}" if x.get("text") else "")
+                print(f"  why {x['slot']}:{text} — {x['why']}")
+        for k, v in enumerate((d.variants or [])[1:], start=1):
+            vq = (v.get("quality") or {}).get("score", "")
+            print(f"\n  variant {chr(65 + k)} ({v.get('angle', '')}, quality {vq}/100)")
+            print("  Subject: " + v["subject"])
+            print("  " + v["body"].replace("\n", "\n  "))
     if args.out:
         import json
         with open(args.out, "w", encoding="utf-8") as f:
@@ -1001,10 +1082,29 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--no-send", action="store_true", help="stop after drafting")
     r.set_defaults(func=cmd_run)
 
+    from openleads.writing.library import ANGLES, TONES
     w = sub.add_parser("write", help="draft personalized emails for leads")
     _add_query_flags(w, with_output=False)
     w.add_argument("--from", dest="from_file", help="draft from a leads CSV instead of searching")
-    w.add_argument("-o", "--out", help="save drafts to a JSON file")
+    w.add_argument("--to", action="append", metavar="EMAIL",
+                   help="draft for a saved contact (repeatable) instead of searching")
+    w.add_argument("-o", "--out", help="save drafts (with quality scores and briefs) to a JSON file")
+    w.add_argument("--angle", choices=("auto",) + ANGLES + ("breakup",),
+                   help="how to open: mutual-signal, compliment, curiosity, pain, short-ask "
+                        "(default: picked from what we know about each lead)")
+    w.add_argument("--variants", type=int, default=1, metavar="N",
+                   help="write N versions per lead for A/B testing (max 5)")
+    w.add_argument("--tone", choices=TONES, help="plain, warm, direct or casual "
+                                                 "(default: Settings, AI writing)")
+    w.add_argument("--step", type=int, default=1, metavar="N",
+                   help="1 = first email (default); 2+ = a follow-up in the same thread")
+    llm = w.add_mutually_exclusive_group()
+    llm.add_argument("--llm", action="store_true",
+                     help="draft with the configured LLM (falls back to the built-in writer)")
+    llm.add_argument("--no-llm", action="store_true",
+                     help="use only the built-in (keyless) writer")
+    w.add_argument("--explain", action="store_true",
+                   help="print each lead's research brief and why every line was chosen")
     w.set_defaults(func=cmd_write)
 
     sd = sub.add_parser("send", help="find → write → send (dry-run unless --live)")

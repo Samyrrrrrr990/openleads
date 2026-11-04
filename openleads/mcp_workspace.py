@@ -3,7 +3,8 @@ Workspace tools for the MCP server — let an AI assistant work your CRM the way
 you do in the dashboard: search people and companies, read a contact's full
 record, check the pipeline and the task queue, and (with write tools) save
 leads to lists, change stages, tag, take notes, create tasks and deals, and
-enroll people in sequences.
+enroll people in sequences. ``draft_email`` writes (never sends) an email with
+its quality score and research brief.
 
 Read tools carry ``readOnlyHint``; write tools change only the local
 workspace (nothing here sends email — sequences send on their own schedule).
@@ -69,6 +70,26 @@ TOOLS = [
     {"name": "list_sequences", "annotations": {**_RO, "title": "List sequences"},
      "description": "Outreach sequences with their steps, status and reply/bounce numbers.",
      "inputSchema": _obj({})},
+    {"name": "draft_email", "annotations": {"readOnlyHint": True, "openWorldHint": True,
+                                            "title": "Draft an email"},
+     "description": ("Write a personalized cold email (or a follow-up) for a saved contact, or "
+                     "for a lead object from find_leads. Nothing is sent or saved. Returns the "
+                     "subject and body, a 0-100 quality score with reasons, the research brief "
+                     "(the facts the email may use: company, tech stack, signals like hiring or "
+                     "YC, the person's role) and why each line was chosen. Shared inboxes "
+                     "(info@, office@) get a 'who should I talk to' email. Uses the configured "
+                     "LLM when there is one (facts-checked), else the built-in writer."),
+     "inputSchema": _obj({
+         "email": {**_S, "description": "A saved contact's email."},
+         "lead": {"type": "object", "description": "A lead (e.g. from find_leads) instead of a "
+                                                   "saved contact."},
+         "angle": {"type": "string", "enum": ["auto", "mutual-signal", "compliment", "curiosity",
+                                              "pain", "short-ask", "breakup"]},
+         "step": {"type": "integer", "minimum": 1, "maximum": 10, "default": 1,
+                  "description": "1 = first email; 2+ = follow-up in the same thread."},
+         "variants": {"type": "integer", "minimum": 1, "maximum": 5, "default": 1},
+         "tone": {"type": "string", "enum": ["plain", "warm", "direct", "casual"]},
+         "use_llm": {"type": "boolean", "description": "false = built-in writer only."}})},
     {"name": "workspace_stats", "annotations": {**_RO, "title": "Workspace stats"},
      "description": ("The workspace at a glance: contacts, sends, reply rate, tasks due, "
                      "pipeline, ICP grades and data-quality issues."),
@@ -224,11 +245,46 @@ def workspace_stats(db, args: dict) -> dict:
             "duplicate_groups": hl["duplicates"]["groups"]}
 
 
+def draft_email(db, args: dict) -> dict:
+    from openleads.writing import write_email
+    lead = None
+    if args.get("email"):
+        lead = db.get_lead(str(args["email"]))
+        if not lead and not args.get("lead"):
+            raise ValueError(f"{args['email']} is not in the workspace (pass a lead object)")
+    if args.get("lead"):
+        given = args["lead"] if isinstance(args["lead"], dict) else {}
+        lead = {**(lead or {}), **{k: v for k, v in given.items() if v not in (None, "", [], {})}}
+    if not lead or not lead.get("email"):
+        raise ValueError("give a saved contact's email or a lead with an email")
+    use_llm = args.get("use_llm")
+    d = write_email(lead, angle=args.get("angle") or None, step=int(args.get("step") or 1),
+                    variants=int(args.get("variants") or 1), tone=args.get("tone") or None,
+                    llm=None if use_llm is None else bool(use_llm))
+    q = d.quality or {}
+    b = d.brief or {}
+    return {
+        "email": d.email, "subject": d.subject, "body": d.body, "angle": d.angle,
+        "step": d.step, "writer": d.model,
+        "quality": {"score": q.get("score"), "grade": q.get("grade"),
+                    "reasons": [r["message"] for r in q.get("reasons") or []],
+                    "good": q.get("good") or [], "words": q.get("words")},
+        "brief": {"kind": b.get("kind"), "first_name": b.get("first_name"),
+                  "title": b.get("title"), "company": b.get("company"),
+                  "facts": [{"key": f["key"], "fact": f["value"]} for f in b.get("facts") or []],
+                  "gaps": b.get("gaps") or [], "pitch_topic": b.get("topic_object")},
+        "explain": [f"{x['slot']}: {x['why']}" for x in d.explain or []],
+        "variants": [{"subject": v["subject"], "body": v["body"], "angle": v["angle"],
+                      "quality": (v.get("quality") or {}).get("score")}
+                     for v in d.variants[1:]] if d.variants else [],
+    }
+
+
 HANDLERS = {
     "search_contacts": search_contacts, "get_contact": get_contact,
     "search_companies": search_companies, "get_company": get_company,
     "list_tasks": list_tasks, "pipeline": pipeline, "list_sequences": list_sequences,
-    "workspace_stats": workspace_stats,
+    "workspace_stats": workspace_stats, "draft_email": draft_email,
 }
 
 

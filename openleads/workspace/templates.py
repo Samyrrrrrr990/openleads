@@ -38,6 +38,8 @@ VARIABLES = (
     ("sender_name", "Your name", "Sam"),
     ("sender_org", "Your company", "OpenLeads"),
     ("sender_context", "Your pitch (Settings)", "We help clinics fill empty slots."),
+    ("sender_offer", "Your offer (Settings)", "a 15-minute walkthrough"),
+    ("sender_proof", "Your proof (Settings)", "Northside Dental filled 31 more slots."),
     ("day", "Weekday today", "Thursday"),
 )
 VARIABLE_NAMES = tuple(v[0] for v in VARIABLES)
@@ -60,6 +62,8 @@ def context_for(contact: dict, sender: dict | None = None, now: datetime | None 
     c = contact or {}
     first = c.get("first_name") or (c.get("name") or "").split(" ")[0]
     last = c.get("last_name") or " ".join((c.get("name") or "").split(" ")[1:])
+    if not c.get("first_name") and _is_company_contact(c):
+        first, last = "", ""          # "Hi Northwind," is worse than the fallback
     email = (c.get("email") or "").lower()
     domain = c.get("domain") or (email.split("@", 1)[1] if "@" in email else "")
     s = sender or {}
@@ -73,8 +77,20 @@ def context_for(contact: dict, sender: dict | None = None, now: datetime | None 
         "sender_name": s.get("sender_name") or settings.get("sender_name") or "",
         "sender_org": s.get("sender_org") or settings.get("sender_org") or "",
         "sender_context": s.get("sender_context") or settings.get("sender_context") or "",
+        "sender_offer": s.get("sender_offer") or settings.get("sender_offer") or "",
+        "sender_proof": s.get("sender_proof") or settings.get("sender_proof") or "",
         "day": (now or datetime.now()).strftime("%A"),
     }
+
+
+def _is_company_contact(c: dict) -> bool:
+    """A shared inbox or a row whose "name" is really the company's name."""
+    from openleads.writing.brief import ROLE_LOCALS
+    local = (c.get("email") or "").split("@", 1)[0].lower()
+    name = " ".join(str(c.get("name") or "").split()).lower()
+    org = " ".join(str(c.get("organization") or c.get("company") or "").split()).lower()
+    return (c.get("contact_type") == "company" or local in ROLE_LOCALS
+            or (bool(name) and name == org))
 
 
 def _seed(seed) -> int:
@@ -112,18 +128,28 @@ def render(text: str, values: dict, seed="") -> tuple:
 
 
 def render_draft(subject: str, body: str, contact: dict, sender: dict | None = None,
-                 seed=None) -> tuple:
-    """``(Draft, missing)`` for one contact, spam-linted like every other draft."""
+                 seed=None, step: int = 1) -> tuple:
+    """``(Draft, missing)`` for one contact, spam-linted and quality-scored like every
+    other draft (``step`` > 1 scores it as a follow-up)."""
     from openleads.outreach.compose import spam_lint
     values = context_for(contact, sender)
     seed = seed if seed is not None else contact.get("email", "")
     subj, miss1 = render(subject, values, seed=f"{seed}:s")
     text, miss2 = render(body, values, seed=f"{seed}:b")
     missing = miss1 + [m for m in miss2 if m not in miss1]
+    from openleads.writing import brief_for, score_draft
+    brief = brief_for(contact, _writer_overrides(sender))
     draft = Draft(email=(contact.get("email") or "").lower(), subject=subj, body=text,
                   first_name=values["first_name"], organization=values["company"],
-                  lint=spam_lint(subj, text), model="template")
+                  lint=spam_lint(subj, text), model="template",
+                  quality=score_draft(subj, text, brief, step=step), brief=brief.to_dict())
     return draft, missing
+
+
+def _writer_overrides(sender: dict | None) -> dict:
+    s = sender or {}
+    return {k: s[k] for k in ("sender_name", "sender_org", "sender_context", "sender_offer",
+                              "sender_proof") if s.get(k)}
 
 
 def variables_in(text: str) -> list:

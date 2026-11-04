@@ -1,18 +1,17 @@
 """
 Compose personalized, deliverable cold emails.
 
-Two ways to draft:
+:func:`draft` is the long-standing entry point (``draft(lead, overrides) -> Draft``);
+since 5.2 it is a thin wrapper over :func:`openleads.writing.write_email`, which
+builds a research brief from what we already know about the lead, writes with the
+keyless phrase library (or an LLM, when one is configured, facts-checked and with a
+keyless fallback), and scores the result. See ``docs/writing.md``.
 
-* **Free LLM** (OpenRouter free model) when a key is configured — world-class
-  copy, personalized from the lead's real facts. Uses stdlib ``urllib`` so the
-  core stays dependency-free.
-* **Template** fallback when no key — a clean, deterministic, human draft so the
-  tool always works at $0 with nothing configured.
-
-Either way the output is run through :func:`spam_lint` (a deliverability check for
-spam-trigger words, shouting, link-stuffing, and length) and guaranteed free of
-``[placeholder]`` leftovers. Plain text is the default because it lands in inboxes;
-HTML and tracking pixels do not.
+This module keeps the pure text helpers (:func:`spam_lint`, :func:`clean_dashes`,
+:func:`format_body`, placeholder checks) that the writer and the templates use, and
+the v4 LLM helpers (:func:`build_prompt`, :func:`call_llm`, :func:`template_draft`)
+for back-compat. Plain text is the default because it lands in inboxes; HTML and
+tracking pixels do not.
 
 The pure text helpers are also re-exported from ``openleads.campaign`` for v2
 back-compat.
@@ -236,36 +235,13 @@ def template_draft(lead: dict, cfg: dict) -> tuple[str, str]:
     return subject, body
 
 
-def draft(lead: dict, overrides: dict | None = None) -> Draft:
-    """Produce a personalized :class:`Draft` for one lead (LLM if available, else template)."""
-    cfg = sender_cfg(overrides)
-    company = lead.get("organization") or lead.get("company", "")
-    subject = body = ""
-    model = "template"
+def draft(lead: dict, overrides: dict | None = None, **kw) -> Draft:
+    """Produce a personalized :class:`Draft` for one lead.
 
-    if cfg.get("api_key"):
-        for _ in range(3):
-            try:
-                resp = call_llm(build_prompt(lead, cfg), cfg)
-            except (urllib.error.URLError, urllib.error.HTTPError, OSError,
-                    KeyError, ValueError, RuntimeError):
-                break
-            subject, body = parse_response(resp, company)
-            subject = clean_dashes(subject)
-            body = format_body(clean_dashes(body), lead.get("first_name", ""))
-            model = cfg["model"]
-            if not has_placeholder(subject) and not has_placeholder(body):
-                break
-        else:
-            subject = strip_placeholders(subject)
-            body = format_body(strip_placeholders(body), lead.get("first_name", ""))
-
-    if not subject or not body:
-        subject, body = template_draft(lead, cfg)
-        model = "template"
-
-    return Draft(
-        email=lead.get("email", ""), subject=subject, body=body,
-        first_name=lead.get("first_name", ""), organization=company,
-        lint=spam_lint(subject, body), model=model,
-    )
+    ``overrides`` tweak the sender profile for this call (``context`` /
+    ``sender_context`` = the pitch, ``sender`` / ``sender_name``, ``org`` /
+    ``sender_org``, ``api_key``, ``model``, …). Extra keyword arguments (``angle``,
+    ``step``, ``variants``, ``tone``, ``llm``) go to :func:`openleads.writing.write_email`.
+    """
+    from openleads.writing import write_email
+    return write_email(lead, settings=dict(overrides or {}), **kw)
