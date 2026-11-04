@@ -20,7 +20,6 @@ import math
 import threading
 import time
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Callable
 
@@ -224,7 +223,7 @@ def build_leads(query: Query, cache=None, db=None, on_progress: ProgressFn = _no
     rep.requested = query.count
     rep.budget = budget
     t0 = time.monotonic()
-    with _concurrency.deadline(budget), _http.run_scope(), \
+    with _concurrency.deadline(budget), _concurrency.lifetime(), _http.run_scope(), \
             runreport.activate(rep, listener=lambda sr: on_progress("source", sr)):
         try:
             leads = _run(query, use_cache, db, on_progress, budget, rep)
@@ -275,7 +274,7 @@ def _run(query: Query, use_cache, db, on_progress: ProgressFn, budget,
     futility = max(25, query.count * 4)   # give up if nothing usable after this many
     workers = max(1, min(8, query.count))
     gen = iter(gen)
-    pool = ThreadPoolExecutor(max_workers=workers)
+    pool = _concurrency.Pool(workers, name="openleads-resolve")
     window: deque = deque()                # (entity, future), in stream order
     pulled = 0
     exhausted = False

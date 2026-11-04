@@ -20,7 +20,9 @@ unchanged; everything downstream (email waterfall, scoring, output) is reused.
 """
 from __future__ import annotations
 
+import contextvars
 import re
+import threading
 import time
 from dataclasses import replace as _dc_replace
 from typing import Iterator
@@ -222,7 +224,10 @@ def expand_company(ent: Entity, cache=None, discover: bool = True,
         out.append(ent)
 
     if discover:
-        people = find_people(ent.domain, cache=cache, limit=max_people * 2)
+        # Only ``max_people`` are kept, so stop crawling as soon as that many are
+        # found: discovery used to ask for twice as many and so fetched all twelve
+        # team paths even when /team alone named the whole team.
+        people = find_people(ent.domain, cache=cache, limit=max_people)
         for p in people[:max_people]:
             out.append(_person_entity(ent, p["name"], p["title"]))
 
@@ -325,6 +330,81 @@ def key_for(cand: Entity) -> tuple:
     return (cand.domain, who)
 
 
+class _Prefetch:
+    """Start a source's first fetch on a background thread as soon as it's planned.
+
+    The round-robin asks each source for its first entity in turn, and a source's
+    first ``next()`` is where its slow work happens (Overpass, a SPARQL query, a
+    dataset download). Asked one after the other, a 10s Overpass query delayed
+    Wikidata's request by 10s. With every head prefetched, they all run at once;
+    the order entities come out in is unchanged.
+
+    The first ``next()`` runs on the worker thread (in a copy of the caller's
+    context, as ``name``'s active source); everything after it runs on the
+    consumer's thread as before. Closing while the first fetch is still running
+    defers the close to the worker, so the stream never runs on two threads.
+    """
+
+    def __init__(self, name: str, stream) -> None:
+        self._it = iter(stream)
+        self._head = None                 # ("item", entity) or ("raise", exception)
+        self._ready = threading.Event()
+        self._lock = threading.Lock()
+        self._closed = False
+        self._taken = False
+        self._name = name
+        ctx = contextvars.copy_context()
+        threading.Thread(target=ctx.run, args=(self._fetch_head,), daemon=True,
+                         name=f"openleads-prefetch-{name}").start()
+
+    def _fetch_head(self) -> None:
+        token = runreport.SOURCE.set(self._name)
+        try:
+            self._head = ("item", next(self._it))
+        except BaseException as e:  # noqa: BLE001 — handed to the consumer as-is
+            self._head = ("raise", e)
+        finally:
+            runreport.SOURCE.reset(token)
+            with self._lock:
+                self._ready.set()
+                closed = self._closed
+            if closed:
+                self._close_stream()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._taken:
+            return next(self._it)
+        if not self._ready.is_set():
+            left = _concurrency.remaining()
+            wait = None if left == float("inf") else max(0.0, left) + _concurrency.GRACE_SECONDS
+            if not self._ready.wait(wait):
+                raise BudgetExhausted("time budget reached")
+        self._taken = True                # from now on, plain iteration on this thread
+        kind, value = self._head
+        self._head = None
+        if kind == "raise":
+            raise value
+        return value
+
+    def _close_stream(self) -> None:
+        close = getattr(self._it, "close", None)
+        if close is not None:
+            try:
+                close()
+            except Exception:  # noqa: BLE001 — cleanup only
+                pass
+
+    def close(self) -> None:
+        with self._lock:
+            self._closed = True
+            if not self._ready.is_set():
+                return                    # the worker closes it when its fetch ends
+        self._close_stream()
+
+
 def _tagged(name: str, stream) -> Iterator[tuple]:
     for ent in stream:
         yield name, ent
@@ -356,6 +436,8 @@ def search(query: Query, cache=None, db=None, discover_people: bool | None = Non
                 rep.add_error(sr, f"{type(e).__name__}: {e}")
                 rep.source_done(sr)
             continue
+        if len(names) > 1:
+            stream = _Prefetch(name, stream)     # all sources' first fetches at once
         streams.append(_tagged(name, _instrument(name, stream)))
     if not streams:
         return

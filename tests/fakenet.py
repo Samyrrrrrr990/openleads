@@ -11,7 +11,11 @@ expansion, MX/SPF, scoring, the run report — runs exactly as it does live.
 """
 import json
 import re
+import socket
+import threading
+import time
 import urllib.error
+import zlib
 
 # --- Overpass ---------------------------------------------------------------- #
 OVERPASS_OK = json.dumps({
@@ -73,28 +77,67 @@ def status(code: int):
     return answer
 
 
+def latency(url: str, delay) -> float:
+    """Seconds a route takes for ``url``: a number, or ``(lo, hi)`` spread
+    deterministically per URL (crc32), so a benchmark is the same every run."""
+    if not delay:
+        return 0.0
+    if isinstance(delay, (int, float)):
+        return float(delay)
+    lo, hi = delay
+    return lo + (hi - lo) * ((zlib.crc32(url.encode("utf-8")) % 1000) / 999.0)
+
+
 class FakeNet:
-    """Route URLs to canned answers; records every request in ``calls``."""
+    """Route URLs to canned answers; records every request in ``calls``.
+
+    A route may take time (``delay``): the answer arrives after that many seconds,
+    or — when the caller's timeout is shorter — the call fails like a real socket
+    timeout once the timeout has passed. That makes latency benchmarks of the whole
+    pipeline possible offline (see ``bench/latency.py``).
+    """
 
     def __init__(self) -> None:
         self.routes: list = []
         self.calls: list = []
+        self._lock = threading.Lock()
+        self.in_flight = 0
+        self.peak_in_flight = 0
 
-    def add(self, pattern: str, answer) -> "FakeNet":
-        """``answer``: a body (str), an exception (raised), or ``callable(url)``."""
-        self.routes.append((re.compile(pattern), answer))
+    def add(self, pattern: str, answer, delay=None) -> "FakeNet":
+        """``answer``: a body (str), an exception (raised), or ``callable(url)``.
+
+        ``delay``: seconds (or a ``(lo, hi)`` range) before the answer arrives.
+        """
+        self.routes.append((re.compile(pattern), answer, delay))
         return self
 
     def __call__(self, url, headers=None, timeout=None, data=None):
         self.calls.append(url)
-        for rx, answer in self.routes:
+        for rx, answer, delay in self.routes:
             if rx.search(url):
+                wait = latency(url, delay)
+                if wait:
+                    self._wait(wait, timeout)
                 if callable(answer) and not isinstance(answer, BaseException):
                     answer = answer(url)
                 if isinstance(answer, BaseException):
                     raise answer
                 return answer
         raise urllib.error.URLError(f"fakenet: no route for {url}")
+
+    def _wait(self, wait: float, timeout) -> None:
+        with self._lock:
+            self.in_flight += 1
+            self.peak_in_flight = max(self.peak_in_flight, self.in_flight)
+        try:
+            if timeout is not None and wait > timeout:
+                time.sleep(timeout)
+                raise socket.timeout("timed out")
+            time.sleep(wait)
+        finally:
+            with self._lock:
+                self.in_flight -= 1
 
     def hits(self, pattern: str) -> list:
         rx = re.compile(pattern)

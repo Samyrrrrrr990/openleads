@@ -17,15 +17,17 @@ Nominatim + Overpass fetches.
 """
 from __future__ import annotations
 
+import contextvars
+import json
 import os
+import queue
 import re
 import threading
 import time
 import urllib.parse
 from typing import Iterator
 
-from openleads import _concurrency, runreport
-from openleads._http import get_json, recent_errors
+from openleads import _concurrency, _http, runreport
 from openleads.config import APP_USER_AGENT
 from openleads.discover.geo import resolve_place, search_pois
 from openleads.emails.permute import domain_of, is_role_account
@@ -341,43 +343,130 @@ def overpass_problem(data) -> str | None:
     return None
 
 
+# Hedged requests: when the first mirror hasn't answered after HEDGE_DELAY seconds,
+# a second one is asked too and the first good answer wins. Never more than
+# HEDGE_MAX requests are in flight for one query, so a slow night costs the
+# public servers at most one extra request per search, not a fan-out.
+HEDGE_MAX = 2
+HEDGE_DELAY = 1.0
+
+
+def _overpass_attempt(host: str, url: str, timeout: float, out: queue.Queue) -> None:
+    """One Overpass request on its own thread; the outcome goes to ``out``.
+
+    It never touches the run report (a request that lost the race must not show up
+    as an error) but it does tell the circuit breaker how the mirror did.
+    """
+    data, problem, exc = None, None, None
+    try:
+        data = json.loads(_http.request(url, _UA, timeout, retries=0))
+        problem = overpass_problem(data)
+    except _http.FETCH_ERRORS as e:
+        exc, problem = e, _http._reason(e)
+        if not _http.is_transient(e) and not isinstance(e, _concurrency.BudgetExhausted):
+            _http._dead(url, add=True)       # don't ask it again this run
+    except Exception as e:  # noqa: BLE001 - a thread must always report back
+        exc, problem = e, f"{type(e).__name__}: {e}"
+    if problem is None:
+        BREAKER.success(host)
+    else:
+        BREAKER.failure(host)
+    out.put((url, data, problem, exc))
+
+
+def _race(targets: list, cache, timeout: float, reasons: list):
+    """Ask ``targets`` (``[(host, url)]``, in preference order) with hedging.
+
+    The first mirror starts at once; a second starts when the first fails or has
+    not answered within :data:`HEDGE_DELAY`. A failure starts the next untried
+    mirror, keeping at most :data:`HEDGE_MAX` in flight. Returns the first good
+    answer (cached), or None when every mirror failed or the time window closed.
+    Requests still running when an answer wins are left to finish on their own
+    (they are clamped to the same window) and are ignored.
+    """
+    results: queue.Queue = queue.Queue()
+    waiting = list(targets)
+    running: dict = {}
+
+    def start() -> bool:
+        while waiting:
+            host, url = waiting.pop(0)
+            if _http._dead(url):
+                continue
+            ctx = contextvars.copy_context()
+            threading.Thread(target=ctx.run, name="openleads-overpass", daemon=True,
+                             args=(_overpass_attempt, host, url, timeout, results)).start()
+            running[url] = host
+            return True
+        return False
+
+    start()
+    while running:
+        hedge = bool(waiting) and len(running) < HEDGE_MAX
+        left = _concurrency.remaining()
+        wait = None if left == float("inf") else max(0.0, left) + _concurrency.GRACE_SECONDS
+        if hedge:
+            wait = HEDGE_DELAY if wait is None else min(wait, HEDGE_DELAY)
+        try:
+            url, data, problem, exc = results.get(timeout=wait)
+        except queue.Empty:
+            if hedge and _concurrency.remaining() > 0:
+                start()              # the first mirror is slow: ask a second one too
+                continue
+            return None              # the window closed with requests still running
+        host = running.pop(url)
+        if problem is None:
+            if cache is not None:
+                cache.set("dataset", url, data)
+            return data
+        if exc is not None:
+            _http._record(url, problem, exc)
+        else:
+            problem = f"rejected: {problem}"
+            _http._record(url, problem)
+        if not isinstance(exc, _concurrency.BudgetExhausted):
+            reasons.append(f"{host}: {problem}")
+        while len(running) < HEDGE_MAX and start():
+            pass
+    return None
+
+
 def run_overpass(ql: str, cache=None, mirrors=None, timeout: int = 25,
                  reasons: list | None = None):
     """Run an Overpass QL query across the public mirrors; None if all fail.
 
-    Each mirror gets one attempt (a 429/504 moves straight on to the next one
-    instead of backing off on a server that is shedding load), mirrors whose
-    breaker is open are skipped, and only if every mirror failed *and* more than
-    20s of the run remain is there one more round after a short pause. Error
-    remarks are rejected (and never cached). Pass a list as ``reasons`` to collect
-    why each mirror failed.
+    A cached answer from any mirror is used without a request. Otherwise the
+    mirrors are asked with hedging (:func:`_race`): each gets one attempt (a
+    429/504 moves straight on to the next one instead of backing off on a server
+    that is shedding load), mirrors whose breaker is open are skipped, and only if
+    every mirror failed *and* more than 20s of the run remain is there one more
+    round after a short pause. Error remarks are rejected (and never cached); a
+    recently expired cached answer is the last resort. Pass a list as ``reasons``
+    to collect why each mirror failed.
     """
     mirrors = tuple(mirrors or overpass_mirrors())
     qs = urllib.parse.urlencode({"data": ql})
     reasons = reasons if reasons is not None else []
+    targets = [(urllib.parse.urlsplit(base).hostname or base, f"{base}?{qs}")
+               for base in mirrors]
+    if cache is not None:
+        for _, url in targets:
+            hit = cache.get("dataset", url)
+            if hit is not None and overpass_problem(hit) is None:
+                return hit
     for round_no in (0, 1):
-        tried = False
-        for base in mirrors:
-            host = urllib.parse.urlsplit(base).hostname or base
-            if not BREAKER.allow(host):
-                continue
-            tried = True
-            url = f"{base}?{qs}"
-            data = get_json(url, headers=_UA, cache=cache, ttl_ns="dataset",
-                            timeout=timeout, retries=0, validate=overpass_problem)
-            problem = overpass_problem(data)
-            if problem is None:
-                BREAKER.success(host)
+        live = [(host, url) for host, url in targets if BREAKER.allow(host)]
+        if live:
+            data = _race(live, cache, timeout, reasons)
+            if data is not None:
                 return data
-            BREAKER.failure(host)
-            last = recent_errors()
-            if last and last[-1][0] == url:
-                reasons.append(f"{host}: {last[-1][1]}")
-            elif not any(r.startswith(f"{host}: ") for r in reasons):
-                reasons.append(f"{host}: {problem}")
-        if round_no or not tried or _concurrency.remaining() <= RETRY_ROUND_MIN_SECONDS:
+        if round_no or not live or _concurrency.remaining() <= RETRY_ROUND_MIN_SECONDS:
             break
         _sleep(RETRY_ROUND_DELAY)
+    for _, url in targets:
+        stale = _http._stale(cache, "dataset", url)
+        if stale is not None and overpass_problem(stale) is None:
+            return stale
     return None
 
 

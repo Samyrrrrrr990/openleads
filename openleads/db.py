@@ -455,7 +455,11 @@ class DB:
         return cur.rowcount > 0
 
     def close(self) -> None:
-        try:
-            self._conn.close()
-        except Exception:
-            pass
+        # Under the lock: a search returns before its last resolver threads finish,
+        # and closing the connection while one of them is inside a query crashed
+        # the interpreter (SQLite use-after-close). Later calls raise instead.
+        with self._lock:
+            try:
+                self._conn.close()
+            except Exception:
+                pass
