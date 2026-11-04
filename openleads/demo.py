@@ -239,5 +239,11 @@ def seed(db, now: float | None = None, rng_seed: int = 7) -> dict:
                             "technologies": {"HubSpot": 5, "WordPress": 3}})
     scoring.rescore(db)
     templates.seed_defaults(db)
+    # Two workflows to open in the editor. Paused: the demo never runs anything by itself.
+    from openleads.automate.workflow import store as wfstore
+    from openleads.automate.workflow import templates as wftemplates
+    for key, name in (("local-business-outreach", "dental-outreach"), ("inbound-reply", "reply-to-task")):
+        if not wfstore.get(db, name):
+            wfstore.save(db, wftemplates.instantiate(key, name=name))
     return {"contacts": len(emails), "companies": len(COMPANIES), "lists": 4,
             "sequences": 2, "tasks": len(t_specs), "deals": len(d_specs)}

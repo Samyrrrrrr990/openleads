@@ -30,7 +30,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from openleads import settings
-from openleads.web import api, workspace_api
+from openleads.web import api, workflow_api, workspace_api
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -114,6 +114,10 @@ _POST_STREAM = {
 _GET_API.update(workspace_api.GET)
 _POST_JSON.update(workspace_api.POST)
 _POST_STREAM.update(workspace_api.STREAM)
+# So does the workflow editor.
+_GET_API.update(workflow_api.GET)
+_POST_JSON.update(workflow_api.POST)
+_POST_STREAM.update(workflow_api.STREAM)
 
 
 class Handler(BaseHTTPRequestHandler):

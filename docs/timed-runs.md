@@ -32,6 +32,10 @@ run once a day at 09:00:
 openleads watch add new-clinics "dentists in Austin" --every "every 12h" --sink webhook
 ```
 
+[Workflows](workflows.md) use the same schedules on their Schedule and New leads
+triggers. Once a workflow is active, each wake-up also fires its due triggers and
+continues items parked in Wait steps.
+
 ## 2. Arm this machine once
 
 ```bash

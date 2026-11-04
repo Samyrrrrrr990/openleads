@@ -751,6 +751,12 @@ def cmd_drip(args) -> int:
     print(f"  recipes: {summary['campaigns_run']} · recipe sends: {summary['campaign_sent']}"
           f" · watchers: {summary['watchers_run']} · follow-ups due: {summary['due']}"
           f" · sent: {summary['sent']}")
+    wf = summary.get("workflows") or {}
+    waits = wf.get("waits") or {}
+    if wf.get("run") or waits.get("due"):
+        print(f"  workflows: {wf.get('run', 0)} run · {waits.get('resumed', 0)} waiting items "
+              f"resumed" + (f" · {waits['due']} due (resumed on a --live drip)"
+                            if not live and waits.get("due") else ""))
     seq = summary.get("sequences") or {}
     if seq.get("due"):
         verb = "sent" if live else "previewed"
@@ -914,7 +920,7 @@ QUICK_START = (
 COMMAND_GROUPS = (
     ("Find", ("find", "company", "verify", "enrich", "sources")),
     ("Outreach", ("write", "run", "inbox", "drip")),
-    ("Automate", ("recipe", "watch", "schedule", "runs", "assistant")),
+    ("Automate", ("workflow", "recipe", "watch", "schedule", "runs", "assistant")),
     ("Workspace", ("people", "companies", "lists", "seq", "tasks", "deals", "import",
                    "export", "dedupe", "stats", "backup", "demo")),
     ("Setup", ("init", "config", "doctor", "cache", "web", "chat", "mcp", "bench")),
@@ -1144,7 +1150,8 @@ def build_parser() -> argparse.ArgumentParser:
     cp.add_argument("rest", nargs=argparse.REMAINDER)
     cp.set_defaults(func=cmd_campaign)
 
-    from openleads import cli_workspace
+    from openleads import cli_workflow, cli_workspace
+    cli_workflow.register(sub)
     cli_workspace.register(sub)
     p.epilog = _grouped_help(sub.help)
     p._registrar = sub          # for tests / tooling: every registered command

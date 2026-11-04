@@ -307,3 +307,42 @@ def _m3_workspace(conn):
             lead = {}
         lead.setdefault("organization", org or "")
         sync_account(conn, domain, lead, now)
+
+
+# --------------------------------------------------------------------------- #
+# v4 — workflow graphs (the node editor), their run log and parked waits       #
+# --------------------------------------------------------------------------- #
+WORKFLOW_SQL = """
+CREATE TABLE IF NOT EXISTS workflows (
+    name TEXT PRIMARY KEY, graph TEXT NOT NULL DEFAULT '{}', active INTEGER NOT NULL DEFAULT 0,
+    live INTEGER NOT NULL DEFAULT 0, state TEXT NOT NULL DEFAULT '{}', last_run_at TEXT DEFAULT '',
+    created REAL, updated REAL
+);
+CREATE TABLE IF NOT EXISTS workflow_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, workflow TEXT NOT NULL, mode TEXT NOT NULL DEFAULT 'test',
+    live INTEGER NOT NULL DEFAULT 0, trigger TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'running',
+    started REAL NOT NULL, finished REAL, nodes TEXT NOT NULL DEFAULT '[]',
+    summary TEXT NOT NULL DEFAULT '{}', error TEXT DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_workflow_runs_wf ON workflow_runs (workflow, started);
+CREATE TABLE IF NOT EXISTS workflow_waits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, workflow TEXT NOT NULL, run_id INTEGER,
+    node TEXT NOT NULL, item TEXT NOT NULL, wake_at REAL NOT NULL, live INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'waiting', created REAL, resumed REAL
+);
+CREATE INDEX IF NOT EXISTS idx_workflow_waits_due ON workflow_waits (status, wake_at);
+CREATE INDEX IF NOT EXISTS idx_workflow_waits_wf ON workflow_waits (workflow, status);
+"""
+
+
+def create_workflow_tables(conn) -> None:
+    for stmt in WORKFLOW_SQL.split(";"):
+        if stmt.strip():
+            conn.execute(stmt)
+
+
+@register(4, "workflow graphs, run log and parked waits")
+def _m4_workflows(conn):
+    # Recipes are not copied: they stay in ``campaigns`` and appear as graphs on read
+    # (openleads.automate.workflow.convert), so they keep running exactly as before.
+    create_workflow_tables(conn)
