@@ -786,6 +786,32 @@ details > summary { cursor: pointer; }
 .email-preview__body { white-space: pre-wrap; line-height: 1.6; font-size: 14px; max-width: 70ch; }
 .lint-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--warn); }
 .lint-list li { display: flex; gap: 6px; align-items: flex-start; }
+/* Compose: the draft on the left, what we know + quality on the right */
+.compose-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.compose-controls .select { width: auto; min-width: 150px; }
+.compose-outbox { position: sticky; top: 16px; }
+.draft__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 18px; align-items: start; }
+.draft__side { border-left: 1px solid var(--line); padding-left: 16px; gap: 14px; }
+.brief { display: grid; gap: 6px; font-size: 13px; }
+.brief + .brief { border-top: 1px solid var(--line); padding-top: 12px; }
+.brief__head { font-weight: 650; font-size: 12.5px; color: var(--muted); }
+.brief__who { font-weight: 600; }
+.brief__facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 10px; margin: 0; }
+.brief__facts dt { color: var(--muted); }
+.brief__facts dd { margin: 0; overflow-wrap: anywhere; }
+.brief__gaps { margin: 0; padding-left: 16px; color: var(--muted); font-size: 12.5px; display: grid; gap: 2px; }
+.why summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
+.why ul { margin: 6px 0 0; padding-left: 16px; display: grid; gap: 3px; color: var(--muted); font-size: 12.5px; }
+.why b { color: var(--text); font-weight: 600; }
+.quality-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+@media (max-width: 1100px) {
+  .grid-main-side:has(.compose-outbox) { grid-template-columns: 1fr; }
+  .compose-outbox { position: static; }
+}
+@media (max-width: 820px) {
+  .draft__grid { grid-template-columns: 1fr; }
+  .draft__side { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 12px; }
+}
 @media (max-width: 1280px) { .tpl-shell { grid-template-columns: 240px minmax(0, 1fr); } #tpl-side { grid-column: 2; } }
 @media (max-width: 820px) { .tpl-shell { grid-template-columns: 1fr; } #tpl-side { grid-column: auto; } .tpl-lib { position: static; max-height: 320px; } }
 

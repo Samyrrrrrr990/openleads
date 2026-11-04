@@ -5,14 +5,23 @@
 import { $, $$, api, esc, fail, ico, onAct, router, store, toast, ui } from "../core.js";
 
 const GROUPS = {
-  sender: ["Sender identity", "Who the emails are from and what you're offering. Drafts and templates use these."],
+  sender: ["Sender identity", "Who the emails are from, what you're offering and your proof. Drafts and templates use these, and never invent anything you didn't write here."],
   mailbox: ["Mailbox", "Your SMTP account (app password, not your login). IMAP is optional and lets replies and bounces stop sequences automatically."],
   sending: ["Sending policy", "Deliverability guardrails: daily cap, warmup ramp, pacing, and whether risky addresses may be emailed."],
-  ai: ["AI writing", "Optional free LLM (OpenRouter) for personalized drafts and plain-English queries."],
+  ai: ["AI writing", "How drafts are written. The built-in writer works with nothing set up; add an OpenRouter key or any OpenAI-compatible endpoint (a local Ollama works) for LLM drafts. Every LLM draft is checked against what we know about the lead, and the built-in writer takes over on any problem."],
   discover: ["Discovery", "Optional keys that raise public API limits."],
   integrations: ["Integrations", "Where exports and alerts go: webhooks, Notion, Airtable, HubSpot."],
   web: ["Dashboard", "This local web app."],
 };
+// Friendlier names than the setting keys, where the key reads badly.
+const LABELS = {
+  sender_context: "Your pitch", sender_offer: "Your offer", sender_proof: "Proof",
+  writing_tone: "Tone", writing_examples: "Your writing samples", writing_llm: "Use an LLM",
+  openrouter_api_key: "OpenRouter API key", openrouter_model: "OpenRouter model",
+  ai_base_url: "Custom endpoint URL", ai_api_key: "Custom endpoint key", ai_model: "Custom endpoint model",
+  ai_timeout: "LLM timeout (seconds)",
+};
+const labelOf = (key) => LABELS[key] || key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 let ROOT = null;
 let TAB = "sender";
 let PRESETS = {};
@@ -23,6 +32,9 @@ export function registerSettingsTab(key, label, render) { extraTabs.push({ key, 
 function control(s) {
   const id = `set-${s.key}`;
   if (s.type === "bool") return ui.switch(s.key, !!s.value, s.value ? "On" : "Off", `data-set="${s.key}" id="${id}"`);
+  if (s.type === "text") {
+    return `<textarea class="textarea" id="${id}" data-set="${s.key}" rows="6" placeholder="${esc(s.description)}">${esc(s.value ?? "")}</textarea>`;
+  }
   if (s.choices && s.choices.length) {
     return `<select class="select" id="${id}" data-set="${s.key}">${s.choices.map((c) =>
       `<option ${String(s.value) === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>`;
@@ -39,7 +51,7 @@ function groupHtml(g) {
   return `<div class="card"><div class="card__head"><div><h3>${esc(title)}</h3><p class="hint" style="margin-top:2px">${esc(desc)}</p></div></div>
     <div class="card__body stack">${items.map((s) => `
       <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:center">
-        <div><label for="set-${s.key}" class="t-strong" style="font-weight:600">${esc(s.key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()))}</label>
+        <div><label for="set-${s.key}" class="t-strong" style="font-weight:600">${esc(labelOf(s.key))}</label>
           <div class="hint">${esc(s.description)}${s.source === "env" ? ' <span class="badge badge--sm badge--info">from env</span>' : ""}</div></div>
         <div>${control(s)}</div></div>`).join('<div class="divider" style="margin:2px 0"></div>')}
     </div>

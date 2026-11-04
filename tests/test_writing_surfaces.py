@@ -127,6 +127,11 @@ def test_api_rewrite_and_brief(base):
     assert st == 400 and "unknown rewrite" in bad["error"]
     st, b = post(base, "/api/write/brief", {"email": "info@northwind.example"})
     assert st == 200 and b["brief"]["kind"] == "company"
+    # an edit in Compose is re-scored against the same brief
+    st, sc = post(base, "/api/write/score", {"email": "maya@northwind.example", "subject": "hi",
+                                             "body": "Hi Maya,\n\nClick here for a FREE demo!!!"})
+    assert st == 200 and sc["quality"]["score"] < d["quality"]["score"]
+    assert any(r["code"] == "spam" for r in sc["quality"]["reasons"])
 
 
 def test_api_templates_generate_improve_and_preview_quality(base):

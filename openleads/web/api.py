@@ -317,6 +317,22 @@ def write_rewrite(payload: dict) -> dict:
     return {"draft": out.to_dict()}
 
 
+def write_score(payload: dict) -> dict:
+    """Score an edited draft: ``{subject, body, email, step}`` → ``{quality}``."""
+    from openleads.writing import brief_for, score_draft
+    db = DB()
+    try:
+        lead = _writer_lead(db, payload.get("lead") or {"email": payload.get("email") or ""})
+    finally:
+        db.close()
+    try:
+        step = max(1, int(payload.get("step") or 1))
+    except (TypeError, ValueError):
+        step = 1
+    return {"quality": score_draft(payload.get("subject") or "", payload.get("body") or "",
+                                   brief_for(lead), step=step)}
+
+
 def write_brief(payload: dict) -> dict:
     """The research brief for one lead (or saved contact ``email``)."""
     from openleads.writing import brief_for

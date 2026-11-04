@@ -6,6 +6,11 @@
    ========================================================================= */
 import { $, api, confirmDialog, esc, fail, fmt, ico, menu, modal, onAct, promptDialog, router, store, toast, ui } from "../core.js";
 import { showSkipped } from "../actions.js";
+import { generateItems, generateTemplate } from "./templates.js";
+
+const WRITER_ANGLES = [["", "Angle: auto"], ["mutual-signal", "Mutual signal"], ["compliment", "Compliment"],
+  ["curiosity", "Curiosity"], ["pain", "Pain"], ["short-ask", "Short ask"]];
+const qTone = (s) => (s >= 80 ? "good" : s >= 60 ? "warn" : "bad");
 
 const TYPE_ICON = { auto_email: "mail", manual_email: "edit", call: "phone", linkedin: "linkedin", task: "task" };
 const typeLabel = (k) => store.label("step_types", k);
@@ -105,10 +110,14 @@ function stepEditor(s, i) {
     </div>
     ${isEmail ? `<div class="row row--wrap" style="gap:14px">
         ${i > 0 ? ui.switch("thread", s.thread, "Reply in the same thread", `data-sf="thread" data-i="${i}"`) : ""}
-        ${ui.switch("ai", s.ai, "AI-write it for each person", `data-sf="ai" data-i="${i}"`)}</div>
-      ${s.ai ? `<p class="hint">Leave the variants empty to have each email written from the contact's details and this sequence's pitch (free LLM if configured, otherwise the built-in writer).</p>` : ""}
+        ${ui.switch("ai", s.ai, "AI-write it for each person", `data-sf="ai" data-i="${i}"`)}
+        ${s.ai && i === 0 ? `<select class="select select--sm" style="width:auto" data-sf="angle" data-i="${i}" aria-label="Angle">${WRITER_ANGLES.map(([v, l]) =>
+          `<option value="${v}" ${(s.angle || "") === v ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>` : ""}</div>
+      ${s.ai ? `<p class="hint">Leave the variants empty to have each email written for that person from what we know about them and this sequence's pitch. ${i === 0 ? "" : "Later steps follow up in the same thread with something new; the last of three or more closes the loop."} An LLM writes it when one is configured, otherwise the built-in writer.</p>` : ""}
       ${variants.map((v, k) => `<div class="card card--pad stack" style="background:var(--panel)">
         <div class="row"><b>${variants.length > 1 ? `Variant ${String.fromCharCode(65 + k)}` : "Email"}</b><span class="spacer"></span>
+          <button type="button" class="btn btn--xs" data-gen="${i}:${k}" title="Write this step from your pitch">${ico("spark", "ico--sm")} Generate step</button>
+          <button type="button" class="btn btn--xs" data-imp="${i}:${k}" title="Fix spam words, missing fallbacks, links, length and a missing ask">${ico("check", "ico--sm")} Improve</button>
           ${variants.length > 1 ? `<button class="btn btn--xs btn--ghost" data-var-del="${i}:${k}">${ico("trash", "ico--sm")} Remove</button>` : ""}</div>
         ${s.thread && i > 0 ? `<span class="hint">Subject: “re:” plus the first email's subject, so it lands in the same thread.</span>`
           : `<input class="input input--sm" data-vf="subject" data-i="${i}" data-k="${k}" value="${esc(v.subject)}" placeholder="Subject — e.g. quick question about {{company}}"/>`}
@@ -214,8 +223,10 @@ const refreshPreview = (() => {
         if (!r.draft) { el.innerHTML = `<div class="banner">${ico(TYPE_ICON[r.type] || "task")}<div><b>${esc(typeLabel(r.type))}</b> — becomes a task: “${esc(r.note || typeLabel(r.type))}”</div></div>`; return; }
         el.innerHTML = `<div class="email-card" style="background:var(--panel)"><div class="hint">To ${esc(r.draft.email)}${r.sample ? " (sample)" : ""}${r.variant ? `, variant ${String.fromCharCode(65 + r.variant)}` : ""}</div>
           <b>${esc(r.draft.subject)}</b><div style="white-space:pre-wrap;font-size:13px">${esc(r.draft.body)}</div>
-          <div class="row row--wrap">${r.draft.lint ? `<span class="badge ${r.draft.lint.ok ? "badge--good" : "badge--warn"}">spam score ${r.draft.lint.score}</span>` : ""}
-          ${(r.missing || []).map((m) => `<span class="badge badge--warn" title="Blank for this contact">{{${esc(m)}}} blank</span>`).join("")}</div></div>`;
+          <div class="row row--wrap">${r.quality ? `<span class="badge badge--${qTone(r.quality.score)}" title="${esc((r.quality.reasons || []).map((x) => x.message).join("\n") || "Nothing to fix")}">Quality ${r.quality.score}</span>` : ""}
+          ${r.draft.lint ? `<span class="badge ${r.draft.lint.ok ? "badge--outline" : "badge--warn"}">spam score ${r.draft.lint.score}</span>` : ""}
+          ${(r.missing || []).map((m) => `<span class="badge badge--warn" title="Blank for this contact">{{${esc(m)}}} blank</span>`).join("")}</div>
+          ${(r.quality?.reasons || []).length ? `<ul class="lint-list">${r.quality.reasons.slice(0, 4).map((x) => `<li>${ico("flag", "ico--sm")} ${esc(x.message)}</li>`).join("")}</ul>` : ""}</div>`;
       } catch (e) { el.innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
     }, 200);
   };
@@ -338,6 +349,29 @@ function bindEditor(root) {
     }
     if (g("data-var-add")) { const s = E.steps[+g("data-var-add").dataset.varAdd]; s.variants = [...(s.variants?.length ? s.variants : [{ subject: "", body: "" }]), { subject: s.variants?.[0]?.subject || "", body: "" }]; markDirty(true); return; }
     if (g("data-var-del")) { const [i, k] = g("data-var-del").dataset.varDel.split(":").map(Number); E.steps[i].variants.splice(k, 1); markDirty(true); return; }
+    if (g("data-gen") || g("data-imp")) {
+      const btn = g("data-gen") || g("data-imp");
+      const [i, k] = (btn.dataset.gen || btn.dataset.imp).split(":").map(Number);
+      const s = E.steps[i];
+      s.variants = s.variants && s.variants.length ? s.variants : [{ subject: "", body: "" }];
+      const v = s.variants[k];
+      const apply = (r) => { v.subject = r.subject; v.body = r.body; markDirty(true); };
+      if (btn.dataset.gen) {
+        const items = generateItems();
+        const order = i === 0 ? items : [...items.slice(3), ...items.slice(0, 3)];
+        menu(btn, order, async (pick) => {
+          try { const r = await generateTemplate(pick, E.seq.settings?.context); apply(r); toast(r.note || "Step written from this sequence's pitch"); }
+          catch (err) { fail(err); }
+        });
+      } else {
+        try {
+          const r = await api.post("/api/templates/improve", { subject: v.subject, body: v.body });
+          if (!r.changes.length) toast("Nothing to fix");
+          else { apply(r); toast(`${fmt.plural(r.changes.length, "fix", "fixes")}: ${r.changes.slice(0, 2).join(", ")}`); }
+        } catch (err) { fail(err); }
+      }
+      return;
+    }
     if (g("data-insert")) {
       const b = g("data-insert");
       const field = $(`[data-vf="body"][data-i="${b.dataset.i}"][data-k="${b.dataset.k}"]`, root);

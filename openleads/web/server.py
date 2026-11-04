@@ -93,6 +93,7 @@ _POST_JSON = {
     "/api/write": api.write,
     "/api/write/rewrite": api.write_rewrite,
     "/api/write/brief": api.write_brief,
+    "/api/write/score": api.write_score,
     "/api/settings": api.update_settings,
     "/api/crm": api.crm,
     "/api/recipes/save": api.recipes_save,
