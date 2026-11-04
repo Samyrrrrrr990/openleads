@@ -26,24 +26,28 @@ Some things I learned building it:
 - My unit tests passed while the product was broken. 300 tests, all mocking the
   network. Real queries returned page headings like "Refund Policy" as people, and
   "dentists in Austin" returned chiropractors. Now there's `openleads bench`, which
-  runs 12 real queries against the live sources every night and commits the
-  scoreboard to the repo. Last night: 12/12 queries returned results, 82% of
-  requested leads filled, 0% junk names, and 57% of emails found or
-  pattern-backed (the rest are labelled as guesses).
+  runs 13 real queries against the live sources every night and commits the
+  scoreboard to the repo, empty nights included. Latest run: 13/13 queries
+  returned results, 78% of requested leads filled, 0% junk names, and 68% of
+  emails found or pattern-backed (the rest are labelled as guesses).
 - Telling a name from a heading is surprisingly hard. What finally worked was
   requiring scraped names to start with a known given name (public-domain SSA data
   plus an international list), and rejecting acronyms.
 - Port 25 is blocked almost everywhere, so SMTP verification usually can't run.
   Most of the confidence comes from addresses the company itself publishes, which
   reveal its email format.
-- The public Overpass API is often overloaded (504s), so local search falls back to
-  a mirror, then to Nominatim.
+- The public Overpass API is often overloaded (502s, timeouts). For a while that
+  made the same search return 10 leads one night and 0 the next. Now mirrors are
+  raced, Overpass only gets part of the time budget, and Nominatim always gets a
+  turn, and every search reports which source failed and why.
 
 It's stdlib-only Python, runs locally (SQLite in ~/.openleads, no telemetry), and
 also works as an MCP server, so Claude or Cursor can call it. You can put searches
 on a schedule ("weekdays 9am") and it'll draft and send within a daily cap, with
-dry-run as the default. As of 4.6, the local dashboard (`openleads web`) draws each
-scheduled search as an n8n-style node canvas you can edit and test-run.
+dry-run as the default. The local dashboard (`openleads web`) has a people/company
+workspace like Apollo's, and as of 5.2 an n8n-style workflow editor (find → verify →
+split by tier → write → wait → send/export) whose test runs never send. Emails are
+written from what it actually knows about each lead and scored before you send.
 
 Site and docs: https://samyrrrrrr990.github.io/openleads/
 
