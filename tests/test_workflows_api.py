@@ -219,7 +219,7 @@ def test_cli_run_is_a_test_run_by_default(capsys):
     assert code == 0 and "test run" in out and "found 2" in out and "sent 0" in out
     code, out, _ = cli_run(capsys, "workflow", "run", "fo", "--json")
     res = json.loads(out)
-    assert res["mode"] == "test" and res["summary"]["previewed"] == 0
+    assert res["mode"] == "test" and res["summary"]["previewed"] == 1 and res["summary"]["sent"] == 0
     code, out, _ = cli_run(capsys, "runs")
     assert "wf-test" in out and "fo" in out
 

@@ -100,7 +100,11 @@ def workflows_catalog(db, p):
 @_route(GET, "/api/workflows/templates")
 def workflows_templates(db, p):
     from openleads.automate.workflow import templates
-    return {"templates": templates.list_templates()}
+    out = []
+    for t in templates.list_templates():
+        g = templates.instantiate(t["key"])
+        out.append({**t, "graph": {k: g[k] for k in ("nodes", "edges", "description")}})
+    return {"templates": out}
 
 
 @_route(GET, "/api/workflows/runs")

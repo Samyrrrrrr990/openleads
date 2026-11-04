@@ -849,6 +849,7 @@ def run_send(ctx, params, items):
                           "detail": f"suppressed: {reason}" if reason else "test run"}
             if not reason:
                 out.append(it)
+        ctx.vars["previewed"] = ctx.vars.get("previewed", 0) + len(out)
         _would(ctx, f"send {len(out)} emails (nothing was sent)")
         return {"out": out}
     if ctx.live and params.get("respect_window", True) and not ctx.svc("in_send_window")(ctx.now):
