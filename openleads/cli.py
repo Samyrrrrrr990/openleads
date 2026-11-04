@@ -500,7 +500,8 @@ def _emit_drafts(drafts, args) -> int:
         if explain:
             for x in d.explain or []:
                 quoted = x.get("text") and x["slot"] not in ("angle", "writer")
-                text = f' "{x["text"][:80]}"' if quoted else (f" {x['text']}" if x.get("text") else "")
+                short = x.get("text", "")[:80] + ("…" if len(x.get("text", "")) > 80 else "")
+                text = f' "{short}"' if quoted else (f" {x['text']}" if x.get("text") else "")
                 print(f"  why {x['slot']}:{text} — {x['why']}")
         for k, v in enumerate((d.variants or [])[1:], start=1):
             vq = (v.get("quality") or {}).get("score", "")
