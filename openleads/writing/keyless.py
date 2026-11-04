@@ -43,7 +43,14 @@ def _sentence(text: str) -> str:
     if not text:
         return ""
     text = text[0].upper() + text[1:]
-    return text if text[-1] in ".!?\"'" else text + "."
+    return text if text[-1] in ".!?\"'}" else text + "."
+
+
+def possessive(name: str) -> str:
+    """"Acme's", "Helio Payments'" (and a {{variable}} gets the plain 's)."""
+    if name.endswith("}}"):
+        return name + "'s"
+    return name + ("'" if name.endswith("s") else "'s")
 
 
 def pitch_lines(pitch: str, max_words: int = 40) -> str:
@@ -93,6 +100,7 @@ def values(b: Brief) -> dict:
         offer = offer[0].lower() + offer[1:]
     return {
         "first": b.first_name, "company": b.company or "your team",
+        "company_pos": possessive(b.company) if b.company else "your team's",
         "topic_object": b.topic_object, "topic_short": b.topic_short,
         "Topic_short": b.topic_short[:1].upper() + b.topic_short[1:],
         "who": who, "vertical_noun": L.AUDIENCE.get(b.vertical, L.AUDIENCE["general"])[2],

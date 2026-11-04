@@ -101,10 +101,15 @@ def rewrite_text(subject: str, body: str, mode: str) -> dict:
         paras = [_tidy(p) for p in text.split(" \n") if p.strip()]
         sents = [(i, s) for i, p in enumerate(paras) for s in _sentences(p)]
         qi = max((k for k, (_, s) in enumerate(sents) if s.endswith("?")), default=None)
-        budget = max(35, int(before * 0.6))
+        budget = max(40, int(before * 0.65))
+        # Always the opener, the first sentence of the next paragraph (the pitch) and the ask.
+        lead_of = {}
+        for k, (i, _) in enumerate(sents):
+            lead_of.setdefault(i, k)
+        must = {0, qi} | ({lead_of[1]} if 1 in lead_of and len(paras) > 2 else set())
         keep, n = set(), 0
-        for k, (_, s) in enumerate(sents):            # always the opener and the ask
-            if k == 0 or k == qi:
+        for k, (_, s) in enumerate(sents):
+            if k in must:
                 keep.add(k)
                 n += len(s.split())
         for k, (_, s) in enumerate(sents):

@@ -142,7 +142,8 @@ def facts_check(subject: str, body: str, brief) -> list:
                 if i == 0 or not tok[0].isupper():
                     continue
                 w = tok.lower().strip(".'")
-                if w in _COMMON_CAPS or w in vocab or w.rstrip("'s") in vocab:
+                base = w[:-2] if w.endswith("'s") else w.rstrip("'")
+                if w in _COMMON_CAPS or w in vocab or base in vocab:
                     continue
                 problems.append(f"names '{tok.strip('.')}', which isn't in the brief")
     for phrase in L.FAKE_FAMILIARITY:

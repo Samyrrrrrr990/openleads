@@ -48,12 +48,6 @@ class Setting:
 
 # --- the schema: the single source of truth for every setting ----------------- #
 SCHEMA: tuple[Setting, ...] = (
-    # LLM (free) — used for drafting + natural-language understanding (optional).
-    Setting("openrouter_api_key", ("OPENROUTER_API_KEY",), True, "str", "",
-            "ai", "OpenRouter API key — unlocks free-LLM email drafting & NL parsing."),
-    Setting("openrouter_model", ("OPENROUTER_MODEL",), False, "str",
-            "openai/gpt-oss-120b:free", "ai",
-            "Free OpenRouter model id used for drafting."),
     # AI writing (openleads.writing): keyless by default, an LLM when one is set up.
     Setting("writing_tone", (), False, "str", "plain", "ai",
             "Default tone for drafts: plain, warm, direct or casual.",
@@ -65,6 +59,12 @@ SCHEMA: tuple[Setting, ...] = (
             "auto = draft with an LLM when one is configured (falls back to the built-in "
             "writer on any problem); off = always use the built-in writer.",
             choices=("auto", "off")),
+    # LLM (free) — used for drafting + natural-language understanding (optional).
+    Setting("openrouter_api_key", ("OPENROUTER_API_KEY",), True, "str", "",
+            "ai", "OpenRouter API key — unlocks free-LLM email drafting & NL parsing."),
+    Setting("openrouter_model", ("OPENROUTER_MODEL",), False, "str",
+            "openai/gpt-oss-120b:free", "ai",
+            "Free OpenRouter model id used for drafting."),
     Setting("ai_base_url", ("OPENLEADS_AI_BASE_URL",), False, "str", "", "ai",
             "Any OpenAI-compatible endpoint, e.g. http://localhost:11434/v1 for Ollama. "
             "Blank = OpenRouter."),

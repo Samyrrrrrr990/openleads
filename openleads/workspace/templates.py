@@ -38,6 +38,8 @@ VARIABLES = (
     ("sender_name", "Your name", "Sam"),
     ("sender_org", "Your company", "OpenLeads"),
     ("sender_context", "Your pitch (Settings)", "We help clinics fill empty slots."),
+    ("sender_offer", "Your offer (Settings)", "a 15-minute walkthrough"),
+    ("sender_proof", "Your proof (Settings)", "Northside Dental filled 31 more slots."),
     ("day", "Weekday today", "Thursday"),
 )
 VARIABLE_NAMES = tuple(v[0] for v in VARIABLES)
@@ -75,6 +77,8 @@ def context_for(contact: dict, sender: dict | None = None, now: datetime | None 
         "sender_name": s.get("sender_name") or settings.get("sender_name") or "",
         "sender_org": s.get("sender_org") or settings.get("sender_org") or "",
         "sender_context": s.get("sender_context") or settings.get("sender_context") or "",
+        "sender_offer": s.get("sender_offer") or settings.get("sender_offer") or "",
+        "sender_proof": s.get("sender_proof") or settings.get("sender_proof") or "",
         "day": (now or datetime.now()).strftime("%A"),
     }
 
@@ -144,7 +148,8 @@ def render_draft(subject: str, body: str, contact: dict, sender: dict | None = N
 
 def _writer_overrides(sender: dict | None) -> dict:
     s = sender or {}
-    return {k: s[k] for k in ("sender_name", "sender_org", "sender_context") if s.get(k)}
+    return {k: s[k] for k in ("sender_name", "sender_org", "sender_context", "sender_offer",
+                              "sender_proof") if s.get(k)}
 
 
 def variables_in(text: str) -> list:

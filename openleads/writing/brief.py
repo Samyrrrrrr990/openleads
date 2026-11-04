@@ -72,7 +72,8 @@ _SOURCE_VERTICAL = {"github": "developers", "huggingface": "developers", "openal
 # (topic, keywords). First match with the most hits wins.
 TOPICS = (
     ("bookings", ("booking", "appointment", "no-show", "no show", "schedul", "patients",
-                  "reservation", "empty slots", "chair time", "calendar fill")),
+                  "reservation", "slots", "chair time", "calendar fill", "cancellation",
+                  "waitlist", "wait list", "class", "covers")),
     ("meetings", ("meeting", "pipeline", "outbound", "leads", "prospect", "demo", "sales",
                   "calendar", "deals", "revenue")),
     ("hiring", ("hire", "hiring", "recruit", "candidate", "talent", "job ")),

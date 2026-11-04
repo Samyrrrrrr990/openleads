@@ -211,7 +211,9 @@ def _template_brief(settings: dict | None) -> Brief:
     b.first_name = "{{first_name|there}}"
     b.company = "{{company|your team}}"
     b.sender = {**b.sender, "pitch": "{{sender_context}}" if real_pitch else "",
-                "name": "{{sender_name}}", "org": ""}
+                "name": "{{sender_name}}", "org": "",
+                "offer": "{{sender_offer}}" if sender.get("offer") else "",
+                "proof": "{{sender_proof}}" if sender.get("proof") else ""}
     b.facts, b.gaps = [], []
     return b
 
@@ -240,7 +242,7 @@ def generate_template(*, angle: str | None = None, step: int = 1, tone: str | No
         e = keyless.follow_up(b, max(2, step), first, tone, 0, final=final)
     else:
         e = first
-    body = e.body.replace("{{sender_context}}.", "{{sender_context}}")
+    body = e.body
     explain = e.explain + ([{"slot": "note", "text": "", "why": note}] if note else [])
     q = score_draft(e.subject, body, None, step=max(1, step), template=True)
     return {"subject": e.subject, "body": body, "angle": e.angle, "quality": q,
