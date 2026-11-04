@@ -32,6 +32,7 @@ import socket
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zlib
 from collections import deque
@@ -113,6 +114,8 @@ def _open(url: str, headers: dict | None = None, timeout: float = DEFAULT_TIMEOU
 def _reason(e: Exception) -> str:
     if isinstance(e, BudgetExhausted):
         return "skipped: time budget reached"
+    if isinstance(e, HostUnresponsive):
+        return "skipped: site keeps timing out"
     if isinstance(e, urllib.error.HTTPError):
         code = e.code
         hint = {403: "rate-limited or forbidden", 404: "not found",
@@ -179,7 +182,8 @@ def retry_delay(url: str, attempt: int, e: Exception | None = None) -> float:
 
 
 def request(url: str, headers: dict | None = None, timeout: float = DEFAULT_TIMEOUT,
-            data: bytes | None = None, retries: int | None = None) -> str:
+            data: bytes | None = None, retries: int | None = None,
+            skip_slow_hosts: bool = False) -> str:
     """Fetch ``url`` as text with retries and the run deadline. Raises on failure.
 
     * Each attempt's timeout is ``min(timeout, time left)`` (never under 0.5s);
@@ -187,6 +191,9 @@ def request(url: str, headers: dict | None = None, timeout: float = DEFAULT_TIME
     * Transient failures (:func:`is_transient`) are retried up to ``retries``
       times (default ``MAX_RETRIES``), never sleeping past the deadline.
     * POSTs are never replayed (a webhook may have acted on the first one).
+    * With ``skip_slow_hosts`` (web pages: :func:`get_text`), a site that already
+      timed out ``SLOW_HOST_TIMEOUTS`` times in this run raises
+      :class:`HostUnresponsive` at once. Shared services (DNS, APIs) never do.
     """
     tries = MAX_RETRIES if retries is None else max(0, int(retries))
     if data is not None:
@@ -196,10 +203,14 @@ def request(url: str, headers: dict | None = None, timeout: float = DEFAULT_TIME
         left = _concurrency.remaining()
         if left <= 0:
             raise BudgetExhausted(f"time budget reached before fetching {url}")
+        if skip_slow_hosts and _slow_host(url):
+            raise HostUnresponsive(f"skipped: {_host_of(url)} keeps timing out")
         t = max(MIN_TIMEOUT, min(float(timeout), left))
         try:
             return _open(url, headers, t, data=data)
         except FETCH_ERRORS as e:
+            if skip_slow_hosts and _is_timeout(e) and _slow_host(url, timed_out=True):
+                raise            # the host is hanging: don't wait for it again
             if attempt >= tries or not is_transient(e):
                 raise
             delay = retry_delay(url, attempt, e)
@@ -256,14 +267,54 @@ STALE_SECONDS = 7 * 86400
 _DEAD: contextvars.ContextVar = contextvars.ContextVar("openleads_http_dead", default=None)
 
 
+# Run-scoped count of timeouts per host. A company site that has timed out
+# SLOW_HOST_TIMEOUTS times in a run is not asked again in that run: a hanging
+# site otherwise cost each of its pages a full timeout (plus retries) in people
+# discovery, then again in the address harvest and the company profile.
+_SLOW: contextvars.ContextVar = contextvars.ContextVar("openleads_http_slow", default=None)
+SLOW_HOST_TIMEOUTS = 2
+
+
+class HostUnresponsive(OSError):
+    """This run already saw the host time out repeatedly; the request was skipped."""
+
+
 @contextmanager
 def run_scope():
-    """Scope one search run: within it, a permanently failed URL is fetched once."""
+    """Scope one search run: within it, a permanently failed URL is fetched once,
+    and a host that keeps timing out is skipped."""
     token = _DEAD.set((threading.Lock(), set()))
+    token2 = _SLOW.set((threading.Lock(), {}))
     try:
         yield
     finally:
+        _SLOW.reset(token2)
         _DEAD.reset(token)
+
+
+def _host_of(url: str) -> str:
+    """The site a URL belongs to (``www.`` dropped: it's the same server, usually)."""
+    host = urllib.parse.urlsplit(url).hostname or ""
+    return host[4:] if host.startswith("www.") else host
+
+
+def _is_timeout(e: BaseException) -> bool:
+    if isinstance(e, urllib.error.URLError) and isinstance(e.reason, BaseException):
+        e = e.reason
+    return isinstance(e, (socket.timeout, TimeoutError))
+
+
+def _slow_host(url: str, timed_out: bool = False) -> bool:
+    """True if ``url``'s host is unresponsive in this run; ``timed_out`` counts one more."""
+    memo = _SLOW.get()
+    if memo is None:
+        return False
+    lock, counts = memo
+    host = _host_of(url)
+    with lock:
+        if timed_out:
+            counts[host] = counts.get(host, 0) + 1
+        return counts.get(host, 0) >= SLOW_HOST_TIMEOUTS
 
 
 def _dead(url: str, add: bool = False) -> bool:
@@ -278,7 +329,8 @@ def _dead(url: str, add: bool = False) -> bool:
         return url in urls
 
 
-def _fetch(url, headers, timeout, cache, ttl_ns, data, validate, retries, parse):
+def _fetch(url, headers, timeout, cache, ttl_ns, data, validate, retries, parse,
+           skip_slow_hosts=False):
     use_cache = cache is not None and bool(ttl_ns) and data is None
     if use_cache:
         hit = cache.get(ttl_ns, url)
@@ -287,7 +339,8 @@ def _fetch(url, headers, timeout, cache, ttl_ns, data, validate, retries, parse)
     if data is None and _dead(url):
         return _stale(cache, ttl_ns, url) if use_cache else None
     try:
-        value = parse(request(url, headers, timeout, data=data, retries=retries))
+        value = parse(request(url, headers, timeout, data=data, retries=retries,
+                              skip_slow_hosts=skip_slow_hosts))
     except FETCH_ERRORS as e:
         _record(url, _reason(e), e)
         if data is None and not is_transient(e) and not isinstance(e, BudgetExhausted):
@@ -314,7 +367,7 @@ def get_text(url: str, headers: dict | None = None, timeout: float = DEFAULT_TIM
     if validate is _DEFAULT:
         validate = looks_like_challenge if data is None else None
     return _fetch(url, headers, timeout, cache, ttl_ns, data, validate, retries,
-                  lambda raw: raw)
+                  lambda raw: raw, skip_slow_hosts=data is None)
 
 
 def get_json(url: str, headers: dict | None = None, timeout: float = DEFAULT_TIMEOUT,

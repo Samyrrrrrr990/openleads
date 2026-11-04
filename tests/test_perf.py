@@ -207,3 +207,23 @@ def test_gather_keeps_order_and_swallows_errors():
                                lambda: time.sleep(0.3) or "c"], default="-")
     assert out == ["a", "-", "c"]
     assert time.monotonic() - t0 < 0.55
+
+
+def test_a_hanging_site_is_skipped_after_two_timeouts_in_a_run(monkeypatch):
+    n = fakenet.install(monkeypatch)
+    n.add(r"hang\.example", "<html></html>", delay=5)
+    n.add(r"api\.example", "{}", delay=5)
+    with _http.run_scope():
+        for path in ("/team", "/about"):
+            assert _http.get_text(f"https://hang.example{path}", timeout=0.2, retries=0) is None
+        t0 = time.monotonic()
+        assert _http.get_text("https://www.hang.example/", timeout=0.2) is None
+        assert time.monotonic() - t0 < 0.1                 # skipped, not waited for
+        for _ in range(3):                                 # APIs are never skipped
+            assert _http.get_json("https://api.example/x", timeout=0.2, retries=0) is None
+    assert len(n.hits(r"hang\.example")) == 2
+    assert len(n.hits(r"api\.example")) == 3
+    assert "skipped: site keeps timing out" in _http.recent_errors()[-4][1]
+    with _http.run_scope():                                # a new run asks again
+        assert _http.get_text("https://hang.example/", timeout=0.2, retries=0) is None
+    assert len(n.hits(r"hang\.example")) == 3

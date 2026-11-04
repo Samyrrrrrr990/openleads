@@ -6,7 +6,8 @@ goes to ``tests/fakenet.py`` routes that answer after a deterministic, per-URL
 delay modelled on what the live runs see —
 
 * Overpass mirrors 3–8s each (``--scenario main-down``: the main instance hangs);
-* company sites 0.3–1.5s per page, one site in ten hanging past the 8s timeout;
+* company sites 0.3–1.5s per page, one site in ten hanging past the 8s timeout
+  (``--scenario dead-sites``: one in five, including the top-ranked business);
 * DNS-over-HTTPS 0.1s, Gravatar 0.15s, Wikidata 0.5–6s, SEC 1–2s;
 * Nominatim's 1 request/second throttle stays real.
 
@@ -37,7 +38,7 @@ import fakenet  # noqa: E402
 
 QUERIES = ("dentists in Austin", "marketing agencies in Miami",
            "software companies in Berlin")
-SCENARIOS = ("busy", "main-down")
+SCENARIOS = ("busy", "main-down", "dead-sites")
 
 FIRST = ("Maria", "James", "Linda", "Robert", "Susan", "David", "Karen", "Daniel",
          "Laura", "Michael", "Emily", "Thomas")
@@ -90,10 +91,18 @@ def site(url: str) -> str:
     raise fakenet.http_error(url, 404, "not found")
 
 
-def site_delay(url: str) -> float:
+def _ten_percent(idx: int) -> bool:
+    return idx % 10 == 7
+
+
+def _top_ranked_too(idx: int) -> bool:
+    return idx % 5 == 1          # one in five, including the first-ranked site
+
+
+def site_delay(url: str, hangs=_ten_percent) -> float:
     m = re.match(r"https?://(?:www\.)?([^/?#]+)", url)
     digits = re.findall(r"\d+", m.group(1) if m else "")
-    slow = bool(digits) and int(digits[0]) % 10 == 7
+    slow = bool(digits) and hangs(int(digits[0]))
     return fakenet.latency(url, SLOW_SITE_DELAY if slow else SITE_DELAY)
 
 
@@ -116,16 +125,20 @@ def sec_tickers() -> str:
 class World(fakenet.FakeNet):
     """FakeNet whose site routes compute a per-site delay (slow sites hang)."""
 
+    hangs = staticmethod(_ten_percent)
+
     def __call__(self, url, headers=None, timeout=None, data=None):
         if re.match(r"https?://(?:www\.)?(?:[^/]*\.example|[a-z]+\d+\.com)(?:/|$)", url):
             self.calls.append(url)
-            self._wait(site_delay(url), timeout)
+            self._wait(site_delay(url, self.hangs), timeout)
             return site(url)
         return super().__call__(url, headers=headers, timeout=timeout, data=data)
 
 
 def build_world(scenario: str = "busy") -> World:
     net = World()
+    if scenario == "dead-sites":
+        net.hangs = _top_ranked_too
     main = HANG if scenario == "main-down" else OVERPASS_DELAY
     body = overpass_body()
     net.add(r"overpass-api\.de", body, delay=main)
