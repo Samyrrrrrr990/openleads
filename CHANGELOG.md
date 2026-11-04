@@ -6,6 +6,74 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-11-04
+
+**Faster searches, real workflows, better emails.** Searches start every source at
+once and stop waiting on slow servers; workflows become n8n-style node graphs you draw
+and run; and every email is written from what OpenLeads actually knows about the lead,
+scored, and easy to rewrite.
+
+### Performance
+- All planned sources start their first fetch at once, and Overpass mirrors are
+  hedged: a second mirror is asked if the first hasn't answered within a second
+  (never more than two at a time).
+- Team-page discovery stops as soon as it has the people it keeps, and a company
+  site that keeps timing out is skipped for the rest of the search.
+- MX, SPF and DMARC lookups run concurrently; the lookup cache uses SQLite WAL
+  (cache writes about 5x faster).
+- `openleads find` exits as soon as it prints: leftover work stops when a search
+  returns instead of crawling until the budget runs out.
+- On the new offline latency benchmark (`bench/latency.py`), median search time fell
+  from 25s to 12s and searches with a hanging site went from 1-4 leads to 10.
+- Fixed a crash when `openleads.find()` closed SQLite while lookups were still running.
+
+### Workflows (n8n-style)
+- Workflows are node graphs with 22 node types: triggers (manual, schedule, new
+  leads, reply received), find, load contacts, enrich a CSV or list, company lookup,
+  verify, filter (if), split by tier, skip contacted, limit, write email, wait, send,
+  add to list, enroll in sequence, set stage, create task, tag, export and notify.
+- A new dashboard editor: pan and zoom canvas, searchable node palette, drag to
+  connect, typed settings for every node, undo and redo, keyboard shortcuts, live run
+  view with item counts on each node, run history with sample items, and a read-only
+  step list on phones.
+- The executor: safe test runs that never send, export or change the workspace;
+  per-node results; stop or continue on errors; Wait steps that park leads in the
+  database and resume on the next cycle (anyone who replies meanwhile is dropped);
+  every run in `openleads runs`.
+- `openleads workflow list|show|run [--live]|export|import|templates|new --from|
+  activate|pause|runs|rm`, with 7 templates. New workflows and imports arrive paused.
+- Existing recipes appear as equivalent graphs and keep running unchanged.
+- MCP tools `list_workflows` and `run_workflow` (a test run by default), and
+  `/api/workflows/*` endpoints.
+
+### Writing emails
+- Every draft is written from a research brief of what OpenLeads already knows:
+  company, tech stack, hiring, YC and GitHub signals, the person's role, and your
+  pitch, offer and proof. No invented facts; copy is stable per lead and varied
+  across leads.
+- Five angles (mutual signal, compliment, curiosity, pain, short ask), four tones,
+  A/B variants, and casual or plain subject lines. Shared inboxes get a "who should I
+  talk to" email; follow-ups stay in the thread without repeating the first one.
+- Optional LLM through OpenRouter or any OpenAI-compatible endpoint (Ollama works):
+  drafts are facts-checked against the brief and fall back to the built-in writer on
+  a timeout, an error or an invented fact.
+- A 0-100 quality score with reasons on every draft and preview: spam words, length,
+  reading level, personalization, links, unfilled variables, fake familiarity. On the
+  demo workspace the built-in writer's average went from 81 to 97.
+- Compose shows the brief beside each draft with one-click rewrites (shorter, warmer,
+  more direct, more casual); Templates and the sequence editor get Generate and
+  Improve.
+- `openleads write` gains `--angle`, `--variants`, `--tone`, `--step`, `--llm/--no-llm`
+  and `--explain`; new MCP tool `draft_email`; new settings for your offer, proof,
+  tone, example emails and the AI endpoint.
+- Fixed: sequence and assistant pitches were ignored by drafts, AI-written follow-ups
+  re-sent the intro, and templates greeted companies by their first word.
+
+### Website
+- The landing page plays out a search (sources lighting up, addresses resolving to
+  their evidence), shows a live workflow graph, and fills in the benchmark as you
+  scroll. Everything is readable without JavaScript and still under reduced motion.
+
 ## [5.1.1] - 2026-10-30
 
 ### Fixed

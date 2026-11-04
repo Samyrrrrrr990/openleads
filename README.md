@@ -151,9 +151,17 @@ The assistant can search and edit your workspace, but it never sends email itsel
 
 ## Automate it
 
-Draw a search as a workflow in the dashboard, or save it as a recipe and put it on a
-schedule. Sends stay inside your daily cap, warmup ramp and business hours, and stop
-for anyone who replies.
+Workflows are n8n-style node graphs you draw in the dashboard: triggers (schedule,
+new leads, a reply), find, verify, filter and split by tier, write email, wait, send,
+add to a list or sequence, create tasks, and export. Test runs never send; every run
+shows what each node did. Sends stay inside your daily cap, warmup ramp and business
+hours, and stop for anyone who replies.
+
+```bash
+openleads workflow templates                       # 7 ready-made workflows
+openleads workflow new dentists --from local-business-outreach   # arrives paused
+openleads workflow run dentists      # a test run: finds and writes, never sends
+```
 
 ```bash
 openleads recipe add miami "marketing agencies in Miami" --every "weekdays 9am" --send
@@ -162,11 +170,11 @@ openleads schedule on      # one agent: launchd, cron or Windows Task Scheduler
 openleads runs             # what ran, what it found, what failed
 ```
 
-[Workflows](./docs/workflows.md) &nbsp;|&nbsp; [Timed runs](./docs/timed-runs.md). Exports go to CSV, Google
+[Workflows](./docs/workflows.md) &nbsp;|&nbsp; [Writing emails](./docs/writing.md) &nbsp;|&nbsp; [Timed runs](./docs/timed-runs.md). Exports go to CSV, Google
 Sheets, Notion, Airtable, HubSpot or any webhook. There is also a GitHub Action:
 
 ```yaml
-- uses: Samyrrrrrr990/openleads@v5.1.1
+- uses: Samyrrrrrr990/openleads@v5.2.0
   with: { query: "marketing agencies in Miami", count: 50 }
 ```
 
@@ -198,7 +206,7 @@ openleads enrich my-list.csv                           # your names and companie
 openleads verify ada@acme.io
 
 # reach out (a dry run unless you add --live)
-openleads write "rust developers in Berlin"
+openleads write "rust developers in Berlin" --variants 2 --explain   # drafts, scored, with the brief
 openleads run "rust developers in Berlin"
 
 # the workspace

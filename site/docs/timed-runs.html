@@ -39,7 +39,7 @@
 <div class="docs__rail"><nav class="dsb" id="dsb" aria-label="Docs">
 <ul class="dsb__list"><li><a class="dsb__link" href="index.html">Overview</a></li></ul>
 <p class="dsb__sec" id="dsb-get-started">Get started</p><ul class="dsb__list" aria-labelledby="dsb-get-started"><li><a class="dsb__link" href="quickstart.html">Quickstart</a></li><li><a class="dsb__link" href="web.html">Web dashboard</a></li></ul>
-<p class="dsb__sec" id="dsb-guides">Guides</p><ul class="dsb__list" aria-labelledby="dsb-guides"><li><a class="dsb__link" href="finding.html">Finding leads</a></li><li><a class="dsb__link" href="workspace.html">Workspace</a></li><li><a class="dsb__link" href="sequences.html">Sequences</a></li><li><a class="dsb__link" href="from-apollo.html">Moving from Apollo</a></li><li><a class="dsb__link" href="workflows.html">Workflows</a></li><li><a class="dsb__link" href="deliverability.html">Deliverability</a></li><li><a class="dsb__link" href="sending.html">Sending</a></li><li><a class="dsb__link" href="timed-runs.html" aria-current="page">Timed runs</a></li><li><a class="dsb__link" href="automation.html">Automation and assistant</a></li><li><a class="dsb__link" href="mcp.html">Claude, Cursor, and MCP</a></li><li><a class="dsb__link" href="python-api.html">Python API</a></li><li><a class="dsb__link" href="sources.html">Add a source</a></li></ul>
+<p class="dsb__sec" id="dsb-guides">Guides</p><ul class="dsb__list" aria-labelledby="dsb-guides"><li><a class="dsb__link" href="finding.html">Finding leads</a></li><li><a class="dsb__link" href="workspace.html">Workspace</a></li><li><a class="dsb__link" href="sequences.html">Sequences</a></li><li><a class="dsb__link" href="from-apollo.html">Moving from Apollo</a></li><li><a class="dsb__link" href="workflows.html">Workflows</a></li><li><a class="dsb__link" href="writing.html">Writing emails</a></li><li><a class="dsb__link" href="deliverability.html">Deliverability</a></li><li><a class="dsb__link" href="sending.html">Sending</a></li><li><a class="dsb__link" href="timed-runs.html" aria-current="page">Timed runs</a></li><li><a class="dsb__link" href="automation.html">Automation and assistant</a></li><li><a class="dsb__link" href="mcp.html">Claude, Cursor, and MCP</a></li><li><a class="dsb__link" href="python-api.html">Python API</a></li><li><a class="dsb__link" href="sources.html">Add a source</a></li></ul>
 <p class="dsb__sec" id="dsb-reference">Reference</p><ul class="dsb__list" aria-labelledby="dsb-reference"><li><a class="dsb__link" href="architecture.html">Architecture</a></li><li><a class="dsb__link" href="how-it-works.html">Email engine</a></li><li><a class="dsb__link" href="responsible-use.html">Responsible use</a></li><li><a class="dsb__link" href="licensing.html">Licensing</a></li></ul>
 <p class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" rel="noopener">Ask the community<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" rel="noopener">Report an issue<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p>
 </nav></div>
@@ -56,6 +56,7 @@ openleads recipe add weekly &quot;fintech founders&quot; -n 50     --every &quot
 <p><code>openleads recipe list</code> shows each recipe's schedule. A bad schedule is rejected when you save it, not when it should have run.</p>
 <p>Watchers ("tell me when new leads match") take the same flag. Without one they run once a day at 09:00:</p>
 <div class="codeblock"><pre class="code"><code>openleads watch add new-clinics &quot;dentists in Austin&quot; --every &quot;every 12h&quot; --sink webhook</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p><a href="workflows.html">Workflows</a> use the same schedules on their Schedule and New leads triggers. Once a workflow is active, each wake-up also fires its due triggers and continues items parked in Wait steps.</p>
 <h2 id="2-arm-this-machine-once" class="anchored"><a class="hlink" href="#2-arm-this-machine-once">#</a>2. Arm this machine once</h2>
 <div class="codeblock"><pre class="code"><code>openleads schedule on        # install the agent
 openleads schedule status    # is it installed, and when does each recipe run next?
@@ -81,7 +82,7 @@ jobs:
   leads:
     runs-on: ubuntu-latest
     steps:
-      - uses: Samyrrrrrr990/openleads@v5.1.1
+      - uses: Samyrrrrrr990/openleads@v5.2.0
         id: leads
         with: { query: &quot;marketing agencies in Miami&quot;, count: 50 }
       - uses: actions/upload-artifact@v4

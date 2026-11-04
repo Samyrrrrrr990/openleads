@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Writing emails · OpenLeads docs</title>
+<meta name="description" content="How drafts are written from what OpenLeads knows, scored, and rewritten. OpenLeads documentation." />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#131418" media="(prefers-color-scheme: dark)" />
+<meta property="og:title" content="Writing emails · OpenLeads docs" />
+<meta property="og:description" content="How drafts are written from what OpenLeads knows, scored, and rewritten. OpenLeads documentation." />
+<meta property="og:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preload" href="../fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../styles.css?v=10" />
+<link rel="stylesheet" href="docs.css?v=10" />
+</head>
+<body class="docs">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="gh" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol><symbol id="i-search" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.75" cy="8.75" r="5.25"/><path d="m12.75 12.75 4 4"/></symbol><symbol id="i-menu" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6h13M3.5 10h13M3.5 14h13"/></symbol><symbol id="i-close" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 5 10 10M15 5 5 15"/></symbol><symbol id="i-arrow-left" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H4m5-5-5 5 5 5"/></symbol><symbol id="i-arrow-right" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12m-5-5 5 5-5 5"/></symbol><symbol id="i-external" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13 13 7M8 7h5v5"/></symbol></svg>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav" id="nav">
+  <a class="brand" href="../index.html" aria-label="OpenLeads home"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="../index.html#labels">How it labels</a>
+    <a href="../index.html#benchmark">Benchmark</a>
+    <a href="../index.html#workspace">Workspace</a>
+    <a href="index.html" class="is-active">Docs</a>
+  </nav>
+  <div class="nav__cta">
+    <button class="dsearch" type="button" data-search-open aria-label="Search the docs" aria-keyshortcuts="Meta+K Control+K /"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg><span class="dsearch__label">Search</span><kbd data-mod-k>⌘K</kbd></button>
+    <a class="gh-btn" href="https://github.com/Samyrrrrrr990/openleads" rel="noopener" aria-label="OpenLeads on GitHub">
+      <svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true"><use href="#gh"/></svg><span class="gh-btn__label">GitHub</span><span class="gh-btn__count" data-stars hidden></span>
+    </a>
+    <button class="dmenu" id="dsbToggle" type="button" aria-label="Open the docs menu" aria-controls="dsb" aria-expanded="false"><svg class="ico ico--open" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg><svg class="ico ico--close" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+  </div>
+</header>
+<div class="docs__shell">
+<div class="docs__rail"><nav class="dsb" id="dsb" aria-label="Docs">
+<ul class="dsb__list"><li><a class="dsb__link" href="index.html">Overview</a></li></ul>
+<p class="dsb__sec" id="dsb-get-started">Get started</p><ul class="dsb__list" aria-labelledby="dsb-get-started"><li><a class="dsb__link" href="quickstart.html">Quickstart</a></li><li><a class="dsb__link" href="web.html">Web dashboard</a></li></ul>
+<p class="dsb__sec" id="dsb-guides">Guides</p><ul class="dsb__list" aria-labelledby="dsb-guides"><li><a class="dsb__link" href="finding.html">Finding leads</a></li><li><a class="dsb__link" href="workspace.html">Workspace</a></li><li><a class="dsb__link" href="sequences.html">Sequences</a></li><li><a class="dsb__link" href="from-apollo.html">Moving from Apollo</a></li><li><a class="dsb__link" href="workflows.html">Workflows</a></li><li><a class="dsb__link" href="writing.html" aria-current="page">Writing emails</a></li><li><a class="dsb__link" href="deliverability.html">Deliverability</a></li><li><a class="dsb__link" href="sending.html">Sending</a></li><li><a class="dsb__link" href="timed-runs.html">Timed runs</a></li><li><a class="dsb__link" href="automation.html">Automation and assistant</a></li><li><a class="dsb__link" href="mcp.html">Claude, Cursor, and MCP</a></li><li><a class="dsb__link" href="python-api.html">Python API</a></li><li><a class="dsb__link" href="sources.html">Add a source</a></li></ul>
+<p class="dsb__sec" id="dsb-reference">Reference</p><ul class="dsb__list" aria-labelledby="dsb-reference"><li><a class="dsb__link" href="architecture.html">Architecture</a></li><li><a class="dsb__link" href="how-it-works.html">Email engine</a></li><li><a class="dsb__link" href="responsible-use.html">Responsible use</a></li><li><a class="dsb__link" href="licensing.html">Licensing</a></li></ul>
+<p class="dsb__foot"><a href="https://github.com/Samyrrrrrr990/openleads/discussions" rel="noopener">Ask the community<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><a href="https://github.com/Samyrrrrrr990/openleads/issues/new" rel="noopener">Report an issue<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p>
+</nav></div>
+<div class="docs__body">
+<main class="docs__main" id="main" tabindex="-1"><article class="prose">
+<div class="dmeta"><nav class="dmeta__crumb" aria-label="Breadcrumb"><a href="index.html">Docs</a><span aria-hidden="true">/</span><span>Guides</span></nav><span class="dmeta__time">7 min read</span></div><h1 id="writing-emails">Writing emails</h1>
+<p class="lede">OpenLeads writes every cold email from a <strong>research brief</strong>: what a search, an import or a company profile already found about that lead. It doesn't scrape anything new to write, and it never mentions a fact the brief doesn't hold.</p>
+<p>It works with nothing configured (the built-in writer). With an LLM set up it writes better prose from the same brief, and every LLM draft is checked against the brief before you see it.</p>
+<h2 id="before-and-after" class="anchored"><a class="hlink" href="#before-and-after">#</a>Before and after</h2>
+<p>The same lead, the same pitch in Settings ("We help growing teams fill their calendar with qualified meetings, without buying a contact database.").</p>
+<p><strong>Before (5.1)</strong> — every lead got this, with only the name, title and company swapped in. The sequence's own pitch was dropped, so this line was the default:</p>
+<div class="codeblock"><pre class="code"><code>Subject: quick question about northwind dental
+
+Hey Maya,
+
+I came across your work as Owner &amp; Lead Dentist and wanted to reach out. We&#x27;re
+reaching out about a potential collaboration.
+
+Would you be open to a quick chat? Happy to work around your schedule.
+
+Best,
+Sam</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p><strong>After (5.2, built-in writer, no key)</strong> — <code>openleads write --to maya@… --explain</code>:</p>
+<div class="codeblock"><pre class="code"><code>── maya.okafor@northwind-dental.example ── quality 100/100, curiosity
+  brief: Maya Okafor (person), Owner &amp; Lead Dentist at Northwind Dental
+    Title: Owner &amp; Lead Dentist [contact]
+    Tech stack: WordPress, Zocdoc, Google Analytics, Podium [homepage]
+    Industry: Dental [source]
+    Team size: 24 people [profile]
+    Location: Austin, TX [source]
+    Your pitch is about: booking new sales meetings
+Subject: sales meetings at Northwind Dental
+Hi Maya,
+
+With 24 people at Northwind Dental, how are you handling booking new sales
+meetings? Figured you&#x27;d be the right person to ask as Owner &amp; Lead Dentist there.
+
+We help growing teams fill their calendar with qualified meetings, without buying
+a contact database.
+
+Open to a short call to see if it fits?
+
+Best,
+Sam
+Slotfill
+  why angle: curiosity — we know something specific about the company
+  why opener: &quot;With 24 people at Northwind Dental, …&quot; — their team size
+  why why you: &quot;Figured you&#x27;d be the right person …&quot; — their title
+  why value: &quot;We help growing teams …&quot; — your pitch, from Settings</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p>A shared inbox. <strong>Before</strong>, <code>info@northwind-dental.example</code> (saved with the company's name) got <code>Hey Northwind,</code> and a pitch as if it were the owner. <strong>After</strong>:</p>
+<div class="codeblock"><pre class="code"><code>Subject: who handles sales meetings at Northwind Dental?
+
+Hi Northwind Dental team,
+
+I&#x27;m hoping to reach the right person at Northwind Dental for this.
+
+We help growing teams fill their calendar with qualified meetings, without buying
+a contact database.
+
+Could you point me to the right person, or pass this along?</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p>A follow-up (<code>--step 2</code>) stays in the thread and adds something new instead of repeating the first email:</p>
+<div class="codeblock"><pre class="code"><code>Subject: re: sales meetings at Helio Payments
+
+Hi Lucas,
+
+Following up on my note below. Curious how Helio Payments handles booking new
+sales meetings today.
+
+Any interest?</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<p>The last email of three or more closes the loop ("I'll close the loop here so I'm not filling up your inbox…").</p>
+<h2 id="the-research-brief" class="anchored"><a class="hlink" href="#the-research-brief">#</a>The research brief</h2>
+<p><code>openleads.writing.build_brief(lead, sender)</code> is a pure function. It reads:</p>
+<ul><li><strong>The person</strong>: a clean first name (never the company's first word, never a role mailbox like <code>info@</code>), a real job title (a GitHub bio is kept as a bio, "Hiring" as a signal), seniority and department.</li><li><strong>The company</strong>: name, the homepage one-liner (when it says more than the name and industry), industry, size, location, and the tech stack worth mentioning (CRM, scheduling, e-commerce… not fonts or CDNs).</li><li><strong>Signals the source provides</strong>: hiring (HN "Who is hiring"), Y Combinator, a GitHub profile or repo, a paper, a Product Hunt launch.</li><li><strong>Evidence</strong>: how the address is known (found, pattern, guessed).</li><li><strong>You</strong>: name, company, pitch, offer and proof from Settings, Sender identity.</li></ul>
+<p>Each fact has a key, a label, the exact wording the writer may use, a weight and where it came from. <code>gaps</code> lists what's missing ("No pitch set…").</p>
+<h2 id="angles-tones-variants" class="anchored"><a class="hlink" href="#angles-tones-variants">#</a>Angles, tones, variants</h2>
+<div class="tablewrap"><table><thead><tr><th>Angle</th><th>Opens with</th><th>Needs</th></tr></thead><tbody><tr><td><code>mutual-signal</code></td><td>a real, recent signal: hiring, YC, a repo, a paper, a stack overlap with your pitch</td><td>a signal</td></tr><tr><td><code>compliment</code></td><td>an honest observation: their homepage line, their stack</td><td>a description or stack</td></tr><tr><td><code>curiosity</code></td><td>a question about how they handle what your pitch solves</td><td>a pitch topic</td></tr><tr><td><code>pain</code></td><td>a common problem for their role or vertical, said as a pattern</td><td>a pitch topic</td></tr><tr><td><code>short-ask</code></td><td>two lines: what you do, is it relevant?</td><td>nothing</td></tr></tbody></table></div>
+<p>Leave the angle on auto and it's picked from the brief. If you ask for one the lead can't support (a compliment with nothing to compliment), the writer says so in the explanation and picks another. Shared inboxes always get the "who should I talk to" email.</p>
+<p>Choices are <strong>deterministic per lead</strong>: re-running a campaign reproduces the same drafts, while two people at the same company get different openers, asks and subjects. Tones: <code>plain</code>, <code>warm</code>, <code>direct</code>, <code>casual</code>. Subjects come in a lowercase-casual and a plain-case form (<code>subject_options</code>); variant B uses the other one.</p>
+<p><code>--variants N</code> (or the Compose page's "2 versions") writes N versions per lead, each on a different eligible angle, all scored.</p>
+<h2 id="the-quality-gate" class="anchored"><a class="hlink" href="#the-quality-gate">#</a>The quality gate</h2>
+<p>Every draft, template preview and sequence preview gets a score from 0 to 100 with the reasons that cost points:</p>
+<ul><li>spam-trigger words, shouting, exclamation marks, money amounts (the existing <code>spam_lint</code>);</li><li>length (50–120 words for a first email, 20–90 for a follow-up) and reading level (Flesch–Kincaid grade);</li><li>personalization: how many brief facts it actually uses;</li><li>links (none or one) and attachments (none);</li><li>unfilled <code>{{variables}}</code> or <code>[placeholders]</code>;</li><li>a greeting that's really a company name, or a shared inbox that isn't asked for the right person;</li><li>fake familiarity ("as we discussed", "big fan", "hope this finds you well") and generic openers ("I wanted to reach out");</li><li>no question to answer; for follow-ups, repeating the earlier email.</li></ul>
+<h2 id="with-an-llm" class="anchored"><a class="hlink" href="#with-an-llm">#</a>With an LLM</h2>
+<p>Set either of these in Settings, AI writing (or <code>openleads config</code>):</p>
+<ul><li>an <strong>OpenRouter key</strong> (<code>openrouter_api_key</code>, model <code>openrouter_model</code>), or</li><li><strong>any OpenAI-compatible endpoint</strong>: <code>ai_base_url</code> (e.g. <code>http://localhost:11434/v1</code> for Ollama), <code>ai_api_key</code> if it needs one, and <code>ai_model</code>.</li></ul>
+<p>The model gets the brief (facts only), your writing samples (<code>writing_examples</code>, for voice, never facts) and strict rules: only facts from the brief, no fake familiarity, the length, one ask, plain text, JSON out (<code>subject</code>, <code>body</code>, <code>variants</code>). Then every draft is <strong>facts-checked</strong>: numbers, names, tools and places that aren't in the brief get it rejected. On a rejection, a timeout (<code>ai_timeout</code>, 20 s by default), a bad reply or any error, the built-in writer's draft is used and the explanation says why. <code>writing_llm = off</code> turns the LLM off for drafting.</p>
+<h2 id="rewrites-generate-and-improve" class="anchored"><a class="hlink" href="#rewrites-generate-and-improve">#</a>Rewrites, Generate and Improve</h2>
+<ul><li><strong>Rewrite</strong> a draft: <code>shorter</code>, <code>warmer</code>, <code>more direct</code>, <code>more casual</code>. Without an LLM these are rule edits (cut filler and the least important sentences, soften or sharpen the ask, contractions); they only move or cut words, so they can't add a fact. With an LLM the model rewrites and is facts-checked too.</li><li><strong>Generate step</strong> (Templates, sequence editor) writes a reusable step with <code>{{variables}}</code> from your pitch: a first email (curiosity, pain, short ask), a follow-up, a yes/no nudge or a breakup. Compliment and mutual-signal need facts about each person, so for those turn on <strong>AI-write</strong> on the step instead.</li><li><strong>Improve</strong> fixes what the gate flags in a template: spam words, shouting, extra links, fake familiarity, missing <code>{{first_name|there}}</code> fallbacks, no ask, too long. It never touches your other variables.</li></ul>
+<p>Templates can use <code>{{sender_offer}}</code> and <code>{{sender_proof}}</code> alongside <code>{{sender_context}}</code>.</p>
+<h2 id="where-it-shows-up" class="anchored"><a class="hlink" href="#where-it-shows-up">#</a>Where it shows up</h2>
+<ul><li><strong>CLI</strong>: <code>openleads write</code> takes <code>--to EMAIL</code> (saved contacts), <code>--from CSV</code> or a search, plus <code>--angle</code>, <code>--variants N</code>, <code>--tone</code>, <code>--step N</code>, <code>--llm / --no-llm</code> and <code>--explain</code> (prints the brief and why each line was chosen). <code>-o drafts.json</code> saves drafts with their scores and briefs. <code>openleads run</code> drafts with the same writer.</li><li><strong>Dashboard</strong>: Compose shows the brief and the score beside each draft, with angle/tone/versions controls, A/B tabs and one-click rewrites; edits are re-scored as you type. Templates and the sequence editor have Generate step and Improve; previews show the score.</li><li><strong>Sequences</strong>: an AI-written step knows its position. Step 1 opens, later steps follow up in the same thread with something new, and the last of three or more is the breakup. The sequence's pitch is used.</li><li><strong>MCP</strong>: <code>draft_email</code> returns subject, body, score, reasons and the brief.</li><li><strong>API</strong>: <code>POST /api/write</code> (<code>leads</code>, <code>angle</code>, <code>tone</code>, <code>variants</code>, <code>step</code>, <code>llm</code>), <code>/api/write/rewrite</code>, <code>/api/write/brief</code>, <code>/api/write/score</code>, <code>/api/templates/generate</code>, <code>/api/templates/improve</code>.</li></ul>
+<h2 id="python-entry-point" class="anchored"><a class="hlink" href="#python-entry-point">#</a>Python entry point</h2>
+<p>One stable function, for scripts, recipes and workflow nodes:</p>
+<div class="codeblock"><pre class="code"><code>from openleads.writers import write_email   # same as openleads.writing.write_email
+
+draft = write_email(lead, angle=None, step=1, settings=None, variants=1, llm=None)</code></pre><button class="codeblock__copy" type="button" aria-label="Copy code">Copy</button></div>
+<ul><li><code>lead</code>: a <code>Lead</code>, its <code>to_dict()</code>, or a workspace contact row.</li><li><code>angle</code>: <code>None</code>/<code>&quot;auto&quot;</code>, <code>&quot;mutual-signal&quot;</code>, <code>&quot;compliment&quot;</code>, <code>&quot;curiosity&quot;</code>, <code>&quot;pain&quot;</code>, <code>&quot;short-ask&quot;</code>, or <code>&quot;breakup&quot;</code>.</li><li><code>step</code>: 1 for the first email, 2+ for follow-ups (<code>final=True</code> for the breakup; <code>thread_subject=</code> to thread under a known subject; <code>previous=</code> the earlier emails, to avoid repeating them).</li><li><code>settings</code>: overrides for this call: <code>sender_name</code>, <code>sender_org</code>, <code>sender_context</code> (pitch), <code>sender_offer</code>, <code>sender_proof</code>, <code>writing_tone</code>, <code>writing_examples</code>, and LLM keys (<code>ai_base_url</code>, <code>ai_api_key</code>, <code>ai_model</code>, <code>writing_llm</code>).</li><li><code>variants</code>: 1–5. <code>llm</code>: <code>None</code> (use one if configured), <code>False</code> (built-in writer only), or a dict of LLM settings. <code>tone=</code> overrides the tone.</li></ul>
+<p>It returns a <code>Draft</code> with <code>subject</code>, <code>body</code>, <code>model</code> (<code>&quot;writer&quot;</code> or the LLM model), <code>lint</code>, <code>quality</code> (<code>score</code>, <code>grade</code>, <code>reasons</code>, <code>good</code>, <code>words</code>, <code>reading_grade</code>, <code>personalization</code>), <code>brief</code>, <code>angle</code>, <code>step</code>, <code>variants</code> (<code>[{subject, body, angle, model, quality}]</code> when more than one), <code>explain</code> (<code>[{slot, text, why}]</code>) and <code>subject_options</code>. It doesn't raise for a lead with an email, and it makes no network call unless an LLM is configured.</p>
+<p><code>openleads.outreach.compose.draft(lead, overrides)</code> keeps working and now calls the same writer. Related helpers: <code>writing.rewrite(draft, mode, lead)</code>, <code>writing.brief_for(lead)</code>, <code>writing.score_draft(subject, body, brief)</code>, <code>writing.generate_template(...)</code>, <code>writing.improve_template(subject, body)</code>.</p>
+<nav class="prevnext" aria-label="Previous and next page"><a class="pn pn--prev" href="workflows.html" rel="prev"><span class="pn__dir"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Previous</span><span class="pn__title">Workflows</span></a><a class="pn pn--next" href="deliverability.html" rel="next"><span class="pn__dir">Next<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-arrow-right"/></svg></span><span class="pn__title">Deliverability</span></a></nav>
+</article></main>
+<nav class="dtoc" aria-label="On this page"><p class="dtoc__h">On this page</p><ul class="dtoc__list"><li><a class="dtoc__l2" href="#before-and-after">Before and after</a></li><li><a class="dtoc__l2" href="#the-research-brief">The research brief</a></li><li><a class="dtoc__l2" href="#angles-tones-variants">Angles, tones, variants</a></li><li><a class="dtoc__l2" href="#the-quality-gate">The quality gate</a></li><li><a class="dtoc__l2" href="#with-an-llm">With an LLM</a></li><li><a class="dtoc__l2" href="#rewrites-generate-and-improve">Rewrites, Generate and Improve</a></li><li><a class="dtoc__l2" href="#where-it-shows-up">Where it shows up</a></li><li><a class="dtoc__l2" href="#python-entry-point">Python entry point</a></li></ul><p class="dtoc__edit"><a href="https://github.com/Samyrrrrrr990/openleads/edit/main/docs/writing.md" rel="noopener">Edit this page<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></p></nav>
+<footer class="footer dfoot">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a class="brand" href="../index.html"><span class="brand__mark" aria-hidden="true"></span><span class="brand__name">OpenLeads</span></a>
+      <p>Lead finding and a sales workspace that run on your own machine.</p>
+    </div>
+    <div class="footer__cols">
+      <div><h4>Product</h4><a href="../index.html#labels">How it labels</a><a href="../index.html#benchmark">Benchmark</a><a href="../index.html#workspace">Workspace</a><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/CHANGELOG.md">Changelog</a></div>
+      <div><h4>Project</h4><a href="https://github.com/Samyrrrrrr990/openleads">GitHub</a><a href="https://pypi.org/project/openleads/">PyPI</a><a href="https://www.npmjs.com/package/openleads">npm</a><a href="https://github.com/Samyrrrrrr990/openleads/discussions">Discussions</a></div>
+    </div>
+  </div>
+  <div class="footer__legal">
+    <span>© 2026 Samyar Shafiee. Open source under AGPL-3.0.</span>
+    <span><a href="https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md">Commercial license</a></span>
+  </div>
+</footer>
+</div>
+</div>
+<div class="search" id="search" hidden>
+  <div class="search__backdrop" data-search-close></div>
+  <div class="search__panel" role="dialog" aria-modal="true" aria-label="Search the docs">
+    <div class="search__field"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+      <input id="searchInput" type="search" placeholder="Search the docs" aria-label="Search the docs" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="searchResults" aria-autocomplete="list" />
+      <button class="search__esc" type="button" data-search-close aria-label="Close search"><span>Esc</span><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button>
+    </div>
+    <ul class="search__results" id="searchResults" role="listbox" aria-label="Results"></ul>
+    <p class="search__empty" id="searchEmpty" role="status" hidden></p>
+    <p class="search__foot"><span><kbd>↑</kbd> <kbd>↓</kbd> to move</span><span><kbd>Enter</kbd> to open</span><span><kbd>Esc</kbd> to close</span></p>
+  </div>
+</div>
+<script src="docs.js?v=10" defer></script>
+</body>
+</html>
