@@ -35,13 +35,14 @@ class FakeSMTP:
 
 @pytest.fixture
 def env(tmp_path, monkeypatch):
-    """An isolated home, a mailbox config, no pacing delays and a fake SMTP server."""
+    """An isolated home, a mailbox config, the check turned on (hold), no pacing
+    delays and a fake SMTP server."""
     monkeypatch.setenv("OPENLEADS_HOME", str(tmp_path))
     monkeypatch.setenv("SMTP_USER", "me@acme.io")
     monkeypatch.setenv("SMTP_PASS", "pw")
     monkeypatch.setenv("SMTP_HOST", "mail.acme.io")
     monkeypatch.setenv("CAMPAIGN_CONTEXT", "We build billing software for clinics.")
-    monkeypatch.delenv("PRECLEARED_MODE", raising=False)
+    monkeypatch.setenv("PRECLEARED_MODE", "hold")
     monkeypatch.delenv("PRECLEARED_API_KEY", raising=False)
     settings.set("save_to_sent", "never")
     smtp = FakeSMTP()
@@ -154,6 +155,14 @@ def test_warn_mode_records_a_verdict_and_sends_anyway(env, api, monkeypatch):
     assert _timeline(env)[0]["data"]["verdict"] == "consent_needed"
 
 
+def test_the_check_is_off_unless_you_turn_it_on(env, api, monkeypatch):
+    monkeypatch.delenv("PRECLEARED_MODE", raising=False)
+    res = _send(env)
+    assert res[0].status == "sent"
+    assert api["calls"] == []    # nothing about the contact leaves the machine
+    assert _timeline(env) == []
+
+
 def test_off_mode_makes_no_call(env, api, monkeypatch):
     monkeypatch.setenv("PRECLEARED_MODE", "off")
     res = _send(env)
@@ -192,36 +201,18 @@ def test_a_cached_verdict_is_reused_for_thirty_days(env, api):
 
 
 # --- when Precleared itself is the problem -------------------------------------
-def test_keyless_daily_limit_gets_a_free_key_with_the_sender_address(env, api):
-    api["answers"].extend([
-        (429, {"error": "daily_limit", "operator_message": "Free checks used up for today.",
-               "create_key": {"method": "POST", "url": "https://precleared.dev/api/v1/keys",
-                              "body": {"email": ""}}}),
-        (201, {"api_key": "pc_live_abc123"}),
-        OK,
-    ])
-    res = _send(env)
-    assert res[0].status == "sent"
-    assert [c[0] for c in api["calls"]] == ["https://precleared.dev/api/v1/check?src=openleads",
-                                           "https://precleared.dev/api/v1/keys",
-                                           "https://precleared.dev/api/v1/check?src=openleads"]
-    assert api["calls"][1][1] == {"email": "me@acme.io"}
-    assert api["calls"][2][2] == "pc_live_abc123"    # retried with the new key
-    assert settings.get("precleared_api_key") == "pc_live_abc123"
-    assert settings.source_of("precleared_api_key") == "store"
-
-
-def test_keyless_daily_limit_without_a_sender_address_holds(env, api, monkeypatch):
-    monkeypatch.setenv("SMTP_USER", "mailbox-login")
+def test_keyless_daily_limit_holds_and_never_signs_up_for_a_key(env, api):
     api["answers"].append((429, {"error": "daily_limit", "operator_message": "Free checks used "
-                                 "up for today; get a free key at https://precleared.dev/get-key",
+                                 "up for today.",
                                  "create_key": {"method": "POST",
                                                 "url": "https://precleared.dev/api/v1/keys"}}))
     res = _send(env)
     assert res[0].status == "skipped"
-    assert res[0].detail == ("precleared: not checked. Free checks used up for today; get a free "
-                             "key at https://precleared.dev/get-key")
-    assert len(api["calls"]) == 1 and not settings.get("precleared_api_key")
+    assert res[0].detail.startswith("precleared: not checked. ")
+    assert "https://precleared.dev/get-key" in res[0].detail
+    assert "openleads config set precleared_api_key" in res[0].detail
+    assert len(api["calls"]) == 1                      # no sign-up call, no retry
+    assert not settings.get("precleared_api_key")      # and no key stored
 
 
 def test_rate_limit_waits_and_retries_once(env, api, monkeypatch):
@@ -299,13 +290,16 @@ def test_payload_leaves_out_what_it_does_not_know(env, monkeypatch):
                     "address_source": "unknown", "existing_customer": True}
 
 
-def test_settings_have_safe_defaults(env):
-    assert settings.get("precleared_mode") == "hold"
+def test_settings_have_safe_defaults(env, monkeypatch):
+    monkeypatch.delenv("PRECLEARED_MODE", raising=False)
+    assert settings.get("precleared_mode") == "off"
     assert settings.get("precleared_sender_country") == "GB"
     assert settings.get("precleared_api_key") == ""
     with pytest.raises(ValueError):
         settings.set("precleared_mode", "maybe")
-    assert precleared.current_mode() == "hold"
+    assert precleared.current_mode() == "off"
+    monkeypatch.setenv("PRECLEARED_MODE", "maybe")
+    assert precleared.current_mode() == "off"       # anything odd means no check
 
 
 # --- sequences: a held contact is visible and doesn't count as a send error -----

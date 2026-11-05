@@ -6,8 +6,9 @@ Built to protect your domain reputation and stay out of spam:
 * **Dry-run by default.** Nothing leaves your machine unless ``dry_run=False``.
 * **Suppression-aware.** Never emails anyone bounced/unsubscribed/do-not-contact,
   and never the same person twice (the DB tracks every touch).
-* **Legality-checked.** Asks Precleared whether a cold email to each new address is
-  legal before the first one goes (:mod:`outreach.precleared`); holds the rest.
+* **Legality check (opt-in).** Off by default. Once you turn it on, asks Precleared
+  whether a cold email to each new address is legal before the first one goes
+  (:mod:`outreach.precleared`) and holds the rest.
 * **Warmup-capped.** Honors the daily ramp from :mod:`outreach.deliverability`.
 * **Human-paced.** Randomized delays between real sends.
 * **Correct headers.** Real ``Message-ID``/``Date``, a one-click ``List-Unsubscribe``
@@ -65,7 +66,8 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
     """Send (or preview) a list of drafts. Returns one :class:`SendResult` each.
 
     Owns the DB lifecycle only if it opens one. Respects suppression + warmup caps
-    and the Precleared legality check (first real email of a campaign only); real
+    and, when it is turned on, the Precleared legality check (first real email of a
+    campaign only); real
     sends are throttled with randomized human-like delays.
     """
     own_db = False
@@ -87,7 +89,7 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
 
     # Legality check, once per new recipient, before the first real email of a
     # campaign. Follow-ups (anyone already emailed in it) and previews are never checked.
-    checker = precleared.Checker(db, operator_email=cfg.get("user", ""))
+    checker = precleared.Checker(db)
     check = checker.mode != "off" and not dry_run
 
     server = None

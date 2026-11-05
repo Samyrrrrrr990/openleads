@@ -28,10 +28,10 @@ compliance, which may include:
   honor objections, and disclose how you got the contact.
 - **CASL (Canada):** stricter consent rules, understand them before emailing Canadians.
 
-Before the first email to each new address, the sender asks
-[Precleared](https://precleared.dev) whether a cold email is allowed and holds anyone
-it cannot clear, with the reason and what to do next (`precleared_mode` in the README).
-That is decision support, not legal advice.
+If you turn on the legality check (`precleared_mode` in the README; it is off by
+default), the sender asks [Precleared](https://precleared.dev) before the first email
+to each new address whether a cold email is allowed, and holds anyone it cannot
+clear with the reason and what to do next. That is decision support, not legal advice.
 
 This is not legal advice. When in doubt, consult a professional.
 

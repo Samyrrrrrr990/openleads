@@ -12,10 +12,11 @@ The sender asks once per **new** recipient, right before the first real email of
 campaign. Follow-ups, dry runs and ``off`` mode make no call. Settings
 (``openleads config``, group ``sending``):
 
-* ``precleared_mode``            ``hold`` (default) | ``warn`` | ``off``
+* ``precleared_mode``            ``off`` (default) | ``hold`` | ``warn``
 * ``precleared_api_key``         optional; a free key raises the daily allowance
 * ``precleared_sender_country``  ``GB`` (default) | ``US`` | ``AE``, where *you* send from
 
+The check is opt-in: with ``off``, the default, nothing is sent to Precleared.
 ``hold`` sends only on ``ok_to_email`` and holds everything else, including a
 check that couldn't run (no network, allowance used up, bad key): the hold line
 says why, so nothing is skipped silently. ``warn`` records the verdict on the
@@ -25,16 +26,15 @@ Definite verdicts (ok_to_email, consent_needed, blocked) are kept in the ``kv``
 table for CACHE_DAYS, keyed on the address and the facts sent with it, so a held
 lead tried again, or emailed from another campaign, costs no new check;
 ``unknown`` is never kept. Without a key Precleared allows 10 checks a day per
-network. When that runs out the sender asks for a free key with your sending
-address, stores it in ``secrets.json`` and carries on. Stdlib only, like the rest
-of the engine. Decision support, not legal advice.
+network; when that runs out the check stops for the day and says where to get a
+free key. OpenLeads never signs up for a key on your behalf. Stdlib only, like the
+rest of the engine. Decision support, not legal advice.
 """
 from __future__ import annotations
 
 import hashlib
 import http.client
 import json
-import re
 import time
 import urllib.error
 import urllib.request
@@ -51,7 +51,7 @@ MAX_RETRY_WAIT = 60             # longest we wait on a per-minute rate limit
 CACHE_DAYS = 30
 KV_PREFIX = "precleared:"       # one kv row per address: precleared:<email>
 PREFIX = "precleared: "         # every hold line starts with this
-MODES = ("hold", "warn", "off")
+MODES = ("off", "hold", "warn")
 SENDER_COUNTRIES = ("GB", "US", "AE")
 DEFINITE = ("ok_to_email", "consent_needed", "blocked")
 VERDICTS = DEFINITE + ("unknown",)
@@ -102,9 +102,10 @@ class Verdict:
 
 # --- settings ------------------------------------------------------------------ #
 def current_mode() -> str:
-    """``hold`` | ``warn`` | ``off`` from the settings; anything odd means hold."""
-    value = str(settings.get("precleared_mode") or "hold").strip().lower()
-    return value if value in MODES else "hold"
+    """``off`` | ``hold`` | ``warn`` from the settings. The check is opt-in, so
+    anything unset or odd means off and nothing is sent."""
+    value = str(settings.get("precleared_mode") or "off").strip().lower()
+    return value if value in MODES else "off"
 
 
 def held_verdict(detail: str) -> str:
@@ -212,9 +213,8 @@ class Checker:
     Stored verdicts are still used while that lasts.
     """
 
-    def __init__(self, db, operator_email: str = "", mode: str | None = None):
+    def __init__(self, db, mode: str | None = None):
         self.db = db
-        self.operator_email = operator_email or ""
         self.mode = mode or current_mode()
         self.paused = ""        # why fresh checks stopped for this batch
 
@@ -233,7 +233,7 @@ class Checker:
         if v is None and self.paused:
             v = Verdict(email, error=self.paused)
         elif v is None:
-            v = check(payload, self.operator_email)
+            v = check(payload)
             remember(self.db, v, payload)
             if v.pause:
                 self.paused = v.error
@@ -255,19 +255,15 @@ def record(db, v: Verdict, held: bool = True) -> None:
 
 
 # --- talking to the API ---------------------------------------------------------- #
-def check(payload: dict, operator_email: str = "") -> Verdict:
-    """Ask Precleared now. One retry on a per-minute rate limit; when the keyless
-    daily allowance is used up and we know the sender's address, get a free key
-    with it, store it, and ask again once."""
+def check(payload: dict) -> Verdict:
+    """Ask Precleared now, with one retry on a per-minute rate limit. When the
+    keyless daily allowance is used up the answer says so and the check stops for
+    the day; OpenLeads never signs up for a key on your behalf."""
     api_key = str(settings.get("precleared_api_key") or "").strip()
     status, body = _post(API_URL, payload, api_key)
     if status == 429 and body.get("error") == "rate_limited":
         time.sleep(_retry_after(body))
         status, body = _post(API_URL, payload, api_key)
-    elif status == 429 and not api_key and isinstance(body.get("create_key"), dict):
-        api_key = _create_key(body["create_key"], operator_email)
-        if api_key:
-            status, body = _post(API_URL, payload, api_key)
     return _verdict(payload["recipient_email"], status, body)
 
 
@@ -300,8 +296,10 @@ def _verdict(email: str, status: int, body: dict) -> Verdict:
         return Verdict(email, pause=True, error=message or "Precleared is limiting how fast we "
                        "can check; it will be tried again next run")
     if status == 429:
-        return Verdict(email, pause=True, error=message or "Precleared's free daily allowance is "
-                       f"used up; a free key gives more: {GET_KEY_URL}")
+        return Verdict(email, pause=True, error="Precleared's free daily allowance (10 checks "
+                       f"a day without a key) is used up. To check more, get a free key at "
+                       f"{GET_KEY_URL} and add it with: openleads config set "
+                       "precleared_api_key <key>")
     return Verdict(email, pause=True, error=f"Precleared is unavailable (HTTP {status}); "
                    "it will be tried again next run")
 
@@ -321,28 +319,6 @@ def _retry_after(body: dict) -> float:
     except (TypeError, ValueError):
         wait = 5.0
     return min(max(wait, 1.0), float(MAX_RETRY_WAIT))
-
-
-def _create_key(spec: dict, operator_email: str) -> str:
-    """Ask for a free key with the sender's address, the way the 429 answer says
-    to, and store it. Returns the key, or "" when that isn't possible."""
-    email = (operator_email or "").strip()
-    url = _text(spec.get("url"), 300)
-    if "@" not in email or not url.startswith("https://precleared.dev/"):
-        return ""
-    if _text(spec.get("method")).upper() not in ("", "POST"):
-        return ""
-    body = dict(spec["body"]) if isinstance(spec.get("body"), dict) else {}
-    body["email"] = email
-    status, answer = _post(url, body)
-    key = _text(answer.get("api_key") or answer.get("key"), 200)
-    if status not in (200, 201) or not re.fullmatch(r"[!-~]+", key):
-        return ""
-    try:
-        settings.set("precleared_api_key", key)
-    except (OSError, KeyError, ValueError):
-        pass  # still good for this batch; the next keyless 429 asks again
-    return key
 
 
 class _Connection(http.client.HTTPSConnection):
