@@ -311,6 +311,13 @@ def _do_send(sess: Session, console, live: bool):
     err = sum(1 for r in results if r.status == "error")
     verb = "sent" if live else "previewed"
     _say(console, f"  {verb}: {sent or prev} · skipped: {skip} · errors: {err}")
+    for r in results:
+        if r.status == "skipped" and r.detail:    # say why: suppressed, capped, held
+            line = f"{r.email}: {r.detail}"
+            if _HAS_RICH:
+                from rich.markup import escape
+                line = escape(line)
+            _say(console, f"    skipped {line}")
     if not live:
         _say(console, "  (/send live to actually deliver)")
 

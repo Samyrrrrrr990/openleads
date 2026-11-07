@@ -279,7 +279,7 @@ async function runNow(anchor) {
       if (live && paused) await api.post("/api/sequences/status", { id: E.seq.id, status: "active" });
       await api.stream("/api/sequences/run", { id: E.seq.id, live, ignore_window: true }, (ev) => { if (ev.type === "done") done = ev; });
       if (done) {
-        toast(`${done.due} due, ${live ? `${done.sent} sent` : `${done.previewed} previewed`}, ${done.tasks} tasks${done.capped ? `, ${done.capped} over the cap` : ""}`);
+        toast(`${done.due} due, ${live ? `${done.sent} sent` : `${done.previewed} previewed`}, ${done.tasks} tasks${done.capped ? `, ${done.capped} over the cap` : ""}${done.held ? `, ${done.held} held by the cold-email check` : ""}`);
         if (!live && done.results.length) {
           modal({ title: "Dry run — what would send", wide: true, body: `<div class="table-wrap" style="max-height:420px;border:1px solid var(--line);border-radius:10px"><table class="tbl tbl--compact"><thead><tr><th>To</th><th>Step</th><th>Subject</th></tr></thead><tbody>
             ${done.results.map((r) => `<tr><td class="t-mono">${esc(r.email)}</td><td>${r.step}${r.variant ? " (" + String.fromCharCode(65 + r.variant) + ")" : ""}</td><td>${esc(r.subject)}</td></tr>`).join("")}</tbody></table></div>` });
