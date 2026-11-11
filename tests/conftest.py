@@ -29,3 +29,17 @@ def _no_live_http(monkeypatch):
     local.BREAKER.reset()
     monkeypatch.setattr(local, "_sleep", lambda s: None)
     yield
+
+
+@pytest.fixture
+def set_setting():
+    """Set OpenLeads settings for one test; every key it touched is unset afterwards."""
+    from openleads import settings
+    touched = []
+
+    def _set(key, value):
+        settings.set(key, value)
+        touched.append(key)
+    yield _set
+    for key in touched:
+        settings.unset(key)

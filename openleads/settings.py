@@ -125,6 +125,14 @@ SCHEMA: tuple[Setting, ...] = (
             "sending", "Maximum seconds between sends."),
     Setting("include_risky", (), False, "bool", False,
             "sending", "Allow sending to 'risky' (unverified) addresses. Off = safer."),
+    Setting("presend_hook", ("OPENLEADS_PRESEND_HOOK",), False, "str", "",
+            "sending", "Optional check before every real send: a shell command or an "
+                       "https:// URL that answers send or hold (see docs/sending.md)."),
+    Setting("presend_hook_on_error", (), False, "str", "hold",
+            "sending", "If the pre-send hook times out or answers badly: hold the email "
+                       "or send it anyway.", ("hold", "send")),
+    Setting("presend_hook_timeout", (), False, "int", 10,
+            "sending", "Seconds to wait for the pre-send hook."),
     # Web dashboard
     Setting("web_port", ("OPENLEADS_WEB_PORT",), False, "int", 8787,
             "web", "Port for the local web dashboard (openleads web)."),

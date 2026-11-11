@@ -72,13 +72,15 @@ day's allowance and tells you how many remain. Tune these in `openleads config`
 
 1. **Suppression check**: skips anyone bounced / unsubscribed / replied /
    do-not-contact / duplicate. The suppression list is permanent and local.
-2. **Warmup check**: stops at the day's allowance.
-3. **Human pacing**: a randomized delay (`send_delay_min`–`send_delay_max` seconds,
+2. **Pre-send hook** (optional, off by default): asks your own check whether this
+   email may go. See [the pre-send hook](#the-pre-send-hook) below.
+3. **Warmup check**: stops at the day's allowance.
+4. **Human pacing**: a randomized delay (`send_delay_min`–`send_delay_max` seconds,
    default 25–90) between real sends.
-4. **Proper headers**: `Message-ID`, `Date`, threading headers, and
+5. **Proper headers**: `Message-ID`, `Date`, threading headers, and
    **`List-Unsubscribe` + `List-Unsubscribe-Post`** (one-click). Plain-text default;
    **no open-tracking pixels**.
-5. **Logged + resumable**: every attempt is written to the local CRM (`touches`), so
+6. **Logged + resumable**: every attempt is written to the local CRM (`touches`), so
    a crashed batch resumes cleanly and reporting is exact.
 
 By default OpenLeads sends **only to `safe`-tier** addresses. Opt into `risky` with
@@ -128,6 +130,67 @@ openleads send "<query>" --live   # same pipeline, terse output
 openleads write "<query>" -o drafts.json   # stop after drafting
 openleads write --to ann@acme.com --explain --variants 2   # a saved contact, with the brief
 ```
+
+## The pre-send hook
+
+Some checks only you can make: whether a cold email to this person is lawful where
+they are, whether they're already a customer in another system, whether a teammate
+is talking to them. The pre-send hook lets you plug any of those in. It's off until
+you set it, and it only runs on real sends, never on previews or dry runs.
+
+Set `presend_hook` to a shell command or a URL:
+
+```bash
+openleads config set presend_hook "python3 ~/bin/check_email.py"
+openleads config set presend_hook https://checks.example.com/v1/email
+```
+
+OpenLeads sends each email as JSON (on stdin for a command, as a POST body for a
+URL):
+
+```json
+{"to": "ada@globex.co.uk", "from": "you@yourco.com", "subject": "quick question",
+ "body": "Hi Ada, ...", "first_email": true, "lead": {"organization": "Globex", "...": "..."}}
+```
+
+and expects one line of JSON back:
+
+```json
+{"action": "send"}
+{"action": "hold", "reason": "UK sole trader: needs consent first (PECR reg 22)"}
+```
+
+A held email comes back as `skipped` with `held: <reason>`, goes on the contact's
+timeline, and shows up in `openleads today`. Nothing else in the batch waits for it.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `presend_hook` | empty (off) | A command, or a URL. URLs must be `https://`, except `http://localhost` and `http://127.0.0.1`. |
+| `presend_hook_on_error` | `hold` | What happens if the hook times out, exits non-zero, or answers with anything else: `hold` the email or `send` it anyway. |
+| `presend_hook_timeout` | `10` | Seconds to wait for an answer. |
+
+**Example: a cold-email legality check with [Precleared](https://precleared.dev).**
+Precleared answers whether a cold email to a given address is allowed, and why. A
+small wrapper that turns its verdict into `send` or `hold` is all it takes:
+
+```python
+#!/usr/bin/env python3
+"""~/bin/precleared_hook.py: hold anything Precleared doesn't clear."""
+import json, sys, urllib.request
+
+email = json.load(sys.stdin)
+req = urllib.request.Request(
+    "https://api.precleared.dev/v1/check?src=openleads",
+    data=json.dumps({"email": email["to"], "sender_country": "GB",
+                     "company": email["lead"].get("organization", "")}).encode(),
+    headers={"Content-Type": "application/json"})
+verdict = json.load(urllib.request.urlopen(req, timeout=8))
+ok = verdict.get("verdict") == "ok_to_email"
+print(json.dumps({"action": "send" if ok else "hold", "reason": verdict.get("reason", "")}))
+```
+
+Check Precleared's own docs for its current API before relying on this sketch.
+Thanks to @gabrielaoimevbore-beep, whose PR #31 started this.
 
 ## Safety defaults, in one place
 

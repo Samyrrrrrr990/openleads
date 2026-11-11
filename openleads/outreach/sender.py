@@ -24,7 +24,7 @@ from email.utils import formatdate, make_msgid
 from openleads import db as dbmod
 from openleads import settings
 from openleads.models import Draft, SendResult
-from openleads.outreach import providers
+from openleads.outreach import presend, providers
 
 OPT_OUT_FOOTER = "\n\nP.S. If this isn't relevant, just reply and I'll leave you be."
 
@@ -87,12 +87,22 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
         for i, d in enumerate(drafts):
             email = (d.email or "").lower().strip()
             reason = db.is_suppressed(email)
+            hold = ""
+            if email and not reason and d.subject and d.body and not dry_run:
+                action, why = presend.check(d, db.get_lead(email), first=step <= 1)
+                if action == "hold":
+                    hold = why or "held by the pre-send hook"
             if not email:
                 res = SendResult(email, "skipped", detail="no recipient address")
             elif reason:
                 res = SendResult(email, "skipped", detail=f"suppressed: {reason}")
             elif not d.subject or not d.body:
                 res = SendResult(email, "skipped", detail="empty draft")
+            elif hold:
+                res = SendResult(email, "skipped", detail=f"held: {hold}")
+                from openleads.workspace import activity
+                activity.log(db, "contact", email, "presend_hold", hold,
+                             {"subject": d.subject, "campaign": campaign, "step": step})
             elif not dry_run and sent_count >= remaining:
                 res = SendResult(email, "skipped", detail="daily warmup cap reached")
             elif dry_run:
