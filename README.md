@@ -28,7 +28,7 @@ pipx install "openleads[all]"          # or: pip install "openleads[all]", or: n
 openleads "find 30 rust devs in Berlin and email them about our hiring tool"
 openleads today                        # replies, emails to approve, tasks due
 openleads find "dentists in Austin"    # ten leads, every email labeled
-openleads web                          # the workspace at http://127.0.0.1:8787
+openleads web                          # the app at http://127.0.0.1:8787
 ```
 
 Say what you want and OpenLeads shows the plan before anything runs:

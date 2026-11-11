@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 
-import { href } from "~/lib/router";
+import { Pick } from "~/components/app/Pick";
+import { href, navigate } from "~/lib/router";
 import { cn } from "~/lib/utils";
 
-import { type Section } from "./sections";
+import { SECTIONS, type Section } from "./sections";
 
 /** The 52px bar on top of every screen: title, the section's pages as tabs, actions. */
 export function PageHeader({
@@ -18,8 +19,16 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex h-[52px] shrink-0 items-center gap-4 border-b border-border px-5">
-      <h1 className="text-sm font-semibold tracking-tight">{title ?? section.label}</h1>
+    <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-border px-5 max-md:px-3">
+      {/* Phones have no sidebar: the section name becomes the way to move between sections. */}
+      <Pick
+        label="Section"
+        className="md:hidden"
+        value={section.key}
+        onChange={(key) => navigate(key)}
+        options={SECTIONS.map((x) => ({ key: x.key, label: x.label }))}
+      />
+      <h1 className="text-sm font-semibold tracking-tight max-md:hidden">{title ?? section.label}</h1>
       {section.pages.length > 0 && (
         <nav className="flex items-center gap-0.5 overflow-x-auto" aria-label={`${section.label} pages`}>
           {section.pages.map((p) => {

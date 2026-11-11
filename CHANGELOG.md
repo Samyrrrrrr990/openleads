@@ -6,6 +6,30 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+**The app.** A new dashboard, forked from T3 Code's web app, with Today as home.
+
+- `openleads web` opens on Today: replies, emails to approve, tasks, new people,
+  and an ask box. Type a request, read the plan, press Run, watch it stream.
+  Emails it writes wait for approval; a schedule is saved as a workflow.
+- Six sections instead of fifteen pages: Today, People, Outreach, Workflows,
+  Pipeline, Settings. `⌘K` jumps anywhere, finds a person, or sends a sentence to
+  the ask box; `g` then a letter moves between sections.
+- New screens for people (table, filters, a side panel per person), companies,
+  lists, approvals, sequences, templates, workflows, deals, tasks, activity, the
+  AI model and doctor. The workflow editor, compose, find people, import, data
+  health, analytics and the full settings form are the classic ones, shown inside
+  the app.
+- The classic dashboard stays at `/classic/`; `openleads web --classic` makes it
+  home. From a git checkout without a build you get it automatically.
+- New endpoints: `POST /api/ask/plan`, `POST /api/ask/run` (stream) and
+  `GET /api/drafts/waiting`.
+- The classic dashboard under `/classic/` can now be framed by its own origin
+  (and only that), so the app can show its screens. Nothing else changed in the
+  security headers.
+- The app's shell and interface pieces come from T3 Code (MIT); see
+  `THIRD-PARTY-NOTICES.md`. The source is in `app/`; releases build it into the
+  wheel, so installing from PyPI still needs no Node.
+
 **Bring your own model.** OpenLeads can think with a model you already have.
 
 - `openleads setup ai` lists what this computer has and connects one of three

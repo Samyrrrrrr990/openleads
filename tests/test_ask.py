@@ -342,3 +342,14 @@ def test_question_prompt_is_untrusted_and_short(ws, monkeypatch):
     monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "claude")
     assert ask.question("who replied this week?", ws) == "None."
     assert seen["untrusted"] is True and seen["timeout"] <= 60
+
+
+@pytest.mark.parametrize("text,want", [
+    ("find 5 dentists in Austin", "Find 5 dentists in Austin"),
+    ("dentists in Austin", "Find 20 dentists in Austin"),
+    ("search for 12 rust developers in Berlin", "Find 12 rust developers in Berlin"),
+])
+def test_a_search_plan_says_who_it_looks_for_once(text, want):
+    """The dashboard shows a search's plan; its one step must read like a sentence."""
+    step = " ".join(ask.make_plan(text).steps[0].split())
+    assert step.startswith(want), step

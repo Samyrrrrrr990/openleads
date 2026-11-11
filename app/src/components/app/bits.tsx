@@ -105,7 +105,7 @@ export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () 
 export function Body({ children, wide, className }: { children: ReactNode; wide?: boolean; className?: string }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className={cn("mx-auto flex w-full flex-col gap-5 px-5 py-6", wide ? "max-w-6xl" : "max-w-[var(--content-max)]", className)}>
+      <div className={cn("mx-auto flex w-full flex-col gap-5 px-5 py-6 max-md:px-3 max-md:py-4", wide ? "max-w-6xl" : "max-w-[var(--content-max)]", className)}>
         {children}
       </div>
     </div>

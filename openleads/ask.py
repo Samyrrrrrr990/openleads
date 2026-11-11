@@ -279,7 +279,8 @@ def _build(text: str, f: dict, live: bool, sequence_names: list | None) -> Plan:
         q = intent.parse(f["search"], allow_llm=False)[0]
         if f.get("count"):
             q.count = f["count"]
-        return Plan(text, "find", query=q, steps=[_find_line(q, f["search"])])
+        return Plan(text, "find", query=q,
+                    steps=[_find_line(q, _audience(f["search"]) or f["search"])])
 
     audience, count, pitch = f["audience"], f["count"], f.get("goal") or ""
     if kind == "enroll":

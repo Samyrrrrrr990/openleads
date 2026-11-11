@@ -4,12 +4,58 @@
 openleads web                 # → http://127.0.0.1:8787
 openleads web --port 9000     # custom port
 openleads web --no-open       # don't auto-open a browser
+openleads web --classic       # the pre-5.5 dashboard as the home page
 openleads demo                # the same dashboard on an invented demo workspace
 ```
 
-A full sales workspace in your browser — prospecting, a people and company
-database, lists, sequences, tasks, deals, templates, analytics and workflows —
-running on the same engine and the same local database as the CLI.
+A full sales workspace in your browser, running on the same engine and the same
+local database as the terminal: your morning, an ask box, people and companies,
+sequences and approvals, workflows, deals and tasks.
+
+## The app
+
+The page opens on **Today**: who replied, which emails are waiting for your yes,
+what's due, and the people found since you last looked. With a model connected,
+one or two sentences on top say what matters first.
+
+At the bottom is the ask box. Type what you want, the way you would in a terminal:
+
+```text
+email 15 agencies in Miami about our SEO audit
+every weekday at 9am find 20 dentists in Austin and email them about reminders
+who replied this week and what do they want?
+```
+
+OpenLeads answers a question straight away. Anything else comes back as a
+numbered plan, with who read it (the built-in rules or your model), and nothing
+happens until you press **Run it**. A search runs and streams what it finds. Emails
+are written and put in the approval queue; the dashboard never sends on its own. A
+schedule is saved as a workflow. If a model read more into your sentence than the
+rules did, the button says **Yes, run it** and tells you why.
+
+Six sections, in the sidebar and under `g` then a letter:
+
+| Section | Key | What's in it |
+|---|---|---|
+| **Today** | `g t` | The briefing and the ask box |
+| **People** | `g p` | People, companies, lists, find people, import and enrich, data health |
+| **Outreach** | `g o` | Approvals, sequences, templates, compose and send |
+| **Workflows** | `g w` | Saved plans, on a schedule or a trigger, and the node editor |
+| **Pipeline** | `g d` | Deals, tasks, activity, analytics |
+| **Settings** | `g s` | AI model, doctor, every setting |
+
+`⌘K` (or `Ctrl K`) opens the command palette: jump to a page, find a person by
+name, or type a whole request and send it to the ask box. `/` focuses the ask box
+and `t` switches light and dark.
+
+Some screens (the workflow editor, compose, find people, import, data health,
+analytics and the full settings form) are the classic dashboard's, shown inside
+the app. They work the same and use the same data. The whole classic dashboard
+stays at `/classic/`, and `openleads web --classic` makes it the home page.
+
+The app's shell and interface pieces are forked from
+[T3 Code](https://github.com/pingdotgg/t3code) (MIT). See
+[THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
 
 ---
 
@@ -19,15 +65,17 @@ running on the same engine and the same local database as the CLI.
   library (`openleads/web/server.py`). No Flask, no Node, no build step.
 - **Bound to localhost.** It listens on `127.0.0.1`, not reachable from your
   network.
-- **Pre-built UI.** The app is plain ES modules and CSS committed under
-  `openleads/web/static/` and shipped in the wheel. End users need **no
-  toolchain**.
+- **Pre-built UI.** The app is built from `app/` when a release is cut and shipped
+  inside the wheel; the classic dashboard is plain ES modules and CSS under
+  `openleads/web/static/`. End users need **no toolchain**. From a git checkout,
+  `npm ci && npm run build` in `app/` builds the app; without it you get the
+  classic dashboard.
 - **No external requests from the page.** A strict same-origin
   Content-Security-Policy blocks third-party scripts, styles and fonts. The
   typeface ships inside the package, and there is no CDN and no analytics:
   nothing phones home.
 
-## The pages
+## The classic dashboard's pages
 
 | Group | Page | What |
 |---|---|---|
@@ -117,7 +165,8 @@ Long-running actions stream **newline-delimited JSON** so progress renders live.
 | Tasks, deals | `GET /api/tasks` · `POST /api/tasks/save` · `/complete` · `/skip` · `/reopen` · `GET /api/deals` · `POST /api/deals/save` · `/move` |
 | Templates | `GET /api/templates` · `POST /api/templates/save` · `/preview` · `/delete` |
 | Data | `POST /api/import/preview` · `/api/import` · `GET /api/duplicates` · `POST /api/duplicates/merge` · `GET /api/scoring` · `POST /api/scoring/save` · `/preview` · `/explain` |
-| Settings | `GET/POST /api/settings` · `GET /api/doctor` |
+| Settings | `GET/POST /api/settings` · `GET /api/doctor` · `GET /api/ai` · `POST /api/ai/use` · `/api/ai/test` |
+| Today and asking | `GET /api/today` · `/api/today/line` · `/api/drafts/waiting` · `POST /api/drafts/approve` · `/skip` · `/api/replies/done` · `/api/today/snooze` · `/api/ask/plan` · `/api/ask/run` (stream) |
 
 Errors come back as JSON with an `error` message and a 4xx status;
 the server never sends a traceback to the client.
@@ -144,7 +193,13 @@ open in your browser as hostile:
 - **JSON only.** Every write must be `Content-Type: application/json` (`415`
   otherwise), which a plain HTML form on another site can't send. Bodies over 25 MB
   get `413`; malformed JSON gets `400`.
-- **Can't be framed.** `X-Frame-Options: DENY` and `frame-ancestors 'none'`.
+- **Can't be framed by another site.** `X-Frame-Options: DENY` and
+  `frame-ancestors 'none'` on everything, with one exception: the classic dashboard
+  under `/classic/` allows this same origin (`SAMEORIGIN`, `frame-ancestors 'self'`)
+  so the app can show its screens.
+- **A plan runs once, and never live.** `POST /api/ask/run` takes the id of a plan
+  `/api/ask/plan` showed you, runs it a single time and queues any email for
+  approval. A plan a model widened needs `confirmed: true`.
 - **Strict headers.** Same-origin CSP with no inline scripts, `nosniff`,
   `Referrer-Policy: no-referrer`, same-origin opener and resource policies.
 - **Secrets stay put.** Stored `chmod 600` on disk, shown masked in the UI, never

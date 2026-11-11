@@ -57,7 +57,7 @@ export function Composer({ onAsk: submit, busy, showExamples }: { onAsk: (text: 
   };
 
   return (
-    <div className="mx-auto w-full max-w-[var(--content-max)] px-5 pb-5">
+    <div className="relative mx-auto w-full max-w-[var(--content-max)] px-5 pb-5 before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-linear-to-t before:from-background before:to-transparent max-md:px-3 max-md:pb-3">
       {showExamples && (
         <div className="mb-2 flex flex-wrap gap-1.5">
           {EXAMPLES.map((e) => (
@@ -227,7 +227,8 @@ export function Thread({
   const last = turns[turns.length - 1];
   const signature = last ? `${turns.length}:${last.status}:${last.log.length}` : "";
   useEffect(() => {
-    if (signature) end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    // Not smooth: a smooth scroll is dropped when the next line arrives mid-animation.
+    if (signature) end.current?.scrollIntoView({ block: "end" });
   }, [signature]);
 
   if (!turns.length) return null;
