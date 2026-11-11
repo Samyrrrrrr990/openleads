@@ -198,3 +198,16 @@ def test_answering_closes_the_reply_task(db):
     db.set_status("ada@globex.example", "replied")
     replies.mark_answered(db, "ada@globex.example", 2000.0)
     assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == 0
+
+
+@pytest.mark.parametrize("text", ["Not interested, thanks.", "I am out of the office until Monday."])
+def test_replies_that_need_nothing_close_the_reply_task(db, text):
+    db.set_status("ada@globex.example", "replied")
+    replies.record(db, "ada@globex.example", "Re: hi", text, "<a@x>", 1000.0)
+    assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == 0
+
+
+def test_a_reply_that_needs_you_keeps_the_task(db):
+    db.set_status("ada@globex.example", "replied")
+    replies.record(db, "ada@globex.example", "Re: hi", "Send pricing?", "<a@x>", 1000.0)
+    assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == 1

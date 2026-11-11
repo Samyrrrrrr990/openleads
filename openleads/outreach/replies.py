@@ -88,6 +88,8 @@ def record(db, email: str, subject: str, body: str, message_id: str, received: f
                  ts=float(received))
     if category == "unsubscribe":
         db.suppress(email, "asked to unsubscribe")
+    if category != "needs_you":
+        _close_reply_task(db, email)        # nothing to answer: no "Reply to <name>" task
     return {"email": email, **data}
 
 
