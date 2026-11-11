@@ -123,3 +123,79 @@ def test_find_leads_can_save_to_a_list(monkeypatch):
     c = call("get_contact", email="ada@zeta.example")["contact"]
     assert c["lists"] == ["Zeta founders"] and c["fit_score"] > 0
     assert "saved" not in call("find_leads", query="founders at zeta")
+
+
+# --- Today ------------------------------------------------------------------- #
+@pytest.fixture
+def fake_send(monkeypatch):
+    from openleads.models import SendResult
+    sent = []
+
+    def send(drafts_, dry_run=True, db=None, campaign="", step=1, **kw):
+        sent.extend(drafts_)
+        return [SendResult(d.email, "sent", message_id="<m>") for d in drafts_]
+    monkeypatch.setattr("openleads.outreach.sender.send_drafts", send)
+    return sent
+
+
+@pytest.fixture
+def draft_id():
+    from openleads.models import Draft
+    from openleads.workspace import drafts
+    db = DB()
+    try:
+        return drafts.enqueue(db, Draft(email="jane@acme.example", subject="hi", body="Hi Jane"),
+                              "ask", {"campaign": "ask", "step": 1})["id"]
+    finally:
+        db.close()
+
+
+def test_today_tools_listed_with_write_annotations():
+    tools = mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})["result"]["tools"]
+    by = {t["name"]: t for t in tools}
+    assert by["today"]["annotations"]["readOnlyHint"] is True
+    for name in ("approve_draft", "skip_draft", "snooze", "mark_reply_done"):
+        assert by[name]["annotations"]["readOnlyHint"] is False
+    assert "really sends" in by["approve_draft"]["description"]
+    assert by["approve_draft"]["annotations"]["openWorldHint"] is True
+
+
+def test_mcp_today_and_approve(draft_id, fake_send):
+    b = call("today")
+    assert [d["id"] for d in b["drafts"]] == [draft_id] and b["counts"]["drafts"] == 1
+    assert call("approve_draft", id=draft_id)["status"] == "sent"
+    assert call("approve_draft", id=draft_id)["status"] == "error"
+    assert len(fake_send) == 1 and call("today")["counts"]["drafts"] == 0
+
+
+def test_mcp_approve_with_edits(draft_id, fake_send):
+    call("approve_draft", id=draft_id, subject="Better", body="Better body")
+    assert fake_send[0].subject == "Better" and fake_send[0].body == "Better body"
+
+
+def test_mcp_skip_draft(draft_id, fake_send):
+    assert call("skip_draft", id=draft_id)["status"] == "skipped" and fake_send == []
+
+
+def test_mcp_snooze_and_mark_reply_done():
+    from openleads.outreach import replies
+    db = DB()
+    try:
+        replies.record(db, "jane@acme.example", "Re: hi", "pricing?", "<m@x>", 1000.0)
+        replies.record(db, "bob@beta.example", "Re: hi", "call me", "<b@x>", 1001.0)
+    finally:
+        db.close()
+    assert call("today")["counts"]["replies"] == 2
+    call("snooze", kind="reply", ref="jane@acme.example", until="tomorrow")
+    call("mark_reply_done", email="bob@beta.example")
+    assert call("today")["counts"]["replies"] == 0
+    task = call("list_tasks")["tasks"][0]
+    out = call("snooze", kind="task", ref=str(task["id"]), until="+3d")
+    assert out["due"] > task["due"]
+
+
+def test_mcp_snooze_bad_kind_is_an_error():
+    r = mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                    "params": {"name": "snooze", "arguments": {"kind": "deal", "ref": "1",
+                                                               "until": "tomorrow"}}})["result"]
+    assert r["isError"] is True

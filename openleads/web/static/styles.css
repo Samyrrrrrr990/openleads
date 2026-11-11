@@ -668,6 +668,13 @@ details > summary { cursor: pointer; }
 /* ---------------------------------------------------------- home */
 .home-hello { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
 .home-hello h1 { font-size: 24px; }
+.home-today { margin-bottom: 40px; }
+.today-notes { display: grid; gap: 8px; margin-bottom: 28px; }
+.today-notes code { font-size: 12.5px; }
+.today-row { align-items: flex-start; }
+.today-row .actions { flex-shrink: 0; align-items: center; }
+.today-snippet { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin: 2px 0; overflow-wrap: anywhere; }
+.today-editor { display: grid; gap: 8px; padding: 4px 0 14px; border-bottom: 1px solid var(--line); }
 .home-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 48px; align-items: start; }
 .home-cols--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .home-cols > .sec + .sec { margin-top: 0; }

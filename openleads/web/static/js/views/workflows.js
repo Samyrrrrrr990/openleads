@@ -395,7 +395,8 @@ function render() {
   <section class="page wf-page">
     <div class="head"><div><div class="head__title"><h1>Workflows</h1></div>
       <p class="head__sub">Triggers, searches, filters, emails and exports joined into one automation. Test runs never send.</p></div>
-      <button type="button" class="btn btn--primary" data-act="new">${ico("plus")} New workflow</button></div>
+      <div class="head__actions"><a class="btn btn--ghost" href="#/automations">${ico("robot")} Recipes &amp; watchers</a>
+        <button type="button" class="btn btn--primary" data-act="new">${ico("plus")} New workflow</button></div></div>
     <div class="wf__list"><div class="wf__items" id="wf-items">${listHtml()}</div></div>
     <div class="wf__shell">
       <div class="wf__board card">

@@ -48,13 +48,10 @@ const NAV = [
   ]],
   ["Automate", [
     ["workflows", "Workflows", "flow"],
-    ["automations", "Recipes & watchers", "robot"],
     ["enrich", "Import & enrich", "upload"],
   ]],
   ["Settings", [
     ["settings", "Settings", "settings"],
-    ["health", "Data health", "heart"],
-    ["doctor", "Doctor", "doctor"],
   ]],
 ];
 
@@ -65,7 +62,8 @@ function renderNav() {
     if (!links.length) return "";
     return `<div class="nav__group" role="presentation" data-group="${esc(group)}"></div>` + links.map(([name, label, icon]) =>
       `<a class="navlink" href="#/${name}" data-nav="${name}" title="${esc(label)}">${ico(icon)}<span>${esc(label)}</span>`
-      + (name === "tasks" ? '<span class="navlink__count hidden" id="nav-tasks"></span>' : "") + "</a>").join("");
+      + (name === "tasks" ? '<span class="navlink__count hidden" id="nav-tasks"></span>' : "")
+      + (name === "home" ? '<span class="navlink__count hidden" id="nav-home" title="Replies and emails waiting on you"></span>' : "") + "</a>").join("");
   }).join("");
 }
 
@@ -114,6 +112,12 @@ export async function refreshBadges() {
     const el = $("#nav-tasks");
     if (el) { el.textContent = n; el.classList.toggle("hidden", !n); el.classList.toggle("is-quiet", !t.counts?.overdue); }
   } catch (_) { /* tasks view not available yet */ }
+  try {
+    const b = await api.get("/api/today");
+    const n = (b.counts?.replies || 0) + (b.counts?.drafts || 0);
+    const el = $("#nav-home");
+    if (el) { el.textContent = n; el.classList.toggle("hidden", !n); }
+  } catch (_) { /* older server */ }
 }
 async function loadReadiness() {
   try {

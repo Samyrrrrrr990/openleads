@@ -277,3 +277,71 @@ def test_backup_endpoints(base):
     _, after = get(base, "/api/backups")
     assert len(after["backups"]) == len(before["backups"]) + 1
     assert after["backups"][0]["name"].startswith("openleads-")
+
+
+# --- Today ------------------------------------------------------------------- #
+@pytest.fixture
+def draft_id():
+    from openleads.models import Draft
+    from openleads.workspace import drafts
+    db = DB()
+    try:
+        return drafts.enqueue(db, Draft(email="jane@acme.example", subject="hi", body="Hi Jane"),
+                              "ask", {"campaign": "ask", "step": 1})["id"]
+    finally:
+        db.close()
+
+
+@pytest.fixture
+def fake_send(monkeypatch):
+    from openleads.models import SendResult
+    sent = []
+
+    def send(drafts_, dry_run=True, db=None, campaign="", step=1, **kw):
+        sent.extend(drafts_)
+        return [SendResult(d.email, "sent", message_id="<m>") for d in drafts_]
+    monkeypatch.setattr("openleads.outreach.sender.send_drafts", send)
+    return sent
+
+
+def test_api_today_and_skip(base, draft_id, fake_send):
+    status, b = get(base, "/api/today")
+    assert status == 200 and b["counts"]["drafts"] == 1 and b["drafts"][0]["id"] == draft_id
+    status, r = post(base, "/api/drafts/skip", {"id": draft_id})
+    assert status == 200 and r["status"] == "skipped" and r["counts"]["drafts"] == 0
+    assert fake_send == []
+
+
+def test_api_approve_sends_once(base, draft_id, fake_send):
+    status, r = post(base, "/api/drafts/approve", {"id": draft_id, "subject": "Edited"})
+    assert status == 200 and r["status"] == "sent" and fake_send[0].subject == "Edited"
+    _, again = post(base, "/api/drafts/approve", {"id": draft_id})
+    assert again["status"] == "error" and len(fake_send) == 1
+
+
+def test_api_approve_requires_same_origin(base, draft_id, fake_send):
+    req = urllib.request.Request(base + "/api/drafts/approve",
+                                 data=json.dumps({"id": draft_id}).encode(),
+                                 headers={"Content-Type": "application/json",
+                                          "Origin": "http://evil.example"}, method="POST")
+    with pytest.raises(urllib.error.HTTPError) as e:
+        urllib.request.urlopen(req, timeout=10)
+    assert e.value.code == 403 and fake_send == []
+
+
+def test_api_snooze_and_reply_done(base):
+    from openleads.outreach import replies
+    db = DB()
+    try:
+        replies.record(db, "jane@acme.example", "Re: hi", "pricing?", "<m@x>", 1000.0)
+        replies.record(db, "ann@beta.example", "Re: hi", "call me", "<a@x>", 1001.0)
+    finally:
+        db.close()
+    assert get(base, "/api/today")[1]["counts"]["replies"] == 2
+    status, _ = post(base, "/api/today/snooze", {"kind": "reply", "ref": "jane@acme.example",
+                                                 "until": "tomorrow"})
+    assert status == 200
+    status, r = post(base, "/api/replies/done", {"email": "ann@beta.example"})
+    assert status == 200 and r["counts"]["replies"] == 0
+    status, err = post(base, "/api/today/snooze", {"kind": "deal", "ref": "1", "until": "tomorrow"})
+    assert status == 400

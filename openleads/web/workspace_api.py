@@ -96,6 +96,50 @@ def home(db, p):
     return stats.home(db, days=_int(p.get("days"), 30) or 30)
 
 
+@route(GET, "/api/today")
+def today_get(db, p):
+    from openleads import today
+    return today.briefing(db)
+
+
+def _today_counts(db) -> dict:
+    from openleads import today
+    return today.briefing(db)["counts"]
+
+
+@route(POST, "/api/drafts/approve")
+def drafts_approve(db, p):
+    """Send a waiting first email (with optional edits). This really sends."""
+    from openleads.workspace import drafts
+    res = drafts.approve(db, p.get("id"), subject=p.get("subject"), body=p.get("body"))
+    return {**res, "counts": _today_counts(db)}
+
+
+@route(POST, "/api/drafts/skip")
+def drafts_skip(db, p):
+    from openleads.workspace import drafts
+    return {**drafts.skip(db, p.get("id")), "counts": _today_counts(db)}
+
+
+@route(POST, "/api/today/snooze")
+def today_snooze(db, p):
+    from openleads import today
+    from openleads.workspace import tasks
+    until = tasks.parse_due(p.get("until") or "tomorrow")
+    out = today.snooze(db, str(p.get("kind") or ""), str(p.get("ref") or ""), until)
+    return {"ok": True, "snoozed": out, "counts": _today_counts(db)}
+
+
+@route(POST, "/api/replies/done")
+def replies_done(db, p):
+    from openleads.outreach import replies
+    email = str(p.get("email") or "").strip().lower()
+    if not email:
+        raise ValueError("give the contact's email")
+    replies.mark_done(db, email)
+    return {"ok": True, "counts": _today_counts(db)}
+
+
 @route(GET, "/api/analytics/replies")
 def analytics_replies(db, p):
     from openleads.workspace import stats

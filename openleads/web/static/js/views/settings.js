@@ -67,7 +67,8 @@ function render() {
   ROOT.innerHTML = `<section class="page">
     <div class="head"><div><div class="head__title"><h1>Settings</h1></div>
       <p class="head__sub">Saved to <code>~/.openleads</code> on this machine. Passwords and keys are never sent back to the browser.</p></div>
-      <div class="head__actions"><a class="btn" href="#/doctor">${ico("doctor")} Run Doctor</a></div></div>
+      <div class="head__actions"><a class="btn btn--ghost" href="#/health">${ico("heart")} Data health</a>
+        <a class="btn" href="#/doctor">${ico("doctor")} Run Doctor</a></div></div>
     <div class="tabs" style="border-bottom:1px solid var(--line);margin-bottom:16px">${tabs.map(([k, l]) =>
       `<button type="button" class="${TAB === k ? "is-on" : ""}" data-act="tab" data-k="${k}">${esc(l)}</button>`).join("")}</div>
     <div id="tab-body">${extra ? "" : groupHtml(TAB)}</div></section>`;

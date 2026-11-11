@@ -185,3 +185,12 @@ def test_reply_task_is_not_shown_twice(db):
     b = today.briefing(db, now=NOW)
     titles = [t["title"] for t in b["tasks"]["overdue"] + b["tasks"]["today"]]
     assert b["counts"]["replies"] == 1 and titles == ["Call A"] and b["counts"]["tasks"] == 1
+
+
+def test_demo_workspace_has_a_morning_to_show(db):
+    from openleads import demo
+    demo.seed(db)
+    b = today.briefing(db)
+    assert b["counts"]["replies"] >= 2 and b["counts"]["drafts"] >= 2
+    assert all("—" not in d["body"] and "–" not in d["body"] for d in b["drafts"])
+    assert drafts.waiting(db)[0]["ref"]["campaign"] == "demo"

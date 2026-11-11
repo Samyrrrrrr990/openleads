@@ -80,6 +80,20 @@ def _email(first: str, last: str, domain: str, style: int) -> str:
     return [f"{f}.{la}@{domain}", f"{f}@{domain}", f"{f[0]}{la}@{domain}"][style % 3]
 
 
+REPLY_TEXTS = (
+    "Thanks for reaching out. Can you send pricing for a team of five?",
+    "Interesting timing, we were just talking about this. Free Thursday afternoon for a call?",
+    "Not interested, thanks.",
+    "I am out of the office until Monday with limited access to email.",
+    "Who else in our space uses this? Happy to look if it's a fit.",
+)
+DRAFT_BODY = ("Hi {first},\n\nI saw {org} is hiring for front desk roles again. Most clinics we "
+              "talk to lose a few hours a week to appointment reminders and no-show calls.\n\n"
+              "We built a small tool that sends the reminders and fills the gaps from a waitlist. "
+              "Two clinics in Austin cut no-shows by about a third in their first month.\n\n"
+              "Worth a 15 minute look next week? If not, no worries at all.\n\nSam")
+
+
 def seed(db, now: float | None = None, rng_seed: int = 7) -> dict:
     """Fill ``db`` with the demo workspace. Returns counts of what was created."""
     from openleads.workspace import (
@@ -173,10 +187,12 @@ def seed(db, now: float | None = None, rng_seed: int = 7) -> dict:
             db.execute("INSERT INTO touches (email, campaign, step, subject, status, ts) "
                        "VALUES (?,?,?,?,?,?)", (email, campaign, 2, "re: quick question", "sent",
                                                 sent_at + 3 * DAY))
-    for email in contacted[:5]:
+    from openleads.outreach import replies as reply_log
+    for email, text in zip(contacted[:5], REPLY_TEXTS):
         db.set_status(email, "replied")
-        db.execute("UPDATE activity SET ts=? WHERE ref=? AND kind='replied'",
-                   (now - rnd.uniform(0.2, 9) * DAY, email))
+        at = now - rnd.uniform(0.2, 9) * DAY
+        db.execute("UPDATE activity SET ts=? WHERE ref=? AND kind='replied'", (at, email))
+        reply_log.record(db, email, "Re: quick question", text, f"<demo-{email}>", at)
     db.set_status(contacted[6], "bounced")
     people.update(db, contacted[0], {"stage": "meeting"})
     people.update(db, contacted[1], {"stage": "interested"})
@@ -245,5 +261,16 @@ def seed(db, now: float | None = None, rng_seed: int = 7) -> dict:
     for key, name in (("local-business-outreach", "dental-outreach"), ("inbound-reply", "reply-to-task")):
         if not wfstore.get(db, name):
             wfstore.save(db, wftemplates.instantiate(key, name=name))
+    # Three first emails waiting for a yes in Today (approval queue).
+    from openleads.models import Draft
+    from openleads.workspace import drafts as queue
+    waiting = [e for e in emails if e not in contacted][:3]
+    for email in waiting:
+        lead = db.get_lead(email) or {}
+        first = lead.get("first_name") or "there"
+        org = lead.get("organization") or "your team"
+        body = DRAFT_BODY.format(first=first, org=org)
+        queue.enqueue(db, Draft(email=email, subject=f"question about {org}", body=body,
+                                quality={"score": 91}), "ask", {"campaign": "demo", "step": 1})
     return {"contacts": len(emails), "companies": len(COMPANIES), "lists": 4,
             "sequences": 2, "tasks": len(t_specs), "deals": len(d_specs)}

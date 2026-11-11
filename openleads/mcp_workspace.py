@@ -539,6 +539,78 @@ def run_workflow(db, args: dict) -> dict:
 HANDLERS.update({"list_workflows": list_workflows, "run_workflow": run_workflow})
 
 
+# --------------------------------------------------------------------------- #
+# Today: replies waiting, first emails to approve, tasks due, heads-ups.       #
+# --------------------------------------------------------------------------- #
+TODAY_TOOLS = [
+    {"name": "today", "annotations": {**_RO, "title": "Today"},
+     "description": ("What needs the user right now: replies waiting for an answer (with a "
+                     "snippet), first emails waiting for approval (with subject, body and "
+                     "quality score), tasks due today or overdue, leads found since they last "
+                     "looked, and heads-ups (mailbox not connected, bounces climbing, a failed "
+                     "workflow). Start a morning review here."),
+     "inputSchema": _obj({})},
+    {"name": "approve_draft",
+     "annotations": {"readOnlyHint": False, "destructiveHint": True, "openWorldHint": True,
+                     "title": "Approve and send a draft"},
+     "description": ("Approve a waiting first email: this really sends it, from the user's "
+                     "mailbox, now (suppression, warmup cap and the pre-send hook still apply). "
+                     "Optionally pass an edited subject and body. Only approve drafts the user "
+                     "has said yes to."),
+     "inputSchema": _obj({"id": {"type": "integer"}, "subject": _S, "body": _S}, ["id"])},
+    {"name": "skip_draft", "annotations": {**_RW, "title": "Skip a draft"},
+     "description": "Skip a waiting first email so it never sends (a sequence contact leaves it).",
+     "inputSchema": _obj({"id": {"type": "integer"}}, ["id"])},
+    {"name": "snooze", "annotations": {**_RW, "title": "Snooze"},
+     "description": ("Hide a waiting reply (kind='reply', ref=email) or move a task "
+                     "(kind='task', ref=task id) until a later time. until accepts today, "
+                     "tomorrow, +3d, +2h, a weekday (fri) or YYYY-MM-DD."),
+     "inputSchema": _obj({"kind": {"type": "string", "enum": ["reply", "task"]}, "ref": _S,
+                          "until": _S}, ["kind", "ref", "until"])},
+    {"name": "mark_reply_done", "annotations": {**_RW, "title": "Mark a reply handled"},
+     "description": "Mark a contact's waiting reply as handled, so it leaves Today.",
+     "inputSchema": _obj({"email": _S}, ["email"])},
+]
+TOOLS += TODAY_TOOLS
+
+
+def today_tool(db, args: dict) -> dict:
+    from openleads import today
+    return today.briefing(db)
+
+
+def approve_draft(db, args: dict) -> dict:
+    from openleads.workspace import drafts
+    return drafts.approve(db, args.get("id"), subject=args.get("subject"), body=args.get("body"))
+
+
+def skip_draft(db, args: dict) -> dict:
+    from openleads.workspace import drafts
+    return drafts.skip(db, args.get("id"))
+
+
+def snooze(db, args: dict) -> dict:
+    from openleads import today
+    from openleads.workspace import tasks
+    until = tasks.parse_due(args.get("until"))
+    if until is None:
+        raise ValueError("snooze needs an until time, like tomorrow or +3d")
+    return today.snooze(db, str(args.get("kind") or ""), str(args.get("ref") or ""), until)
+
+
+def mark_reply_done(db, args: dict) -> dict:
+    from openleads.outreach import replies
+    email = str(args.get("email") or "").strip().lower()
+    if not email:
+        raise ValueError("give the contact's email")
+    replies.mark_done(db, email)
+    return {"email": email, "status": "done"}
+
+
+HANDLERS.update({"today": today_tool, "approve_draft": approve_draft, "skip_draft": skip_draft,
+                 "snooze": snooze, "mark_reply_done": mark_reply_done})
+
+
 def call(name: str, args: dict) -> dict:
     """Run one workspace tool against the local database."""
     from openleads.db import DB
