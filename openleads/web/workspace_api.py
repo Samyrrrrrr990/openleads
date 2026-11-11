@@ -11,6 +11,7 @@ into the server's tables.
 """
 from __future__ import annotations
 
+import threading
 import time
 from typing import Callable
 
@@ -105,14 +106,16 @@ def today_get(db, p):
 # --- the ask box: plan first, then run the plan you saw ---------------------------- #
 _PLANS: dict = {}          # id -> Plan, for plans shown in the browser and not yet run
 _PLANS_MAX = 32
+_PLANS_LOCK = threading.Lock()
 
 
 def _keep_plan(plan) -> str:
     import secrets
     pid = secrets.token_urlsafe(9)
-    _PLANS[pid] = plan
-    while len(_PLANS) > _PLANS_MAX:
-        _PLANS.pop(next(iter(_PLANS)))
+    with _PLANS_LOCK:          # the server answers each request on its own thread
+        _PLANS[pid] = plan
+        while len(_PLANS) > _PLANS_MAX:
+            _PLANS.pop(next(iter(_PLANS)))
     return pid
 
 

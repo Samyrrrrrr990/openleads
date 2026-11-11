@@ -147,7 +147,8 @@ function PlanCard({ turn, onRun, onDismiss }: { turn: Turn; onRun: (confirmed: b
           <Button size="sm" variant="ghost" onClick={onDismiss}>
             Not now
           </Button>
-          <Button size="sm" onClick={() => onRun(plan.needs_yes)} autoFocus>
+          {/* Enter runs an ordinary plan; one the model widened has to be clicked on purpose. */}
+          <Button size="sm" onClick={() => onRun(plan.needs_yes)} autoFocus={!plan.needs_yes}>
             {plan.needs_yes ? "Yes, run it" : plan.schedule ? "Save schedule" : "Run it"}
           </Button>
         </div>

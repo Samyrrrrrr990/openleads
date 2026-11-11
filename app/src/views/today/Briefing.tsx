@@ -247,7 +247,8 @@ function HeadsUpList({ items }: { items: HeadsUp[] }) {
 
 export function Briefing({ b, onChanged }: { b: BriefingData; onChanged: () => void }) {
   const tasks = [...b.tasks.overdue, ...b.tasks.today];
-  const more = b.counts.drafts - b.drafts.length;
+  const shown = b.drafts.slice(0, 5);
+  const more = b.counts.drafts - shown.length;
   const calm = !b.replies.length && !b.drafts.length && !tasks.length;
   return (
     <>
@@ -270,7 +271,7 @@ export function Briefing({ b, onChanged }: { b: BriefingData; onChanged: () => v
             ) : undefined
           }
         >
-          {b.drafts.slice(0, 5).map((d) => (
+          {shown.map((d) => (
             <DraftRow key={d.id} d={d} onChanged={onChanged} />
           ))}
         </Panel>
