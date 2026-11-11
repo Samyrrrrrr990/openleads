@@ -32,7 +32,9 @@ from pathlib import Path
 from openleads import settings
 from openleads.web import api, workflow_api, workspace_api
 
-STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC_DIR = Path(__file__).resolve().parent / "static"   # the classic dashboard
+APP_DIR = Path(__file__).resolve().parent / "app"         # the 5.5 app (built from app/)
+CLASSIC = False                                           # `openleads web --classic`
 
 _MIME = {
     ".html": "text/html; charset=utf-8",
@@ -203,12 +205,25 @@ class Handler(BaseHTTPRequestHandler):
         return data
 
     def _serve_static(self, path: str) -> None:
-        rel = path.lstrip("/") or "index.html"
-        target = (STATIC_DIR / rel).resolve()
-        # path-traversal guard: must stay inside STATIC_DIR
-        if not str(target).startswith(str(STATIC_DIR)) or not target.is_file():
-            # SPA fallback: unknown non-API path → index.html
-            target = STATIC_DIR / "index.html"
+        """The app at ``/`` (when it's built), the classic dashboard at ``/classic/``.
+
+        Without a build, or with ``--classic``, the classic dashboard is home too.
+        Unknown paths fall back to the index of whichever one they belong to."""
+        app = APP_DIR.resolve()
+        classic = STATIC_DIR.resolve()
+        if path == "/classic":
+            path = "/classic/"
+        if path.startswith("/classic/"):
+            root, rel = classic, path[len("/classic/"):]
+        elif CLASSIC or not (app / "index.html").is_file():
+            root, rel = classic, path.lstrip("/")
+        else:
+            root, rel = app, path.lstrip("/")
+        target = (root / (rel or "index.html")).resolve()
+        # path-traversal guard: must stay inside its root
+        inside = target == root or root in target.parents
+        if not inside or not target.is_file():
+            target = root / "index.html"
             if not target.is_file():
                 self._send_json({"error": "dashboard assets missing"},
                                 HTTPStatus.NOT_FOUND)
@@ -217,8 +232,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", _MIME.get(target.suffix, "application/octet-stream"))
         self.send_header("Content-Length", str(len(body)))
-        # static assets are content-stable per build; index must stay fresh
-        if target.suffix in (".css", ".js", ".woff2", ".svg"):
+        if root == app and target.parent.name == "assets":
+            # the app's build names every asset by its content hash
+            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        else:
             self.send_header("Cache-Control", "no-cache")
         self._security_headers()
         self.end_headers()
@@ -293,8 +310,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(port: int | None = None, open_browser: bool = True,
-          host: str = "127.0.0.1") -> int:
+          host: str = "127.0.0.1", classic: bool = False) -> int:
     """Start the dashboard. Blocks until Ctrl-C. Returns a process exit code."""
+    global CLASSIC
+    CLASSIC = bool(classic)
     port = int(port or settings.get("web_port") or 8787)
     try:
         httpd = ThreadingHTTPServer((host, port), Handler)

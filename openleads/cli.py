@@ -623,7 +623,8 @@ def cmd_web(args) -> int:
     except ImportError as e:  # pragma: no cover
         print(f"[!] web app unavailable: {e}", file=sys.stderr)
         return 2
-    return serve(port=args.port, open_browser=not args.no_open)
+    return serve(port=args.port, open_browser=not args.no_open,
+                 classic=getattr(args, "classic", False))
 
 
 def cmd_chat(args) -> int:
@@ -1241,6 +1242,8 @@ def build_parser() -> argparse.ArgumentParser:
     wb = sub.add_parser("web", help="launch the local web dashboard")
     wb.add_argument("--port", type=int, default=None, help="port (default 8787)")
     wb.add_argument("--no-open", action="store_true", help="don't open a browser")
+    wb.add_argument("--classic", action="store_true",
+                    help="open the pre-5.5 dashboard (it's also at /classic/)")
     wb.add_argument("--demo", action="store_true",
                     help="open it on an invented demo workspace (your data is untouched)")
     wb.set_defaults(func=cmd_web)

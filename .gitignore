@@ -38,3 +38,9 @@ Thumbs.db
 *.log
 /tmp/
 npm/LICENSE
+
+# ─── The 5.5 app ───
+# Source lives in app/; `npm run build` there writes openleads/web/app, which the
+# release workflow builds into the wheel. Without it the classic dashboard is served.
+app/node_modules/
+openleads/web/app/

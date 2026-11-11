@@ -56,8 +56,9 @@ include = ["openleads*"]
 py-modules = ["lead_engine", "automation"]
 
 [tool.setuptools.package-data]
-# Ship the pre-built local dashboard (no Node/build needed by end users).
-"openleads.web" = ["static/*", "static/**/*"]
+# Ship the pre-built local dashboard (no Node/build needed by end users): the 5.5 app
+# (built from app/ into openleads/web/app by the release workflow) and the classic one.
+"openleads.web" = ["static/*", "static/**/*", "app/*", "app/**/*"]
 # Given-name list for the person-name quality gate; the offline metro gazetteer.
 "openleads.discover" = ["given_names.txt", "places.tsv"]
 

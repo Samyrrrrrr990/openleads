@@ -130,3 +130,23 @@ jobs:
       - run: openleads sources
       - run: python -c "from openleads.automate import scheduler as s; print(s.schtasks_args(None)); print(s.cron_line(None))"
       - run: node --check npm/bin/openleads.js
+
+  app:
+    name: App (typecheck, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: The build lands in the Python package
+        run: test -f ../openleads/web/app/index.html

@@ -102,6 +102,63 @@ def today_get(db, p):
     return today.briefing(db)
 
 
+# --- the ask box: plan first, then run the plan you saw ---------------------------- #
+_PLANS: dict = {}          # id -> Plan, for plans shown in the browser and not yet run
+_PLANS_MAX = 32
+
+
+def _keep_plan(plan) -> str:
+    import secrets
+    pid = secrets.token_urlsafe(9)
+    _PLANS[pid] = plan
+    while len(_PLANS) > _PLANS_MAX:
+        _PLANS.pop(next(iter(_PLANS)))
+    return pid
+
+
+@route(POST, "/api/ask/plan")
+def ask_plan(db, p):
+    """Read a request. A question about your workspace is answered; anything else comes
+    back as a plan to look at. Nothing runs here."""
+    from openleads import ask
+    text = " ".join(str(p.get("text") or "").split())
+    if not text:
+        raise ValueError("type what you want first")
+    if len(text) > 2000:
+        raise ValueError("that request is too long")
+    if ask.is_question(text):
+        reply = ask.question(text, db)
+        if reply:
+            return {"kind": "answer", "answer": reply}
+    plan = ask.make_plan(text, live=False, sequence_names=ask._sequence_names(db),
+                         use_model=True)
+    shown = {k: v for k, v in plan.to_dict().items() if k != "graph"}
+    shown["steps"] = [ask.web_step(step) for step in plan.steps]
+    return {"kind": "plan", "id": _keep_plan(plan), "plan": shown,
+            "runnable": plan.kind != "unsupported"}
+
+
+@route(STREAM, "/api/ask/run")
+def ask_run(db, p, emit):
+    """Run a plan from :func:`ask_plan`, once. Never live: emails it writes wait for
+    your approval on Today."""
+    from openleads import ask
+    plan = _PLANS.pop(str(p.get("id") or ""), None)
+    if plan is None:
+        emit({"type": "error", "message": "That plan is gone. Ask again to get a fresh one."})
+        return
+    if plan.kind == "unsupported":
+        emit({"type": "error", "message": f"Use: {plan.suggestion}"})
+        return
+    if plan.needs_yes and p.get("confirmed") is not True:
+        emit({"type": "error", "message": "The model read this as more than a search. "
+                                          "Say yes to that first."})
+        return
+    result = ask.run_plan(plan, live=False, db=db, emit=emit)
+    emit({"type": "done", "result": result, "answer": ask.answer(result, web=True),
+          "counts": _today_counts(db)})
+
+
 @route(GET, "/api/today/line")
 def today_line(db, p):
     """The model's one-line read of the morning; fetched after the page is up, since
@@ -113,6 +170,14 @@ def today_line(db, p):
 def _today_counts(db) -> dict:
     from openleads import today
     return today.briefing(db)["counts"]
+
+
+@route(GET, "/api/drafts/waiting")
+def drafts_waiting(db, p):
+    """Every first email waiting for a yes (Today shows the first twenty)."""
+    from openleads.workspace import drafts
+    limit = max(1, min(_int(p.get("limit"), 200), 500))
+    return {"drafts": drafts.waiting(db, limit=limit), "count": drafts.count_waiting(db)}
 
 
 @route(POST, "/api/drafts/approve")

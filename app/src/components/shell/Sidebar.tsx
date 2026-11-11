@@ -1,0 +1,149 @@
+import { ExternalLinkIcon, MoonIcon, SearchIcon, SunIcon } from "lucide-react";
+
+import { Kbd } from "~/components/ui/kbd";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
+import { useCounts } from "~/lib/counts";
+import { askFor, useRequests } from "~/lib/requests";
+import { href, navigate } from "~/lib/router";
+import { toggleTheme, useTheme } from "~/lib/theme";
+import { cn, IS_MAC } from "~/lib/utils";
+
+import { SECTIONS } from "./sections";
+
+function Logo() {
+  return (
+    <span className="grid size-6 place-items-center rounded-md bg-primary text-primary-foreground" aria-hidden>
+      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 4v16M5 4h9a5 5 0 0 1 0 10H5" />
+      </svg>
+    </span>
+  );
+}
+
+export function Sidebar({
+  active,
+  version,
+  onOpenPalette,
+}: {
+  active: string;
+  version: string;
+  onOpenPalette: () => void;
+}) {
+  const counts = useCounts();
+  const requests = useRequests();
+  const theme = useTheme();
+  const waiting = counts.replies + counts.drafts;
+
+  return (
+    <aside
+      data-app-sidebar
+      className="flex w-[var(--sidebar-width)] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground max-md:hidden"
+    >
+      <div className="flex h-[52px] items-center gap-2 px-3.5">
+        <Logo />
+        <span className="font-semibold tracking-tight">openleads</span>
+        {version && <span className="ms-auto text-2xs text-sidebar-muted-foreground">v{version}</span>}
+      </div>
+
+      <div className="px-2">
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          className="flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg border border-sidebar-border bg-sidebar-row-active px-2.5 text-[13px] text-sidebar-muted-foreground shadow-xs/5 transition-colors hover:text-sidebar-foreground"
+        >
+          <SearchIcon className="size-3.5" />
+          <span>Search or jump to</span>
+          <Kbd className="ms-auto">{IS_MAC ? "⌘K" : "Ctrl K"}</Kbd>
+        </button>
+      </div>
+
+      <nav className="mt-3 flex flex-col gap-px px-2" aria-label="Sections">
+        {SECTIONS.map((s) => {
+          const on = s.key === active;
+          const Icon = s.icon;
+          return (
+            <a
+              key={s.key}
+              href={href(s.key)}
+              aria-current={on ? "page" : undefined}
+              className={cn(
+                "group flex h-8 items-center gap-2.5 rounded-lg border border-transparent px-2.5 text-[13px] font-medium text-sidebar-muted-foreground transition-colors",
+                "hover:bg-sidebar-row-hover hover:text-sidebar-foreground",
+                on && "border-sidebar-border bg-sidebar-row-active text-sidebar-foreground shadow-xs/5 dark:border-transparent",
+              )}
+            >
+              <Icon className={cn("size-4", on ? "text-sidebar-foreground" : "text-sidebar-muted-foreground")} />
+              <span>{s.label}</span>
+              {s.key === "today" && waiting > 0 && (
+                <span className="ms-auto rounded-full bg-primary px-1.5 text-2xs font-semibold leading-4 text-primary-foreground tabular-nums">
+                  {waiting}
+                </span>
+              )}
+              {s.key === "pipeline" && counts.tasks > 0 && (
+                <span className="ms-auto text-2xs text-sidebar-muted-foreground tabular-nums">{counts.tasks}</span>
+              )}
+            </a>
+          );
+        })}
+      </nav>
+
+      {requests.length > 0 && (
+        <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2">
+          <div className="px-2.5 pb-1 text-2xs font-medium uppercase tracking-wider text-sidebar-muted-foreground/80">
+            Recent requests
+          </div>
+          {requests.map((r) => (
+            <button
+              key={r}
+              type="button"
+              title={r}
+              onClick={() => {
+                navigate("today");
+                window.setTimeout(() => askFor(r), 0);
+              }}
+              className="block h-7 w-full cursor-pointer truncate rounded-md px-2.5 text-start text-[13px] text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-auto flex items-center gap-1 border-t border-sidebar-border px-2 py-2">
+        <span className="flex items-center gap-1.5 px-1.5 text-2xs text-sidebar-muted-foreground">
+          <span className="size-1.5 rounded-full bg-success" /> Local, private
+        </span>
+        <span className="ms-auto" />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <a
+                href="/classic/"
+                className="grid size-7 place-items-center rounded-md text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
+                aria-label="Open the classic dashboard"
+              />
+            }
+          >
+            <ExternalLinkIcon className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipPopup>Classic dashboard</TooltipPopup>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="grid size-7 cursor-pointer place-items-center rounded-md text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
+                aria-label="Switch between light and dark"
+              />
+            }
+          >
+            {theme === "dark" ? <SunIcon className="size-3.5" /> : <MoonIcon className="size-3.5" />}
+          </TooltipTrigger>
+          <TooltipPopup>{theme === "dark" ? "Light mode" : "Dark mode"}</TooltipPopup>
+        </Tooltip>
+      </div>
+    </aside>
+  );
+}

@@ -47,6 +47,11 @@ def _no_live_http(monkeypatch):
     def no_model(url, *a, **kw):
         raise ai.AIError(f"model calls are disabled in tests: {url}")
     monkeypatch.setattr(ai, "_post", no_model)
+    # Nor may a local build of the app (openleads/web/app is git-ignored): the server
+    # serves the classic dashboard unless a test points APP_DIR at a build.
+    from openleads.web import server
+    monkeypatch.setattr(server, "APP_DIR", server.STATIC_DIR / "no-app-build-in-tests")
+    monkeypatch.setattr(server, "CLASSIC", False)
     yield
 
 

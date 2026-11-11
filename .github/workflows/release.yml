@@ -42,6 +42,16 @@ jobs:
           print(f"tag={tag} pyproject={py} package={pkg} npm={npm}")
           sys.exit(0 if len({tag, py, pkg, npm}) == 1 else "version mismatch")
           PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Build the app into the package
+        working-directory: app
+        run: |
+          npm ci
+          npm run build
       - name: Build distributions
         run: |
           python -m pip install --upgrade pip build twine
@@ -55,8 +65,13 @@ jobs:
           names = zipfile.ZipFile(whl).namelist()
           need = ["openleads/web/static/index.html", "openleads/web/static/app.js",
                   "openleads/web/static/styles.css",
-                  "openleads/web/static/fonts/atkinson-next-latin.woff2"]
+                  "openleads/web/static/fonts/atkinson-next-latin.woff2",
+                  "openleads/web/app/index.html"]
           missing = [n for n in need if n not in names]
+          assert any(n.startswith("openleads/web/app/assets/") and n.endswith(".js")
+                     for n in names), "the app's script is missing from the wheel"
+          assert not any(n.startswith("app/") or "node_modules" in n for n in names), \
+              "app sources leaked into the wheel"
           print("wheel:", whl)
           assert not missing, f"missing from wheel: {missing}"
           print("OK — local dashboard is bundled.")

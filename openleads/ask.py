@@ -374,7 +374,14 @@ def run_plan(plan: Plan, *, live: bool = False, db=None, emit=None) -> dict:
     try:
         if plan.kind == "find":
             from openleads.engine import build_leads
-            leads = build_leads(plan.query, db=db)
+            def progress(kind, payload):
+                if emit is None:
+                    return
+                if kind == "phase":
+                    emit({"type": "phase", "message": str(payload)})
+                elif kind == "lead":
+                    emit({"type": "lead", "lead": payload.to_dict()})
+            leads = build_leads(plan.query, db=db, on_progress=progress)
             safe = sum(1 for lead in leads if getattr(lead, "tier", "") == "safe")
             return {**out, "ok": True, "leads": len(leads), "verified": safe}
         if plan.schedule:
@@ -399,13 +406,14 @@ def _n_of(n: int, one: str, many: str) -> str:
     return f"{n} {one if n == 1 else many}"
 
 
-def answer(result: dict) -> str:
-    """One or two plain sentences. Every number comes from ``result``."""
+def answer(result: dict, web: bool = False) -> str:
+    """One or two plain sentences. Every number comes from ``result``. ``web`` leaves
+    out the terminal commands (the dashboard has buttons for them)."""
     if not result.get("ok"):
         return f"That didn't work: {result.get('message') or 'the run stopped'}."
     if result.get("scheduled"):
-        return (f"Saved as workflow {result.get('workflow')}; it runs {result['scheduled']}. "
-                "See it with: openleads workflow ls")
+        said = f"Saved as workflow {result.get('workflow')}; it runs {result['scheduled']}."
+        return said if web else said + " See it with: openleads workflow ls"
     leads = int(result.get("leads") or 0)
     if not leads:
         return "Found no one for that. Try a broader audience or another place."
@@ -415,11 +423,18 @@ def answer(result: dict) -> str:
         found += f", {verified} with a verified email"
     parts = [found + "."]
     if result.get("drafts_waiting"):
-        parts.append(f"{_n_of(int(result['drafts_waiting']), 'draft is', 'drafts are')} waiting "
-                     "for your yes: openleads today")
+        waiting = (f"{_n_of(int(result['drafts_waiting']), 'draft is', 'drafts are')} waiting "
+                   "for your yes")
+        parts.append(waiting + ("." if web else ": openleads today"))
     if result.get("sent"):
         parts.append(f"Sent {_n_of(int(result['sent']), 'email', 'emails')}.")
     return " ".join(parts)
+
+
+def web_step(step: str) -> str:
+    """A plan step as the dashboard shows it: the Today page instead of the command."""
+    return (step.replace("approval queue (openleads today)", "approval queue on Today")
+            .replace("in openleads today", "on Today"))
 
 
 # --- questions about your workspace (5.4) ---------------------------------------- #
