@@ -23,6 +23,12 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 - Replies: the model tells a real question from a polite no and suggests an answer
   for the ones that need you (Today, dashboard and MCP). Rules still decide
   bounces, out-of-office and unsubscribes.
+- Ask about your workspace: `openleads "who replied and what do they want?"` or the
+  same in chat. The model answers from a small summary of your workspace and says
+  when it can't tell; a question that's really a search still searches.
+- The dashboard follows T3 Code's look: the system font, zinc greys, a near-black
+  dark mode with hairline borders and a blue primary. Email addresses keep Atkinson
+  Hyperlegible so `l`, `I` and `1` never look alike.
 - Today warns when the chosen model isn't working, and mentions an installed Claude
   or Codex CLI you haven't connected.
 - Dashboard: Settings, AI model shows what's connected, what this computer has, and

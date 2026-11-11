@@ -98,3 +98,16 @@ def test_plan_says_which_model_read_it(monkeypatch, capsys):
     assert cli_ask.cmd_ask(["get", "me", "thirty", "berlin", "rustaceans", "re", "hiring"]) == 0
     out = capsys.readouterr().out
     assert "read by codex:gpt-5" in out and "rust developers in Berlin" in out
+
+
+def test_a_question_gets_an_answer_not_a_search(monkeypatch, capsys):
+    monkeypatch.setattr(ask, "question", lambda text, db: "Two people replied this week.")
+    monkeypatch.setattr(ask, "make_plan", lambda *a, **k: pytest.fail("planned a question"))
+    assert cli_ask.cmd_ask(["who", "replied", "this", "week?"]) == 0
+    assert "Two people replied this week." in capsys.readouterr().out
+
+
+def test_question_json(monkeypatch, capsys):
+    monkeypatch.setattr(ask, "question", lambda text, db: "None yet.")
+    assert cli_ask.cmd_ask(["who", "replied?", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == {"answer": "None yet."}

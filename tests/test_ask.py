@@ -221,3 +221,47 @@ def test_model_find_is_a_search(model):
                       "count": 50}
     p = ask.make_plan("who are the series a fintech founders in london", use_model=True)
     assert p.kind == "find" and p.query.count == 50 and p.confirm is False
+
+
+# --- 5.4: questions about your workspace -------------------------------------------- #
+@pytest.fixture
+def ws(tmp_path):
+    d = DB(tmp_path / "q.db")
+    d.upsert_lead({"email": "maya@northwind.example", "first_name": "Maya", "last_name": "Okafor",
+                   "organization": "Northwind Dental", "tier": "safe"})
+    d.execute("UPDATE leads SET stage='interested'")
+    yield d
+    d.close()
+
+
+@pytest.mark.parametrize("text,want", [
+    ("who replied this week?", True), ("how many emails did I send", True),
+    ("which deals are stuck", True), ("dentists in Austin", False),
+    ("find 30 rust devs in Berlin", False), ("email them about x", False),
+])
+def test_looks_like_a_question(text, want):
+    assert ask.is_question(text) is want
+
+
+def test_question_is_answered_from_the_workspace(ws, model):
+    model["reply"] = {"kind": "answer", "text": "One person is interested: Maya Okafor."}
+    out = ask.question("who is interested?", ws)
+    assert out == "One person is interested: Maya Okafor."
+    sent = model["calls"][0]
+    assert "Maya" in sent[-1]["content"] and "interested" in sent[-1]["content"]
+    assert "only" in sent[0]["content"].lower()           # answers only from the data
+
+
+def test_question_that_is_really_a_search(ws, model):
+    model["reply"] = {"kind": "search"}
+    assert ask.question("who are the fintech founders in London?", ws) is None
+
+
+def test_no_question_without_a_model(ws):
+    assert ask.question("who replied this week?", ws) is None
+
+
+def test_question_model_failure_is_none(ws, model):
+    from openleads import ai
+    model["reply"] = ai.AIError("offline")
+    assert ask.question("who replied this week?", ws) is None

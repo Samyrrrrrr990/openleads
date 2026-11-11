@@ -61,6 +61,16 @@ def cmd_ask(argv: list) -> int:
     as_json = "--json" in argv
     text = " ".join(a for a in argv if a not in FLAGS).strip()
     from openleads import ai
+    if ask.is_question(text) and not live:
+        from openleads.db import DB
+        db = DB()
+        try:
+            reply = ask.question(text, db)
+        finally:
+            db.close()
+        if reply:
+            print(json.dumps({"answer": reply}) if as_json else reply)
+            return 0
     if not as_json and ai.resolve() is not None and _interactive():
         print(ui.c("Reading your request...", ui.FAINT), flush=True)
     plan = ask.make_plan(text, live=live, sequence_names=_sequence_names(), use_model=True)

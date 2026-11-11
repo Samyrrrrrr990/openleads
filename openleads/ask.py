@@ -396,3 +396,94 @@ def answer(result: dict) -> str:
     if result.get("sent"):
         parts.append(f"Sent {_n_of(int(result['sent']), 'email', 'emails')}.")
     return " ".join(parts)
+
+
+# --- questions about your workspace (5.4) ---------------------------------------- #
+_QUESTION_RE = re.compile(r"^(?:who|what|which|how many|how much|how's|how is|how are|when|"
+                          r"did|do|does|has|have|is|are|any|anything|show me what|tell me)\b",
+                          re.I)
+_QUESTION_SYSTEM = (
+    "You answer questions about the user's OpenLeads workspace (their contacts, replies, "
+    "tasks, sequences, deals and recent sends). Use ONLY the data given; if it doesn't "
+    "say, answer that you can't tell from what OpenLeads has. Never invent people, numbers "
+    "or dates. Answer with ONE JSON object: {\"kind\": \"answer\", \"text\": str} with a "
+    "short plain answer (under 80 words, names and numbers from the data), or "
+    "{\"kind\": \"search\"} if the question asks to find NEW people or companies on the web "
+    "rather than about the workspace.")
+
+
+def is_question(text: str) -> bool:
+    """Phrased as a question (worth asking the model about the workspace)."""
+    t = " ".join(str(text or "").split())
+    if not t or re.match(r"^(?:find|search|email|send|add|schedule|enroll)\b", t, re.I):
+        return False
+    return t.endswith("?") or bool(_QUESTION_RE.match(t))
+
+
+def snapshot(db, now: float | None = None, limit: int = 40) -> dict:
+    """A compact picture of the workspace for answering questions (no secrets)."""
+    import time as _time
+
+    from openleads import today
+    now = _time.time() if now is None else now
+    b = today.briefing(db, now=now)
+    week = now - 7 * 86400
+
+    def q(sql, args=()):
+        try:
+            return db.query(sql, args)
+        except Exception:  # noqa: BLE001 — an old workspace may lack a table
+            return []
+    contacts = [{"name": r.get("name") or "", "email": r["email"],
+                 "company": r.get("organization") or "", "stage": r.get("stage") or "",
+                 "status": r.get("status") or ""}
+                for r in q("SELECT * FROM leads ORDER BY updated DESC LIMIT ?", (limit,))]
+    return {
+        "today": {"replies_waiting": [{"name": r.get("name"), "email": r["email"],
+                                       "said": r.get("snippet")} for r in b["replies"]],
+                  "emails_to_approve": b["counts"]["drafts"],
+                  "tasks_due": [{"title": t.get("title"), "contact": t.get("contact")}
+                                for t in b["tasks"]["overdue"] + b["tasks"]["today"]],
+                  "heads_up": [h["message"] for h in b["heads_up"]]},
+        "contacts_by_stage": {r["stage"] or "none": r["n"] for r in q(
+            "SELECT stage, COUNT(*) AS n FROM leads GROUP BY stage")},
+        "contacts_by_status": {r["status"] or "none": r["n"] for r in q(
+            "SELECT status, COUNT(*) AS n FROM leads GROUP BY status")},
+        "sent_last_7_days": next((r["n"] for r in q(
+            "SELECT COUNT(*) AS n FROM touches WHERE status='sent' AND ts >= ?", (week,))), 0),
+        "replies_last_7_days": [{"email": r["ref"], "said": r["summary"]} for r in q(
+            "SELECT ref, summary FROM activity WHERE kind='reply' AND ts >= ? "
+            "ORDER BY ts DESC LIMIT 20", (week,))],
+        "sequences": [{"name": r["name"], "status": r["status"], "active": r["n"]} for r in q(
+            "SELECT s.name, s.status, COUNT(e.id) AS n FROM sequences s LEFT JOIN enrollments e "
+            "ON e.sequence_id=s.id AND e.status='active' GROUP BY s.id")],
+        "open_deals": [{"name": r["name"], "stage": r["stage"], "amount": r["amount"]} for r in q(
+            "SELECT name, stage, amount FROM deals WHERE closed IS NULL ORDER BY updated DESC "
+            "LIMIT 20")],
+        "recent_contacts": contacts,
+    }
+
+
+def question(text: str, db) -> str | None:
+    """Answer a question about the workspace with the connected model, or None (no
+    model, not a workspace question, or the model failed: the caller searches)."""
+    import json as _json
+
+    from openleads import ai
+    if not is_question(text):
+        return None
+    m = ai.resolve()
+    if m is None:
+        return None
+    data = _json.dumps(snapshot(db), default=str)[:12000]
+    try:
+        out = ai.parse_json(ai.chat([{"role": "system", "content": _QUESTION_SYSTEM},
+                                     {"role": "user", "content": f"Question: {text}\n\n"
+                                                                 f"Workspace data:\n{data}"}],
+                                    m, max_tokens=400, temperature=0))
+    except ai.AIError:
+        return None
+    if out.get("kind") != "answer" or not str(out.get("text") or "").strip():
+        return None
+    from openleads.outreach.compose import clean_dashes
+    return clean_dashes(" ".join(str(out["text"]).split()))[:800]

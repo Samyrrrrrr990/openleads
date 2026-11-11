@@ -82,6 +82,21 @@ this in house last year")? For the ones that need you, Today shows a suggested
 answer you can start from. It won't invent prices or facts; it says "I'll check"
 instead.
 
+**Answers questions about your workspace.** Ask `openleads "who replied and what do
+they want?"` or "how many contacts are in each stage?" (in chat too). OpenLeads
+sends the model a small summary: what Today shows, counts by stage and status,
+sends and replies from the last week, sequences, open deals and your 40 most recent
+contacts. The model answers only from that and says so when it can't tell. A
+question that is really a search ("who are the fintech founders in London?") runs
+the search instead.
+
+### What leaves your computer
+
+Only what each job needs goes to the provider you picked: the request, the facts
+about the person you're writing to, the reply being sorted, or the workspace
+summary for a question. With Ollama nothing leaves your computer. With no model,
+nothing is sent anywhere.
+
 ## In the dashboard
 
 Settings, AI model shows what's connected, what this computer has (with a **Use

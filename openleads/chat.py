@@ -482,6 +482,11 @@ def run() -> int:
                 continue
             if _maybe_refine(text, session, console):
                 continue
+            from openleads import ask
+            reply = ask.question(text, session.db)
+            if reply:
+                _say(console, reply)
+                continue
             if _looks_like_action(text):
                 _run_assistant(text, session, console)
             else:
