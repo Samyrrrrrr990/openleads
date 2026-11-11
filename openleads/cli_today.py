@@ -164,8 +164,10 @@ def summary(b: dict) -> str:
     return ", ".join(parts) + ". Nothing else needs you."
 
 
-def render(b: dict, now: float) -> str:
+def render(b: dict, now: float, line: str = "") -> str:
     lines = [ui.c("Today", ui.BOLD)]
+    if line:
+        lines.append(ui.c(line, ui.GREY))
 
     def section(title: str, rows: list) -> None:
         if rows:
@@ -252,10 +254,11 @@ def cmd_today(args) -> int:
     db = DB()
     try:
         b = today.briefing(db, now=now)
+        line = today.morning_line(db, b, now=now)
         if args.json:
-            print(json.dumps(b, indent=2, default=str))
+            print(json.dumps(dict(b, line=line), indent=2, default=str))
         else:
-            print(render(b, now))
+            print(render(b, now, line=line))
         today.mark_seen(db, now=now)
         has_items = b["replies"] or b["drafts"] or b["tasks"]["overdue"] or b["tasks"]["today"]
         if not args.json and not args.no_input and has_items and _interactive():

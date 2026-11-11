@@ -219,3 +219,75 @@ def test_heads_up_when_the_chosen_model_is_missing(db, monkeypatch, set_setting)
     monkeypatch.setattr(ai, "_which", lambda name: None)
     set_setting("ai_provider", "codex")
     assert any("codex" in m and "isn't on PATH" in m for m in _msgs(db))
+
+
+# ---- the model's one-line "what matters this morning" ----------------------
+
+@pytest.fixture
+def line_model(monkeypatch):
+    from openleads import ai
+    state = {"reply": "Maya asked for pricing; answer her first.", "calls": [], "kw": []}
+
+    def chat(messages, m=None, **kw):
+        if "start their morning" not in messages[0]["content"]:
+            raise ai.AIError("only the morning line is under test")   # reply sorting: rules
+        state["calls"].append(messages)
+        state["kw"].append(kw)
+        if isinstance(state["reply"], Exception):
+            raise state["reply"]
+        return state["reply"]
+    monkeypatch.setattr(ai, "chosen", lambda: ai.Model("claude", "sonnet"))
+    monkeypatch.setattr(ai, "chat", chat)
+    return state
+
+
+def _waiting_reply(db):
+    _lead(db, "a@x.co", created=1.0)
+    replies.record(db, "a@x.co", "Re: hi", "Can you send pricing?", "<m@x>", NOW - 500)
+
+
+def test_morning_line_comes_from_the_model(db, line_model):
+    _waiting_reply(db)
+    assert today.morning_line(db, now=NOW) == "Maya asked for pricing; answer her first."
+    kw = line_model["kw"][-1]
+    from openleads import ai
+    assert kw.get("untrusted") is True and kw.get("timeout") == ai.SHORT_JOB
+    assert "pricing" in line_model["calls"][-1][-1]["content"]
+
+
+def test_morning_line_is_asked_once_per_briefing(db, line_model):
+    _waiting_reply(db)
+    today.morning_line(db, now=NOW)
+    today.morning_line(db, now=NOW + 60)
+    assert len(line_model["calls"]) == 1
+    _lead(db, "b@x.co", created=1.0)
+    replies.record(db, "b@x.co", "Re: hi", "Call me?", "<m2@x>", NOW - 100)
+    today.morning_line(db, now=NOW + 120)
+    assert len(line_model["calls"]) == 2          # something changed: ask again
+
+
+def test_no_morning_line_when_nothing_waits(db, line_model):
+    assert today.morning_line(db, now=NOW) == "" and not line_model["calls"]
+
+
+def test_no_morning_line_without_a_chosen_model(db, monkeypatch):
+    from openleads import ai
+    monkeypatch.setattr(ai, "chosen", lambda: None)
+    monkeypatch.setattr(ai, "chat", lambda *a, **k: pytest.fail("no model was chosen"))
+    _waiting_reply(db)
+    assert today.morning_line(db, now=NOW) == ""
+
+
+def test_morning_line_failure_is_quiet(db, line_model):
+    from openleads import ai
+    line_model["reply"] = ai.AIError("offline")
+    _waiting_reply(db)
+    assert today.morning_line(db, now=NOW) == ""
+
+
+def test_morning_line_is_one_short_plain_paragraph(db, line_model):
+    line_model["reply"] = "Answer Maya — she asked\n\nfor pricing. " + "More words here. " * 60
+    _waiting_reply(db)
+    out = today.morning_line(db, now=NOW)
+    assert "—" not in out and "\n" not in out and len(out) <= 320
+    assert out.endswith(".")

@@ -115,6 +115,12 @@ shows a suggested answer you can start from. It won't invent prices or facts; it
 says "I'll check" instead. One inbox scan asks the model about ten replies at most;
 the rest are sorted by the rules.
 
+**Reads your morning.** When something is waiting, Today opens with one or two
+sentences on what matters most and what to do first ("Maya at Northwind asked for
+pricing yesterday; answer her before the three approvals"). It's asked once and
+kept until your replies, approvals or tasks change, and it needs a provider you
+chose, like reply sorting.
+
 **Answers questions about your workspace.** Ask `openleads "who replied and what do
 they want?"` or "how many contacts are in each stage?" (in chat too). A sentence is
 treated as a question when it reads like one ("who", "how many", "what", or a

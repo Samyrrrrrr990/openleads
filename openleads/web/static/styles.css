@@ -1154,3 +1154,6 @@ details > summary { cursor: pointer; }
 }
 
 .today-suggest { margin-top: 4px; font-size: 13px; color: var(--muted); }
+
+/* Today: the model's one-line read of the morning */
+.home-line { margin: 6px 0 0; max-width: 68ch; color: var(--text); font-size: 13.5px; line-height: 1.5; }

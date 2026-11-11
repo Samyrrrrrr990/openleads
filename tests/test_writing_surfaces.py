@@ -222,3 +222,8 @@ def test_api_ai_use_tests_before_saving(base, monkeypatch):
     st, r = post(base, "/api/ai/use", {"provider": "skynet"})
     assert st == 400
     settings.unset("ai_provider")
+
+
+def test_api_today_line_is_empty_without_a_chosen_model(base):
+    st, r = get(base, "/api/today/line")
+    assert st == 200 and r == {"line": ""}

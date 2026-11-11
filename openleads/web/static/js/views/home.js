@@ -93,6 +93,14 @@ function todayBlock(b) {
     </div>`;
 }
 
+// The model's read of the morning arrives after the page: it can take a while.
+function loadLine(root) {
+  api.get("/api/today/line").then((r) => {
+    const el = $("#home-line", root);
+    if (el && r && r.line) { el.textContent = r.line; el.hidden = false; }
+  }).catch(() => {});
+}
+
 async function refreshToday(root) {
   const b = await api.get("/api/today");
   const host = $("#home-today", root);
@@ -138,7 +146,8 @@ async function render(root) {
 
   root.innerHTML = `<div class="page">
     <div class="home-hello">
-      <div><h1>${esc(today)}</h1><p class="head__sub" id="home-sub">${summary(b, h)}</p></div>
+      <div><h1>${esc(today)}</h1><p class="head__sub" id="home-sub">${summary(b, h)}</p>
+        <p class="home-line" id="home-line" hidden></p></div>
       <div class="head__actions"><a class="btn btn--primary" href="#/prospect">${ico("radar")} Find people</a></div>
     </div>
     <div id="home-today" class="home-today">${todayBlock(b)}</div>
@@ -176,6 +185,7 @@ async function render(root) {
       <a class="link" href="#/settings/sending">Sending policy</a>. ${fmt.num(h.companies.total)} companies, ${fmt.num(h.lists.total)} lists.
       <a class="link" href="#/health">Data health</a></p>
   </div>`;
+  loadLine(root);
   cleanup = columns($("#home-sent", root), s.sent, { unit: "sent", height: 150, empty: "No emails sent yet. Start a sequence to see your sends here." });
 }
 

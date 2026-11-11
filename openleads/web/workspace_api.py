@@ -102,6 +102,14 @@ def today_get(db, p):
     return today.briefing(db)
 
 
+@route(GET, "/api/today/line")
+def today_line(db, p):
+    """The model's one-line read of the morning; fetched after the page is up, since
+    it can take a while the first time."""
+    from openleads import today
+    return {"line": today.morning_line(db)}
+
+
 def _today_counts(db) -> dict:
     from openleads import today
     return today.briefing(db)["counts"]

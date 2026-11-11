@@ -220,3 +220,24 @@ def test_reply_line_labels_a_likely_no():
     r = {"email": "a@x.co", "name": "Ada", "snippet": "We built it in house.", "received": 0,
          "likely_no": True}
     assert "looks like a no" in cli_today._reply_line(r, now=3600).lower()
+
+
+def test_today_prints_the_models_line_under_the_title(monkeypatch, capsys, tmp_path):
+    from openleads import today
+    monkeypatch.setenv("OPENLEADS_HOME", str(tmp_path))
+    monkeypatch.setattr(today, "morning_line", lambda db, b=None, now=None: "Answer Maya first.")
+    from openleads.cli import main
+    assert main(["today", "--no-input"], _tips=False) == 0
+    out = capsys.readouterr().out
+    assert "Answer Maya first." in out
+
+
+def test_today_json_carries_the_line(monkeypatch, capsys, tmp_path):
+    import json
+
+    from openleads import today
+    monkeypatch.setenv("OPENLEADS_HOME", str(tmp_path))
+    monkeypatch.setattr(today, "morning_line", lambda db, b=None, now=None: "Answer Maya first.")
+    from openleads.cli import main
+    assert main(["today", "--json"], _tips=False) == 0
+    assert json.loads(capsys.readouterr().out)["line"] == "Answer Maya first."

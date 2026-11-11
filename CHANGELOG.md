@@ -32,6 +32,9 @@ All notable changes to OpenLeads are documented here. Format loosely follows
   it thinks is a polite no stays on Today labelled "looks like a no". Rules still
   decide bounces, out-of-office and unsubscribes. At most ten model calls per inbox
   scan.
+- Today opens with one or two sentences from your model on what matters most
+  (terminal, `--json` as `line`, and the dashboard). Asked once until something
+  changes.
 - Ask about your workspace: `openleads "who replied and what do they want?"` or the
   same in chat. The model answers from a small summary of your workspace and says
   when it can't tell; a question that's really a search still searches.
