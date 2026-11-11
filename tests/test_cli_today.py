@@ -1,6 +1,7 @@
 """`openleads today`: the briefing in a terminal, with one-key actions on a TTY."""
 import io
 import json
+import sys
 import time
 
 import pytest
@@ -178,3 +179,30 @@ def test_parse_edited_text():
     assert cli_today._parse_edited("Subject: Hi there\n\nLine one\nLine two\n") == (
         "Hi there", "Line one\nLine two")
     assert cli_today._parse_edited("no subject header\n\nbody") is None
+
+
+def test_read_key_drops_keys_typed_before_the_prompt(monkeypatch, capsys):
+    """A double-tapped 'a' (or keys typed while an email was sending) must not
+    approve the next draft before you've read it."""
+    import io
+    import types
+    events = []
+    fake_termios = types.SimpleNamespace(
+        TCSADRAIN=1, TCIFLUSH=0,
+        tcgetattr=lambda fd: "old",
+        tcsetattr=lambda fd, when, attrs: events.append("restore"),
+        tcflush=lambda fd, which: events.append(("flush", which)))
+    fake_tty = types.SimpleNamespace(setcbreak=lambda fd: events.append("cbreak"))
+    monkeypatch.setitem(sys.modules, "termios", fake_termios)
+    monkeypatch.setitem(sys.modules, "tty", fake_tty)
+
+    class Stdin(io.StringIO):
+        def fileno(self):
+            return 0
+
+        def read(self, n=-1):
+            events.append("read")
+            return super().read(n)
+    monkeypatch.setattr(sys, "stdin", Stdin("a"))
+    assert cli_today._read_key("> ") == "a"
+    assert events.index(("flush", 0)) < events.index("read")

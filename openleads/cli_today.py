@@ -52,6 +52,9 @@ def _read_key(prompt: str) -> str:
     old = termios.tcgetattr(fd)
     try:
         tty.setcbreak(fd)
+        # Drop anything typed before this prompt (a double tap, keys pressed while an
+        # email was sending): it must never answer for an item you haven't read.
+        termios.tcflush(fd, termios.TCIFLUSH)
         ch = sys.stdin.read(1)
     except KeyboardInterrupt:
         ch = "q"

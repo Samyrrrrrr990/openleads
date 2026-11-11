@@ -1,4 +1,6 @@
 """The approval queue: first emails that wait in Today until someone says yes."""
+import time
+
 import pytest
 
 from openleads.db import DB
@@ -174,3 +176,62 @@ def test_transient_failure_keeps_draft_waiting(db, monkeypatch, result):
     r = drafts.approve(db, d["id"])
     assert r["status"] == "error" and r["detail"]
     assert drafts.get(db, d["id"])["status"] == "waiting" and drafts.count_waiting(db) == 1
+
+
+# --- final review fixes ------------------------------------------------------------ #
+def test_approve_without_a_mailbox_keeps_the_draft(db):
+    """No SMTP set up (every new user, every `web --demo`): the real sender raises."""
+    d = drafts.enqueue(db, _draft(), "ask", REF)
+    r = drafts.approve(db, d["id"])
+    assert r["status"] == "error" and "mailbox" in r["detail"].lower()
+    assert drafts.get(db, d["id"])["status"] == "waiting" and drafts.count_waiting(db) == 1
+
+
+def test_approve_when_the_sender_crashes_keeps_the_draft(db, monkeypatch):
+    def boom(*a, **k):
+        raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+    monkeypatch.setattr("openleads.outreach.sender.send_drafts", boom)
+    d = drafts.enqueue(db, _draft(), "ask", REF)
+    assert drafts.approve(db, d["id"])["status"] == "error"
+    assert drafts.get(db, d["id"])["status"] == "waiting"
+
+
+def test_contact_who_wrote_in_after_queueing_is_skipped(db, fake_send):
+    """A queued first email means the lead is still 'new': the inbox scan records the
+    reply on the timeline but leaves the status alone."""
+    from openleads.outreach import replies
+    d = drafts.enqueue(db, _draft(), "ask", REF)
+    replies.record(db, "a@x.co", "re: hi", "Can you call me tomorrow?", "<r1>", time.time())
+    assert (db.get_lead("a@x.co") or {}).get("status") != "replied"
+    r = drafts.approve(db, d["id"])
+    assert r["status"] == "skipped" and "wrote" in r["detail"] and fake_send.calls == []
+
+
+def test_second_copy_for_the_same_person_is_not_queued(db):
+    first = drafts.enqueue(db, _draft(), "ask", REF)
+    again = drafts.enqueue(db, _draft(subject="other"), "workflow", REF)
+    assert again["id"] == first["id"] and drafts.count_waiting(db) == 1
+
+
+def test_first_email_to_someone_emailed_since_queueing_is_skipped(db, fake_send):
+    seq, (a, _) = _held_enrollment(db)
+    d1 = drafts.enqueue(db, _draft("a@x.co"), "ask", REF)
+    d2 = drafts.enqueue(db, _draft("a@x.co"), "sequence",
+                        {"campaign": f"seq:{seq['id']}", "step": 1, "enrollment_id": a["id"],
+                         "sequence_id": seq["id"]})
+    assert d2["id"] != d1["id"]              # a sequence draft always gets its own row
+    assert drafts.approve(db, d1["id"])["status"] == "sent"
+    r = drafts.approve(db, d2["id"])
+    assert r["status"] == "skipped" and "already emailed" in r["detail"]
+    assert len(fake_send.calls) == 1
+
+
+def test_held_sequence_draft_releases_the_enrollment(db, monkeypatch):
+    seq, (a, _) = _held_enrollment(db)
+    monkeypatch.setattr("openleads.outreach.sender.send_drafts",
+                        lambda *a_, **k: [SendResult("a@x.co", "skipped", detail="held by hook")])
+    d = drafts.enqueue(db, _draft("a@x.co"), "sequence",
+                       {"campaign": f"seq:{seq['id']}", "step": 1, "enrollment_id": a["id"],
+                        "sequence_id": seq["id"]})
+    assert drafts.approve(db, d["id"])["status"] == "skipped"
+    assert db.query_one("SELECT status FROM enrollments WHERE id=?", (a["id"],))["status"] != "active"

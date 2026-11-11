@@ -19,7 +19,9 @@ def test_search_is_a_find_without_confirm():
 def test_campaign_graph_is_valid_and_queues_without_live():
     p = ask.make_plan("find 30 rust devs in Berlin and email them about our hiring tool")
     assert p.kind == "workflow" and p.confirm and graph.errors(p.graph, check_name=False) == []
-    assert [n["type"] for n in p.graph["nodes"]] == ["trigger.manual", "find", "write", "send"]
+    assert [n["type"] for n in p.graph["nodes"]] == ["trigger.manual", "find", "dedupe", "write",
+                                                     "send"]
+    assert _node(p, "dedupe")["params"]["skip_contacted"] is True
     assert _node(p, "send")["params"]["approve"] == "always"
     assert _node(p, "send")["params"]["respect_window"] is False
     assert _node(p, "find")["params"]["count"] == 30
@@ -39,9 +41,18 @@ def test_schedule_builds_active_scheduled_graph():
     assert _node(p, "trigger.schedule")["params"]["schedule"] == "weekdays 09:00"
     assert p.graph["active"] is True and p.graph["live"] is False
     assert [n["type"] for n in p.graph["nodes"]] == ["trigger.schedule", "find", "split_tier",
-                                                     "write", "send"]
+                                                     "dedupe", "write", "send"]
     assert graph.errors(p.graph, check_name=False) == []
-    assert _node(p, "send")["params"]["approve"] == "auto"
+    # Not live: the plan promised the approval queue, and a non-live graph would only
+    # ever preview with "auto". Every run would otherwise re-find the same people.
+    assert _node(p, "send")["params"]["approve"] == "always"
+    assert _node(p, "dedupe")["params"]["skip_contacted"] is True
+
+
+def test_live_schedule_follows_the_approval_setting():
+    p = ask.make_plan("every weekday at 9am email 20 agencies in Miami about our SEO audit",
+                      live=True)
+    assert p.graph["live"] is True and _node(p, "send")["params"]["approve"] == "auto"
 
 
 def test_daily_schedule_without_weekday_words():

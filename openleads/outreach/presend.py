@@ -50,8 +50,12 @@ def _answer(text: str) -> tuple:
 
 def _run_command(hook: str, body: str, timeout: int) -> tuple:
     try:
-        proc = subprocess.run(shlex.split(hook), input=body, capture_output=True, text=True,
-                              timeout=timeout)
+        argv = shlex.split(hook)
+    except ValueError as e:
+        raise HookError(f"can't read the command: {e}") from None
+    try:
+        proc = subprocess.run(argv, input=body, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=timeout)
     except subprocess.TimeoutExpired:
         raise HookError(f"timed out after {timeout}s") from None
     except OSError as e:
@@ -88,6 +92,7 @@ def check(draft: Draft, lead: dict | None = None, first: bool = True) -> tuple:
         if "://" in hook.split()[0]:
             return _post(hook, body, timeout)
         return _run_command(hook, body, timeout)
-    except HookError as e:
+    except Exception as e:  # noqa: BLE001 — a broken hook must never stop the batch
         on_error = settings.get("presend_hook_on_error")
-        return ("send" if on_error == "send" else "hold"), f"pre-send hook failed: {e}"
+        why = str(e) if isinstance(e, HookError) else f"{type(e).__name__}: {e}"
+        return ("send" if on_error == "send" else "hold"), f"pre-send hook failed: {why}"[:300]
