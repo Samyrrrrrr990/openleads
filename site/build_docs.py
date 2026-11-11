@@ -30,6 +30,7 @@ REPO = "https://github.com/Samyrrrrrr990/openleads"
 NAV = [
     ("Get started", [
         ("quickstart", "Quickstart", "Install, find leads, and send a first campaign in ten minutes."),
+        ("today", "Today", "Replies, emails to approve, tasks and heads-ups: what needs you now."),
         ("web", "Web dashboard", "The local app: search, CRM, workflows, and analytics in your browser."),
     ]),
     ("Guides", [

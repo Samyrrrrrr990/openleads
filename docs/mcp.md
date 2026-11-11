@@ -73,7 +73,7 @@ No Python on the PATH? Use the npm wrapper instead:
 ### Workspace tools
 
 These read and change your saved workspace — the same data as the dashboard and
-`openleads people`. They never send email: enrolling someone in a sequence queues
+`openleads people`. They never send email (only `approve_draft`, below, does): enrolling someone in a sequence queues
 the steps, which then run on their own schedule inside your warmup cap.
 
 | Tool | What it does |
@@ -91,6 +91,20 @@ the steps, which then run on their own schedule inside your warmup cap.
 | `create_task` · `complete_task` | Follow-ups with natural due dates (`tomorrow`, `+3d`, `fri`). |
 | `create_deal` · `move_deal` | Open and advance deals (`12k`, `$2.5k`); winning one makes the contact a customer. |
 | `enroll_in_sequence` | Add people or a whole list to a sequence; anyone it skips comes back with the reason. |
+
+### Today tools
+
+| Tool | What it does |
+|---|---|
+| `today` | What needs the user now: replies waiting (with a snippet), first emails waiting for approval (subject, body, quality score), tasks due, new leads and heads-ups. |
+| `approve_draft` | Approve a waiting first email, optionally with an edited subject and body. **This really sends it**, through the normal sender (suppression, warmup cap and pre-send hook still apply). |
+| `skip_draft` | Skip a waiting email so it never sends. |
+| `snooze` | Hide a reply (`kind: "reply"`, `ref`: the email) or move a task (`kind: "task"`, `ref`: its id) until `tomorrow`, `+3d`, `fri` or a date. |
+| `mark_reply_done` | Mark a contact's reply as handled. |
+
+`approve_draft` is the only tool that sends email, and only a draft that is already
+waiting in the queue. It is annotated as destructive and open-world, so clients that
+ask before such tools will ask you. See [Today](today.md).
 
 Read-only tools are annotated `readOnlyHint`, so clients that ask before running
 write tools will do so for the ones that change your data.

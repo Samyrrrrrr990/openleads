@@ -116,7 +116,24 @@ machine. Prefer env vars / `.env`? Those still win. See [`sending.md`](./sending
 
 ## 5. Write + send
 
-One command does the whole pipeline (dry-run first, and always preview):
+The shortest way: say what you want. OpenLeads shows the plan and runs it on a yes.
+
+```text
+$ openleads "email 5 fintech founders about our tool"
+Plan
+  1. Find      5 fintech founders, deliverable emails only
+  2. Write     an email to each about our tool
+  3. Queue     them for you to approve in openleads today (nothing sends yet)
+
+Run it? [Y/n]
+```
+
+The emails wait in [Today](today.md) until you approve them. Add `--live` to send
+straight away, or `--yes` to skip the question in scripts. Requests like "every
+weekday at 9am email 20 agencies in Miami about our SEO audit" are saved as a
+scheduled workflow instead of running now.
+
+The older commands still work and give you more control (dry-run first, always preview):
 
 ```bash
 openleads run "50 AI founders in SF"          # preview drafts + sends
@@ -168,7 +185,16 @@ Already have a list from Apollo, HubSpot or a spreadsheet?
 `openleads import export.csv --list "Imported"`. The [workspace guide](./workspace.md)
 and the [sequences guide](./sequences.md) cover the rest.
 
-## 8. Keep an eye on it
+## 8. Every morning
+
+```bash
+openleads today
+```
+
+Replies waiting on you, emails to approve, tasks due and anything that went wrong,
+with one-key actions. See [Today](today.md).
+
+## 9. Keep an eye on it
 
 ```bash
 openleads stats               # contacts, sends, replies, tasks, pipeline

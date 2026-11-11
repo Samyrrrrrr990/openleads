@@ -131,6 +131,25 @@ openleads write "<query>" -o drafts.json   # stop after drafting
 openleads write --to ann@acme.com --explain --variants 2   # a saved contact, with the brief
 ```
 
+## The approval queue
+
+In workspaces created with 5.3, first emails that go out without you watching wait
+for a yes: a sequence's first step, a scheduled workflow's Send node, and campaigns
+started with `openleads "..."` without `--live`. Approve, edit or skip them in
+`openleads today`, on the dashboard's home page, or from an assistant
+(`approve_draft`). Approving sends through everything on this page: suppression, the
+warmup cap and the pre-send hook. Follow-ups in a sequence send on schedule once its
+first email was approved.
+
+| Setting | Effect |
+|---|---|
+| `approve_first_emails auto` (default) | On for new workspaces, off for workspaces that were already sending. |
+| `approve_first_emails on` | Always wait. |
+| `approve_first_emails off` | Send unattended first emails directly, as before 5.3. |
+
+A workflow's Send node has its own **Wait for approval** setting (auto, always,
+never) that overrides this for that workflow.
+
 ## The pre-send hook
 
 Some checks only you can make: whether a cold email to this person is lawful where

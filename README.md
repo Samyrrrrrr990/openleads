@@ -25,9 +25,25 @@ It runs on your machine, with no API keys and nothing to pay.
 
 ```bash
 pipx install "openleads[all]"          # or: pip install "openleads[all]", or: npx openleads
+openleads "find 30 rust devs in Berlin and email them about our hiring tool"
+openleads today                        # replies, emails to approve, tasks due
 openleads find "dentists in Austin"    # ten leads, every email labeled
 openleads web                          # the workspace at http://127.0.0.1:8787
 ```
+
+Say what you want and OpenLeads shows the plan before anything runs:
+
+```text
+$ openleads "email 5 fintech founders about our tool"
+Plan
+  1. Find      5 fintech founders, deliverable emails only
+  2. Write     an email to each about our tool
+  3. Queue     them for you to approve in openleads today (nothing sends yet)
+
+Run it? [Y/n]
+```
+
+Emails wait for your yes in [Today](./docs/today.md) unless you add `--live`.
 
 <img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-people.png" alt="The People page of the OpenLeads dashboard: a filter column beside a table of contacts with title, company, email with its evidence mark, stage and last contact." width="100%" />
 
@@ -95,7 +111,7 @@ terminal and your AI assistant.
 <td width="50%"><img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-sequence.png" alt="A sequence editor: a day-by-day step timeline (automatic email, threaded bump, call) with counts per step, and a live preview of the email for a contact with its spam score." /></td>
 </tr>
 <tr>
-<td><b>Home.</b> What is due today, how outreach is going, and the strongest leads you haven't contacted.</td>
+<td><b>Home.</b> Today first: replies waiting on you, emails to approve, tasks due. Then how outreach is going and the strongest leads you haven't contacted.</td>
 <td><b>Sequences.</b> Email, call, LinkedIn and task steps with A/B variants and same-thread follow-ups. People leave when they reply, bounce or unsubscribe.</td>
 </tr>
 <tr>
@@ -147,7 +163,9 @@ claude mcp add openleads -- openleads mcp
 
 > *"Find 10 law firms in London with emails we can actually send to, save them to a list called London law, and give me a call task for each partner."*
 
-The assistant can search and edit your workspace, but it never sends email itself.
+The assistant can search and edit your workspace and run your morning from
+[Today](./docs/today.md). The one tool that sends, `approve_draft`, only sends a draft
+already waiting for your approval.
 
 ## Automate it
 
@@ -198,6 +216,11 @@ Python 3.8 or newer on macOS, Linux or Windows. Full walkthrough:
 ## Commands
 
 ```bash
+# start
+openleads "find 30 rust devs in Berlin and email them"   # see the plan, run it on a yes
+openleads today                                        # what needs you
+openleads web                                          # the dashboard (--demo: invented data)
+
 # find
 openleads find "50 fintech founders, verified only" -o leads.csv
 openleads find "accountants in Toronto" --explain     # the plan, each source's status, hints
@@ -214,11 +237,12 @@ openleads people | companies | lists | seq | tasks | deals
 openleads import | export | dedupe | stats | backup
 
 # set up and automate
-openleads init | config | doctor | web | mcp | bench
-openleads recipe | watch | schedule | runs
+openleads setup                  # mailbox and identity (also: setup doctor, setup config)
+openleads workflow | mcp
 ```
 
-`openleads --help` lists every command by group.
+`openleads --help` shows the ten everyday commands; `openleads help all` lists every
+command. Older ones (recipe, watch, drip, crm, campaign...) all still work.
 
 ## How it works
 

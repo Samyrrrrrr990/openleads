@@ -3,6 +3,22 @@
 Everything needed to launch OpenLeads publicly. Nothing here is posted automatically:
 each post goes out from your own accounts, and you edit it first.
 
+## Status (2026-11-11)
+
+Numbers today: 65 stars, 15 forks, 246 PyPI downloads in the last week (pypistats.org). Goal before charging: 1,000
+stars. 5.3 ("Simple": `openleads "..."`, Today, ten commands) is built on branch
+`plan/5.3-5.5`, waiting for your OK to merge and release.
+
+Waiting on you:
+- [ ] Say go for the 5.3.0 release (merge, tag, push; the release workflow does PyPI,
+      GitHub Releases and the MCP Registry).
+- [ ] npm is still on 5.0.0: `gh secret set NPM_TOKEN` with a fresh automation token.
+- [ ] Ship notes: add `BLUESKY_HANDLE`, `BLUESKY_APP_PASSWORD`, `X_API_KEY`,
+      `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` and `DEVTO_API_KEY` as repo
+      secrets. Until then `ship-notes.yml` only does dry runs.
+- [ ] Today's paste queue: `queue/2026-11-11.md` (r/coldemail, LinkedIn, X).
+- [ ] Five license replies are drafted in `~/Desktop/email people/openleads-license-replies.md`.
+
 ## Status (2026-10-13)
 
 Done:

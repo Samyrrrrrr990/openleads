@@ -15,7 +15,8 @@ def test_seed_fills_every_page_with_invented_data(tmp_path):
     assert db.scalar("SELECT COUNT(*) FROM enrollments WHERE status='active'") > 0
     replied = db.scalar("SELECT COUNT(*) FROM leads WHERE status='replied'")
     assert replied and db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == \
-        counts["tasks"] + replied                           # + a "Reply to …" task each
+        counts["tasks"] + replied - 2   # a "Reply to" task per reply, minus the two
+    #                                     that need no answer (not interested, out of office)
     assert {r["stage"] for r in db.query("SELECT stage FROM deals")} >= {"qualify", "won", "lost"}
     assert len(duplicates.find(db)) == 2
     home = stats.home(db, now=1_790_000_000.0)

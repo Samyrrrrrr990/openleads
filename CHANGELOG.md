@@ -6,10 +6,62 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-11-11
+
+**Simple.** Say what you want and see the plan before it runs; one Today screen for
+what needs you; ten commands up front instead of forty.
+
+### Say it, see the plan, run it
+- `openleads "find 30 rust devs in Berlin and email them about our hiring tool"`
+  prints the plan (find, write, then queue or send) and runs it on a yes. Without
+  `--live` the emails wait for your approval; with `--live` they send. `--yes` skips
+  the question; `--json` prints the plan and the result.
+- "Every weekday at 9am email 20 agencies in Miami about..." is saved as an active
+  scheduled workflow instead of running now. "Add 20 fintech founders to my Founders
+  sequence" finds and enrolls them, after checking the sequence exists. Edits (tag,
+  move a deal, add a task) point you at their command.
+- A one-word typo of a command gets "Did you mean `openleads find`?".
+- Chat uses the same plans and confirms before anything runs.
+
+### Today
+- `openleads today`: replies waiting on you, emails to approve, tasks due or overdue,
+  new leads since you last looked, and heads-ups (mailbox not connected, sending
+  limit reached, bounces above 5%, a failed workflow, emails your pre-send hook held).
+  On a terminal, act on each with one key: approve, edit, skip, done, snooze.
+- The dashboard's home page opens with the same Today section; approving asks for
+  confirmation in the row. The nav shows a count of what's waiting.
+- MCP tools `today`, `approve_draft`, `skip_draft`, `snooze` and `mark_reply_done`.
+- An approval queue: in new workspaces, unattended first emails (a sequence's first
+  step, a scheduled workflow's Send, a campaign without `--live`) wait for a yes.
+  Workspaces that were already sending keep sending (`approve_first_emails`).
+- Replies keep their text: each one is stored on the contact's timeline, sorted
+  (needs you, not interested, unsubscribe, out of office, bounce), and stops waiting
+  once you've answered it (OpenLeads reads your Sent folder), marked it done or
+  snoozed it. An unsubscribe request suppresses the address.
+- An opt-in pre-send hook (a command or a URL) can hold any email before it goes, for
+  your own checks or a service like Precleared (thanks to the PR #31 discussion).
+
+### Fewer commands
+- `openleads --help` shows ten commands, each naming the older commands that now live
+  under it. `openleads help all` lists everything; every old command still works and,
+  the first time you use one on a terminal, says where it lives now.
+- New `openleads setup` (first-run setup, or `setup config|doctor|cache`) and
+  `openleads web --demo`.
+
+### Writing
+- The quality gate charges for long dashes, first emails over 125 words and stock
+  lines ("came across your profile", "hope this finds you well"). Drafts never
+  contain long dashes.
+
 ### Added
 - `pypi` source: maintainers of Python packages for a topic (a curated package
   list per topic, or an exact package name), with their published email when the
   package lists one (#29, thanks @Shalinipks).
+- Daily ship notes to X and Bluesky and a weekly dev.to draft from CI, through
+  their official APIs only.
+
+### Fixed
+- A duplicate "job title" key in the CSV enricher's column map.
 
 ## [5.2.0] - 2026-11-04
 

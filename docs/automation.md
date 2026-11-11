@@ -4,9 +4,30 @@ OpenLeads v3.5 can run your outreach for you: describe a campaign in one line, a
 let your own machine find, draft, and send it at the right time, with every message
 landing in your **Sent** folder like you typed it yourself.
 
-## The assistant (natural language → a configured campaign)
+## Say it: `openleads "..."`
 
-Tell OpenLeads what you want in plain English:
+Since 5.3 the front door is the request itself:
+
+```text
+$ openleads "every weekday at 9am email 20 agencies in Miami about our SEO audit"
+Plan
+  1. Schedule  every weekday at 09:00
+  2. Find      up to 20 agencies in Miami
+  3. Keep      only deliverable (safe) emails
+  4. Write     an email about our SEO audit
+  5. Then      the emails go into your approval queue (openleads today)
+
+Re-run with --yes to run it.
+```
+
+A one-off campaign runs now and queues its emails for approval (or sends them with
+`--live`). A schedule is saved as an active [workflow](workflows.md) and runs from
+the background agent (`openleads schedule on`). "Add 20 fintech founders to my
+Founders sequence" finds them and enrolls them. Edits like tagging or moving a deal
+point you at their command instead. Recipes and watchers still work and are now
+listed under `openleads workflow` in the help.
+
+## The older assistant command
 
 ```bash
 openleads assistant "send 50 emails to fintech founders for my SaaS at 9am"
