@@ -125,6 +125,10 @@ SCHEMA: tuple[Setting, ...] = (
             "sending", "Maximum seconds between sends."),
     Setting("include_risky", (), False, "bool", False,
             "sending", "Allow sending to 'risky' (unverified) addresses. Off = safer."),
+    Setting("approve_first_emails", (), False, "str", "auto",
+            "sending", "Hold first emails from sequences and scheduled workflows in Today "
+                       "until you approve them. auto: on for workspaces created in 5.3 or "
+                       "later.", ("auto", "on", "off")),
     Setting("presend_hook", ("OPENLEADS_PRESEND_HOOK",), False, "str", "",
             "sending", "Optional check before every real send: a shell command or an "
                        "https:// URL that answers send or hold (see docs/sending.md)."),

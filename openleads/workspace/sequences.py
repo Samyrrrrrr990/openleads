@@ -381,6 +381,33 @@ def _advance(db, enr: dict, seq: dict, now: float, thread_subject: str = "") -> 
                "END WHERE id=?", (nxt, due, now, thread_subject, enr["id"]))
 
 
+def approved(db, enrollment_id: int, subject: str, now: float | None = None) -> None:
+    """A held first email was approved and sent: log the step and schedule the next."""
+    now = time.time() if now is None else now
+    enr = db.query_one("SELECT * FROM enrollments WHERE id=?", (int(enrollment_id),))
+    if not enr or enr["status"] != "active":
+        return
+    seq = get(db, enr["sequence_id"])
+    if not seq:
+        return
+    activity.log(db, "contact", enr["email"], "sequence_step",
+                 f"{seq['name']} · step {int(enr['step']) + 1}",
+                 {"sequence_id": seq["id"], "step": enr["step"], "subject": subject,
+                  "approved": True})
+    _advance(db, enr, seq, now, thread_subject=subject)
+
+
+def skipped(db, enrollment_id: int, now: float | None = None) -> None:
+    """A held first email was skipped: take the contact out of the sequence."""
+    now = time.time() if now is None else now
+    enr = db.query_one("SELECT * FROM enrollments WHERE id=?", (int(enrollment_id),))
+    if not enr or enr["status"] not in ACTIVE_ENROLLMENT:
+        return
+    seq = get(db, enr["sequence_id"]) or {"id": enr["sequence_id"], "name": "sequence",
+                                           "settings": {}}
+    _finish(db, enr, seq, "removed", now, "skipped in Today")
+
+
 def task_closed(db, task: dict) -> None:
     """A sequence task was completed or skipped: move that contact to the next step."""
     if not task or not task.get("enrollment_id"):

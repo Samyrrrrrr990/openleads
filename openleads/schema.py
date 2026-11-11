@@ -14,6 +14,7 @@ Rules for adding a migration:
 """
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import Callable
 
@@ -346,3 +347,21 @@ def _m4_workflows(conn):
     # Recipes are not copied: they stay in ``campaigns`` and appear as graphs on read
     # (openleads.automate.workflow.convert), so they keep running exactly as before.
     create_workflow_tables(conn)
+
+
+@register(5, "drafts queue and approval default")
+def _m5_drafts(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS drafts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, subject TEXT,
+            body TEXT, source TEXT, ref TEXT, quality INTEGER,
+            status TEXT DEFAULT 'waiting', detail TEXT, created REAL, decided REAL
+        )""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts (status, created)")
+    # Approve-before-send defaults on for new workspaces. One that has already sent or
+    # saved anyone keeps sending the way it did: mark it "off" (the setting overrides).
+    used = (conn.execute("SELECT COUNT(*) FROM touches").fetchone()[0]
+            or conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0])
+    if used:
+        conn.execute("INSERT OR REPLACE INTO kv (k, v, ts) VALUES ('approval.default', ?, "
+                     "strftime('%s','now'))", (json.dumps("off"),))
