@@ -60,7 +60,10 @@ def cmd_ask(argv: list) -> int:
     yes = "-y" in argv or "--yes" in argv
     as_json = "--json" in argv
     text = " ".join(a for a in argv if a not in FLAGS).strip()
-    plan = ask.make_plan(text, live=live, sequence_names=_sequence_names())
+    from openleads import ai
+    if not as_json and ai.resolve() is not None and _interactive():
+        print(ui.c("Reading your request...", ui.FAINT), flush=True)
+    plan = ask.make_plan(text, live=live, sequence_names=_sequence_names(), use_model=True)
 
     if plan.kind == "find" and not as_json:
         from openleads import cli
@@ -68,7 +71,8 @@ def cmd_ask(argv: list) -> int:
         return cli.cmd_find(args)
 
     if not as_json:
-        print(ui.c("Plan", ui.BOLD))
+        print(ui.c("Plan", ui.BOLD) + (ui.c(f"  (read by {plan.by})", ui.FAINT)
+                                      if plan.by != "rules" else ""))
         for i, step in enumerate(plan.steps, 1):
             print(f"  {i}. {step}")
     if plan.kind == "unsupported":

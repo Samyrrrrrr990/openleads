@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from openleads import ask, cli
+from openleads import ask, cli, cli_ask
 
 
 @pytest.fixture(autouse=True)
@@ -84,3 +84,17 @@ def test_plain_requests_are_not_typos(capsys, monkeypatch, stub_run_plan, words)
     monkeypatch.setattr("sys.stdin", io.StringIO(""))
     cli.main(words)
     assert "Did you mean" not in capsys.readouterr().err
+
+
+def test_plan_says_which_model_read_it(monkeypatch, capsys):
+    import json as _json
+
+    from openleads import ai
+    monkeypatch.setattr(ai, "resolve", lambda overrides=None: ai.Model("codex", "gpt-5"))
+    monkeypatch.setattr(ai, "chat", lambda *a, **k: _json.dumps(
+        {"kind": "campaign", "audience": "rust developers in Berlin", "count": 30,
+         "goal": "our hiring tool"}))
+    monkeypatch.setattr(cli_ask, "_interactive", lambda: False)
+    assert cli_ask.cmd_ask(["get", "me", "thirty", "berlin", "rustaceans", "re", "hiring"]) == 0
+    out = capsys.readouterr().out
+    assert "read by codex:gpt-5" in out and "rust developers in Berlin" in out

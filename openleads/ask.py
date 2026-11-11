@@ -33,6 +33,7 @@ class Plan:
     confirm: bool = False           # True if it sends, schedules or changes the workspace
     suggestion: str = ""            # for "unsupported": the command to use instead
     schedule: str = ""              # for scheduled workflows: "weekdays 09:00"
+    by: str = "rules"               # who read the request: "rules" or the model's label
 
     def to_dict(self) -> dict:
         out = asdict(self)
@@ -138,18 +139,127 @@ def _find_line(q: Query, audience: str, verified: bool | None = None) -> str:
     return f"Find      {q.count} {audience}{src}" + (", deliverable emails only" if verified else "")
 
 
-def make_plan(text: str, *, live: bool = False, sequence_names: list | None = None) -> Plan:
-    """Turn a request into a :class:`Plan`. Never runs anything."""
+# --- facts: what the request asks for --------------------------------------------- #
+KINDS = ("find", "campaign", "schedule", "enroll")
+
+
+def _rule_facts(text: str) -> dict:
+    """Read the request with the built-in rules."""
+    count, audience, goal = _count(text), _audience(text), _goal(text)
+    m = _ENROLL_RE.search(text)
+    if m and audience:
+        return {"kind": "enroll", "audience": audience, "count": count,
+                "sequence": m.group("name").strip()}
+    action = assistant.rule_interpret(text)
+    if action.intent in ("search", "unknown"):
+        return {"kind": "find", "search": text}
+    facts = {"kind": "campaign", "audience": audience or action.query, "count": count,
+             "goal": goal or action.context}
+    if action.intent == "schedule":
+        hm = _time(text) or (9, 0)
+        facts.update(kind="schedule", time=f"{hm[0]:02d}:{hm[1]:02d}",
+                     days="daily" if (_DAILY_RE.search(text) and not _WEEKDAY_RE.search(text))
+                     else "weekdays",
+                     campaign=action.campaign if action.campaign != "assistant" else "")
+    return facts
+
+
+_MODEL_SYSTEM = (
+    "You read one request for OpenLeads, a lead finding and cold email tool, and say what "
+    "it asks for. Answer with ONE JSON object:\n"
+    '{"kind": "find" | "campaign" | "schedule" | "enroll",\n'
+    ' "audience": who to find, as a short search ("dental clinics in Austin"),\n'
+    ' "count": how many people (1-1000, default 25),\n'
+    ' "goal": what the emails are about, as a short noun phrase in the user\'s words '
+    '("our route-planning API", not "pitch our route-planning API"; "" if not said),\n'
+    ' "days": "weekdays" or "daily" (schedule only),\n'
+    ' "time": "HH:MM" 24-hour (schedule only, default "09:00"),\n'
+    ' "sequence": the sequence name (enroll only)}\n'
+    "find = only look people up. campaign = find them and email them once, now. "
+    "schedule = do that on a repeating schedule. enroll = find them and add them to an "
+    "existing sequence. Never add facts the request doesn't contain.")
+
+
+def _clean_facts(raw: dict) -> dict | None:
+    """The model's answer, if every field is usable; else None (use the rules)."""
+    kind = str(raw.get("kind") or "").lower()
+    if kind not in KINDS:
+        return None
+    audience = " ".join(str(raw.get("audience") or "").split())
+    if not audience or len(audience) > 200:
+        return None
+    try:
+        count = int(raw.get("count") or 25)
+    except (TypeError, ValueError):
+        return None
+    if not 1 <= count <= 1000:
+        return None
+    if kind == "find":
+        return {"kind": "find", "search": audience, "count": count}
+    goal = " ".join(str(raw.get("goal") or "").split())[:200]
+    facts = {"kind": kind, "audience": audience, "count": count, "goal": goal}
+    if kind == "schedule":
+        days = str(raw.get("days") or "weekdays").lower()
+        m = re.match(r"^([01]?\d|2[0-3]):([0-5]\d)$", str(raw.get("time") or "09:00").strip())
+        if days not in ("weekdays", "daily") or not m:
+            return None
+        facts.update(days=days, time=f"{int(m.group(1)):02d}:{m.group(2)}", campaign="")
+    if kind == "enroll":
+        name = " ".join(str(raw.get("sequence") or "").split())
+        if not name or len(name) > 80:
+            return None
+        facts["sequence"] = name
+    return facts
+
+
+def _model_facts(text: str, sequence_names: list | None) -> tuple:
+    """``(facts, model label)`` from the connected model, or ``(None, "")``."""
+    from openleads import ai
+    m = ai.resolve()
+    if m is None:
+        return None, ""
+    user = text if not sequence_names else (
+        f"{text}\n\n(Existing sequences: {', '.join(sequence_names[:30])})")
+    try:
+        raw = ai.parse_json(ai.chat([{"role": "system", "content": _MODEL_SYSTEM},
+                                     {"role": "user", "content": user}], m,
+                                    max_tokens=300, temperature=0))
+    except ai.AIError:
+        return None, ""
+    facts = _clean_facts(raw)
+    return (facts, f"{m.provider}:{m.model}" if m.model else m.provider) if facts else (None, "")
+
+
+def make_plan(text: str, *, live: bool = False, sequence_names: list | None = None,
+              use_model: bool = False) -> Plan:
+    """Turn a request into a :class:`Plan`. Never runs anything.
+
+    With ``use_model`` and a connected model (:mod:`openleads.ai`), the model reads the
+    request; the plan itself (graph, approval, live or not) is always built here, from
+    checked fields. Any problem with the model's answer means the rules read it instead.
+    """
     text = " ".join(str(text or "").split())
     for pattern, hint in _UNSUPPORTED:
         if pattern.search(text):
             return Plan(text, "unsupported", suggestion=hint,
                         steps=[f"This one has its own command: {hint}"])
+    facts, by = (_model_facts(text, sequence_names) if use_model else (None, ""))
+    plan = _build(text, facts or _rule_facts(text), live, sequence_names)
+    plan.by = by or "rules"
+    return plan
 
-    count, audience, goal = _count(text), _audience(text), _goal(text)
-    m = _ENROLL_RE.search(text)
-    if m and audience:
-        name = m.group("name").strip()
+
+def _build(text: str, f: dict, live: bool, sequence_names: list | None) -> Plan:
+    kind = f["kind"]
+    if kind == "find":
+        q = intent.parse(f["search"], allow_llm=False)[0]
+        if f.get("count"):
+            q.count = f["count"]
+        return Plan(text, "find", query=q, steps=[_find_line(q, f["search"])])
+
+    audience, count, pitch = f["audience"], f["count"], f.get("goal") or ""
+    if kind == "enroll":
+        name = f["sequence"]
         if sequence_names is not None:
             match = next((s for s in sequence_names if s.lower() == name.lower()), None)
             if not match:
@@ -166,19 +276,10 @@ def make_plan(text: str, *, live: bool = False, sequence_names: list | None = No
                     steps=[_find_line(q, audience), f"Enroll    them in the {name} sequence "
                                                     "(its steps run on their schedule)"])
 
-    action = assistant.rule_interpret(text)
-    if action.intent == "search" or action.intent == "unknown":
-        q = intent.parse(text, allow_llm=False)[0]
-        return Plan(text, "find", query=q, steps=[_find_line(q, text)])
-
-    audience = audience or action.query
     q = _query(audience, count)
-    pitch = goal or action.context
     write = _n("write", "write", 0, pitch=pitch)
-    if action.intent == "schedule":
-        hm = _time(text) or (9, 0)
-        days = "daily" if (_DAILY_RE.search(text) and not _WEEKDAY_RE.search(text)) else "weekdays"
-        when = f"{days} {hm[0]:02d}:{hm[1]:02d}"
+    if kind == "schedule":
+        when = f"{f['days']} {f['time']}"
         nodes = [_n("trigger", "trigger.schedule", 40, schedule=when),
                  _n("find", "find", 280, query=audience, count=count, verified_only=False),
                  _n("split", "split_tier", 520),
@@ -187,8 +288,7 @@ def make_plan(text: str, *, live: bool = False, sequence_names: list | None = No
                  # Not live: queue for approval, as the plan says. Live: the
                  # approve_first_emails setting decides (unattended sends).
                  _n("send", "send", 1240, approve="auto" if live else "always")]
-        name = f"{_slug(action.campaign if action.campaign != 'assistant' else '')}-" \
-               f"{_slug(audience)}".strip("-")
+        name = f"{_slug(f.get('campaign') or '')}-{_slug(audience)}".strip("-")
         g = _graph(name or _slug(audience), nodes, active=True, live=live, description=text)
         how = ("send live, inside your warmup cap" if live else
                "go into your approval queue (openleads today)")

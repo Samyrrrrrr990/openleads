@@ -132,3 +132,92 @@ def test_save_plan_names_the_workflow(db):
     p = ask.make_plan("email 10 fintech founders about our tool")
     saved = ask.save_plan(p, "fintech-founders", db=db)
     assert saved["name"] == "fintech-founders"
+
+
+# --- 5.4: the connected model reads the request ------------------------------------- #
+@pytest.fixture
+def model(monkeypatch):
+    """A connected model whose answer each test sets; records every call."""
+    import json as _json
+
+    from openleads import ai
+    state = {"reply": None, "calls": []}
+
+    def chat(messages, m=None, **kw):
+        state["calls"].append(messages)
+        if isinstance(state["reply"], Exception):
+            raise state["reply"]
+        return _json.dumps(state["reply"]) if isinstance(state["reply"], dict) else state["reply"]
+    monkeypatch.setattr(ai, "resolve", lambda overrides=None: ai.Model("claude", "sonnet"))
+    monkeypatch.setattr(ai, "chat", chat)
+    return state
+
+
+ODD = ("I need to get in front of about forty heads of ops at logistics startups in "
+       "Rotterdam, pitch our route-planning API")
+
+
+def test_model_reads_what_the_rules_cannot(model):
+    model["reply"] = {"kind": "campaign", "audience": "heads of operations at logistics "
+                      "startups in Rotterdam", "count": 40, "goal": "our route-planning API"}
+    p = ask.make_plan(ODD, use_model=True)
+    assert p.kind == "workflow" and graph.errors(p.graph, check_name=False) == []
+    assert _node(p, "find")["params"]["count"] == 40
+    assert "Rotterdam" in _node(p, "find")["params"]["query"]
+    assert _node(p, "write")["params"]["pitch"] == "our route-planning API"
+    assert _node(p, "send")["params"]["approve"] == "always"       # the model never picks live
+    assert p.by.startswith("claude") and ODD in model["calls"][0][-1]["content"]
+
+
+def test_model_schedule(model):
+    model["reply"] = {"kind": "schedule", "audience": "dental clinics in Austin", "count": 15,
+                      "goal": "appointment reminders", "days": "weekdays", "time": "08:30"}
+    p = ask.make_plan("each workday morning hit up fifteen Austin dentists re reminders",
+                      use_model=True)
+    assert _node(p, "trigger.schedule")["params"]["schedule"] == "weekdays 08:30"
+
+
+def test_model_enroll_still_checks_the_sequence(model):
+    model["reply"] = {"kind": "enroll", "audience": "fintech founders", "count": 20,
+                      "sequence": "Nope"}
+    p = ask.make_plan("stick twenty fintech founders into Nope", use_model=True,
+                      sequence_names=["Founders"])
+    assert p.kind == "unsupported" and "seq list" in p.suggestion
+
+
+@pytest.mark.parametrize("reply", [
+    {"kind": "delete_everything"},
+    {"kind": "campaign", "audience": "", "count": 10},
+    {"kind": "campaign", "audience": "x" * 400, "count": 10},
+    {"kind": "schedule", "audience": "dentists", "count": 5, "days": "hourly", "time": "25:99"},
+    "not json at all",
+])
+def test_bad_model_answers_fall_back_to_the_rules(model, reply):
+    model["reply"] = reply
+    text = "find 30 rust devs in Berlin and email them about our hiring tool"
+    p = ask.make_plan(text, use_model=True)
+    assert p.by == "rules" and _node(p, "find")["params"]["count"] == 30
+
+
+def test_model_failure_falls_back(model):
+    from openleads import ai
+    model["reply"] = ai.AIError("not logged in")
+    p = ask.make_plan("find 30 rust devs in Berlin and email them about x", use_model=True)
+    assert p.kind == "workflow" and p.by == "rules"
+
+
+def test_edits_with_their_own_command_never_ask_the_model(model):
+    p = ask.make_plan("tag maya@x.co as hot", use_model=True)
+    assert p.kind == "unsupported" and model["calls"] == []
+
+
+def test_model_only_when_asked(model):
+    ask.make_plan("find 30 rust devs in Berlin and email them about x")
+    assert model["calls"] == []
+
+
+def test_model_find_is_a_search(model):
+    model["reply"] = {"kind": "find", "audience": "Series A fintech founders in London",
+                      "count": 50}
+    p = ask.make_plan("who are the series a fintech founders in london", use_model=True)
+    assert p.kind == "find" and p.query.count == 50 and p.confirm is False

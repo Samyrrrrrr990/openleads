@@ -351,7 +351,7 @@ def _looks_like_action(text: str) -> bool:
 def _run_assistant(text: str, sess: Session, console):
     """Show the plan for an action, run it on a yes, answer in plain words."""
     from openleads import ask
-    plan = ask.make_plan(text, sequence_names=ask._sequence_names(sess.db))
+    plan = ask.make_plan(text, sequence_names=ask._sequence_names(sess.db), use_model=True)
     print(ui.c("  Plan", ui.BOLD))
     for i, step in enumerate(plan.steps, 1):
         print(f"    {i}. {step}")
