@@ -182,8 +182,11 @@ def make_plan(text: str, *, live: bool = False, sequence_names: list | None = No
         nodes = [_n("trigger", "trigger.schedule", 40, schedule=when),
                  _n("find", "find", 280, query=audience, count=count, verified_only=False),
                  _n("split", "split_tier", 520),
-                 {**write, "position": {"x": 760, "y": 200}},
-                 _n("send", "send", 1000, approve="auto")]
+                 _n("dedupe", "dedupe", 760, skip_contacted=True),
+                 {**write, "position": {"x": 1000, "y": 200}},
+                 # Not live: queue for approval, as the plan says. Live: the
+                 # approve_first_emails setting decides (unattended sends).
+                 _n("send", "send", 1240, approve="auto" if live else "always")]
         name = f"{_slug(action.campaign if action.campaign != 'assistant' else '')}-" \
                f"{_slug(audience)}".strip("-")
         g = _graph(name or _slug(audience), nodes, active=True, live=live, description=text)
@@ -193,18 +196,21 @@ def make_plan(text: str, *, live: bool = False, sequence_names: list | None = No
             f"Schedule  {when.replace('weekdays', 'every weekday at').replace('daily', 'every day at')}",
             _find_line(q, audience, verified=False).replace("Find     ", "Find      up to"),
             "Keep      only deliverable (safe) emails",
+            "Skip      anyone you've already emailed",
             f"Write     an email about {pitch}" if pitch else "Write     an email for each lead",
             f"Then      the emails {how}"])
 
     nodes = [_n("trigger", "trigger.manual", 40),
              _n("find", "find", 280, query=audience, count=count, verified_only=True),
-             {**write, "position": {"x": 520, "y": 200}},
-             _n("send", "send", 760, approve="never" if live else "always", respect_window=False)]
+             _n("dedupe", "dedupe", 520, skip_contacted=True),
+             {**write, "position": {"x": 760, "y": 200}},
+             _n("send", "send", 1000, approve="never" if live else "always", respect_window=False)]
     g = _graph(f"ask-{_slug(audience)}", nodes, description=text)
     last = ("Send      them now from your mailbox (live)" if live else
             "Queue     them for you to approve in openleads today (nothing sends yet)")
     return Plan(text, "workflow", query=q, graph=g, confirm=True, steps=[
         _find_line(q, audience),
+        "Skip      anyone you've already emailed",
         f"Write     an email to each about {pitch}" if pitch else "Write     an email to each",
         last])
 

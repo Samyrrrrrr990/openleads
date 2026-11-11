@@ -834,19 +834,30 @@ def _should_queue(ctx, params) -> bool:
 
 
 def _queue(ctx, drafts, by_email, campaign) -> dict:
+    from openleads.automate.workflow import store
     from openleads.models import Draft
     from openleads.workspace import drafts as draftsmod
+    node_id = ctx.node.get("id", "")
+    # Steps after Send wait on each draft: they run once it's approved and sent.
+    follows = bool(node_id) and any(e.get("from") == node_id
+                                    for e in (ctx.workflow or {}).get("edges") or [])
     out = []
     for d in drafts:
-        draftsmod.enqueue(ctx.db, Draft(email=d["email"], subject=d.get("subject", ""),
-                                        body=d.get("body", ""), quality=d.get("quality") or {}),
-                          "workflow", {"campaign": campaign, "step": 1, "workflow": ctx.name,
-                                       "run_id": ctx.run_id})
         it = dict(by_email[d["email"].lower()])
         it["send"] = {"status": "queued", "detail": "waiting for approval in Today"}
+        ref = {"campaign": campaign, "step": 1, "workflow": ctx.name, "run_id": ctx.run_id}
+        if follows:
+            ref["wait_id"] = store.hold(ctx.db, ctx.name, ctx.run_id, node_id,
+                                        {**it, "send": {"status": "sent"}})
+        row = draftsmod.enqueue(ctx.db, Draft(email=d["email"], subject=d.get("subject", ""),
+                                              body=d.get("body", ""),
+                                              quality=d.get("quality") or {}), "workflow", ref)
+        if ref.get("wait_id") and (row or {}).get("ref", {}).get("wait_id") != ref["wait_id"]:
+            store.release(ctx.db, ref["wait_id"], go=False)    # already queued elsewhere
         out.append(it)
     ctx.vars["queued"] = ctx.vars.get("queued", 0) + len(out)
-    ctx.note(f"{len(out)} drafts waiting for approval in Today")
+    ctx.note(f"{len(out)} drafts waiting for approval in Today"
+             + ("; the next steps run for each one you approve" if follows and out else ""))
     return {"out": []}
 
 

@@ -147,3 +147,23 @@ def test_dry_run_never_calls_hook(tmp_path, set_setting):
         assert res.status == "preview" and not marker.exists()
     finally:
         db.close()
+
+
+# --- final review: a broken hook never crashes the batch ---------------------------- #
+def test_hook_printing_non_utf8_is_a_hook_failure(set_setting, tmp_path):
+    set_setting("presend_hook", _hook(tmp_path, "bad.py",
+                "import sys; sys.stdout.buffer.write(b'\\xff\\xfe not json')"))
+    action, reason = presend.check(_draft())
+    assert action == "hold" and "pre-send hook failed" in reason
+
+
+def test_hook_with_an_unclosed_quote_is_a_hook_failure(set_setting):
+    set_setting("presend_hook", 'echo "unclosed')
+    action, reason = presend.check(_draft())
+    assert action == "hold" and "pre-send hook failed" in reason
+
+
+def test_broken_hook_follows_on_error_send(set_setting):
+    set_setting("presend_hook", 'echo "unclosed')
+    set_setting("presend_hook_on_error", "send")
+    assert presend.check(_draft())[0] == "send"

@@ -283,3 +283,13 @@ def test_enrich_streams(server, monkeypatch):
     events = _stream(server, "/api/enrich",
                      {"rows": [{"name": "Ada Lovelace", "domain": "ae.com"}]})
     assert events[-1]["type"] == "done" and events[-1]["count"] == 1
+
+
+def test_today_approve_sends_the_open_editor_text():
+    """The editor sits after the row (insertAdjacentHTML afterend), so the row's own
+    Send must find it by data-for, not inside the row, or edits are silently dropped."""
+    import re
+    from pathlib import Path
+    js = (Path(__file__).parent.parent / "openleads/web/static/js/views/home.js").read_text()
+    send = re.search(r'"draft-send": async \(el\) => \{(.*?)\n      \},', js, re.S).group(1)
+    assert '.today-editor[data-for=' in send and '$(".today-editor", row)' not in send

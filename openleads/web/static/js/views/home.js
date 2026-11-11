@@ -218,8 +218,8 @@ router.register("home", {
         slot.innerHTML = slot.dataset.was || "";
       },
       "draft-send": async (el) => {
-        const row = el.closest(".today-row");
-        const ed = $(".today-editor", row);
+        // The editor (if open) sits after the row, not inside it.
+        const ed = $(`.today-editor[data-for="${el.dataset.id}"]`, root);
         const edits = ed ? { subject: $("[name=subject]", ed).value, body: $("[name=body]", ed).value } : {};
         el.disabled = true;
         try {
@@ -231,7 +231,7 @@ router.register("home", {
       },
       "draft-edit": async (el) => {
         const row = el.closest(".today-row");
-        if ($(".today-editor", row)) return;
+        if ($(`.today-editor[data-for="${el.dataset.id}"]`, root)) return;
         const b = await api.get("/api/today");
         const d = b.drafts.find((x) => String(x.id) === el.dataset.id);
         if (!d) return refreshToday(root);

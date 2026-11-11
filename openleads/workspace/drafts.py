@@ -21,6 +21,8 @@ from openleads.models import Draft
 
 SOURCES = ("sequence", "workflow", "ask")
 _GONE = ("replied", "bounced")
+REPLY_LOOKBACK = 30 * 86400     # a reply this recent means you're in a conversation
+_NO_MAILBOX = ("no SMTP host", "no mailbox credentials")
 
 
 def approval_on(db) -> bool:
@@ -43,13 +45,22 @@ def _row(r: dict | None) -> dict | None:
 
 
 def enqueue(db, draft: Draft, source: str, ref: dict) -> dict:
+    """Queue ``draft``. A workflow or ``openleads "..."`` draft for someone who already
+    has one waiting returns that one instead of queueing a second copy. (A sequence
+    draft always gets its own row: its enrollment waits on it.)"""
     if source not in SOURCES:
         raise ValueError(f"unknown draft source: {source!r}")
+    email = (draft.email or "").lower().strip()
+    if source != "sequence":
+        dup = db.query_one("SELECT id FROM drafts WHERE email=? AND status='waiting' "
+                           "ORDER BY id LIMIT 1", (email,))
+        if dup:
+            return get(db, dup["id"])
     quality = (draft.quality or {}).get("score")
     cur = db.execute(
         "INSERT INTO drafts (email, subject, body, source, ref, quality, status, created) "
         "VALUES (?,?,?,?,?,?, 'waiting', ?)",
-        ((draft.email or "").lower().strip(), draft.subject, draft.body, source,
+        (email, draft.subject, draft.body, source,
          json.dumps(ref or {}), quality, time.time()))
     return get(db, cur.lastrowid)
 
@@ -93,6 +104,14 @@ def _why_not(db, row: dict) -> str:
         return f"contact {lead['status']} since it was queued"
     if lead.get("stage") == "do_not_contact":
         return "contact is marked do not contact"
+    created = float(row.get("created") or 0)
+    if db.scalar("SELECT 1 FROM activity WHERE ref_type='contact' AND ref=? AND kind='reply' "
+                 "AND ts > ? LIMIT 1", (row["email"], created - REPLY_LOOKBACK)):
+        return "contact wrote to you recently; answer them instead"
+    if int(row["ref"].get("step") or 1) <= 1 and db.scalar(
+            "SELECT 1 FROM touches WHERE email=? AND status='sent' AND ts > ? LIMIT 1",
+            (row["email"], created)):
+        return "already emailed since this was queued"
     enr_id = row["ref"].get("enrollment_id")
     if row["source"] == "sequence" and enr_id:
         enr = db.query_one("SELECT status FROM enrollments WHERE id=?", (int(enr_id),))
@@ -127,21 +146,32 @@ def approve(db, draft_id, subject: str | None = None, body: str | None = None,
     ref = row["ref"]
     draft = Draft(email=row["email"], subject=row["subject"], body=row["body"],
                   step=int(ref.get("step") or 1))
-    [res] = sender.send_drafts([draft], dry_run=False, db=db,
-                               campaign=ref.get("campaign") or "default",
-                               step=int(ref.get("step") or 1))
-    detail = res.detail or res.error or ""
-    if res.status == "error" or (res.status == "skipped" and "warmup" in detail):
+    try:
+        [res] = sender.send_drafts([draft], dry_run=False, db=db,
+                                   campaign=ref.get("campaign") or "default",
+                                   step=int(ref.get("step") or 1))
+        detail = res.detail or res.error or ""
+        status = res.status
+    except Exception as e:  # noqa: BLE001 — never strand a claimed draft in 'sending'
+        status, detail = "error", f"{type(e).__name__}: {e}"[:300]
+    if any(k in detail for k in _NO_MAILBOX):
+        detail = "Connect your mailbox first (`openleads setup`); the draft is still waiting."
+    if status == "error" or (status == "skipped" and "warmup" in detail):
         # Nothing went out and it may work later (cap resets tomorrow, SMTP recovers):
         # keep the draft, with any edits, in the queue.
         db.execute("UPDATE drafts SET status='waiting', detail=?, subject=?, body=? WHERE id=?",
                    (detail, row["subject"], row["body"], row["id"]))
         return {"id": row["id"], "status": "error",
                 "detail": detail or "not sent; still waiting in Today"}
-    if res.status == "sent" and row["source"] == "sequence" and ref.get("enrollment_id"):
+    if status == "sent" and row["source"] == "sequence" and ref.get("enrollment_id"):
         from openleads.workspace import sequences
         sequences.approved(db, int(ref["enrollment_id"]), row["subject"], now)
-    return _decide(db, row["id"], res.status, detail, now,
+    if status == "sent" and ref.get("wait_id"):
+        from openleads.automate.workflow import store
+        store.release(db, ref["wait_id"], go=True, now=now)
+    elif status == "skipped":
+        _skip_source(db, row, now)       # held or suppressed: don't leave the enrollment parked
+    return _decide(db, row["id"], status, detail, now,
                    subject=row["subject"], body=row["body"])
 
 
@@ -150,6 +180,9 @@ def _skip_source(db, row: dict, now: float) -> None:
     if row["source"] == "sequence" and ref.get("enrollment_id"):
         from openleads.workspace import sequences
         sequences.skipped(db, int(ref["enrollment_id"]), now)
+    if ref.get("wait_id"):
+        from openleads.automate.workflow import store
+        store.release(db, ref["wait_id"], go=False)
 
 
 def skip(db, draft_id, now: float | None = None) -> dict:

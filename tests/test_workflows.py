@@ -718,3 +718,32 @@ def test_test_mode_never_queues(db, set_setting):
     fk = Fakes([L("a@a.example")])
     run(_send_graph(approve="always"), db, fk, mode=TEST, trigger_label="schedule")
     assert drafts.count_waiting(db) == 0
+
+
+def test_steps_after_a_queued_send_run_once_approved(db, monkeypatch):
+    """Spec 6.3: the workflow step after Send waits on the draft, not dropped."""
+    from openleads.workspace import drafts, tags
+    monkeypatch.setattr("openleads.outreach.sender.send_drafts",
+                        lambda ds, **k: [SendResult(d.email, "sent", message_id="<m>") for d in ds])
+    g = G([N("t", "trigger.manual"), N("f", "find", query="dentists"), N("w", "write"),
+           N("s", "send", approve="always"), N("tg", "tag", tags="emailed")],
+          [E("t", "f"), E("f", "w"), E("w", "s"), E("s", "tg")], active=True)
+    store.save(db, g)
+    fk = Fakes([L("a@a.example"), L("b@a.example")])
+    run(store.get(db, "wf"), db, fk, mode=RUN, live=False)
+    assert drafts.count_waiting(db) == 2 and tags.for_contact(db, "a@a.example") == []
+    a, b = drafts.waiting(db)
+    assert runner.resume_waits(db, WED_10 + timedelta(minutes=1), services=fk.services())["due"] == 0
+    t = (WED_10 + timedelta(minutes=1)).timestamp()
+    assert drafts.approve(db, a["id"], now=t)["status"] == "sent"
+    drafts.skip(db, b["id"], now=t)
+    res = runner.resume_waits(db, WED_10 + timedelta(minutes=2), services=fk.services())
+    assert res["resumed"] == 1
+    assert tags.for_contact(db, a["email"]) == ["emailed"] and tags.for_contact(db, b["email"]) == []
+
+
+def test_queued_send_with_nothing_after_it_parks_nothing(db):
+    fk = Fakes([L("a@a.example")])
+    store.save(db, G(_send_graph(approve="always")["nodes"], _send_graph()["edges"], active=True))
+    run(store.get(db, "wf"), db, fk, mode=RUN, live=False)
+    assert db.scalar("SELECT COUNT(*) FROM workflow_waits", default=0) == 0

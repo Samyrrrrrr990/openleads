@@ -329,6 +329,29 @@ def park(db, name: str, run_id: int | None, node: str, items: list, wake_at: flo
     return len(items)
 
 
+def hold(db, name: str, run_id: int | None, node: str, item: dict) -> int:
+    """Park one item at ``node`` until its draft is approved (status ``approval``:
+    :func:`due_waits` never picks it up until :func:`release` says go)."""
+    _ensure(db)
+    cur = db.execute("INSERT INTO workflow_waits (workflow, run_id, node, item, wake_at, live, "
+                     "status, created) VALUES (?,?,?,?, 0, 1, 'approval', ?)",
+                     (name, run_id, node, json.dumps(item, default=str), time.time()))
+    return int(cur.lastrowid)
+
+
+def release(db, wait_id, go: bool, now: float | None = None) -> None:
+    """The draft an item was held for was sent (``go``: continue on the next drip) or
+    skipped (the item's remaining steps are cancelled)."""
+    _ensure(db)
+    if go:
+        db.execute("UPDATE workflow_waits SET status='waiting', wake_at=? "
+                   "WHERE id=? AND status='approval'", (time.time() if now is None else now,
+                                                        int(wait_id)))
+    else:
+        db.execute("UPDATE workflow_waits SET status='cancelled', resumed=? "
+                   "WHERE id=? AND status='approval'", (time.time(), int(wait_id)))
+
+
 def due_waits(db, now: float) -> list:
     _ensure(db)
     rows = db.query("SELECT * FROM workflow_waits WHERE status='waiting' AND wake_at <= ? "
