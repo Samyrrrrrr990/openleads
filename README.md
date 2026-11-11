@@ -167,6 +167,19 @@ The assistant can search and edit your workspace and run your morning from
 [Today](./docs/today.md). The one tool that sends, `approve_draft`, only sends a draft
 already waiting for your approval.
 
+## Use the model you already pay for
+
+Everything works with no model. Connect one and it reads your requests, writes the
+drafts and sorts your replies:
+
+```bash
+openleads setup ai
+```
+
+It finds what this computer has: your Claude or ChatGPT subscription (through the
+`claude` or `codex` CLI), an Anthropic, OpenAI or Gemini key, a free OpenRouter
+model, or Ollama. Nothing is spent until you pick one. [Your model](./docs/ai.md)
+
 ## Automate it
 
 Workflows are n8n-style node graphs you draw in the dashboard: triggers (schedule,

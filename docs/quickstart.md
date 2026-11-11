@@ -69,7 +69,8 @@ openleads doctor
 - **DNS-over-HTTPS** reachable? (needed for MX/SPF/DMARC checks)
 - **SMTP port 25** open? If blocked (most home ISPs), don't worry: the engine
   compensates with Gravatar + ground-truth + learned patterns.
-- **OpenRouter key** set? Optional; unlocks AI drafting + smarter NL parsing.
+- **A model** connected? Optional; `openleads setup ai` uses a Claude or ChatGPT
+  subscription you already have, an API key, or a free model. See [Your model](ai.md).
 - **Mailbox** configured + logs in? Needed only for *sending*.
 - Your **sending domain's** SPF/DKIM/DMARC grade.
 

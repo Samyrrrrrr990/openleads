@@ -6,6 +6,28 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+**Bring your own model.** OpenLeads can think with a model you already have.
+
+- `openleads setup ai` lists what this computer has and connects one of three
+  kinds: a subscription through its CLI (`claude`, `codex`), an API key (Anthropic,
+  OpenAI, Gemini), or a free model (OpenRouter, Ollama, any OpenAI-compatible
+  endpoint). Each choice is tested with one tiny call before it's saved.
+  `--use <provider>` does it without a terminal.
+- Nothing spends a subscription or paid key until you pick it. `auto` keeps using
+  only an OpenRouter key or `ai_base_url`, as before.
+- The CLIs run in an empty scratch folder with no session: Claude with every tool
+  off, Codex in its read-only sandbox.
+- `openleads "..."` and chat: the model reads the request and OpenLeads builds and
+  checks the plan, which says who read it. Anything odd falls back to the rules.
+- Drafts come from the connected model, with the same facts check.
+- Replies: the model tells a real question from a polite no and suggests an answer
+  for the ones that need you (Today, dashboard and MCP). Rules still decide
+  bounces, out-of-office and unsubscribes.
+- Today warns when the chosen model isn't working, and mentions an installed Claude
+  or Codex CLI you haven't connected.
+- Dashboard: Settings, AI model shows what's connected, what this computer has, and
+  a Test button.
+
 ## [5.3.0] - 2026-11-11
 
 **Simple.** Say what you want and see the plan before it runs; one Today screen for

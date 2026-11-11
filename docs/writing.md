@@ -155,14 +155,11 @@ with the reasons that cost points:
   generic openers ("I wanted to reach out");
 - no question to answer; for follow-ups, repeating the earlier email.
 
-## With an LLM
+## With a model
 
-Set either of these in Settings, AI writing (or `openleads config`):
-
-- an **OpenRouter key** (`openrouter_api_key`, model `openrouter_model`), or
-- **any OpenAI-compatible endpoint**: `ai_base_url` (e.g.
-  `http://localhost:11434/v1` for Ollama), `ai_api_key` if it needs one, and
-  `ai_model`.
+Connect one with `openleads setup ai`: a Claude or ChatGPT subscription through its
+CLI, an Anthropic, OpenAI or Gemini key, a free OpenRouter model, Ollama, or any
+OpenAI-compatible endpoint. See [Your model](ai.md).
 
 The model gets the brief (facts only), your writing samples
 (`writing_examples`, for voice, never facts) and strict rules: only facts from
