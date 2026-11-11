@@ -1,0 +1,51 @@
+name: Ship notes
+
+# Once a day: post new CHANGELOG [Unreleased] entries to X and Bluesky (official
+# APIs), and on Mondays create a dev.to draft for the week. A platform whose
+# secrets aren't set is skipped. Nothing here posts to Reddit, HN or LinkedIn.
+
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print the posts instead of sending them"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ship-notes
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Post new entries
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+        run: |
+          python launch/autopost/post.py --state launch/autopost/state.json \
+            --changelog CHANGELOG.md ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: Save what was posted
+        run: |
+          git config user.name "openleads-ship-notes"
+          git config user.email "openleads-ship-notes@users.noreply.github.com"
+          git add launch/autopost/state.json
+          git diff --cached --quiet || git commit -m "chore: ship-notes state [skip ci]"
+          git push || echo "::notice::state not pushed (branch protected?)"
