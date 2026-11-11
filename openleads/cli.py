@@ -1277,6 +1277,15 @@ def main(argv=None) -> int:
     parser = build_parser()
     if not argv:
         return cmd_chat(argparse.Namespace())  # bare `openleads` → chat
+    from openleads import cli_ask
+    known = set(parser._registrar.choices) | set(parser._registrar.aliases) | {"help"}
+    where = cli_ask.route(argv, known)
+    if where.startswith("typo:"):
+        print(f"unknown command '{argv[0]}'. Did you mean `openleads {where[5:]}`?",
+              file=sys.stderr)
+        return 2
+    if where == "ask":
+        return cli_ask.cmd_ask(argv)
     args = parser.parse_args(argv)
     if not getattr(args, "func", None):
         parser.print_help()

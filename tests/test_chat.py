@@ -88,3 +88,36 @@ def test_save_puts_results_in_the_workspace_and_a_list(capsys):
     finally:
         sess.cache.close()
         sess.db.close()
+
+
+def test_action_requests_show_the_plan_and_wait_for_yes(capsys, monkeypatch):
+    from openleads import ask
+    ran = []
+    monkeypatch.setattr(ask, "run_plan", lambda plan, **kw: ran.append(plan) or {
+        "ok": True, "leads": 4, "verified": 4, "drafts_waiting": 4, "sent": 0})
+    replies = iter(["n", "y"])
+    monkeypatch.setattr("builtins.input", lambda *a: next(replies))
+    sess = chat.Session()
+    try:
+        assert chat._looks_like_action("add 5 fintech founders to my Founders sequence")
+        chat._run_assistant("email 4 fintech founders about our tool", sess, None)
+        assert ran == [] and "Nothing ran" in capsys.readouterr().out
+        chat._run_assistant("email 4 fintech founders about our tool", sess, None)
+        out = capsys.readouterr().out
+        assert len(ran) == 1 and "openleads today" in out and "1." in out
+    finally:
+        sess.cache.close()
+        sess.db.close()
+
+
+def test_today_line_when_chat_starts(tmp_path):
+    from openleads.db import DB
+    db = DB(tmp_path / "w.db")
+    try:
+        assert chat._today_line(db) == ""          # nothing waiting: say nothing
+        db.upsert_lead({"email": "a@x.co", "first_name": "A", "tier": "safe"})
+        from openleads.outreach import replies
+        replies.record(db, "a@x.co", "Re: hi", "pricing?", "<m@x>", 1000.0)
+        assert "1 reply" in chat._today_line(db) and "openleads today" in chat._today_line(db)
+    finally:
+        db.close()

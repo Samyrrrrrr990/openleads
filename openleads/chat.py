@@ -17,7 +17,7 @@ from __future__ import annotations
 import re
 import sys
 
-from openleads import __version__, assistant, intent, settings, ui, writers
+from openleads import __version__, intent, settings, ui, writers
 from openleads.cache.store import Cache
 from openleads.config import openrouter_key
 from openleads.db import DB
@@ -343,37 +343,29 @@ def _maybe_refine(text: str, sess: Session, console) -> bool:
 
 
 def _looks_like_action(text: str) -> bool:
-    """True if the user is asking to *send/schedule*, not just search."""
-    return assistant.rule_interpret(text).intent in ("campaign", "schedule")
+    """True if the request sends, schedules, enrolls or edits: anything but a plain search."""
+    from openleads import ask
+    return ask.make_plan(text).kind != "find"
 
 
 def _run_assistant(text: str, sess: Session, console):
-    """Configure a campaign/schedule from one line of natural language."""
-    act, mode = assistant.interpret(text)
-    _say(console, f"  [dim]assistant ({mode})[/] — {act.summary()}")
-
-    def on_progress(kind, payload):
-        if kind == "lead":
-            sess.last_leads.append(payload)
-
-    sess.last_leads = []
-    result = assistant.execute(act, db=sess.db, dry_run=True, install_schedule=False,
-                               on_progress=on_progress)
-    if not result.get("ok"):
-        _say(console, f"  [red]{result.get('message')}[/]")
+    """Show the plan for an action, run it on a yes, answer in plain words."""
+    from openleads import ask
+    plan = ask.make_plan(text, sequence_names=ask._sequence_names(sess.db))
+    print(ui.c("  Plan", ui.BOLD))
+    for i, step in enumerate(plan.steps, 1):
+        print(f"    {i}. {step}")
+    if plan.kind == "unsupported":
         return
-    leads = result.get("leads", [])
-    drafts = result.get("drafts", [])
-    sess.last_leads = leads
-    sess.last_drafts = drafts
-    if leads and _HAS_RICH:
-        _render_table(leads, console)
-    _say(console, f"  [green]✓[/] {result.get('message')}")
-    if act.send_hour is not None:
-        _say(console, f"  to make it run unattended: [yellow]/schedule "
-                      f"{act.send_hour:02d}:{act.send_minute:02d}[/]")
-    if drafts:
-        _say(console, f"  drafted {len(drafts)} emails · [yellow]/send live[/] to deliver now")
+    try:
+        reply = input("  Run it? [Y/n] ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        reply = "n"
+    if reply not in ("", "y", "yes"):
+        print("  Nothing ran.")
+        return
+    result = ask.run_plan(plan, db=sess.db)
+    print("  " + ask.answer(result))
 
 
 def _run_search(text: str, sess: Session, console):
@@ -430,6 +422,20 @@ def _status_items() -> list:
     return [("brain", ai), ("mailbox", mailbox), ("port 25", port25)]
 
 
+def _today_line(db) -> str:
+    """One line about what's waiting, or "" when nothing is."""
+    try:
+        from openleads import cli_today, today
+        b = today.briefing(db)
+    except Exception:           # Today must never stop chat from starting
+        return ""
+    n = b["counts"]
+    if not (n["replies"] or n["drafts"] or n["tasks"]):
+        return ""
+    return cli_today.summary(b).replace(" Nothing else needs you.", "") + \
+        " Run `openleads today` to go through them."
+
+
 def _intro(console):
     tui = "rich" if _HAS_RICH else "plain"
     body = [
@@ -450,6 +456,9 @@ def run() -> int:
     console = Console() if _HAS_RICH else None
     session = Session()
     _intro(console)
+    line = _today_line(session.db)
+    if line:
+        print(ui.c("  Today: ", ui.BOLD) + line + "\n")
 
     # Use prompt_toolkit only on a real terminal; pipes/CI fall back to input().
     use_ptk = _HAS_PTK and sys.stdin.isatty()
