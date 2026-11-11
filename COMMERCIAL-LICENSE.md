@@ -19,6 +19,17 @@ Copyright © 2026 Samyar Shafiee.
 The leads you find and the emails you write are yours. The AGPL applies to the
 OpenLeads code, not to your data or output.
 
+## Using OpenLeads at a company?
+
+Go ahead. It's free for non-profits, solo founders and small teams, and for any
+company that runs it internally to find leads and send its own email. You don't
+need to ask.
+
+Email us if your company wants to keep its changes private, build OpenLeads into a
+closed-source product, or offer it to other people as a hosted service (see
+"Commercial license" below). If you host it for others and do publish your source
+under the AGPL, a short note is still appreciated.
+
 ## Why AGPL?
 
 It's a real, OSI-approved open-source license: you can read, run, change, and share
@@ -38,7 +49,7 @@ Email **samyar.shafiee2009@gmail.com** with:
 - A sentence on how you'll use OpenLeads
 - Rough scale (users, or leads per month)
 
-You'll get simple terms back. Small teams and early startups usually get a nominal fee.
+We work out the terms together by email. There's no price list yet.
 
 ## Earlier versions
 

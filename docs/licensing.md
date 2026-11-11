@@ -18,11 +18,23 @@ Almost certainly not.
 The leads you find and the emails you write are yours. The AGPL covers the
 OpenLeads code, not your data or your output.
 
+## Using OpenLeads at a company?
+
+Go ahead. It's free for non-profits, solo founders and small teams, and for any
+company that runs it internally to find leads and send its own email. You don't
+need to ask.
+
+Email if your company wants to keep its changes private, build OpenLeads into a
+closed-source product, or offer it to other people as a hosted service. The AGPL
+asks you to publish your source in those cases, and a commercial license is the
+other way. If you host it for others and do publish your source, a short note is
+still appreciated.
+
 ## Commercial license
 
 Email **samyar.shafiee2009@gmail.com** with your company, how you'll use
-OpenLeads, and rough scale. Small teams and early startups usually get a
-nominal fee. Details: [COMMERCIAL-LICENSE.md](https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md).
+OpenLeads, and rough scale. We work out the terms together by email; there's no
+price list yet. Details: [COMMERCIAL-LICENSE.md](https://github.com/Samyrrrrrr990/openleads/blob/main/COMMERCIAL-LICENSE.md).
 
 ## Earlier versions
 

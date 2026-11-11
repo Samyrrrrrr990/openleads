@@ -252,10 +252,20 @@ unsubscribe, warmup caps and no tracking pixels.
 
 ## License
 
-Open source under [AGPL-3.0](./LICENSE). Using OpenLeads is free, including at your
-company. If you embed it in a closed-source product, or run a modified version as a
-service without publishing your changes, you need a
-[commercial license](./COMMERCIAL-LICENSE.md).
+Open source under [AGPL-3.0](./LICENSE).
+
+### Using OpenLeads at a company?
+
+Go ahead. It's free for non-profits, solo founders and small teams, and for any
+company that runs it internally to find leads and send its own email. You don't
+need to ask.
+
+Email samyar.shafiee2009@gmail.com if your company wants to keep its changes to
+OpenLeads private, build it into a closed-source product, or offer it to other
+people as a hosted service. The AGPL asks you to publish your source in those
+cases. A commercial license is the other way, and we work out the terms by email.
+There's no price list. If you host it for others and do publish your source,
+I'd still like a short note. [Details](./COMMERCIAL-LICENSE.md).
 
 ## Contributing
 
