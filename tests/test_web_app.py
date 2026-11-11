@@ -237,3 +237,14 @@ def test_the_app_page_has_no_inline_script():
     html = (pathlib.Path(__file__).resolve().parent.parent / "app" / "index.html").read_text()
     for tag in re.findall(r"<script\b[^>]*>(.*?)</script>", html, re.S):
         assert not tag.strip(), "inline script in app/index.html"
+
+
+def test_mailbox_test_answers_without_crashing_when_nothing_is_connected(base):
+    status, r = post(base, "/api/mailbox/test", {})
+    assert status == 200 and r["ok"] is False and r["detail"]
+
+
+def test_mail_presets_carry_the_inbox_host(base):
+    _, _, body = get(base, "/api/providers")
+    presets = json.loads(body)["presets"]
+    assert presets["gmail"]["imap"] == "imap.gmail.com"

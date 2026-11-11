@@ -174,6 +174,7 @@ def providers_presets(params: dict | None = None) -> dict:
         for name, cfg in presets.items():
             out[name] = {"host": cfg.get("smtp_host", ""),
                          "port": cfg.get("smtp_port", 465),
+                         "imap": cfg.get("imap_host", ""),
                          "help": cfg.get("help", "")}
         return {"presets": out}
     except Exception:  # noqa: BLE001

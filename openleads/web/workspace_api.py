@@ -718,6 +718,17 @@ def ai_use(db, p):
     return {"ok": True, "detail": f"{m.label} {detail}"}
 
 
+@route(POST, "/api/mailbox/test")
+def mailbox_test(db, p):
+    """Log in to the saved mailbox, send nothing: does the address and app password work?"""
+    from openleads.outreach import providers
+    try:
+        ok, detail = providers.test_login()
+    except Exception as e:  # noqa: BLE001 - any failure here is an answer, not a crash
+        ok, detail = False, str(e)
+    return {"ok": bool(ok), "detail": str(detail)[:300]}
+
+
 @route(GET, "/api/writing/meta")
 def writing_meta(db, p):
     """Angles, tones and rewrite modes for the writer's controls."""

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { CommandPalette } from "~/components/shell/CommandPalette";
 import { SECTIONS, sectionOf } from "~/components/shell/sections";
 import { Sidebar } from "~/components/shell/Sidebar";
+import { TabBar } from "~/components/shell/TabBar";
 import { Toasts } from "~/components/shell/Toasts";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { api } from "~/lib/api";
@@ -14,7 +15,10 @@ import { Companies } from "~/views/people/Companies";
 import { Lists } from "~/views/people/Lists";
 import { People } from "~/views/people/People";
 import { Activity, Deals, Tasks } from "~/views/pipeline/Pipeline";
-import { Doctor, Model } from "~/views/settings/Settings";
+import { Ask } from "~/views/ask/Ask";
+import { Analytics } from "~/views/pipeline/Analytics";
+import { Connections } from "~/views/settings/Connections";
+import { Doctor } from "~/views/settings/Settings";
 import { Embedded } from "~/views/Embedded";
 import { Today } from "~/views/today/Today";
 import { Workflows } from "~/views/Workflows";
@@ -29,6 +33,8 @@ function Screen() {
   switch (`${section.key}/${page ?? ""}`) {
     case "today/":
       return <Today />;
+    case "ask/":
+      return <Ask />;
     case "people/people":
       return <People open={arg} />;
     case "people/companies":
@@ -49,8 +55,11 @@ function Screen() {
       return <Tasks />;
     case "pipeline/activity":
       return <Activity />;
+    case "pipeline/analytics":
+      return <Analytics />;
+    case "settings/connections":
     case "settings/model":
-      return <Model />;
+      return <Connections />;
     case "settings/doctor":
       return <Doctor />;
     default: {
@@ -98,6 +107,14 @@ export function App() {
         }
         return;
       }
+      if (k === "/") {
+        // "/" goes to the ask box: the one on this screen, or the Ask tab.
+        e.preventDefault();
+        const box = document.querySelector<HTMLElement>("[data-ask-input]");
+        if (box) box.focus();
+        else navigate("ask");
+        return;
+      }
       if (k === "g") pendingG = Date.now();
       else if (k === "t" && !e.shiftKey) toggleTheme();
     };
@@ -124,6 +141,7 @@ export function App() {
         <Sidebar active={sectionOf(route.section).key} version={version} onOpenPalette={() => setPalette(true)} />
         <main className="flex min-w-0 flex-1 flex-col bg-background">
           <Screen />
+          <TabBar active={sectionOf(route.section).key} onMore={() => setPalette(true)} />
         </main>
       </div>
       <CommandPalette open={palette} onOpenChange={setPalette} />

@@ -36,7 +36,7 @@ function Fact({ icon: Icon, children }: { icon: typeof PhoneIcon; children: Reac
 }
 
 function Heading({ children }: { children: React.ReactNode }) {
-  return <h3 className="mb-2 text-2xs font-medium uppercase tracking-wider text-muted-foreground">{children}</h3>;
+  return <h3 className="mb-2 text-xs font-medium text-muted-foreground">{children}</h3>;
 }
 
 function Content({ email, onChanged }: { email: string; onChanged: () => void }) {

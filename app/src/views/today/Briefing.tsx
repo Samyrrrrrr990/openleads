@@ -54,11 +54,11 @@ function ReplyRow({ r, onChanged }: { r: Reply; onChanged: () => void }) {
         <p className="mt-0.5 text-[13px] leading-5 text-foreground/90">{r.snippet || r.subject}</p>
         {r.suggestion && (
           <div className="mt-2 rounded-lg border border-border bg-muted px-3 py-2">
-            <div className="mb-0.5 flex items-center gap-1.5 text-2xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               Suggested answer
               <button
                 type="button"
-                className="ms-auto flex cursor-pointer items-center gap-1 normal-case tracking-normal hover:text-foreground"
+                className="ms-auto flex cursor-pointer items-center gap-1 font-normal hover:text-foreground"
                 onClick={() => navigator.clipboard?.writeText(r.suggestion).then(() => toast("Copied"), () => fail("Couldn't copy"))}
               >
                 <CopyIcon className="size-3" /> Copy
@@ -117,11 +117,11 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
 
   return (
     <Row className="flex-col gap-2">
-      <div className="flex w-full items-start gap-3">
+      <div className="flex w-full flex-wrap items-start gap-x-3 gap-y-2">
         <Avatar email={d.email} className="mt-0.5" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <a href={href("people", "people", d.email)} className="addr truncate text-[13px] font-medium hover:underline">
+            <a href={href("people", "people", d.email)} className="truncate text-[13px] font-medium hover:underline">
               {d.email}
             </a>
             <span className={cn("ms-auto shrink-0 text-xs tabular-nums", d.quality >= 80 ? "text-success-foreground" : d.quality >= 60 ? "text-muted-foreground" : "text-warning-foreground")}>
@@ -135,7 +135,7 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
             </>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-0.5 max-sm:w-full max-sm:justify-end">
           <IconAction label={editing ? "Close the editor" : "Read and edit"} onClick={() => setEditing((v) => !v)}>
             <PencilIcon />
           </IconAction>
@@ -218,7 +218,7 @@ function withCode(message: string) {
   );
 }
 
-function HeadsUpList({ items }: { items: HeadsUp[] }) {
+export function HeadsUpList({ items }: { items: HeadsUp[] }) {
   return (
     <div className="flex flex-col gap-1.5">
       {items.map((h, i) => {
@@ -229,12 +229,12 @@ function HeadsUpList({ items }: { items: HeadsUp[] }) {
             <span>
               {withCode(h.message)}{" "}
               {h.message.includes("openleads setup ai") ? (
-                <a className="text-foreground underline underline-offset-2" href={href("settings", "model")}>
+                <a className="text-foreground underline underline-offset-2" href={href("settings", "connections")}>
                   Choose a model
                 </a>
               ) : h.message.includes("openleads setup") ? (
-                <a className="text-foreground underline underline-offset-2" href={href("settings", "all")}>
-                  Open settings
+                <a className="text-foreground underline underline-offset-2" href={href("settings", "connections")}>
+                  Connect it
                 </a>
               ) : null}
             </span>
@@ -245,7 +245,8 @@ function HeadsUpList({ items }: { items: HeadsUp[] }) {
   );
 }
 
-export function Briefing({ b, onChanged }: { b: BriefingData; onChanged: () => void }) {
+/** Everything waiting on you, most urgent kind first. */
+export function Queue({ b, onChanged }: { b: BriefingData; onChanged: () => void }) {
   const tasks = [...b.tasks.overdue, ...b.tasks.today];
   const shown = b.drafts.slice(0, 5);
   const more = b.counts.drafts - shown.length;
@@ -253,7 +254,7 @@ export function Briefing({ b, onChanged }: { b: BriefingData; onChanged: () => v
   return (
     <>
       {b.replies.length > 0 && (
-        <Panel title="Replies" count={b.replies.length}>
+        <Panel title="Replies to answer" count={b.replies.length}>
           {b.replies.map((r) => (
             <ReplyRow key={r.email} r={r} onChanged={onChanged} />
           ))}
@@ -266,7 +267,7 @@ export function Briefing({ b, onChanged }: { b: BriefingData; onChanged: () => v
           action={
             more > 0 ? (
               <a className="text-xs text-muted-foreground hover:text-foreground" href={href("outreach", "approvals")}>
-                See all
+                See all {b.counts.drafts}
               </a>
             ) : undefined
           }
@@ -278,7 +279,7 @@ export function Briefing({ b, onChanged }: { b: BriefingData; onChanged: () => v
       )}
       {tasks.length > 0 && (
         <Panel
-          title="Tasks"
+          title="Tasks due"
           count={tasks.length}
           action={
             <a className="text-xs text-muted-foreground hover:text-foreground" href={href("pipeline", "tasks")}>
@@ -291,34 +292,15 @@ export function Briefing({ b, onChanged }: { b: BriefingData; onChanged: () => v
           ))}
         </Panel>
       )}
-      {b.new_leads.count > 0 && (
-        <Panel
-          title="New people"
-          count={b.new_leads.count}
-          action={
-            <a className="text-xs text-muted-foreground hover:text-foreground" href={href("people")}>
-              See them
-            </a>
-          }
-        >
-          {b.new_leads.items.slice(0, 4).map((p) => (
-            <Row key={p.email} className="items-center">
-              <Avatar name={p.name} email={p.email} />
-              <a href={href("people", "people", p.email)} className="truncate text-[13px] font-medium hover:underline">
-                {p.name || p.email}
-              </a>
-              <span className="truncate text-xs text-muted-foreground">{[p.title, p.organization].filter(Boolean).join(", ")}</span>
-            </Row>
-          ))}
-        </Panel>
-      )}
       {calm && (
-        <div className="rounded-xl border border-dashed border-border px-5 py-8 text-center">
+        <div className="rounded-xl border border-dashed border-border px-5 py-10 text-center">
           <p className="text-[15px] font-medium">Nothing needs you right now.</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">Ask for something below, or find people to start with.</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">Replies, emails to approve and tasks due show up here.</p>
+          <Button size="sm" className="mt-4" render={<a href={href("ask")} />}>
+            Ask for something
+          </Button>
         </div>
       )}
-      {b.heads_up.length > 0 && <HeadsUpList items={b.heads_up} />}
     </>
   );
 }

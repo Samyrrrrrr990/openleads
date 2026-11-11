@@ -4,7 +4,7 @@ import { cn } from "~/lib/utils";
 export function Toasts() {
   const toasts = useToasts();
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[60] flex flex-col items-center gap-2" role="status" aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 bottom-5 z-[60] max-md:bottom-[4.5rem] flex flex-col items-center gap-2" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div
           key={t.id}

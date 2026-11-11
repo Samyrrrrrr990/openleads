@@ -123,7 +123,7 @@ export function Sequences() {
                 ["Replied", `${s.stats.replied} (${pct(s.stats.reply_rate)})`],
               ].map(([k, v]) => (
                 <div key={k} className="border-e border-border px-3 py-2.5 last:border-e-0">
-                  <dt className="text-2xs uppercase tracking-wider text-muted-foreground">{k}</dt>
+                  <dt className="text-xs text-muted-foreground">{k}</dt>
                   <dd className="mt-0.5 text-[13px] font-medium tabular-nums">{v}</dd>
                 </div>
               ))}

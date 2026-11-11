@@ -1,5 +1,6 @@
 import { ExternalLinkIcon, MoonIcon, SearchIcon, SunIcon } from "lucide-react";
 
+import { Logo } from "~/components/app/Mark";
 import { Kbd } from "~/components/ui/kbd";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { useCounts } from "~/lib/counts";
@@ -9,16 +10,6 @@ import { toggleTheme, useTheme } from "~/lib/theme";
 import { cn, IS_MAC } from "~/lib/utils";
 
 import { SECTIONS } from "./sections";
-
-function Logo() {
-  return (
-    <span className="grid size-6 place-items-center rounded-md bg-primary text-primary-foreground" aria-hidden>
-      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 4v16M5 4h9a5 5 0 0 1 0 10H5" />
-      </svg>
-    </span>
-  );
-}
 
 export function Sidebar({
   active,
@@ -39,11 +30,10 @@ export function Sidebar({
       data-app-sidebar
       className="flex w-[var(--sidebar-width)] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground max-md:hidden"
     >
-      <div className="flex h-[52px] items-center gap-2 px-3.5">
+      <a href={href("today")} className="flex h-[52px] items-center gap-2.5 px-3.5" aria-label="OpenLeads, go to Today">
         <Logo />
-        <span className="font-semibold tracking-tight">openleads</span>
-        {version && <span className="ms-auto text-2xs text-sidebar-muted-foreground">v{version}</span>}
-      </div>
+        <span className="text-[15px] font-semibold tracking-tight">OpenLeads</span>
+      </a>
 
       <div className="px-2">
         <button
@@ -89,16 +79,14 @@ export function Sidebar({
 
       {requests.length > 0 && (
         <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2">
-          <div className="px-2.5 pb-1 text-2xs font-medium uppercase tracking-wider text-sidebar-muted-foreground/80">
-            Recent requests
-          </div>
+          <div className="px-2.5 pb-1 text-xs text-sidebar-muted-foreground">Asked before</div>
           {requests.map((r) => (
             <button
               key={r}
               type="button"
               title={r}
               onClick={() => {
-                navigate("today");
+                navigate("ask");
                 window.setTimeout(() => askFor(r), 0);
               }}
               className="block h-7 w-full cursor-pointer truncate rounded-md px-2.5 text-start text-[13px] text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
@@ -110,8 +98,9 @@ export function Sidebar({
       )}
 
       <div className="mt-auto flex items-center gap-1 border-t border-sidebar-border px-2 py-2">
-        <span className="flex items-center gap-1.5 px-1.5 text-2xs text-sidebar-muted-foreground">
-          <span className="size-1.5 rounded-full bg-success" /> Local, private
+        <span className="flex min-w-0 items-center gap-1.5 px-1.5 text-xs text-sidebar-muted-foreground" title="Everything stays on this computer">
+          <span className="size-1.5 shrink-0 rounded-full bg-success" />
+          <span className="truncate">Local{version ? `, version ${version}` : ""}</span>
         </span>
         <span className="ms-auto" />
         <Tooltip>

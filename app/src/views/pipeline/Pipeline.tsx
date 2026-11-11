@@ -73,7 +73,7 @@ export function Deals() {
                 ["Win rate", pct(board.totals.win_rate)],
               ].map(([k, v]) => (
                 <div key={k}>
-                  <dt className="text-2xs uppercase tracking-wider text-muted-foreground">{k}</dt>
+                  <dt className="text-xs text-muted-foreground">{k}</dt>
                   <dd className="text-[15px] font-semibold tabular-nums">{v}</dd>
                 </div>
               ))}

@@ -20,7 +20,7 @@ import {
 } from "~/components/ui/command";
 import { Kbd } from "~/components/ui/kbd";
 import { api } from "~/lib/api";
-import { askFor } from "~/lib/requests";
+import { ask as askOpenLeads } from "~/views/today/useAsk";
 import { navigate } from "~/lib/router";
 import { toggleTheme } from "~/lib/theme";
 import type { Page, Person } from "~/lib/types";
@@ -109,8 +109,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             hint: "see the plan first",
             icon: SparklesIcon,
             run: () => {
-              navigate("today");
-              window.setTimeout(() => askFor(text.trim()), 0);
+              navigate("ask");
+              void askOpenLeads(text.trim());
             },
           },
         ]

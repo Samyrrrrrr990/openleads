@@ -3,43 +3,30 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
+import { BrandIcon } from "~/components/app/Mark";
 import { onAsk } from "~/lib/requests";
 import { href } from "~/lib/router";
+import { PROVIDER_BRAND, useSetup } from "~/lib/setup";
 import { cn } from "~/lib/utils";
 
 import type { Turn } from "./useAsk";
 
-const EXAMPLES = [
-  "Find 20 dentists in Austin",
-  "Email 15 agencies in Miami about our SEO audit",
-  "Who replied this week and what do they want?",
-];
-
-/** The ask box, docked at the bottom like a chat composer. Enter sends, Shift+Enter breaks the line. */
-export function Composer({ onAsk: submit, busy, showExamples }: { onAsk: (text: string) => void; busy: boolean; showExamples: boolean }) {
+/** The ask box. Enter sends, Shift+Enter breaks the line. */
+export function Composer({ onAsk: submit, busy, autoFocus, className }: { onAsk: (text: string) => void; busy: boolean; autoFocus?: boolean; className?: string }) {
   const [text, setText] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
+  const setup = useSetup();
+  const model = setup.ai.current;
 
-  // The sidebar and the palette can hand a request over; "/" focuses the box.
-  useEffect(() => {
-    const off = onAsk((t) => {
-      setText(t);
-      ref.current?.focus();
-    });
-    const key = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
-      if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
+  // The sidebar and the palette can hand a request over.
+  useEffect(
+    () =>
+      onAsk((t) => {
+        setText(t);
         ref.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", key);
-    return () => {
-      off();
-      window.removeEventListener("keydown", key);
-    };
-  }, []);
+      }),
+    [],
+  );
 
   // Grow with the text, up to a few lines.
   useEffect(() => {
@@ -57,51 +44,46 @@ export function Composer({ onAsk: submit, busy, showExamples }: { onAsk: (text: 
   };
 
   return (
-    <div className="relative mx-auto w-full max-w-[var(--content-max)] px-5 pb-5 before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-linear-to-t before:from-background before:to-transparent max-md:px-3 max-md:pb-3">
-      {showExamples && (
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {EXAMPLES.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => {
-                setText(e);
-                ref.current?.focus();
-              }}
-              className="h-7 cursor-pointer rounded-full border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-input hover:text-foreground"
-            >
-              {e}
-            </button>
-          ))}
-        </div>
+    <div
+      className={cn(
+        "cursor-text rounded-2xl border border-input bg-card shadow-composer transition-shadow focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/15",
+        className,
       )}
-      <div
-        className="cursor-text rounded-2xl border border-input bg-card shadow-composer transition-shadow focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/15"
-        onClick={(e) => {
-          if (!(e.target as HTMLElement).closest("button")) ref.current?.focus();
+      onClick={(e) => {
+        if (!(e.target as HTMLElement).closest("button,a")) ref.current?.focus();
+      }}
+    >
+      <textarea
+        ref={ref}
+        rows={1}
+        value={text}
+        autoFocus={autoFocus}
+        data-ask-input
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            send();
+          }
         }}
-      >
-        <textarea
-          ref={ref}
-          rows={1}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          placeholder="Say what you want: who to find, who to email, or a question about your workspace"
-          aria-label="Ask OpenLeads"
-          className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] leading-6 outline-none placeholder:text-placeholder"
-        />
-        <div className="flex items-center gap-2 px-3 pb-2.5 ps-4">
-          <span className="text-xs text-muted-foreground">You see the plan before anything runs. Emails wait for your yes.</span>
-          <Button size="icon-sm-pill" className="ms-auto" disabled={!text.trim() || busy} onClick={send} aria-label="Ask">
-            {busy ? <Spinner /> : <ArrowUpIcon />}
-          </Button>
-        </div>
+        placeholder="Who to find, who to email, or a question about your workspace"
+        aria-label="Ask OpenLeads"
+        className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] leading-6 outline-none placeholder:text-placeholder"
+      />
+      <div className="flex items-center gap-2 px-2.5 pb-2.5">
+        {/* Which model reads the request, and one click to change it. */}
+        <a
+          href={href("settings", "connections")}
+          className="flex h-7 min-w-0 items-center gap-1.5 rounded-lg px-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          {model ? <BrandIcon size="sm" name={PROVIDER_BRAND[model.provider] ?? model.provider} label={model.label} /> : <SparklesIcon className="size-3.5" />}
+          <span className="truncate">{model ? model.label.split(" (")[0] : "Built-in rules"}</span>
+          {!model && setup.loaded && <span className="shrink-0 text-primary-ink">Connect a model</span>}
+        </a>
+        <span className="ms-auto text-xs text-muted-foreground max-sm:hidden">Nothing runs until you say yes</span>
+        <Button size="icon-sm-pill" className="max-sm:ms-auto" disabled={!text.trim() || busy} onClick={send} aria-label="Ask">
+          {busy ? <Spinner /> : <ArrowUpIcon />}
+        </Button>
       </div>
     </div>
   );
@@ -234,7 +216,7 @@ export function Thread({
 
   if (!turns.length) return null;
   return (
-    <div className="flex flex-col gap-6 border-t border-border pt-6">
+    <div className="flex flex-col gap-6">
       {turns.map((t) => (
         <article key={t.id} className="flex flex-col gap-3" aria-label={`Request: ${t.text}`}>
           <div className="ms-auto max-w-[85%] rounded-2xl rounded-br-md bg-message px-3.5 py-2 text-[15px] leading-6">{t.text}</div>

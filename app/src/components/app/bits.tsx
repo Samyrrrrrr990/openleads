@@ -111,3 +111,40 @@ export function Body({ children, wide, className }: { children: ReactNode; wide?
     </div>
   );
 }
+
+/** One number with its name above and a line of context below. */
+export function Stat({
+  label,
+  value,
+  note,
+  href,
+  children,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  note?: ReactNode;
+  href?: string;
+  children?: ReactNode;
+  className?: string;
+}) {
+  const body = (
+    <>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 flex items-end gap-3">
+        <div className="text-2xl font-semibold leading-8 tracking-tight tabular-nums">{value}</div>
+        {/* A small trend rides beside the number, so every tile keeps the same height. */}
+        {children && <div className="mb-1 ms-auto w-24 max-w-[45%] shrink-0">{children}</div>}
+      </div>
+      <div className="mt-0.5 min-h-4 truncate text-xs text-muted-foreground">{note}</div>
+    </>
+  );
+  const cls = cn("block rounded-xl border border-border bg-card px-4 py-3.5", href && "transition-colors hover:border-input", className);
+  return href ? (
+    <a href={href} className={cls}>
+      {body}
+    </a>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+}

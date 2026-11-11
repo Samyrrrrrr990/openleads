@@ -1,10 +1,11 @@
 import {
   CircleCheckIcon,
+  HouseIcon,
   KanbanSquareIcon,
   type LucideIcon,
   SendIcon,
   SettingsIcon,
-  SunriseIcon,
+  SparklesIcon,
   UsersIcon,
   WorkflowIcon,
 } from "lucide-react";
@@ -25,9 +26,10 @@ export interface Section {
   pages: Page[];
 }
 
-// The six sections of 5.5. Everything the old sidebar had lives under one of them.
+// The seven sections of 5.5. Everything the old sidebar had lives under one of them.
 export const SECTIONS: Section[] = [
-  { key: "today", label: "Today", icon: SunriseIcon, jump: "t", pages: [] },
+  { key: "today", label: "Today", icon: HouseIcon, jump: "t", pages: [] },
+  { key: "ask", label: "Ask", icon: SparklesIcon, jump: "a", pages: [] },
   {
     key: "people",
     label: "People",
@@ -64,7 +66,7 @@ export const SECTIONS: Section[] = [
       { key: "deals", label: "Deals" },
       { key: "tasks", label: "Tasks" },
       { key: "activity", label: "Activity" },
-      { key: "analytics", label: "Analytics", classic: "analytics" },
+      { key: "analytics", label: "Analytics" },
     ],
   },
   {
@@ -73,7 +75,7 @@ export const SECTIONS: Section[] = [
     icon: SettingsIcon,
     jump: "s",
     pages: [
-      { key: "model", label: "AI model" },
+      { key: "connections", label: "Connections" },
       { key: "doctor", label: "Doctor" },
       { key: "all", label: "All settings", classic: "settings" },
     ],
