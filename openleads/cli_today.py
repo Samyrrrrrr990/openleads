@@ -133,6 +133,7 @@ def _plural(n: int, one: str, many: str) -> str:
 def _reply_line(r: dict, now: float) -> str:
     return (f"  {_who(r.get('name'), r['email'], r.get('organization'))}  "
             + ui.c(_ago(r.get("received"), now), ui.GREY)
+            + (ui.c("  looks like a no", ui.GREY) if r.get("likely_no") else "")
             + f"\n    \"{r.get('snippet') or r.get('subject') or ''}\""
             + (ui.c(f"\n    Suggested answer: {r['suggestion']}", ui.GREY)
                if r.get("suggestion") else ""))

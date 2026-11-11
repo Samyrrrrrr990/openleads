@@ -67,6 +67,9 @@ SCHEMA: tuple[Setting, ...] = (
             "`openleads setup ai` picks for you.",
             choices=("auto", "claude", "codex", "anthropic", "openai", "gemini", "openrouter",
                      "ollama", "custom", "off")),
+    Setting("ai_provider_model", ("OPENLEADS_AI_PROVIDER_MODEL",), False, "str", "", "ai",
+            "Model for the provider above when it's a subscription or API key (blank = a good "
+            "default). Cleared when you switch providers."),
     Setting("anthropic_api_key", ("ANTHROPIC_API_KEY",), True, "str", "", "ai",
             "Anthropic API key (used when ai_provider is anthropic)."),
     Setting("openai_api_key", ("OPENAI_API_KEY",), True, "str", "", "ai",

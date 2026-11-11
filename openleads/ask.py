@@ -34,6 +34,8 @@ class Plan:
     suggestion: str = ""            # for "unsupported": the command to use instead
     schedule: str = ""              # for scheduled workflows: "weekdays 09:00"
     by: str = "rules"               # who read the request: "rules" or the model's label
+    needs_yes: bool = False         # the model read more into it than the rules: a person
+                                    # must say yes in a terminal (never --yes or --json)
 
     def to_dict(self) -> dict:
         out = asdict(self)
@@ -223,7 +225,7 @@ def _model_facts(text: str, sequence_names: list | None) -> tuple:
     try:
         raw = ai.parse_json(ai.chat([{"role": "system", "content": _MODEL_SYSTEM},
                                      {"role": "user", "content": user}], m,
-                                    max_tokens=300, temperature=0))
+                                    max_tokens=300, temperature=0, timeout=ai.SHORT_JOB))
     except ai.AIError:
         return None, ""
     facts = _clean_facts(raw)
@@ -243,10 +245,32 @@ def make_plan(text: str, *, live: bool = False, sequence_names: list | None = No
         if pattern.search(text):
             return Plan(text, "unsupported", suggestion=hint,
                         steps=[f"This one has its own command: {hint}"])
+    rules = _rule_facts(text)
     facts, by = (_model_facts(text, sequence_names) if use_model else (None, ""))
-    plan = _build(text, facts or _rule_facts(text), live, sequence_names)
-    plan.by = by or "rules"
+    facts = _guard(text, facts, rules) if facts else None
+    plan = _build(text, facts or rules, live, sequence_names)
+    plan.by = by if facts else "rules"
+    plan.needs_yes = bool(facts) and facts["kind"] != rules["kind"] and facts["kind"] != "find"
     return plan
+
+
+_SCHEDULE_CUE = re.compile(r"\b(?:every|each|daily|weekly|weekdays?|mornings?|monday|tuesday|"
+                           r"wednesday|thursday|friday|schedule)\b", re.I)
+MODEL_COUNT_CAP = 100
+
+
+def _guard(text: str, facts: dict, rules: dict) -> dict | None:
+    """The model may read a request better, never bigger: no schedule without a time or
+    day in the words, no sequence you didn't name, no more people than you asked for."""
+    if facts["kind"] == "schedule" and not (_SCHEDULE_CUE.search(text) or _TIME_RE.search(text)):
+        return None
+    if facts["kind"] == "enroll" and not re.search(r"\bsequence\b", text, re.I):
+        return None
+    said = _COUNT_RE.search(_TIME_RE.sub(" ", text))
+    limit = int(said.group(1)) if said else MODEL_COUNT_CAP
+    if facts.get("count"):
+        facts = dict(facts, count=max(1, min(int(facts["count"]), limit)))
+    return facts
 
 
 def _build(text: str, f: dict, live: bool, sequence_names: list | None) -> Plan:
@@ -412,12 +436,22 @@ _QUESTION_SYSTEM = (
     "rather than about the workspace.")
 
 
+_OWN_DATA_RE = re.compile(
+    r"\b(?:i|i'm|i've|me|my|mine|we|our|ours|us|replied|replies|reply|contacts?|pipeline|"
+    r"stages?|sequences?|deals?|tasks?|today|this week|last week|yesterday|emailed|sent|"
+    r"bounced|bounces|meetings?|approve|approval|queue|workspace|openleads|interested|"
+    r"customers?|booked|approaching|qualified)\b", re.I)
+
+
 def is_question(text: str) -> bool:
-    """Phrased as a question (worth asking the model about the workspace)."""
+    """A question about your own workspace (only those go to the model with a summary
+    of it; "any dentists in Austin?" is a search)."""
     t = " ".join(str(text or "").split())
     if not t or re.match(r"^(?:find|search|email|send|add|schedule|enroll)\b", t, re.I):
         return False
-    return t.endswith("?") or bool(_QUESTION_RE.match(t))
+    if not (t.endswith("?") or _QUESTION_RE.match(t)):
+        return False
+    return bool(_OWN_DATA_RE.search(t))
 
 
 def snapshot(db, now: float | None = None, limit: int = 40) -> dict:
@@ -472,7 +506,7 @@ def question(text: str, db) -> str | None:
     from openleads import ai
     if not is_question(text):
         return None
-    m = ai.resolve()
+    m = ai.chosen()          # never under `auto`: this sends a summary of your workspace
     if m is None:
         return None
     data = _json.dumps(snapshot(db), default=str)[:12000]
@@ -480,7 +514,8 @@ def question(text: str, db) -> str | None:
         out = ai.parse_json(ai.chat([{"role": "system", "content": _QUESTION_SYSTEM},
                                      {"role": "user", "content": f"Question: {text}\n\n"
                                                                  f"Workspace data:\n{data}"}],
-                                    m, max_tokens=400, temperature=0))
+                                    m, max_tokens=400, temperature=0, untrusted=True,
+                                    timeout=ai.SHORT_JOB))
     except ai.AIError:
         return None
     if out.get("kind") != "answer" or not str(out.get("text") or "").strip():

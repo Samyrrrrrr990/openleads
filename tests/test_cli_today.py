@@ -214,3 +214,9 @@ def test_reply_line_shows_the_suggested_answer():
     line = cli_today._reply_line(r, now=3600)
     assert "Suggested answer: Happy to, I'll send it Thursday." in line
     assert "Suggested" not in cli_today._reply_line({**r, "suggestion": ""}, now=3600)
+
+
+def test_reply_line_labels_a_likely_no():
+    r = {"email": "a@x.co", "name": "Ada", "snippet": "We built it in house.", "received": 0,
+         "likely_no": True}
+    assert "looks like a no" in cli_today._reply_line(r, now=3600).lower()

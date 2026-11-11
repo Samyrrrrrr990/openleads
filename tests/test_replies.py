@@ -228,15 +228,55 @@ def model(monkeypatch):
         return _json.dumps(state["reply"])
     monkeypatch.setattr(ai, "resolve", lambda overrides=None: ai.Model("claude", "sonnet"))
     monkeypatch.setattr(ai, "chat", chat)
+    monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "claude")
     return state
 
 
-def test_model_catches_a_soft_no(db, model):
+def test_model_flags_a_soft_no_but_never_hides_it(db, model):
+    """A model mistake must not silently drop a hot lead: a "no" from the model is a
+    label on a reply that still waits for you."""
     model["reply"] = {"category": "not_interested", "suggestion": ""}
     r = replies.record(db, "ada@globex.example", "Re: quick question",
                        "Appreciate it, but we built this in house last year.", "<a1>", 900.0)
-    assert r["category"] == "not_interested" and r["sorted_by"] == "claude:sonnet"
-    assert replies.waiting(db, now=1000.0) == []
+    assert r["category"] == "needs_you" and r["likely_no"] is True
+    [w] = replies.waiting(db, now=1000.0)
+    assert w["likely_no"] is True and w["suggestion"] == ""
+
+
+def test_model_can_raise_a_rules_no_to_needs_you(db, model):
+    model["reply"] = {"category": "needs_you", "suggestion": "Sure, Tuesday works."}
+    r = replies.record(db, "ada@globex.example", "Re: quick question",
+                       "Not interested right now, but could you call me Tuesday?", "<a2>", 900.0)
+    assert r["category"] == "needs_you" and r["sorted_by"] == "claude:sonnet"
+
+
+def test_auto_never_sends_reply_text_to_a_model(db, model, monkeypatch):
+    """`auto` with an old OpenRouter key keeps 5.3 behavior: replies aren't shared."""
+    monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "auto")
+    replies.record(db, "bo@initech.example", "Re: q", "What does it cost?", "<b9>", 900.0)
+    assert model["calls"] == 0
+
+
+def test_reply_sorting_has_a_budget_per_scan(db, model):
+    model["reply"] = {"category": "needs_you", "suggestion": ""}
+    with replies.model_budget(1):
+        replies.record(db, "bo@initech.example", "Re: q", "Pricing?", "<b1>", 900.0)
+        replies.record(db, "cy@hooli.example", "Re: q", "Pricing too?", "<c2>", 900.0)
+    assert model["calls"] == 1
+
+
+def test_reply_prompts_are_marked_untrusted(db, monkeypatch):
+    from openleads import ai
+    seen = {}
+
+    def chat(messages, m=None, **kw):
+        seen.update(kw)
+        return '{"category": "needs_you", "suggestion": ""}'
+    monkeypatch.setattr(ai, "resolve", lambda overrides=None: ai.Model("claude", "sonnet"))
+    monkeypatch.setattr(ai, "chat", chat)
+    monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "claude")
+    replies.record(db, "bo@initech.example", "Re: q", "Pricing?", "<b3>", 900.0)
+    assert seen["untrusted"] is True and seen["timeout"] <= 60
 
 
 def test_model_suggests_an_answer_for_replies_that_need_you(db, model):
@@ -266,3 +306,22 @@ def test_model_cannot_unsubscribe_or_invent_categories(db, model, bad):
                        "<d1>", 900.0)
     assert r["category"] == "needs_you" and r.get("sorted_by", "rules") == "rules"
     assert not db.is_suppressed("di@acme.example")
+
+
+def test_scan_sorts_a_limited_number_of_replies_with_the_model(db, imap, model, monkeypatch):
+    model["reply"] = {"category": "needs_you", "suggestion": ""}
+    monkeypatch.setattr(inbox, "SCAN_MODEL_BUDGET", 2)
+    imap["server"] = FakeIMAP([
+        _msg(f"{n.title()} <{e}>", "Re: quick question", "Pricing please?", mid=f"<{n}@x>")
+        for n, e in (("ada", "ada@globex.example"), ("bo", "bo@initech.example"),
+                     ("cy", "cy@hooli.example"), ("di", "di@acme.example"))])
+    assert inbox.scan(db)["recorded"] == 4
+    assert model["calls"] == 2                       # the other two used the rules
+
+
+def test_demo_seed_never_calls_the_model(tmp_path, model):
+    from openleads import demo
+    d = DB(tmp_path / "demo.db")
+    demo.seed(d)
+    d.close()
+    assert model["calls"] == 0

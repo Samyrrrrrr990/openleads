@@ -205,3 +205,20 @@ def test_api_ai_status_and_test(base, monkeypatch):
     st, t = post(base, "/api/ai/test", {})
     assert t["ok"] is False and "login" in t["detail"]
     settings.unset("ai_provider")
+
+
+def test_api_ai_use_tests_before_saving(base, monkeypatch):
+    import json as _json
+
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude")
+    monkeypatch.setattr(ai, "_run", lambda *a: (1, "", "Please run /login"))
+    st, r = post(base, "/api/ai/use", {"provider": "claude"})
+    assert r["ok"] is False and settings.get("ai_provider") in (None, "", "auto")
+    monkeypatch.setattr(ai, "_run", lambda *a: (0, _json.dumps({"is_error": False,
+                                                                "result": "ready"}), ""))
+    st, r = post(base, "/api/ai/use", {"provider": "claude"})
+    assert r["ok"] is True and settings.get("ai_provider") == "claude"
+    st, r = post(base, "/api/ai/use", {"provider": "skynet"})
+    assert st == 400
+    settings.unset("ai_provider")

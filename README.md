@@ -178,7 +178,8 @@ openleads setup ai
 
 It finds what this computer has: your Claude or ChatGPT subscription (through the
 `claude` or `codex` CLI), an Anthropic, OpenAI or Gemini key, a free OpenRouter
-model, or Ollama. Nothing is spent until you pick one. [Your model](./docs/ai.md)
+model, or Ollama. Nothing is spent until you pick one, and the model never decides
+on its own that something goes out. [Your model](./docs/ai.md)
 
 ## Automate it
 

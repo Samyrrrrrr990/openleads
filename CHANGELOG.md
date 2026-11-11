@@ -14,25 +14,36 @@ All notable changes to OpenLeads are documented here. Format loosely follows
   endpoint). Each choice is tested with one tiny call before it's saved.
   `--use <provider>` does it without a terminal.
 - Nothing spends a subscription or paid key until you pick it. `auto` keeps using
-  only an OpenRouter key or `ai_base_url`, as before.
-- The CLIs run in an empty scratch folder with no session: Claude with every tool
-  off, Codex in its read-only sandbox.
+  only an OpenRouter key or `ai_base_url`, as before, and only for the jobs it had
+  before (reading requests, writing drafts).
+- New setting `ai_provider_model` for a subscription or key; `ai_model` stays the
+  OpenRouter, Ollama or custom endpoint model. Switching provider clears the first.
+- The CLIs run in an empty scratch folder with no session and without your API keys
+  in their environment. Claude runs with every tool off and none of your own MCP
+  servers or settings; Codex runs in its read-only sandbox and is never given
+  replies or your workspace.
 - `openleads "..."` and chat: the model reads the request and OpenLeads builds and
-  checks the plan, which says who read it. Anything odd falls back to the rules.
+  checks the plan, which says who read it. The model can't add a schedule, a
+  sequence or a bigger count than you wrote, and a plan it reads as bigger than the
+  rules did asks for a yes first. Anything odd falls back to the rules.
 - Drafts come from the connected model, with the same facts check.
-- Replies: the model tells a real question from a polite no and suggests an answer
-  for the ones that need you (Today, dashboard and MCP). Rules still decide
-  bounces, out-of-office and unsubscribes.
+- Replies: the model can flag a reply the rules missed and suggests an answer for
+  the ones that need you (Today, dashboard and MCP). It never hides one: a reply
+  it thinks is a polite no stays on Today labelled "looks like a no". Rules still
+  decide bounces, out-of-office and unsubscribes. At most ten model calls per inbox
+  scan.
 - Ask about your workspace: `openleads "who replied and what do they want?"` or the
   same in chat. The model answers from a small summary of your workspace and says
   when it can't tell; a question that's really a search still searches.
 - The dashboard follows T3 Code's look: the system font, zinc greys, a near-black
-  dark mode with hairline borders and a blue primary. Email addresses keep Atkinson
-  Hyperlegible so `l`, `I` and `1` never look alike.
+  dark mode with hairline borders and a blue primary. Email addresses in the people
+  table and on contact cards keep Atkinson Hyperlegible so `l`, `I` and `1` never
+  look alike.
 - Today warns when the chosen model isn't working, and mentions an installed Claude
   or Codex CLI you haven't connected.
-- Dashboard: Settings, AI model shows what's connected, what this computer has, and
-  a Test button.
+- Dashboard: Settings, AI model shows what's connected and what this computer has.
+  **Use this** tests a provider before switching to it; **Test it** checks the
+  current one.
 
 ## [5.3.0] - 2026-11-11
 

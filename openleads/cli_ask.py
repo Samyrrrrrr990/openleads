@@ -46,6 +46,15 @@ def _yes(prompt: str) -> bool:
     return reply in ("", "y", "yes")
 
 
+def _yes_strict(prompt: str) -> bool:
+    try:
+        reply = input(prompt).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return False
+    return reply in ("y", "yes")
+
+
 def _sequence_names() -> list:
     from openleads.db import DB
     db = DB()
@@ -89,7 +98,21 @@ def cmd_ask(argv: list) -> int:
         if as_json:
             print(json.dumps({"plan": plan.to_dict(), "result": None}, default=str))
         return 2
-    if plan.confirm and not yes:
+    if plan.needs_yes and not _interactive():
+        # The model read an action into a request the rules read as a search: only a
+        # person at a terminal can say yes to that (never --yes, --json or a script).
+        if as_json:
+            print(json.dumps({"plan": plan.to_dict(), "result": None,
+                              "reason": "needs a yes in a terminal"}, default=str))
+        else:
+            print(f"\nThis plan was read by {plan.by} and does more than a search. "
+                  "Run it in a terminal to say yes, or reword it.")
+        return 0
+    if plan.needs_yes:
+        if not _yes_strict("\nThe model read this as more than a search. Run it? [y/N] "):
+            print("Nothing ran.")
+            return 0
+    elif plan.confirm and not yes:
         if not _interactive():
             if as_json:
                 print(json.dumps({"plan": plan.to_dict(), "result": None}, default=str))

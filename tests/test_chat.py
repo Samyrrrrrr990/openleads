@@ -1,4 +1,6 @@
 """Tests for chat session logic: slash commands, refinements, export (no network)."""
+import pytest
+
 from openleads import chat
 from openleads.models import Lead
 
@@ -121,3 +123,15 @@ def test_today_line_when_chat_starts(tmp_path):
         assert "1 reply" in chat._today_line(db) and "openleads today" in chat._today_line(db)
     finally:
         db.close()
+
+
+def test_model_escalated_plan_in_chat_needs_an_explicit_yes(monkeypatch, capsys):
+    from openleads import ask, chat
+    p = ask.Plan("x", "workflow", graph={"nodes": [], "edges": []}, confirm=True,
+                 steps=["Find 10", "Send"], by="claude:sonnet", needs_yes=True)
+    monkeypatch.setattr(ask, "make_plan", lambda *a, **k: p)
+    monkeypatch.setattr(ask, "_sequence_names", lambda db: [])
+    monkeypatch.setattr(ask, "run_plan", lambda *a, **k: pytest.fail("Enter ran it"))
+    monkeypatch.setattr("builtins.input", lambda prompt="": "")
+    chat._run_assistant("dentists in Austin", type("S", (), {"db": None})(), None)
+    assert "Nothing ran" in capsys.readouterr().out

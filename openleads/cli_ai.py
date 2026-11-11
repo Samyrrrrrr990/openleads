@@ -88,7 +88,7 @@ def _ask_key(provider: str) -> bool:
     return True
 
 
-def _test(model) -> tuple:
+def test_call(model) -> tuple:
     t = time.time()
     try:
         text = ai.chat([{"role": "system", "content": "Reply with the single word: ready"},
@@ -119,6 +119,8 @@ def apply(provider: str, model: str = "", test: bool = True, interactive: bool =
     overrides = {"ai_provider": provider}
     if model:
         overrides["ai_model"] = model
+    elif provider not in ("openrouter", "ollama", "custom"):
+        overrides["ai_provider_model"] = ""        # a switch starts from the default model
     m = ai.resolve(overrides)
     if m is None:
         if provider in ("claude", "codex"):
@@ -132,7 +134,7 @@ def apply(provider: str, model: str = "", test: bool = True, interactive: bool =
         return 1
     if test:
         print(ui.c(f"  Testing {m.label}...", ui.FAINT))
-        ok, detail = _test(m)
+        ok, detail = test_call(m)
         if not ok:
             print(f"[!] {m.label} didn't answer: {detail}", file=sys.stderr)
             print("    Nothing changed. Fix that (for a CLI: run it once and log in) and try "
@@ -140,8 +142,11 @@ def apply(provider: str, model: str = "", test: bool = True, interactive: bool =
             return 1
         print(f"  Connected: {m.label} ({detail}).")
     settings.set("ai_provider", provider)
-    if model:
-        settings.set("ai_model", model)
+    if provider in ("openrouter", "ollama", "custom"):
+        if model:
+            settings.set("ai_model", model)
+    else:
+        settings.set("ai_provider_model", model)     # blank clears the last provider's
     if provider in ("claude", "codex", "anthropic", "openai", "gemini"):
         print(ui.c("  Uses your subscription or key. Writing a draft or a plan is one short "
                    "call; nothing runs in the background unless you schedule it.", ui.FAINT))

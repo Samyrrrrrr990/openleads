@@ -94,6 +94,14 @@ DRAFT_BODY = ("Hi {first},\n\nI saw {org} is hiring for front desk roles again. 
               "Worth a 15 minute look next week? If not, no worries at all.\n\nSam")
 
 
+def _seed_replies(db, reply_log, contacted, rnd, now) -> None:
+    for email, text in zip(contacted[:5], REPLY_TEXTS):
+        db.set_status(email, "replied")
+        at = now - rnd.uniform(0.2, 9) * DAY
+        db.execute("UPDATE activity SET ts=? WHERE ref=? AND kind='replied'", (at, email))
+        reply_log.record(db, email, "Re: quick question", text, f"<demo-{email}>", at)
+
+
 def seed(db, now: float | None = None, rng_seed: int = 7) -> dict:
     """Fill ``db`` with the demo workspace. Returns counts of what was created."""
     from openleads.workspace import (
@@ -188,11 +196,8 @@ def seed(db, now: float | None = None, rng_seed: int = 7) -> dict:
                        "VALUES (?,?,?,?,?,?)", (email, campaign, 2, "re: quick question", "sent",
                                                 sent_at + 3 * DAY))
     from openleads.outreach import replies as reply_log
-    for email, text in zip(contacted[:5], REPLY_TEXTS):
-        db.set_status(email, "replied")
-        at = now - rnd.uniform(0.2, 9) * DAY
-        db.execute("UPDATE activity SET ts=? WHERE ref=? AND kind='replied'", (at, email))
-        reply_log.record(db, email, "Re: quick question", text, f"<demo-{email}>", at)
+    with reply_log.model_budget(0):      # invented replies: sorted by the rules, same every time
+        _seed_replies(db, reply_log, contacted, rnd, now)
     db.set_status(contacted[6], "bounced")
     people.update(db, contacted[0], {"stage": "meeting"})
     people.update(db, contacted[1], {"stage": "interested"})

@@ -50,7 +50,7 @@ function headsUp(items) {
 function replyRow(r) {
   return `<div class="list-row today-row" data-email="${esc(r.email)}">
     <div style="min-width:0;flex:1">
-      <div class="ellipsis"><a class="link t-strong" href="#/people/${encodeURIComponent(r.email)}">${esc(r.name || r.email)}</a>${r.organization ? `<span class="hint">, ${esc(r.organization)}</span>` : ""}</div>
+      <div class="ellipsis"><a class="link t-strong" href="#/people/${encodeURIComponent(r.email)}">${esc(r.name || r.email)}</a>${r.organization ? `<span class="hint">, ${esc(r.organization)}</span>` : ""}${r.likely_no ? ` <span class="badge badge--sm" title="Your model thinks this is a polite no. It stays here until you mark it done.">Looks like a no</span>` : ""}</div>
       <div class="today-snippet">${esc(r.snippet || r.subject || "")}</div>
       ${r.suggestion ? `<div class="today-suggest"><span class="hint">Suggested answer</span> ${esc(r.suggestion)}</div>` : ""}
       <div class="hint">${esc(fmt.rel(r.received))}</div></div>

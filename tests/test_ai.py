@@ -87,11 +87,19 @@ def test_api_key_providers(set_setting, monkeypatch, provider, env, url, model):
     assert (m.provider, m.url, m.model, m.api_key) == (provider, url, model, "k-123")
 
 
-def test_ai_model_setting_overrides_default(set_setting, monkeypatch):
+def test_provider_model_setting_overrides_default(set_setting, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     set_setting("ai_provider", "anthropic")
-    set_setting("ai_model", "claude-haiku-5-5")
+    set_setting("ai_provider_model", "claude-haiku-5-5")
     assert ai.resolve().model == "claude-haiku-5-5"
+
+
+def test_old_endpoint_model_never_leaks_into_a_subscription(set_setting, monkeypatch):
+    """A pre-5.4 `ai_model=llama3.2` (for Ollama) must not become `claude --model llama3.2`."""
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude")
+    set_setting("ai_model", "llama3.2")
+    set_setting("ai_provider", "claude")
+    assert ai.resolve().model == "sonnet"
 
 
 def test_ollama_picks_first_local_model(set_setting, monkeypatch):
@@ -207,3 +215,75 @@ def test_complete_json_parses_fenced_json(set_setting):
 def test_no_model_raises():
     with pytest.raises(ai.AIError, match="openleads setup ai"):
         ai.chat(MSGS)
+
+
+# --- review fixes -------------------------------------------------------------------- #
+def _capture_subprocess(monkeypatch, out):
+    seen = {}
+
+    class FakePopen:
+        def __init__(self, cmd, **kw):
+            seen.update(cmd=cmd, **kw)
+            self.pid, self.returncode = 0, 0
+            if "--output-last-message" in cmd:
+                with open(cmd[cmd.index("--output-last-message") + 1], "w") as f:
+                    f.write("hi")
+
+        def communicate(self, stdin=None, timeout=None):
+            return out, ""
+    monkeypatch.setattr(ai.subprocess, "Popen", FakePopen)
+    return seen
+
+
+def test_claude_subscription_never_sees_an_api_key(set_setting, monkeypatch):
+    """With ANTHROPIC_API_KEY in the environment, `claude -p` bills the key instead of
+    the subscription the user chose."""
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-paid")
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "tok")
+    monkeypatch.setenv("PATH", "/usr/bin")
+    set_setting("ai_provider", "claude")
+    seen = _capture_subprocess(monkeypatch, json.dumps({"is_error": False, "result": "ok"}))
+    assert ai.chat(MSGS) == "ok"
+    env = seen["env"]
+    assert "ANTHROPIC_API_KEY" not in env and "ANTHROPIC_AUTH_TOKEN" not in env
+    assert env["PATH"] == "/usr/bin"
+
+
+def test_codex_subscription_never_sees_an_api_key(set_setting, monkeypatch):
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/codex")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-paid")
+    monkeypatch.setenv("CODEX_API_KEY", "sk-paid")
+    set_setting("ai_provider", "codex")
+    seen = _capture_subprocess(monkeypatch, "")
+    assert ai.chat(MSGS) == "hi"
+    assert "OPENAI_API_KEY" not in seen["env"] and "CODEX_API_KEY" not in seen["env"]
+
+
+def test_claude_loads_no_mcp_servers_or_user_settings(set_setting, monkeypatch):
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude")
+    set_setting("ai_provider", "claude")
+    run = Runner(out=json.dumps({"is_error": False, "result": "ok"}))
+    ai.chat(MSGS, runner=run)
+    cmd = run.calls[0]["cmd"]
+    assert "--strict-mcp-config" in cmd and "--mcp-config" not in cmd
+    assert cmd[cmd.index("--setting-sources") + 1] == "project"   # the empty temp folder
+
+
+def test_codex_is_not_given_other_peoples_text(set_setting, monkeypatch):
+    """codex exec can still read files in its read-only sandbox: text written by
+    someone else (a reply, the workspace) never goes to it."""
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/codex")
+    set_setting("ai_provider", "codex")
+    run = Runner(write="x")
+    with pytest.raises(ai.AIError, match="codex"):
+        ai.chat(MSGS, runner=run, untrusted=True)
+    assert run.calls == []
+
+
+def test_short_jobs_get_a_short_timeout(set_setting, monkeypatch):
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude")
+    set_setting("ai_provider", "claude")
+    run = Runner(out=json.dumps({"is_error": False, "result": "ok"}))
+    ai.chat(MSGS, runner=run, timeout=45)
+    assert run.calls[0]["timeout"] == 45

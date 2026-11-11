@@ -16,7 +16,8 @@ def clean(monkeypatch):
     monkeypatch.setattr(ai, "_which", lambda name: None)
     monkeypatch.setattr(ai, "_ollama_models", lambda timeout=0.4: [])
     yield
-    for k in ("ai_provider", "ai_model", "anthropic_api_key", "openrouter_api_key"):
+    for k in ("ai_provider", "ai_model", "ai_provider_model", "anthropic_api_key",
+              "openai_api_key", "openrouter_api_key"):
         settings.unset(k)
 
 
@@ -64,7 +65,7 @@ def test_api_key_from_environment(monkeypatch, capsys):
     assert main(["setup", "ai", "--use", "anthropic", "--model", "claude-haiku-5-5"],
                 _tips=False) == 0
     assert settings.get("ai_provider") == "anthropic"
-    assert settings.get("ai_model") == "claude-haiku-5-5"
+    assert settings.get("ai_provider_model") == "claude-haiku-5-5"
 
 
 def test_off_needs_no_test(capsys):
@@ -109,3 +110,16 @@ def test_status_shows_the_current_model(monkeypatch, capsys):
     monkeypatch.setattr(cli_ai, "_interactive", lambda: False)
     assert main(["setup", "ai"], _tips=False) == 0
     assert "Using: Claude" in capsys.readouterr().out
+
+
+def test_switching_provider_clears_the_old_model(monkeypatch, capsys):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-oa")
+    seen = []
+    monkeypatch.setattr(ai, "_post", lambda url, payload, *a: seen.append(payload.get("model"))
+                        or ({"content": [{"type": "text", "text": "ready"}]} if "anthropic" in url
+                            else {"choices": [{"message": {"content": "ready"}}]}))
+    assert main(["setup", "ai", "--use", "anthropic", "--model", "claude-haiku-5-5"],
+                _tips=False) == 0
+    assert main(["setup", "ai", "--use", "openai"], _tips=False) == 0
+    assert seen[-1] == "gpt-4.1-mini" and not settings.get("ai_provider_model")

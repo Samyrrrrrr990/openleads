@@ -141,15 +141,17 @@ def model(monkeypatch):
     import json as _json
 
     from openleads import ai
-    state = {"reply": None, "calls": []}
+    state = {"reply": None, "calls": [], "kw": []}
 
     def chat(messages, m=None, **kw):
         state["calls"].append(messages)
+        state["kw"].append(kw)
         if isinstance(state["reply"], Exception):
             raise state["reply"]
         return _json.dumps(state["reply"]) if isinstance(state["reply"], dict) else state["reply"]
     monkeypatch.setattr(ai, "resolve", lambda overrides=None: ai.Model("claude", "sonnet"))
     monkeypatch.setattr(ai, "chat", chat)
+    monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "claude")
     return state
 
 
@@ -180,7 +182,7 @@ def test_model_schedule(model):
 def test_model_enroll_still_checks_the_sequence(model):
     model["reply"] = {"kind": "enroll", "audience": "fintech founders", "count": 20,
                       "sequence": "Nope"}
-    p = ask.make_plan("stick twenty fintech founders into Nope", use_model=True,
+    p = ask.make_plan("stick twenty fintech founders into my Nope sequence", use_model=True,
                       sequence_names=["Founders"])
     assert p.kind == "unsupported" and "seq list" in p.suggestion
 
@@ -211,6 +213,14 @@ def test_edits_with_their_own_command_never_ask_the_model(model):
     assert p.kind == "unsupported" and model["calls"] == []
 
 
+def test_reading_a_request_is_a_short_job(model):
+    """A slow CLI can't hold `openleads "..."` for the 90s writing budget."""
+    from openleads import ai
+    model["reply"] = {"kind": "find", "who": "dentists", "where": "Austin"}
+    ask.make_plan("dentists in Austin", use_model=True)
+    assert model["kw"][-1].get("timeout") == ai.SHORT_JOB
+
+
 def test_model_only_when_asked(model):
     ask.make_plan("find 30 rust devs in Berlin and email them about x")
     assert model["calls"] == []
@@ -236,8 +246,14 @@ def ws(tmp_path):
 
 @pytest.mark.parametrize("text,want", [
     ("who replied this week?", True), ("how many emails did I send", True),
-    ("which deals are stuck", True), ("dentists in Austin", False),
-    ("find 30 rust devs in Berlin", False), ("email them about x", False),
+    ("which deals are stuck", True), ("what's in my pipeline?", True),
+    ("how many contacts are in each stage?", True),
+    ("dentists in Austin", False), ("find 30 rust devs in Berlin", False),
+    ("email them about x", False),
+    # question-shaped searches: no model call, no workspace data sent
+    ("any dentists in Austin", False), ("are there plumbers in Denver", False),
+    ("what SaaS companies are hiring in Berlin", False), ("dentists in Austin?", False),
+    ("is acme.com hiring", False), ("who are the fintech founders in London?", False),
 ])
 def test_looks_like_a_question(text, want):
     assert ask.is_question(text) is want
@@ -265,3 +281,64 @@ def test_question_model_failure_is_none(ws, model):
     from openleads import ai
     model["reply"] = ai.AIError("offline")
     assert ask.question("who replied this week?", ws) is None
+
+
+# --- review: the model narrows, never escalates ------------------------------------- #
+def test_model_cannot_raise_the_count_above_what_you_said(model):
+    model["reply"] = {"kind": "campaign", "audience": "dentists in Austin", "count": 1000,
+                      "goal": "x"}
+    p = ask.make_plan("email 10 dentists in Austin about x", use_model=True)
+    assert _node(p, "find")["params"]["count"] == 10
+
+
+def test_model_count_is_capped_when_you_gave_no_number(model):
+    model["reply"] = {"kind": "campaign", "audience": "dentists in Austin", "count": 900,
+                      "goal": "x"}
+    p = ask.make_plan("email some dentists in Austin about x", use_model=True)
+    assert _node(p, "find")["params"]["count"] <= 100
+
+
+def test_model_cannot_schedule_without_a_time_or_day_in_the_request(model):
+    model["reply"] = {"kind": "schedule", "audience": "dentists in Austin", "count": 10,
+                      "days": "daily", "time": "03:00"}
+    p = ask.make_plan("email 10 dentists in Austin about x", use_model=True)
+    assert p.schedule == "" and p.by == "rules"
+
+
+def test_model_cannot_enroll_unless_you_named_a_sequence(model):
+    model["reply"] = {"kind": "enroll", "audience": "dentists", "count": 10,
+                      "sequence": "Founders"}
+    p = ask.make_plan("find 10 dentists in Austin", use_model=True,
+                      sequence_names=["Founders"])
+    assert p.kind == "find" and p.by == "rules"
+
+
+def test_model_turning_a_search_into_emails_needs_your_yes(model):
+    model["reply"] = {"kind": "campaign", "audience": "dentists in Austin", "count": 10,
+                      "goal": "x"}
+    p = ask.make_plan("dentists in Austin, 10 of them, our reminders", use_model=True)
+    assert p.kind == "workflow" and p.needs_yes is True
+
+
+def test_rules_plans_do_not_need_the_extra_yes():
+    p = ask.make_plan("find 30 rust devs in Berlin and email them about x")
+    assert p.needs_yes is False
+
+
+def test_auto_never_sends_the_workspace_to_a_model(ws, model, monkeypatch):
+    monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "auto")
+    assert ask.question("who replied this week?", ws) is None and model["calls"] == []
+
+
+def test_question_prompt_is_untrusted_and_short(ws, monkeypatch):
+    from openleads import ai
+    seen = {}
+
+    def chat(messages, m=None, **kw):
+        seen.update(kw)
+        return '{"kind": "answer", "text": "None."}'
+    monkeypatch.setattr(ai, "resolve", lambda overrides=None: ai.Model("claude", "sonnet"))
+    monkeypatch.setattr(ai, "chat", chat)
+    monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "claude")
+    assert ask.question("who replied this week?", ws) == "None."
+    assert seen["untrusted"] is True and seen["timeout"] <= 60

@@ -6,8 +6,11 @@ sort your replies. Connect one and the same steps get better. Three ways in:
 
 * **A subscription you already pay for**: Claude (the ``claude`` CLI) or ChatGPT
   (the ``codex`` CLI). OpenLeads runs them the way T3 Code's text generation does:
-  one prompt on stdin, no tools, no file access, nothing saved to their history,
-  from an empty temporary folder. Logging in stays with the CLI.
+  one prompt on stdin from an empty temporary folder, nothing saved to their
+  history, and never with your API keys in their environment (so the subscription
+  is what's used). Claude runs with no tools, no MCP servers and none of your user
+  settings. Codex runs in its read-only sandbox, which can still read files, so text
+  other people wrote (replies, your workspace) is never sent to it.
 * **An API key**: Anthropic (Messages API), OpenAI, or Google Gemini.
 * **Free or local**: OpenRouter (free models), Ollama, or any OpenAI-compatible URL.
 
@@ -22,10 +25,12 @@ step better but never break it.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
 import urllib.request
@@ -48,6 +53,7 @@ LABEL = {"claude": "Claude (your subscription, via the claude CLI)",
 KEY_SETTING = {"anthropic": "anthropic_api_key", "openai": "openai_api_key",
                "gemini": "gemini_api_key", "openrouter": "openrouter_api_key"}
 CLI_TIMEOUT = 90.0
+MAX_OUTPUT = 200_000         # characters kept from a CLI's answer
 
 
 class AIError(Exception):
@@ -132,7 +138,11 @@ def detect(probe: bool = True) -> list:
 
 
 def _build(provider: str, overrides: dict) -> Model | None:
-    model = str(overrides.get("ai_model") or _setting("ai_model") or "")
+    # `ai_model` belongs to OpenRouter, Ollama and custom endpoints (as before 5.4);
+    # a subscription or API key has its own `ai_provider_model`, cleared on a switch.
+    own = "ai_model" if provider in ("openrouter", "ollama", "custom") else "ai_provider_model"
+    stored = overrides[own] if own in overrides else _setting(own)
+    model = str(overrides.get("ai_model") or stored or "")
     t = _timeout()
     if provider in ("claude", "codex"):
         path = _which(provider)
@@ -185,6 +195,17 @@ def resolve(overrides: dict | None = None) -> Model | None:
     return None
 
 
+def chosen() -> Model | None:
+    """The model, only if you picked one (``ai_provider`` isn't ``auto``). Jobs that
+    send other people's text (replies, your workspace) wait for that choice."""
+    if (_setting("ai_provider") or "auto").lower() in ("auto", ""):
+        return None
+    return resolve()
+
+
+SHORT_JOB = 60.0       # seconds for a short job (reading a request, sorting a reply)
+
+
 def available() -> bool:
     return resolve() is not None
 
@@ -194,6 +215,11 @@ def problem() -> str:
     choice = _setting("ai_provider").lower() or "auto"
     if choice in ("auto", "off") or resolve() is not None:
         return ""
+    return problem_for(choice)
+
+
+def problem_for(choice: str) -> str:
+    """Why ``choice`` can't be used on this computer."""
     if choice in ("claude", "codex"):
         return (f"ai_provider is {choice}, but the `{choice}` command isn't on PATH. "
                 f"Install it and log in, or run `openleads setup ai`.")
@@ -204,16 +230,50 @@ def problem() -> str:
     return f"ai_provider is {choice}, but it isn't set up."
 
 
+_PATH_RE = re.compile(r"(?:[A-Za-z]:)?(?:[\\/][^\s'\"\\/:]+){2,}")
+
+
+def public_error(text: str) -> str:
+    """An error safe to show in a browser: local paths shortened to their last part."""
+    out = _PATH_RE.sub(lambda m: re.split(r"[\\/]", m.group(0))[-1], str(text or ""))
+    return out[:300]
+
+
 # --- talking to it ------------------------------------------------------------ #
+# Keys a CLI would use instead of the subscription you chose (billing your API key).
+_SCRUB = {"claude": ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"),
+          "codex": ("OPENAI_API_KEY", "CODEX_API_KEY")}
+
+
+def _child_env(binary: str) -> dict:
+    env = dict(os.environ)
+    for key in _SCRUB.get(os.path.basename(binary).lower(), ()):
+        env.pop(key, None)
+    return env
+
+
 def _run(cmd: list, stdin: str, timeout: float, cwd: str) -> tuple:
+    """Run a CLI once. Its whole process group is stopped on a timeout."""
+    posix = os.name == "posix"
     try:
-        p = subprocess.run(cmd, input=stdin, capture_output=True, text=True, timeout=timeout,
-                           cwd=cwd, encoding="utf-8", errors="replace")
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True, cwd=cwd,
+                             env=_child_env(cmd[0]), encoding="utf-8", errors="replace",
+                             start_new_session=posix)
+    except OSError:
+        raise AIError(f"couldn't start {os.path.basename(cmd[0])}") from None
+    try:
+        out, err = p.communicate(stdin, timeout=timeout)
     except subprocess.TimeoutExpired:
+        if posix:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except OSError:
+                pass
+        p.kill()
+        p.communicate()
         raise AIError(f"{os.path.basename(cmd[0])} took longer than {int(timeout)}s") from None
-    except OSError as e:
-        raise AIError(f"couldn't start {cmd[0]}: {e}") from None
-    return p.returncode, p.stdout or "", p.stderr or ""
+    return p.returncode, (out or "")[:MAX_OUTPUT], (err or "")[-4000:]
 
 
 def _post(url: str, payload: dict, headers: dict, timeout: float) -> dict:
@@ -237,8 +297,11 @@ def _clean(text: str) -> str:
 
 
 def _claude(m: Model, messages: list, runner) -> str:
+    # No tools, no MCP servers, and none of your user settings (allow-lists, hooks):
+    # only settings from the empty temp folder it runs in.
     base = [m.binary, "-p", "--output-format", "json", "--tools", "",
-            "--permission-mode", "dontAsk", "--disable-slash-commands"]
+            "--permission-mode", "dontAsk", "--disable-slash-commands",
+            "--strict-mcp-config", "--setting-sources", "project"]
     if m.model:
         base += ["--model", m.model]
     prompt = _prompt(messages)
@@ -315,11 +378,21 @@ def _openai_compatible(m: Model, messages: list, http, max_tokens: int,
 
 
 def chat(messages: list, model: Model | None = None, *, max_tokens: int = 900,
-         temperature: float = 0.4, runner=None, http=None) -> str:
-    """One answer from the connected model. Raises :class:`AIError` on any failure."""
+         temperature: float = 0.4, runner=None, http=None, untrusted: bool = False,
+         timeout: float | None = None) -> str:
+    """One answer from the connected model. Raises :class:`AIError` on any failure.
+
+    ``untrusted``: the prompt holds text someone else wrote (a reply, your workspace).
+    Codex can still read files in its read-only sandbox, so such prompts never go to it.
+    ``timeout`` caps a short job (reading a request, sorting a reply).
+    """
     m = model or resolve()
     if m is None:
         raise AIError(problem() or "no model connected; run `openleads setup ai`")
+    if untrusted and m.provider == "codex":
+        raise AIError("codex isn't given text other people wrote; the rules handle this")
+    if timeout:
+        m = dataclasses.replace(m, timeout=float(timeout))
     try:
         if m.provider == "claude":
             return _claude(m, messages, runner or _run)

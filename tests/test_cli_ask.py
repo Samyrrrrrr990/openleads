@@ -111,3 +111,15 @@ def test_question_json(monkeypatch, capsys):
     monkeypatch.setattr(ask, "question", lambda text, db: "None yet.")
     assert cli_ask.cmd_ask(["who", "replied?", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == {"answer": "None yet."}
+
+
+@pytest.mark.parametrize("flags", [["--yes"], ["--yes", "--live"], ["--json"]])
+def test_model_escalated_plan_never_runs_without_a_person(monkeypatch, capsys, flags):
+    p = ask.Plan("x", "workflow", graph={"nodes": [], "edges": []}, confirm=True,
+                 steps=["Find 10", "Send"], by="claude:sonnet", needs_yes=True)
+    monkeypatch.setattr(ask, "make_plan", lambda *a, **k: p)
+    monkeypatch.setattr(ask, "run_plan", lambda *a, **k: pytest.fail("ran without a yes"))
+    monkeypatch.setattr(cli_ask, "_interactive", lambda: False)
+    assert cli_ask.cmd_ask(["dentists", "in", "Austin", *flags]) == 0
+    out = capsys.readouterr().out
+    assert "terminal" in out

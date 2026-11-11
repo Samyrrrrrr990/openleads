@@ -18,7 +18,8 @@ const LABELS = {
   sender_context: "Your pitch", sender_offer: "Your offer", sender_proof: "Proof",
   writing_tone: "Tone", writing_examples: "Your writing samples", writing_llm: "Use an LLM",
   openrouter_api_key: "OpenRouter API key", openrouter_model: "OpenRouter model",
-  ai_base_url: "Custom endpoint URL", ai_api_key: "Custom endpoint key", ai_model: "Custom endpoint model",
+  ai_base_url: "Custom endpoint URL", ai_api_key: "Custom endpoint key",
+  ai_model: "Model for OpenRouter, Ollama or your endpoint", ai_provider_model: "Model for a subscription or key",
   ai_timeout: "LLM timeout (seconds)", ai_provider: "Model",
   anthropic_api_key: "Anthropic API key", openai_api_key: "OpenAI API key", gemini_api_key: "Gemini API key",
 };
@@ -123,9 +124,17 @@ router.register("settings", {
     onAct(root, {
       tab: (el) => { TAB = el.dataset.k; history.replaceState(null, "", `#/settings/${TAB}`); render(); },
       save,
-      "ai-use": (el) => {
-        const sel = $("#set-ai_provider", ROOT);
-        if (sel) { sel.value = el.dataset.p; save(); }
+      "ai-use": async (el) => {
+        // Test before saving, like `openleads setup ai`: a model that can't answer isn't kept.
+        const out = $("#ai-test-out", ROOT);
+        el.disabled = true; out.textContent = "Testing it...";
+        try {
+          const r = await api.post("/api/ai/use", { provider: el.dataset.p });
+          if (!r.ok) { out.textContent = `Not switched: ${r.detail}`; el.disabled = false; return; }
+          toast("Model connected");
+          const s = await api.get("/api/settings"); Object.assign(store.state, s);
+          render();
+        } catch (e) { el.disabled = false; fail(e); }
       },
       "ai-test": async (el) => {
         const out = $("#ai-test-out", ROOT);

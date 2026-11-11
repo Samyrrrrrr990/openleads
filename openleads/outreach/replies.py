@@ -7,14 +7,15 @@ with the subject, a snippet of the new text, a category and the Message-ID), so
 Today can show it and nothing is stored twice.
 
 Rules sort bounce, out of office and unsubscribe (which suppresses the address).
-The rest is "needs you" or "not interested": a connected model
-(:mod:`openleads.ai`) makes that call and suggests a short answer for the ones that
-need you; without one, simple phrases decide. A reply stops waiting once you've
+The rest is "needs you" or "not interested" by simple phrases. A model you picked
+(:mod:`openleads.ai`) can raise a reply to "needs you" and suggest a short answer;
+when it thinks a reply is a no, the reply still waits, labelled "looks like a no". A reply stops waiting once you've
 answered it (a later email to that address, or your reply found in the Sent
 folder), marked it done, or snoozed it.
 """
 from __future__ import annotations
 
+import contextlib
 import html
 import re
 import time
@@ -81,19 +82,38 @@ _MODEL_SYSTEM = (
     'say "I\'ll check" instead). Empty for not_interested.')
 
 
+_BUDGET = [None]       # model calls left in this scan (None = no limit)
+
+
+@contextlib.contextmanager
+def model_budget(n: int | None):
+    """At most ``n`` replies sorted by the model inside the block (the rest use rules)."""
+    saved = _BUDGET[0]
+    _BUDGET[0] = n
+    try:
+        yield
+    finally:
+        _BUDGET[0] = saved
+
+
 def _model_sort(subject: str, body: str) -> dict | None:
-    """``{category, suggestion, sorted_by}`` from the connected model, or None."""
+    """``{category, suggestion, sorted_by}`` from the model you picked, or None."""
     from openleads import ai, settings
-    m = ai.resolve()
+    if _BUDGET[0] is not None and _BUDGET[0] <= 0:
+        return None
+    m = ai.chosen()
     if m is None:
         return None
+    if _BUDGET[0] is not None:
+        _BUDGET[0] -= 1
     sender = {k: settings.get(k) or "" for k in ("sender_name", "sender_org", "sender_context")}
     user = (f"What the sender offers: {sender['sender_context'] or 'not given'}\n"
             f"Subject: {subject or ''}\n\nTheir reply:\n{new_text(body)[:3000]}")
     try:
         out = ai.parse_json(ai.chat([{"role": "system", "content": _MODEL_SYSTEM},
                                      {"role": "user", "content": user}], m,
-                                    max_tokens=300, temperature=0.2))
+                                    max_tokens=300, temperature=0.2, untrusted=True,
+                                    timeout=ai.SHORT_JOB))
     except ai.AIError:
         return None
     category = str(out.get("category") or "")
@@ -124,9 +144,13 @@ def record(db, email: str, subject: str, body: str, message_id: str, received: f
             "message_id": message_id or "", "received": float(received)}
     if category in ("needs_you", "not_interested"):
         sorted_ = _model_sort(subject, body)
-        if sorted_:
-            category = sorted_["category"]
+        if sorted_ and sorted_["category"] == "needs_you":
+            category = "needs_you"                 # the model may raise a reply...
             data.update(sorted_)
+        elif sorted_ and category == "needs_you":
+            # ...but never hide one: a model mistake must not drop a hot lead.
+            data.update(likely_no=True, suggestion="", sorted_by=sorted_["sorted_by"])
+        data["category"] = category
     activity.log(db, "contact", email, "reply", data["snippet"] or subject or "", data,
                  ts=float(received))
     if category == "unsubscribe":
@@ -190,5 +214,6 @@ def waiting(db, now: float | None = None) -> list:
                     "organization": lead.get("organization") or "",
                     "subject": data.get("subject", ""), "snippet": data.get("snippet", ""),
                     "suggestion": data.get("suggestion", ""),
+                    "likely_no": bool(data.get("likely_no")),
                     "received": ts, "message_id": data.get("message_id", "")})
     return out

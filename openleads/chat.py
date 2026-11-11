@@ -357,11 +357,12 @@ def _run_assistant(text: str, sess: Session, console):
         print(f"    {i}. {step}")
     if plan.kind == "unsupported":
         return
+    strict = getattr(plan, "needs_yes", False)    # the model read more into it
     try:
-        reply = input("  Run it? [Y/n] ").strip().lower()
+        reply = input("  Run it? [y/N] " if strict else "  Run it? [Y/n] ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         reply = "n"
-    if reply not in ("", "y", "yes"):
+    if reply not in (("y", "yes") if strict else ("", "y", "yes")):
         print("  Nothing ran.")
         return
     result = ask.run_plan(plan, db=sess.db)

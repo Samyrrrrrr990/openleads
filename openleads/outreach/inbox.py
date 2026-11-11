@@ -46,7 +46,17 @@ def parse_bounced_recipient(raw_message: str, known: set[str] | None = None) -> 
     return None
 
 
+SCAN_MODEL_BUDGET = 10      # replies one scan may sort with your model; the rest use rules
+
+
 def scan(db=None, days: int = 21, overrides: dict | None = None) -> dict:
+    """Scan recent inbox mail; mark replied/bounced leads and keep reply text.
+    At most :data:`SCAN_MODEL_BUDGET` new replies are sorted by your model per scan."""
+    with replies.model_budget(SCAN_MODEL_BUDGET):
+        return _scan(db, days, overrides)
+
+
+def _scan(db=None, days: int = 21, overrides: dict | None = None) -> dict:
     """Scan recent inbox mail; mark replied/bounced leads and keep reply text.
 
     Safe to call repeatedly: a reply already kept (same Message-ID) isn't added

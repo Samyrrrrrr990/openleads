@@ -615,8 +615,31 @@ def ai_test(db, p):
                         {"role": "user", "content": "Are you there?"}], m, max_tokens=20,
                        temperature=0)
     except ai.AIError as e:
-        return {"ok": False, "detail": str(e)[:300]}
+        return {"ok": False, "detail": ai.public_error(str(e))}
     return {"ok": True, "detail": f"{m.label} answered {text[:30]!r} in {time.time() - t0:.1f}s"}
+
+
+@route(POST, "/api/ai/use")
+def ai_use(db, p):
+    """Switch the model, but only if it answers a test message (like `setup ai`)."""
+    from openleads import ai, cli_ai
+    from openleads import settings as st
+    provider = str(p.get("provider") or "").lower()
+    if provider not in cli_ai.CHOICES:
+        raise ValueError(f"unknown provider '{provider}'")
+    if provider == "off":
+        st.set("ai_provider", "off")
+        return {"ok": True, "detail": "No model: built-in rules do the work."}
+    m = ai.resolve({"ai_provider": provider, "ai_provider_model": ""})
+    if m is None:
+        return {"ok": False, "detail": ai.problem_for(provider)}
+    ok, detail = cli_ai.test_call(m)
+    if not ok:
+        return {"ok": False, "detail": ai.public_error(detail)}
+    st.set("ai_provider", provider)
+    if provider not in ("openrouter", "ollama", "custom"):
+        st.set("ai_provider_model", "")
+    return {"ok": True, "detail": f"{m.label} {detail}"}
 
 
 @route(GET, "/api/writing/meta")
