@@ -194,3 +194,28 @@ def test_demo_workspace_has_a_morning_to_show(db):
     assert b["counts"]["replies"] >= 2 and b["counts"]["drafts"] >= 2
     assert all("—" not in d["body"] and "–" not in d["body"] for d in b["drafts"])
     assert drafts.waiting(db)[0]["ref"]["campaign"] == "demo"
+
+
+# --- 5.4: the model ---------------------------------------------------------------- #
+def _msgs(db, now=NOW):
+    return [h["message"] for h in today.briefing(db, now=now)["heads_up"]]
+
+
+def test_heads_up_when_a_subscription_is_here_but_not_chosen(db, monkeypatch):
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude" if name == "claude" else None)
+    assert any("setup ai" in m and "Claude" in m for m in _msgs(db))
+
+
+def test_no_model_hint_once_chosen_or_turned_off(db, monkeypatch, set_setting):
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude")
+    set_setting("ai_provider", "off")
+    assert not any("setup ai" in m for m in _msgs(db))
+
+
+def test_heads_up_when_the_chosen_model_is_missing(db, monkeypatch, set_setting):
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: None)
+    set_setting("ai_provider", "codex")
+    assert any("codex" in m and "isn't on PATH" in m for m in _msgs(db))

@@ -49,6 +49,22 @@ def _bounce_line(db, now: float) -> dict | None:
                                        "Check your list before sending more."}
 
 
+def _model_line() -> dict | None:
+    """The chosen model is broken, or a subscription is here and nobody picked it."""
+    from openleads import ai
+    problem = ai.problem()
+    if problem:
+        return {"level": "warn", "message": f"Your model isn't working: {problem}"}
+    if str(settings.get("ai_provider") or "auto").lower() != "auto" or ai.resolve() is not None:
+        return None
+    subs = [d for d in ai.detect(probe=False) if d["kind"] == "subscription"]
+    if not subs:
+        return None
+    name = "Claude" if subs[0]["provider"] == "claude" else "ChatGPT (Codex)"
+    return {"level": "info", "message": f"{name} is installed here. `openleads setup ai` lets "
+                                        "OpenLeads use it to read requests, write emails and sort replies."}
+
+
 def _heads_up(db, now: float) -> list:
     out = []
     if not settings.get("smtp_host"):
@@ -72,6 +88,9 @@ def _heads_up(db, now: float) -> list:
         if run["status"] == "error" and (run["started"] or 0) >= now - DAY:
             error = (run.get("error") or "unknown error").strip().rstrip(".")
             out.append({"level": "warn", "message": f"Workflow {run['workflow']} failed: {error}."})
+    model = _model_line()
+    if model:
+        out.append(model)
     held = int(db.scalar("SELECT COUNT(*) FROM activity WHERE kind='presend_hold' AND ts >= ?",
                          (now - DAY,), default=0) or 0)
     if held:

@@ -28,6 +28,11 @@ def _no_live_http(monkeypatch):
     from openleads.sources import local
     local.BREAKER.reset()
     monkeypatch.setattr(local, "_sleep", lambda s: None)
+    # What's installed on the machine running the tests (a claude or codex CLI, an
+    # Ollama server) must not change results: tests that need one patch it back.
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: None)
+    monkeypatch.setattr(ai, "_ollama_models", lambda timeout=0.4: [])
     yield
 
 
