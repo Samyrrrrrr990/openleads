@@ -68,3 +68,19 @@ def test_find_request_uses_find_output(capsys, monkeypatch):
 def test_known_commands_unchanged(capsys):
     assert cli.main(["today", "--json"]) == 0
     assert "counts" in json.loads(capsys.readouterr().out)
+
+
+@pytest.mark.parametrize("argv,match", [(["fnd", "dentists in Austin"], "find"),
+                                        (["peple"], "people"), (["todya", "--json"], "today")])
+def test_typo_with_arguments_is_still_a_typo(capsys, stub_run_plan, argv, match):
+    assert cli.main(argv) == 2
+    assert f"Did you mean `openleads {match}`" in capsys.readouterr().err and stub_run_plan == []
+
+
+@pytest.mark.parametrize("words", [["dentists", "in", "Austin"], ["email", "10", "founders"],
+                                   ["tag", "everyone", "from", "Stripe"]])
+def test_plain_requests_are_not_typos(capsys, monkeypatch, stub_run_plan, words):
+    monkeypatch.setattr(cli, "cmd_find", lambda args: 0)
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    cli.main(words)
+    assert "Did you mean" not in capsys.readouterr().err

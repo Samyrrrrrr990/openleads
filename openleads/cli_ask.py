@@ -23,7 +23,7 @@ def route(argv: list, known: set) -> str:
     first = argv[0]
     if first in known or first.startswith("-"):
         return "command"
-    if len(argv) == 1 and " " not in first:
+    if " " not in first:          # `openleads fnd "x"` is a typo, not a request
         match = difflib.get_close_matches(first, sorted(known), n=1, cutoff=0.75)
         if match:
             return f"typo:{match[0]}"
