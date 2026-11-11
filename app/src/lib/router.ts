@@ -57,7 +57,7 @@ export function navigate(...parts: string[]) {
   window.location.hash = href(...parts);
 }
 
-/** A page in the classic dashboard, for the few screens the app doesn't have yet. */
-export function classic(path: string): string {
-  return `/classic/#/${path.replace(/^\/+/, "")}`;
+/** A classic-dashboard screen shown inside the app, under one of the six sections. */
+export function classic(section: string, path: string): string {
+  return `#/${section}/classic/${encodeURIComponent(path.replace(/^\/+/, ""))}`;
 }

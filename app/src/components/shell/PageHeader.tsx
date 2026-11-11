@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { href } from "~/lib/router";
 import { cn } from "~/lib/utils";
 
-import { classic } from "~/lib/router";
 import { type Section } from "./sections";
 
 /** The 52px bar on top of every screen: title, the section's pages as tabs, actions. */
@@ -28,7 +27,7 @@ export function PageHeader({
             return (
               <a
                 key={p.key}
-                href={p.classic ? classic(p.classic) : href(section.key, p.key)}
+                href={href(section.key, p.key)}
                 aria-current={on ? "page" : undefined}
                 className={cn(
                   "h-7 shrink-0 rounded-md px-2.5 text-[13px] leading-7 text-muted-foreground transition-colors hover:text-foreground",
@@ -36,7 +35,6 @@ export function PageHeader({
                 )}
               >
                 {p.label}
-                {p.classic && <span className="ms-1 text-2xs opacity-60">↗</span>}
               </a>
             );
           })}

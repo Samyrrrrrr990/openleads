@@ -1157,3 +1157,7 @@ details > summary { cursor: pointer; }
 
 /* Today: the model's one-line read of the morning */
 .home-line { margin: 6px 0 0; max-width: 68ch; color: var(--text); font-size: 13.5px; line-height: 1.5; }
+
+/* Shown inside the 5.5 app: no sidebar of its own, no boot splash. */
+html.embed .app { grid-template-columns: 1fr; }
+html.embed .nav, html.embed .boot { display: none; }

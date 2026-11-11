@@ -210,3 +210,30 @@ def test_web_copy_never_tells_you_to_type_a_command(base, monkeypatch):
 def test_terminal_answers_keep_their_commands():
     assert "openleads today" in ask.answer({"ok": True, "leads": 2, "verified": 2,
                                             "drafts_waiting": 2})
+
+
+# --- the app shows classic screens inside itself ------------------------------- #
+def test_only_the_classic_dashboard_can_be_framed_and_only_by_this_origin(app_dir, base):
+    _, headers, _ = get(base, "/classic/")
+    assert headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert "frame-ancestors 'self'" in headers["Content-Security-Policy"]
+    for path in ("/", "/assets/index-abc123.js", "/api/state", "/api/nope"):
+        _, headers, _ = get(base, path)
+        assert headers["X-Frame-Options"] == "DENY", path
+        assert "frame-ancestors 'none'" in headers["Content-Security-Policy"], path
+
+
+def test_classic_at_home_is_not_frameable(tmp_path, monkeypatch, base):
+    """Without a build the classic dashboard is the top-level page: nothing frames it."""
+    monkeypatch.setattr(srv, "APP_DIR", tmp_path / "missing")
+    _, headers, _ = get(base, "/")
+    assert headers["X-Frame-Options"] == "DENY"
+
+
+def test_the_app_page_has_no_inline_script():
+    """The server's CSP is script-src 'self': an inline script would silently not run."""
+    import pathlib
+    import re
+    html = (pathlib.Path(__file__).resolve().parent.parent / "app" / "index.html").read_text()
+    for tag in re.findall(r"<script\b[^>]*>(.*?)</script>", html, re.S):
+        assert not tag.strip(), "inline script in app/index.html"

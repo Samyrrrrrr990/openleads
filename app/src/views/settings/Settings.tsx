@@ -136,7 +136,7 @@ export function Model() {
               </dl>
               <p className="mt-4 text-[13px] text-muted-foreground">
                 API keys, the model name and a custom endpoint are under{" "}
-                <a className="text-foreground underline underline-offset-2" href={classic("settings/ai")}>
+                <a className="text-foreground underline underline-offset-2" href={classic("settings", "settings/ai")}>
                   All settings
                 </a>
                 .

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
-const KEY = "openleads.theme";
+// Shared with the classic dashboard, so a screen embedded from it follows along.
+const KEY = "ol-theme";
 type Theme = "light" | "dark";
 const listeners = new Set<() => void>();
 

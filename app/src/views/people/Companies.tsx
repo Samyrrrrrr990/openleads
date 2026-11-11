@@ -69,7 +69,7 @@ export function Companies() {
                 </TableHeader>
                 <TableBody>
                   {data.rows.map((c) => (
-                    <TableRow key={c.domain} className="cursor-pointer" onClick={() => window.location.assign(classic(`companies/${encodeURIComponent(c.domain)}`))}>
+                    <TableRow key={c.domain} className="cursor-pointer" onClick={() => (window.location.hash = classic("people", `companies/${encodeURIComponent(c.domain)}`))}>
                       <TableCell>
                         <span className="font-medium">{c.name || c.domain}</span>
                         <span className="ms-2 text-xs text-muted-foreground">{c.domain}</span>

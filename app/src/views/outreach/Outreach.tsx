@@ -92,7 +92,7 @@ export function Sequences() {
         section={SECTION}
         page="sequences"
         actions={
-          <Button size="sm" render={<a href={classic("sequences")} />}>
+          <Button size="sm" render={<a href={classic("outreach", "sequences")} />}>
             New sequence
           </Button>
         }
@@ -104,7 +104,7 @@ export function Sequences() {
         {list.map((s) => (
           <section key={s.id} className="rounded-xl border border-border bg-card">
             <div className="flex items-center gap-2.5 px-4 pt-3.5">
-              <a href={classic(`sequences/${s.id}`)} className="font-medium hover:underline">
+              <a href={classic("outreach", `sequences/${s.id}`)} className="font-medium hover:underline">
                 {s.name}
               </a>
               <Badge variant={s.status === "active" ? "success" : "secondary"}>{s.status === "active" ? "Running" : s.status === "paused" ? "Paused" : s.status}</Badge>
@@ -153,7 +153,7 @@ export function Templates() {
         section={SECTION}
         page="templates"
         actions={
-          <Button size="sm" variant="outline" render={<a href={classic("templates")} />}>
+          <Button size="sm" variant="outline" render={<a href={classic("outreach", "templates")} />}>
             Edit templates
           </Button>
         }
@@ -164,7 +164,7 @@ export function Templates() {
         {res.data && list.length === 0 && <Quiet>No templates yet.</Quiet>}
         <div className="grid gap-3 sm:grid-cols-2">
           {list.map((t) => (
-            <a key={t.id} href={classic("templates")} className="flex flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-input">
+            <a key={t.id} href={classic("outreach", "templates")} className="flex flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-input">
               <div className="flex items-center gap-2">
                 <span className="truncate font-medium">{t.name}</span>
                 {t.category && <Badge variant="secondary">{t.category}</Badge>}

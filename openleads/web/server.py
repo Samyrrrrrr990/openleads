@@ -134,10 +134,12 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     # ---- helpers ------------------------------------------------------- #
-    def _security_headers(self) -> None:
+    def _security_headers(self, frameable: bool = False) -> None:
+        """``frameable``: the classic dashboard under /classic/, which the app shows
+        inside itself. Only this same origin may frame it; nothing else is frameable."""
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
-        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Frame-Options", "SAMEORIGIN" if frameable else "DENY")
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         # Same-origin only; no third-party anything. The app is fully local.
@@ -145,7 +147,7 @@ class Handler(BaseHTTPRequestHandler):
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
             "script-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'none'; "
-            "form-action 'none'; frame-ancestors 'none'",
+            "form-action 'none'; frame-ancestors " + ("'self'" if frameable else "'none'"),
         )
 
     def _refuse(self, status, message: str) -> None:
@@ -213,7 +215,8 @@ class Handler(BaseHTTPRequestHandler):
         classic = STATIC_DIR.resolve()
         if path == "/classic":
             path = "/classic/"
-        if path.startswith("/classic/"):
+        framed = path.startswith("/classic/")
+        if framed:
             root, rel = classic, path[len("/classic/"):]
         elif CLASSIC or not (app / "index.html").is_file():
             root, rel = classic, path.lstrip("/")
@@ -237,7 +240,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "public, max-age=31536000, immutable")
         else:
             self.send_header("Cache-Control", "no-cache")
-        self._security_headers()
+        self._security_headers(frameable=framed)
         self.end_headers()
         self.wfile.write(body)
 

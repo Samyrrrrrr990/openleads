@@ -98,7 +98,7 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
         <span className="text-xs text-muted-foreground">Fit {c.fit_score}</span>
         {c.tier === "risky" && <span className="text-xs text-warning-foreground">Risky address</span>}
         {detail.data.suppressed && <span className="text-xs text-error-foreground">Unsubscribed</span>}
-        <Button size="xs" variant="outline" className="ms-auto" render={<a href={classic(`people/${encodeURIComponent(c.email)}`)} />}>
+        <Button size="xs" variant="outline" className="ms-auto" render={<a href={classic("people", `people/${encodeURIComponent(c.email)}`)} />}>
           Full record
         </Button>
       </div>

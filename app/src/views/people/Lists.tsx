@@ -31,7 +31,7 @@ export function Lists({ open, person }: { open?: string; person?: string }) {
         section={sectionOf("people")}
         page="lists"
         actions={
-          <Button size="sm" variant="outline" render={<a href={classic("lists")} />}>
+          <Button size="sm" variant="outline" render={<a href={classic("people", "lists")} />}>
             Manage lists
           </Button>
         }
@@ -44,7 +44,7 @@ export function Lists({ open, person }: { open?: string; person?: string }) {
           {lists.map((l) => (
             <a
               key={l.id}
-              href={l.kind === "companies" ? classic(`lists/${l.id}`) : href("people", "lists", String(l.id))}
+              href={l.kind === "companies" ? classic("people", `lists/${l.id}`) : href("people", "lists", String(l.id))}
               className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-input"
             >
               <div className="flex items-center gap-2">

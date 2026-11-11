@@ -233,7 +233,7 @@ function HeadsUpList({ items }: { items: HeadsUp[] }) {
                   Choose a model
                 </a>
               ) : h.message.includes("openleads setup") ? (
-                <a className="text-foreground underline underline-offset-2" href="/classic/#/settings">
+                <a className="text-foreground underline underline-offset-2" href={href("settings", "all")}>
                   Open settings
                 </a>
               ) : null}

@@ -6,16 +6,7 @@
     <meta name="color-scheme" content="light dark" />
     <title>OpenLeads</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <script>
-      // Set the theme before first paint so dark mode never flashes white.
-      (function () {
-        try {
-          var t = localStorage.getItem("openleads.theme");
-          var dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-          document.documentElement.classList.toggle("dark", dark);
-        } catch (e) {}
-      })();
-    </script>
+    <script src="./theme.js"></script>
   </head>
   <body>
     <div id="root"></div>

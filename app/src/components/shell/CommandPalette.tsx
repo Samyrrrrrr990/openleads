@@ -21,7 +21,7 @@ import {
 import { Kbd } from "~/components/ui/kbd";
 import { api } from "~/lib/api";
 import { askFor } from "~/lib/requests";
-import { classic, navigate } from "~/lib/router";
+import { navigate } from "~/lib/router";
 import { toggleTheme } from "~/lib/theme";
 import type { Page, Person } from "~/lib/types";
 
@@ -45,8 +45,8 @@ function destinations(): Entry[] {
         id: `go:${s.key}/${p.key}`,
         label: p.label,
         hint: s.label,
-        icon: p.classic ? ExternalLinkIcon : ArrowRightIcon,
-        run: () => (p.classic ? window.location.assign(classic(p.classic)) : navigate(s.key, p.key)),
+        icon: ArrowRightIcon,
+        run: () => navigate(s.key, p.key),
       });
     }
   }

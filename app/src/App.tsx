@@ -15,7 +15,7 @@ import { Lists } from "~/views/people/Lists";
 import { People } from "~/views/people/People";
 import { Activity, Deals, Tasks } from "~/views/pipeline/Pipeline";
 import { Doctor, Model } from "~/views/settings/Settings";
-import { Soon } from "~/views/Soon";
+import { Embedded } from "~/views/Embedded";
 import { Today } from "~/views/today/Today";
 import { Workflows } from "~/views/Workflows";
 
@@ -24,6 +24,8 @@ function Screen() {
   const section = sectionOf(route.section);
   const page = route.rest[0] ?? section.pages[0]?.key;
   const arg = route.rest[1];
+  // "#/<section>/classic/<path>": a classic screen under this section.
+  if (route.rest[0] === "classic" && arg) return <Embedded section={section} path={arg} label={section.label} />;
   switch (`${section.key}/${page ?? ""}`) {
     case "today/":
       return <Today />;
@@ -52,8 +54,8 @@ function Screen() {
     case "settings/doctor":
       return <Doctor />;
     default: {
-      const p = section.pages.find((x) => x.key === page);
-      return <Soon section={section} page={page} label={p?.label ?? section.label} classicPath={p?.classic ?? section.key} />;
+      const p = section.pages.find((x) => x.key === page) ?? section.pages[0];
+      return <Embedded section={section} page={p?.key} path={p?.classic ?? section.key} label={p?.label ?? section.label} />;
     }
   }
 }
@@ -101,6 +103,15 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // An embedded classic screen asks for the palette when you press ⌘K inside it.
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin === window.location.origin && (e.data as { openleads?: string } | null)?.openleads === "palette") setPalette(true);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
   }, []);
 
   useEffect(() => {

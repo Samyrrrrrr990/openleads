@@ -88,7 +88,7 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
         section={sectionOf("people")}
         page={listId ? "lists" : "people"}
         actions={
-          <Button size="sm" render={<a href="/classic/#/prospect" />}>
+          <Button size="sm" render={<a href={href("people", "find")} />}>
             Find people
           </Button>
         }

@@ -53,7 +53,7 @@ export function Workflows() {
       <PageHeader
         section={sectionOf("workflows")}
         actions={
-          <Button size="sm" render={<a href={classic("workflows")} />}>
+          <Button size="sm" render={<a href={classic("workflows", "workflows")} />}>
             New workflow
           </Button>
         }
@@ -69,7 +69,7 @@ export function Workflows() {
           <section key={w.name} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <a href={classic(`workflows/${encodeURIComponent(w.name)}`)} className="font-medium hover:underline">
+                <a href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)} className="font-medium hover:underline">
                   {w.name}
                 </a>
                 <Badge variant="secondary">{w.when || "run by hand"}</Badge>
@@ -79,7 +79,7 @@ export function Workflows() {
               {w.description && <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground">{w.description}</p>}
               <p className="mt-2 text-xs text-muted-foreground">
                 {w.nodes} steps. Last run: {when(w.last_run_at)}.{" "}
-                <a className="text-foreground hover:underline" href={classic(`workflows/${encodeURIComponent(w.name)}`)}>
+                <a className="text-foreground hover:underline" href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)}>
                   Open the editor
                 </a>
               </p>

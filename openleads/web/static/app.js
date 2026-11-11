@@ -25,6 +25,7 @@ import "./js/views/settings.js";
 import "./js/views/scoring.js";
 import "./js/views/datatab.js";
 import "./js/views/doctor.js";
+import "./js/embed.js";
 import "./js/palette.js";
 
 const NAV = [

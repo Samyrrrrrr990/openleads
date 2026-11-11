@@ -55,7 +55,7 @@ export function Deals() {
         section={SECTION}
         page="deals"
         actions={
-          <Button size="sm" render={<a href={classic("deals")} />}>
+          <Button size="sm" render={<a href={classic("pipeline", "deals")} />}>
             New deal
           </Button>
         }
