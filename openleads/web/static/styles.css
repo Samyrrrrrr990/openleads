@@ -1,11 +1,11 @@
 /* =========================================================================
    OpenLeads workspace — design system
-   Ink on paper. One typeface (Atkinson Hyperlegible, bundled: an email
-   address you misread is an email that bounces). Color means state; a single
-   cobalt marks focus and selection. No card shadows, no decoration: rules,
-   spacing and type carry the structure. The one signature is the evidence
-   mark — ■ found, ◩ pattern, □ guessed — colored by deliverability.
-   Everything here is offline: no CDN, no remote fonts.
+   Quiet, native-feeling chrome in the spirit of T3 Code: the system font,
+   zinc greys, a near-black dark mode with hairline white borders, and one
+   blue for primary actions, focus and selection. Color means state. The one
+   signature is the evidence mark — ■ found, ◩ pattern, □ guessed — colored
+   by deliverability. Email addresses are set in Atkinson Hyperlegible (bundled)
+   so l, I and 1 never look alike. Offline: no CDN, no remote fonts.
    ========================================================================= */
 
 @font-face {
@@ -28,33 +28,35 @@
 :root {
   color-scheme: light;
   /* surfaces */
-  --bg: #ffffff;
-  --panel: #ffffff;
-  --panel-2: #f7f7f8;     /* the rail: sidebar, filter column */
-  --panel-3: #eff0f2;     /* wash: active nav, chips, keys */
-  --hover: #f4f5f6;
-  --line: #e9eaed;
-  --line-2: #dcdee2;
-  --line-strong: #c3c7cd;
-  --overlay: rgba(16, 18, 22, .26);
+  --bg: #fcfcfc;          /* zinc-25 canvas */
+  --panel: #ffffff;       /* cards */
+  --panel-2: #fafafa;     /* the rail: sidebar, filter column (zinc-50) */
+  --panel-3: #f4f4f5;     /* wash: chips, keys (zinc-100) */
+  --hover: #f4f4f5;
+  --line: #e4e4e7;        /* zinc-200 */
+  --line-2: #d4d4d8;      /* zinc-300: inputs */
+  --line-strong: #a1a1aa;
+  --overlay: rgba(9, 9, 11, .28);
 
   /* ink */
-  --text: #15171c;
-  --muted: #5b606a;
-  --faint: #8c919b;
+  --text: #18181b;        /* zinc-900 */
+  --muted: #71717a;       /* zinc-500 */
+  --faint: #8e8e97;
   --inverse: #ffffff;
 
-  /* the one accent: focus and selection */
-  --accent: #2f5ad3;
-  --accent-hover: #2549b8;
-  --accent-ink: #2a52c4;
-  --accent-wash: #eef2fd;
-  --ring: 0 0 0 3px rgba(47, 90, 211, .26);
+  /* the one accent: primary actions, focus and selection */
+  --accent: #1b4ed8;
+  --accent-hover: #113fbb;
+  --accent-ink: #1b4ed8;
+  --accent-wash: #eef3fe;
+  --ring: 0 0 0 3px rgba(27, 78, 216, .24);
 
   /* primary action */
-  --btn: #15171c;
-  --btn-hover: #2c2f36;
+  --btn: #1b4ed8;
+  --btn-hover: #113fbb;
   --btn-ink: #ffffff;
+  --nav-active: #ffffff;
+  --nav-active-line: #e4e4e7;
 
   /* state: fg / bg / mark */
   --good: #1b7a44;   --good-bg: #ecf6f0;   --good-dot: #23964f;
@@ -71,7 +73,7 @@
   --series-1-wash: rgba(46, 50, 58, .06);
   --grid: #eeeff1;
   --axis: #c9ccd1;
-  --ramp-250: #c9ccd1; --ramp-350: #9aa0aa; --ramp-450: #2e323a; --ramp-550: #2f5ad3;
+  --ramp-250: #c9ccd1; --ramp-350: #9aa0aa; --ramp-450: #2e323a; --ramp-550: #1b4ed8;
 
   --radius: 8px;
   --radius-sm: 6px;
@@ -81,8 +83,10 @@
   --shadow: 0 1px 2px rgba(16, 18, 22, .05), 0 12px 32px -12px rgba(16, 18, 22, .22);
   --shadow-lg: 0 28px 64px -20px rgba(16, 18, 22, .34);
 
-  --font: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font: -apple-system, BlinkMacSystemFont, "Inter Variable", "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  /* email addresses keep Atkinson Hyperlegible: l, I and 1 never look alike */
+  --font-addr: "Atkinson Hyperlegible Next", var(--font);
 
   --nav-w: 224px;
   --ease: cubic-bezier(.2, .7, .2, 1);
@@ -91,22 +95,24 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #131418; --panel: #131418; --panel-2: #17181d; --panel-3: #202128;
-    --hover: #1b1c22; --line: #25272d; --line-2: #2f3138; --line-strong: #464952;
-    --overlay: rgba(0, 0, 0, .55);
-    --text: #e8e9ed; --muted: #a2a6af; --faint: #737882; --inverse: #131418;
-    --accent: #8da6f6; --accent-hover: #a6b9f8; --accent-ink: #9db2f7; --accent-wash: #1b2241;
-    --ring: 0 0 0 3px rgba(141, 166, 246, .32);
-    --btn: #e8e9ed; --btn-hover: #ffffff; --btn-ink: #131418;
+    --bg: #000000; --panel: #111111; --panel-2: #0b0b0b; --panel-3: #1c1c1f;
+    --hover: rgba(255, 255, 255, .05); --line: rgba(255, 255, 255, .08);
+    --line-2: rgba(255, 255, 255, .11); --line-strong: rgba(255, 255, 255, .2);
+    --overlay: rgba(0, 0, 0, .6);
+    --text: #f1f3f7; --muted: #a3a3a3; --faint: #737373; --inverse: #000000;
+    --accent: #5588fb; --accent-hover: #77a2fc; --accent-ink: #77a2fc; --accent-wash: #0f1b3d;
+    --ring: 0 0 0 3px rgba(52, 107, 241, .38);
+    --btn: #346bf1; --btn-hover: #5588fb; --btn-ink: #ffffff;
+    --nav-active: rgba(255, 255, 255, .07); --nav-active-line: rgba(255, 255, 255, .06);
     --good: #5cc98a; --good-bg: #13241a; --good-dot: #33a865;
     --info: #9db2f7; --info-bg: #1b2241; --info-dot: #6f8ef0;
     --warn: #e4a84e; --warn-bg: #2a2112; --warn-dot: #cf8f22;
     --bad: #f2857a; --bad-bg: #2c1715; --bad-dot: #de4c3f;
     --neutral: #a2a6af; --neutral-bg: #202128; --neutral-dot: #5d616b;
     --violet: #ab9cf2; --violet-bg: #221c3a;
-    --chart-surface: #131418; --series-1: #cfd2d8; --series-2: #6c717c;
+    --chart-surface: #111111; --series-1: #cfd2d8; --series-2: #6c717c;
     --series-1-wash: rgba(207, 210, 216, .07); --grid: #22242a; --axis: #3a3d44;
-    --ramp-250: #3a3d44; --ramp-350: #6c717c; --ramp-450: #cfd2d8; --ramp-550: #8da6f6;
+    --ramp-250: #3a3d44; --ramp-350: #6c717c; --ramp-450: #cfd2d8; --ramp-550: #5588fb;
     --shadow-xs: 0 1px 1px rgba(0, 0, 0, .4);
     --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px -12px rgba(0, 0, 0, .7);
     --shadow-lg: 0 28px 64px -20px rgba(0, 0, 0, .8);
@@ -114,22 +120,24 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #131418; --panel: #131418; --panel-2: #17181d; --panel-3: #202128;
-  --hover: #1b1c22; --line: #25272d; --line-2: #2f3138; --line-strong: #464952;
-  --overlay: rgba(0, 0, 0, .55);
-  --text: #e8e9ed; --muted: #a2a6af; --faint: #737882; --inverse: #131418;
-  --accent: #8da6f6; --accent-hover: #a6b9f8; --accent-ink: #9db2f7; --accent-wash: #1b2241;
-  --ring: 0 0 0 3px rgba(141, 166, 246, .32);
-  --btn: #e8e9ed; --btn-hover: #ffffff; --btn-ink: #131418;
+  --bg: #000000; --panel: #111111; --panel-2: #0b0b0b; --panel-3: #1c1c1f;
+  --hover: rgba(255, 255, 255, .05); --line: rgba(255, 255, 255, .08);
+  --line-2: rgba(255, 255, 255, .11); --line-strong: rgba(255, 255, 255, .2);
+  --overlay: rgba(0, 0, 0, .6);
+  --text: #f1f3f7; --muted: #a3a3a3; --faint: #737373; --inverse: #000000;
+  --accent: #5588fb; --accent-hover: #77a2fc; --accent-ink: #77a2fc; --accent-wash: #0f1b3d;
+  --ring: 0 0 0 3px rgba(52, 107, 241, .38);
+  --btn: #346bf1; --btn-hover: #5588fb; --btn-ink: #ffffff;
+  --nav-active: rgba(255, 255, 255, .07); --nav-active-line: rgba(255, 255, 255, .06);
   --good: #5cc98a; --good-bg: #13241a; --good-dot: #33a865;
   --info: #9db2f7; --info-bg: #1b2241; --info-dot: #6f8ef0;
   --warn: #e4a84e; --warn-bg: #2a2112; --warn-dot: #cf8f22;
   --bad: #f2857a; --bad-bg: #2c1715; --bad-dot: #de4c3f;
   --neutral: #a2a6af; --neutral-bg: #202128; --neutral-dot: #5d616b;
   --violet: #ab9cf2; --violet-bg: #221c3a;
-  --chart-surface: #131418; --series-1: #cfd2d8; --series-2: #6c717c;
+  --chart-surface: #111111; --series-1: #cfd2d8; --series-2: #6c717c;
   --series-1-wash: rgba(207, 210, 216, .07); --grid: #22242a; --axis: #3a3d44;
-  --ramp-250: #3a3d44; --ramp-350: #6c717c; --ramp-450: #cfd2d8; --ramp-550: #8da6f6;
+  --ramp-250: #3a3d44; --ramp-350: #6c717c; --ramp-450: #cfd2d8; --ramp-550: #5588fb;
   --shadow-xs: 0 1px 1px rgba(0, 0, 0, .4);
   --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px -12px rgba(0, 0, 0, .7);
   --shadow-lg: 0 28px 64px -20px rgba(0, 0, 0, .8);
@@ -178,8 +186,8 @@ code, .mono { font-family: var(--mono); font-size: .92em; }
   background: var(--panel-2); border-right: 1px solid var(--line);
 }
 .nav__brand { display: flex; align-items: center; gap: 9px; padding: 16px 16px 12px; }
-.logo { width: 22px; height: 22px; border-radius: 6px; background: var(--text);
-        display: grid; place-items: center; color: var(--bg); flex: none; }
+.logo { width: 22px; height: 22px; border-radius: 6px; background: var(--btn);
+        display: grid; place-items: center; color: #fff; flex: none; }
 .logo svg { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2.6; fill: none; }
 .wordmark { font-weight: 650; font-size: 15px; letter-spacing: -0.01em; }
 .wordmark b { color: inherit; font-weight: 650; }
@@ -199,7 +207,8 @@ code, .mono { font-family: var(--mono); font-size: .92em; }
   border-radius: var(--radius-sm); color: var(--muted); font-weight: 500; cursor: pointer; position: relative;
 }
 .navlink:hover { background: var(--hover); color: var(--text); }
-.navlink.is-active { background: var(--panel-3); color: var(--text); }
+.navlink.is-active { background: var(--nav-active); color: var(--text);
+                     box-shadow: inset 0 0 0 1px var(--nav-active-line), var(--shadow-xs); }
 .navlink .ico { color: inherit; opacity: .9; }
 .navlink__count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--bad);
                   font-variant-numeric: tabular-nums; }
@@ -240,7 +249,8 @@ code, .mono { font-family: var(--mono); font-size: .92em; }
 .btn .ico { opacity: .8; }
 .btn:hover { background: var(--hover); border-color: var(--line-strong); }
 .btn:disabled, .btn.is-disabled { opacity: .45; pointer-events: none; }
-.btn--primary, .btn--accent { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+.btn--primary, .btn--accent { background: var(--btn); color: var(--btn-ink); border-color: var(--btn);
+                              box-shadow: inset 0 1px rgba(255, 255, 255, .16), var(--shadow-xs); }
 .btn--primary .ico, .btn--accent .ico { opacity: 1; }
 .btn--primary:hover, .btn--accent:hover { background: var(--btn-hover); border-color: var(--btn-hover); }
 .btn--destroy { background: var(--bad); color: #fff; border-color: var(--bad); }
@@ -465,6 +475,7 @@ a.figure:hover .figure__value { color: var(--accent-ink); }
 .cell-person .name { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .cell-person .sub { font-size: 12.5px; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
 .cell-email { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.cell-email .addr, .email-card__addr { font-family: var(--font-addr); }
 .cell-email .addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .copy { opacity: 0; color: var(--faint); display: inline-grid; padding: 2px; border-radius: 4px; }
 tr:hover .copy, .copy:focus-visible { opacity: 1; }

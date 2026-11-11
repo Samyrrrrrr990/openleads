@@ -95,9 +95,10 @@ same marks appear in tables, records, search results and exports.
 ### Light and dark
 
 The interface follows your system theme; the moon/sun button (or **T**) pins one.
-It uses Atkinson Hyperlegible, a typeface drawn so that characters like `l`, `I`
-and `1` can't be mistaken for each other, which matters when you're reading email
-addresses. It respects `prefers-reduced-motion` and works down to phone width.
+Text uses your system font. Email addresses use Atkinson Hyperlegible, a typeface
+drawn so that `l`, `I` and `1` can't be mistaken for each other. Dark mode is near
+black with hairline borders. It respects `prefers-reduced-motion` and works down to
+phone width.
 
 ## The JSON API
 
