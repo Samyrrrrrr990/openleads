@@ -8,6 +8,10 @@ each post goes out from your own accounts, and you edit it first.
 Numbers today: 65 stars, 15 forks, 246 PyPI downloads in the last week (pypistats.org). Goal before charging: 1,000
 stars. 5.3 ("Simple": `openleads "..."`, Today, ten commands) is built on branch
 `plan/5.3-5.5`, waiting for your OK to merge and release.
+5.4 (bring your own model) is on `feat/5.4-byom` and 5.5 (the app, forked from T3 Code)
+on `feat/5.5-app`, each built on the one before and waiting for the same OK. The Show
+HN post for 5.5 is drafted in [`show-hn-5.5.md`](./show-hn-5.5.md) with a 30-second demo
+script; it is the launch to save the Show HN for.
 
 Waiting on you:
 - [ ] Say go for the 5.3.0 release (merge, tag, push; the release workflow does PyPI,

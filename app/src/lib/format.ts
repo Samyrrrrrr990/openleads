@@ -52,3 +52,16 @@ export function initials(name: string | null | undefined, email = ""): string {
 export function dayLabel(d: Date = new Date()): string {
   return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 }
+
+/**
+ * A link that came from data (a website or profile found on the public web), safe to
+ * put in an href: only http and https survive, a bare domain gets https, anything
+ * else ("javascript:", "data:", ...) becomes "".
+ */
+export function safeUrl(raw: string | null | undefined): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "";
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(value);
+  if (scheme) return /^https?$/i.test(scheme[1]) ? value : "";
+  return /^[^\s/?#]+\.[^\s/?#]+/.test(value) ? `https://${value}` : "";
+}

@@ -45,9 +45,9 @@ Run it? [Y/n]
 
 Emails wait for your yes in [Today](./docs/today.md) unless you add `--live`.
 
-<img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/dashboard-people.png" alt="The People page of the OpenLeads dashboard: a filter column beside a table of contacts with title, company, email with its evidence mark, stage and last contact." width="100%" />
+<img src="https://raw.githubusercontent.com/Samyrrrrrr990/openleads/main/docs/assets/app-plan.jpg" alt="The OpenLeads app on Today. A request typed into the ask box, every weekday at 9am email 20 agencies in Miami about our SEO audit, has come back as a six-step plan read by the built-in rules, with Not now and Save schedule buttons. The sidebar lists Today, People, Outreach, Workflows, Pipeline and Settings." width="100%" />
 
-<sub>The local dashboard on the demo workspace (`openleads demo`, invented data).</sub>
+<sub>The app (`openleads web`) on the demo workspace (`openleads demo`, invented data): the plan comes first, and nothing runs until you say so.</sub>
 
 ## Every email says how we know it
 

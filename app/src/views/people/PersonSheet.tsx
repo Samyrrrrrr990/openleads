@@ -7,7 +7,7 @@ import { Button } from "~/components/ui/button";
 import { Sheet, SheetPopup, SheetTitle } from "~/components/ui/sheet";
 import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/lib/api";
-import { ago, due } from "~/lib/format";
+import { ago, due, safeUrl } from "~/lib/format";
 import { useMeta } from "~/lib/meta";
 import { classic } from "~/lib/router";
 import { fail, toast } from "~/lib/toast";
@@ -107,16 +107,16 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
         {c.organization && <Fact icon={BuildingIcon}>{c.organization}{c.industry ? `, ${c.industry}` : ""}</Fact>}
         {place && <Fact icon={MapPinIcon}>{place}</Fact>}
         {c.phone && <Fact icon={PhoneIcon}>{c.phone}</Fact>}
-        {c.website && (
+        {safeUrl(c.website) && (
           <Fact icon={GlobeIcon}>
-            <a className="hover:underline" href={c.website} target="_blank" rel="noreferrer noopener">
+            <a className="hover:underline" href={safeUrl(c.website)} target="_blank" rel="noreferrer noopener">
               {c.website.replace(/^https?:\/\//, "")}
             </a>
           </Fact>
         )}
-        {c.linkedin_url && (
+        {safeUrl(c.linkedin_url) && (
           <Fact icon={LinkedinIcon}>
-            <a className="hover:underline" href={c.linkedin_url} target="_blank" rel="noreferrer noopener">
+            <a className="hover:underline" href={safeUrl(c.linkedin_url)} target="_blank" rel="noreferrer noopener">
               LinkedIn
             </a>
           </Fact>

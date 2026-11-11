@@ -127,7 +127,7 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Title</TableHead>
+                    <TableHead className="max-xl:hidden">Title</TableHead>
                     <TableHead>Company</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Stage</TableHead>
@@ -153,7 +153,7 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
                             <span className="truncate font-medium">{p.name || p.email.split("@")[0]}</span>
                           </span>
                         </TableCell>
-                        <TableCell className="max-w-56 truncate text-muted-foreground">{p.title}</TableCell>
+                        <TableCell className="max-w-56 truncate text-muted-foreground max-xl:hidden">{p.title}</TableCell>
                         <TableCell className="max-w-48 truncate">{p.organization}</TableCell>
                         <TableCell className="max-w-64 truncate">
                           <span className="addr">{p.email}</span>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { splitLines } from "./api";
-import { ago, due, initials, pct, plural } from "./format";
+import { ago, due, initials, pct, plural, safeUrl } from "./format";
 import { parseHash } from "./router";
 
 describe("parseHash", () => {
@@ -51,5 +51,20 @@ describe("format", () => {
     expect(pct(0)).toBe("0%");
     expect(initials("Maya Okafor")).toBe("MO");
     expect(initials("", "zed@x.co")).toBe("ZE");
+  });
+});
+
+describe("safeUrl", () => {
+  it("keeps web links", () => {
+    expect(safeUrl("https://northwind.example/team")).toBe("https://northwind.example/team");
+    expect(safeUrl("http://x.example")).toBe("http://x.example");
+  });
+  it("adds https to a bare domain", () => {
+    expect(safeUrl("northwind.example")).toBe("https://northwind.example");
+  });
+  it("refuses anything that is not a web link", () => {
+    for (const bad of ["javascript:alert(1)", " JavaScript:alert(1)", "data:text/html,x", "vbscript:x", "file:///etc/passwd", "", null, undefined]) {
+      expect(safeUrl(bad)).toBe("");
+    }
   });
 });
