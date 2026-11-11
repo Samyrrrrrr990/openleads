@@ -1141,3 +1141,5 @@ details > summary { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
+
+.today-suggest { margin-top: 4px; font-size: 13px; color: var(--muted); }

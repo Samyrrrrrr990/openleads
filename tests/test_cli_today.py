@@ -206,3 +206,11 @@ def test_read_key_drops_keys_typed_before_the_prompt(monkeypatch, capsys):
     monkeypatch.setattr(sys, "stdin", Stdin("a"))
     assert cli_today._read_key("> ") == "a"
     assert events.index(("flush", 0)) < events.index("read")
+
+
+def test_reply_line_shows_the_suggested_answer():
+    r = {"email": "a@x.co", "name": "Ada", "organization": "X", "snippet": "Pricing for 5?",
+         "suggestion": "Happy to, I'll send it Thursday.", "received": 0}
+    line = cli_today._reply_line(r, now=3600)
+    assert "Suggested answer: Happy to, I'll send it Thursday." in line
+    assert "Suggested" not in cli_today._reply_line({**r, "suggestion": ""}, now=3600)

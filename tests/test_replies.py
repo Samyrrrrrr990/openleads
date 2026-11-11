@@ -211,3 +211,58 @@ def test_a_reply_that_needs_you_keeps_the_task(db):
     db.set_status("ada@globex.example", "replied")
     replies.record(db, "ada@globex.example", "Re: hi", "Send pricing?", "<a@x>", 1000.0)
     assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == 1
+
+
+# --- 5.4: the connected model sorts the unclear ones -------------------------------- #
+@pytest.fixture
+def model(monkeypatch):
+    import json as _json
+
+    from openleads import ai
+    state = {"reply": None, "calls": 0}
+
+    def chat(messages, m=None, **kw):
+        state["calls"] += 1
+        if isinstance(state["reply"], Exception):
+            raise state["reply"]
+        return _json.dumps(state["reply"])
+    monkeypatch.setattr(ai, "resolve", lambda overrides=None: ai.Model("claude", "sonnet"))
+    monkeypatch.setattr(ai, "chat", chat)
+    return state
+
+
+def test_model_catches_a_soft_no(db, model):
+    model["reply"] = {"category": "not_interested", "suggestion": ""}
+    r = replies.record(db, "ada@globex.example", "Re: quick question",
+                       "Appreciate it, but we built this in house last year.", "<a1>", 900.0)
+    assert r["category"] == "not_interested" and r["sorted_by"] == "claude:sonnet"
+    assert replies.waiting(db, now=1000.0) == []
+
+
+def test_model_suggests_an_answer_for_replies_that_need_you(db, model):
+    model["reply"] = {"category": "needs_you",
+                      "suggestion": "Happy to. For a team of five it's — let me check — "
+                                    "can I send it Thursday?"}
+    replies.record(db, "bo@initech.example", "Re: quick question", "What does it cost for 5?",
+                   "<b1>", 900.0)
+    [w] = replies.waiting(db, now=1000.0)
+    assert w["suggestion"].startswith("Happy to") and "—" not in w["suggestion"]
+
+
+@pytest.mark.parametrize("body,want", [("Please remove me from your list.", "unsubscribe"),
+                                       ("I am out of the office until Monday.", "out_of_office")])
+def test_rules_decide_unsubscribe_and_ooo_without_the_model(db, model, body, want):
+    model["reply"] = {"category": "needs_you", "suggestion": "x"}
+    r = replies.record(db, "cy@hooli.example", "Re: quick question", body, "<c1>", 900.0)
+    assert r["category"] == want and model["calls"] == 0
+
+
+@pytest.mark.parametrize("bad", [{"category": "unsubscribe"}, {"category": "spam"}, {},
+                                 None])
+def test_model_cannot_unsubscribe_or_invent_categories(db, model, bad):
+    from openleads import ai
+    model["reply"] = bad if bad is not None else ai.AIError("timeout")
+    r = replies.record(db, "di@acme.example", "Re: quick question", "Can you send pricing?",
+                       "<d1>", 900.0)
+    assert r["category"] == "needs_you" and r.get("sorted_by", "rules") == "rules"
+    assert not db.is_suppressed("di@acme.example")

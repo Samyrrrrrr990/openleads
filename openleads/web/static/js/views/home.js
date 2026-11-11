@@ -52,6 +52,7 @@ function replyRow(r) {
     <div style="min-width:0;flex:1">
       <div class="ellipsis"><a class="link t-strong" href="#/people/${encodeURIComponent(r.email)}">${esc(r.name || r.email)}</a>${r.organization ? `<span class="hint">, ${esc(r.organization)}</span>` : ""}</div>
       <div class="today-snippet">${esc(r.snippet || r.subject || "")}</div>
+      ${r.suggestion ? `<div class="today-suggest"><span class="hint">Suggested answer</span> ${esc(r.suggestion)}</div>` : ""}
       <div class="hint">${esc(fmt.rel(r.received))}</div></div>
     <div class="actions"><button class="btn btn--sm" data-act="reply-done" data-email="${esc(r.email)}">${ico("check")} Done</button>
       <button class="btn btn--sm btn--ghost" data-act="reply-snooze" data-email="${esc(r.email)}" title="Hide until tomorrow 9:00">Snooze</button></div></div>`;

@@ -6,8 +6,10 @@ known contact. The reply is kept on the contact's timeline (activity ``reply``,
 with the subject, a snippet of the new text, a category and the Message-ID), so
 Today can show it and nothing is stored twice.
 
-Sorting is simple rules for now: bounce, out of office, unsubscribe, not
-interested, and everything else "needs you". A reply stops waiting once you've
+Rules sort bounce, out of office and unsubscribe (which suppresses the address).
+The rest is "needs you" or "not interested": a connected model
+(:mod:`openleads.ai`) makes that call and suggests a short answer for the ones that
+need you; without one, simple phrases decide. A reply stops waiting once you've
 answered it (a later email to that address, or your reply found in the Sent
 folder), marked it done, or snoozed it.
 """
@@ -69,6 +71,42 @@ def classify(subject: str, body: str, from_header: str = "") -> str:
     return "needs_you"
 
 
+_MODEL_SYSTEM = (
+    "You sort one reply to a cold email for the person who sent the email. Answer with ONE "
+    'JSON object: {"category": "needs_you" | "not_interested", "suggestion": str}.\n'
+    "needs_you = they asked something, want a call, want more, or might be interested. "
+    "not_interested = a polite or soft no, already have a solution, wrong person with no "
+    "pointer. suggestion: for needs_you only, a short plain-text answer the sender could "
+    "send (under 70 words, no greeting or sign-off, no facts or prices you weren't given; "
+    'say "I\'ll check" instead). Empty for not_interested.')
+
+
+def _model_sort(subject: str, body: str) -> dict | None:
+    """``{category, suggestion, sorted_by}`` from the connected model, or None."""
+    from openleads import ai, settings
+    m = ai.resolve()
+    if m is None:
+        return None
+    sender = {k: settings.get(k) or "" for k in ("sender_name", "sender_org", "sender_context")}
+    user = (f"What the sender offers: {sender['sender_context'] or 'not given'}\n"
+            f"Subject: {subject or ''}\n\nTheir reply:\n{new_text(body)[:3000]}")
+    try:
+        out = ai.parse_json(ai.chat([{"role": "system", "content": _MODEL_SYSTEM},
+                                     {"role": "user", "content": user}], m,
+                                    max_tokens=300, temperature=0.2))
+    except ai.AIError:
+        return None
+    category = str(out.get("category") or "")
+    if category not in ("needs_you", "not_interested"):
+        return None
+    suggestion = ""
+    if category == "needs_you":
+        from openleads.outreach.compose import clean_dashes
+        suggestion = " ".join(clean_dashes(str(out.get("suggestion") or "")).split())[:600]
+    return {"category": category, "suggestion": suggestion,
+            "sorted_by": f"{m.provider}:{m.model}" if m.model else m.provider}
+
+
 def _norm(email: str) -> str:
     return (email or "").strip().lower()
 
@@ -84,6 +122,11 @@ def record(db, email: str, subject: str, body: str, message_id: str, received: f
     category = classify(subject, body, from_header)
     data = {"subject": subject or "", "snippet": snippet(body), "category": category,
             "message_id": message_id or "", "received": float(received)}
+    if category in ("needs_you", "not_interested"):
+        sorted_ = _model_sort(subject, body)
+        if sorted_:
+            category = sorted_["category"]
+            data.update(sorted_)
     activity.log(db, "contact", email, "reply", data["snippet"] or subject or "", data,
                  ts=float(received))
     if category == "unsubscribe":
@@ -146,5 +189,6 @@ def waiting(db, now: float | None = None) -> list:
         out.append({"email": email, "name": lead.get("name") or "",
                     "organization": lead.get("organization") or "",
                     "subject": data.get("subject", ""), "snippet": data.get("snippet", ""),
+                    "suggestion": data.get("suggestion", ""),
                     "received": ts, "message_id": data.get("message_id", "")})
     return out
