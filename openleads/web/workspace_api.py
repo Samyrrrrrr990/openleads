@@ -590,6 +590,35 @@ def templates_improve(db, p):
                             llm=bool(p.get("llm")))
 
 
+@route(GET, "/api/ai")
+def ai_status(db, p):
+    """The connected model and what this machine could use (no paths or keys)."""
+    from openleads import ai
+    m = ai.resolve()
+    return {"current": ({"provider": m.provider, "model": m.model, "label": m.label}
+                        if m else None),
+            "problem": ai.problem(),
+            "detected": [{"provider": d["provider"], "kind": d["kind"], "label": d["label"]}
+                         for d in ai.detect()]}
+
+
+@route(POST, "/api/ai/test")
+def ai_test(db, p):
+    """One tiny call to the connected model: is it working?"""
+    from openleads import ai
+    m = ai.resolve()
+    if m is None:
+        return {"ok": False, "detail": ai.problem() or "No model connected."}
+    t0 = time.time()
+    try:
+        text = ai.chat([{"role": "system", "content": "Reply with the single word: ready"},
+                        {"role": "user", "content": "Are you there?"}], m, max_tokens=20,
+                       temperature=0)
+    except ai.AIError as e:
+        return {"ok": False, "detail": str(e)[:300]}
+    return {"ok": True, "detail": f"{m.label} answered {text[:30]!r} in {time.time() - t0:.1f}s"}
+
+
 @route(GET, "/api/writing/meta")
 def writing_meta(db, p):
     """Angles, tones and rewrite modes for the writer's controls."""

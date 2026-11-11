@@ -8,7 +8,7 @@ const GROUPS = {
   sender: ["Sender identity", "Who the emails are from, what you're offering and your proof. Drafts and templates use these, and never invent anything you didn't write here."],
   mailbox: ["Mailbox", "Your SMTP account (app password, not your login). IMAP is optional and lets replies and bounces stop sequences automatically."],
   sending: ["Sending policy", "Deliverability guardrails: daily cap, warmup ramp, pacing, and whether risky addresses may be emailed."],
-  ai: ["AI writing", "How drafts are written. The built-in writer works with nothing set up; add an OpenRouter key or any OpenAI-compatible endpoint (a local Ollama works) for LLM drafts. Every LLM draft is checked against what we know about the lead, and the built-in writer takes over on any problem."],
+  ai: ["AI model", "The model OpenLeads thinks with: it reads your requests, writes drafts and sorts replies. Use a Claude or ChatGPT subscription you already have (through the claude or codex command), an API key, or a free model (OpenRouter, Ollama, any OpenAI-compatible endpoint). With none, built-in rules do the work. Every draft is still checked against what we know about the lead."],
   discover: ["Discovery", "Optional keys that raise public API limits."],
   integrations: ["Integrations", "Where exports and alerts go: webhooks, Notion, Airtable, HubSpot."],
   web: ["Dashboard", "This local web app."],
@@ -19,8 +19,26 @@ const LABELS = {
   writing_tone: "Tone", writing_examples: "Your writing samples", writing_llm: "Use an LLM",
   openrouter_api_key: "OpenRouter API key", openrouter_model: "OpenRouter model",
   ai_base_url: "Custom endpoint URL", ai_api_key: "Custom endpoint key", ai_model: "Custom endpoint model",
-  ai_timeout: "LLM timeout (seconds)",
+  ai_timeout: "LLM timeout (seconds)", ai_provider: "Model",
+  anthropic_api_key: "Anthropic API key", openai_api_key: "OpenAI API key", gemini_api_key: "Gemini API key",
 };
+const KIND = { subscription: "your subscription", "api key": "API key", free: "free" };
+
+async function aiCard(slot) {
+  let s;
+  try { s = await api.get("/api/ai"); } catch (_) { return; }
+  const cur = s.current ? `<b>${esc(s.current.label)}</b>` : (s.problem ? esc(s.problem) : "No model connected. Built-in rules do the work.");
+  const found = s.detected.filter((d) => !s.current || d.provider !== s.current.provider);
+  slot.innerHTML = `<div class="card" style="margin-bottom:16px"><div class="card__body stack">
+    <div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div><div class="hint">Using now</div><div>${cur}</div></div>
+      ${s.current ? `<button class="btn btn--sm" data-act="ai-test">${ico("spark")} Test it</button>` : ""}</div>
+    ${found.length ? `<div><div class="hint">Found on this computer</div>${found.map((d) =>
+      `<div class="row" style="gap:8px;margin-top:6px"><span>${esc(d.label)}</span><span class="badge badge--sm">${esc(KIND[d.kind] || d.kind)}</span>
+        <button class="btn btn--sm btn--ghost" data-act="ai-use" data-p="${esc(d.provider)}">Use this</button></div>`).join("")}</div>` : ""}
+    <div class="hint" id="ai-test-out">A subscription or paid key is only used after you pick it here or with <code>openleads setup ai</code>.</div>
+  </div></div>`;
+}
 const labelOf = (key) => LABELS[key] || key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 let ROOT = null;
 let TAB = "sender";
@@ -71,8 +89,10 @@ function render() {
         <a class="btn" href="#/doctor">${ico("doctor")} Run Doctor</a></div></div>
     <div class="tabs" style="border-bottom:1px solid var(--line);margin-bottom:16px">${tabs.map(([k, l]) =>
       `<button type="button" class="${TAB === k ? "is-on" : ""}" data-act="tab" data-k="${k}">${esc(l)}</button>`).join("")}</div>
+    ${TAB === "ai" ? '<div id="ai-card"></div>' : ""}
     <div id="tab-body">${extra ? "" : groupHtml(TAB)}</div></section>`;
   if (extra) extra.render($("#tab-body", ROOT));
+  if (TAB === "ai") aiCard($("#ai-card", ROOT));
 }
 
 async function save() {
@@ -103,6 +123,18 @@ router.register("settings", {
     onAct(root, {
       tab: (el) => { TAB = el.dataset.k; history.replaceState(null, "", `#/settings/${TAB}`); render(); },
       save,
+      "ai-use": (el) => {
+        const sel = $("#set-ai_provider", ROOT);
+        if (sel) { sel.value = el.dataset.p; save(); }
+      },
+      "ai-test": async (el) => {
+        const out = $("#ai-test-out", ROOT);
+        el.disabled = true; out.textContent = "Asking the model...";
+        try {
+          const r = await api.post("/api/ai/test", {});
+          out.textContent = r.ok ? `Working: ${r.detail}` : `Not working: ${r.detail}`;
+        } catch (e) { fail(e); } finally { el.disabled = false; }
+      },
     });
     root.addEventListener("change", (e) => {
       const t = e.target;

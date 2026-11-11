@@ -182,3 +182,26 @@ def test_mcp_draft_email_returns_score_and_brief():
     assert inbox["brief"]["kind"] == "company" and inbox["angle"] == "inbox"
     bad = _call("draft_email", email="nobody@x.example")
     assert bad["isError"] is True
+
+
+def test_api_ai_status_and_test(base, monkeypatch):
+    import json as _json
+
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude" if name == "claude" else None)
+    monkeypatch.setattr(ai, "_ollama_models", lambda timeout=0.4: [])
+    st, s = get(base, "/api/ai")
+    assert st == 200 and s["current"] is None
+    assert [d["provider"] for d in s["detected"]] == ["claude"]
+    assert "/bin/claude" not in _json.dumps(s)            # no local paths in the browser
+    settings.set("ai_provider", "claude")
+    monkeypatch.setattr(ai, "_run", lambda *a: (0, _json.dumps({"is_error": False,
+                                                                "result": "ready"}), ""))
+    st, s = get(base, "/api/ai")
+    assert s["current"]["provider"] == "claude"
+    st, t = post(base, "/api/ai/test", {})
+    assert st == 200 and t["ok"] is True and "ready" in t["detail"]
+    monkeypatch.setattr(ai, "_run", lambda *a: (1, "", "Please run /login"))
+    st, t = post(base, "/api/ai/test", {})
+    assert t["ok"] is False and "login" in t["detail"]
+    settings.unset("ai_provider")
