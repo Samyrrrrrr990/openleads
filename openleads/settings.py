@@ -59,6 +59,20 @@ SCHEMA: tuple[Setting, ...] = (
             "auto = draft with an LLM when one is configured (falls back to the built-in "
             "writer on any problem); off = always use the built-in writer.",
             choices=("auto", "off")),
+    # Bring your own model (5.4): which model OpenLeads uses for plans, writing and replies.
+    Setting("ai_provider", ("OPENLEADS_AI_PROVIDER",), False, "str", "auto", "ai",
+            "Which model OpenLeads uses: claude or codex (your subscription, through its CLI), "
+            "anthropic, openai or gemini (an API key), openrouter, ollama or custom (free or "
+            "local). auto = only what's already set below; off = rules only. "
+            "`openleads setup ai` picks for you.",
+            choices=("auto", "claude", "codex", "anthropic", "openai", "gemini", "openrouter",
+                     "ollama", "custom", "off")),
+    Setting("anthropic_api_key", ("ANTHROPIC_API_KEY",), True, "str", "", "ai",
+            "Anthropic API key (used when ai_provider is anthropic)."),
+    Setting("openai_api_key", ("OPENAI_API_KEY",), True, "str", "", "ai",
+            "OpenAI API key (used when ai_provider is openai)."),
+    Setting("gemini_api_key", ("GEMINI_API_KEY", "GOOGLE_API_KEY"), True, "str", "", "ai",
+            "Google Gemini API key (used when ai_provider is gemini)."),
     # LLM (free) — used for drafting + natural-language understanding (optional).
     Setting("openrouter_api_key", ("OPENROUTER_API_KEY",), True, "str", "",
             "ai", "OpenRouter API key — unlocks free-LLM email drafting & NL parsing."),
