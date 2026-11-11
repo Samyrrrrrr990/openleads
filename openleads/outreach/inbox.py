@@ -13,10 +13,11 @@ from __future__ import annotations
 
 import email
 import re
-from email.utils import parseaddr
+import time
+from email.utils import getaddresses, parseaddr, parsedate_to_datetime
 
 from openleads import db as dbmod
-from openleads.outreach import providers
+from openleads.outreach import providers, replies
 
 BOUNCE_SENDERS = ("mailer-daemon", "postmaster", "mail delivery", "maildelivery")
 _ADDR_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
@@ -46,16 +47,19 @@ def parse_bounced_recipient(raw_message: str, known: set[str] | None = None) -> 
 
 
 def scan(db=None, days: int = 21, overrides: dict | None = None) -> dict:
-    """Scan recent inbox mail; mark replied/bounced leads. Returns a summary.
+    """Scan recent inbox mail; mark replied/bounced leads and keep reply text.
 
-    Safe to call repeatedly. Requires IMAP settings; returns an error dict if not
-    configured rather than raising.
+    Safe to call repeatedly: a reply already kept (same Message-ID) isn't added
+    again. Afterwards the Sent folder is checked for your own answers, so Today
+    stops listing replies you've dealt with. Requires IMAP settings; returns an
+    error dict if not configured rather than raising.
     """
     own_db = False
     if db is None:
         db = dbmod.DB()
         own_db = True
-    summary = {"replied": 0, "bounced": 0, "scanned": 0, "error": ""}
+    summary = {"replied": 0, "bounced": 0, "scanned": 0, "recorded": 0, "answered": 0,
+               "error": ""}
     server = None
     try:
         known = {lead["email"] for lead in db.list_leads(limit=100000)}
@@ -88,6 +92,11 @@ def scan(db=None, days: int = 21, overrides: dict | None = None) -> dict:
                 if lead and lead.get("status") == dbmod.STATUS_SENT:
                     db.set_status(from_addr, dbmod.STATUS_REPLIED)
                     summary["replied"] += 1
+                kept = replies.record(db, from_addr, subject, _body_text(msg),
+                                      _message_id(msg), _received(msg), from_hdr)
+                if kept:
+                    summary["recorded"] += 1
+        summary["answered"] = _scan_sent(server, db, date_since)
     except Exception as e:  # noqa: BLE001 — optional feature, never crash the app
         summary["error"] = str(e)
     finally:
@@ -99,6 +108,71 @@ def scan(db=None, days: int = 21, overrides: dict | None = None) -> dict:
         if own_db:
             db.close()
     return summary
+
+
+def _scan_sent(server, db, date_since: str) -> int:
+    """Mark replies answered when your own email to that person is in Sent. Never raises."""
+    try:
+        waiting = {r["email"]: r["received"] for r in replies.waiting(db)}
+        if not waiting:
+            return 0
+        box = providers.find_sent_mailbox(server)
+        if not box:
+            return 0
+        server.select(f'"{box}"', readonly=True)
+        typ, data = server.search(None, f'(SINCE {date_since})')
+        if typ != "OK" or not data or not data[0]:
+            return 0
+        answered = 0
+        for num in data[0].split()[-500:]:
+            typ, msg_data = server.fetch(num, "(RFC822)")
+            if typ != "OK" or not msg_data or not msg_data[0]:
+                continue
+            msg = email.message_from_bytes(msg_data[0][1])
+            when = _received(msg)
+            for _, addr in getaddresses(msg.get_all("To", []) + msg.get_all("Cc", [])):
+                addr = addr.lower()
+                if addr in waiting and when > waiting[addr]:
+                    replies.mark_answered(db, addr, when)
+                    waiting.pop(addr)
+                    answered += 1
+        return answered
+    except Exception:  # noqa: BLE001 — a Sent folder we can't read just means "not checked"
+        return 0
+
+
+def _body_text(msg) -> str:
+    """The plain text of a message; HTML-only mail is reduced to its text."""
+    plain, rich = [], []
+    for p in (msg.walk() if msg.is_multipart() else [msg]):
+        kind = p.get_content_type()
+        if kind not in ("text/plain", "text/html"):
+            continue
+        try:
+            text = p.get_payload(decode=True).decode(p.get_content_charset() or "utf-8",
+                                                     "ignore")
+        except Exception:
+            continue
+        (plain if kind == "text/plain" else rich).append(text)
+    if any(t.strip() for t in plain):
+        return "\n".join(plain).strip()
+    return "\n".join(replies.html_text(t) for t in rich).strip()
+
+
+def _message_id(msg) -> str:
+    mid = (msg.get("Message-ID") or "").strip()
+    if mid:
+        return mid
+    import hashlib
+    key = f"{msg.get('From', '')}|{msg.get('Subject', '')}|{msg.get('Date', '')}"
+    return "<" + hashlib.sha1(key.encode("utf-8", "ignore")).hexdigest() + "@openleads>"
+
+
+def _received(msg) -> float:
+    try:
+        return parsedate_to_datetime(msg.get("Date")).timestamp()
+    except Exception:
+        return time.time()
 
 
 def _flatten(msg) -> str:
@@ -119,5 +193,5 @@ def _flatten(msg) -> str:
 
 
 def _imap_since(days: int) -> str:
-    from datetime import datetime, timedelta
-    return (datetime.utcnow() - timedelta(days=days)).strftime("%d-%b-%Y")
+    from datetime import datetime, timedelta, timezone
+    return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%d-%b-%Y")
