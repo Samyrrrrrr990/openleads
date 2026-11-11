@@ -1,5 +1,6 @@
 """
-Optional LLM drafting over any OpenAI-compatible chat endpoint (OpenRouter by default).
+Optional LLM drafting with the model you connected (:mod:`openleads.ai`): a Claude or
+Codex subscription, an API key, OpenRouter, Ollama or any OpenAI-compatible endpoint.
 
 The model gets the research brief and strict rules, and must answer with JSON
 (``subject``, ``body``, ``variants``). Every draft it returns goes through
@@ -33,11 +34,14 @@ class LLMConfig:
     api_key: str = ""
     model: str = ""
     timeout: float = 20.0
-    provider: str = "openrouter"     # openrouter | custom
+    provider: str = "openrouter"     # openrouter | custom | any openleads.ai provider
+    model_obj: object = None         # the openleads.ai.Model behind it (5.4+)
 
     @property
     def label(self) -> str:
-        return self.model or self.provider
+        if self.provider in ("openrouter", "custom"):
+            return self.model or self.provider
+        return f"{self.provider}:{self.model}" if self.model else self.provider
 
 
 def endpoint(base_url: str) -> str:
@@ -50,25 +54,26 @@ def endpoint(base_url: str) -> str:
 
 
 def config(overrides: dict | None = None) -> LLMConfig | None:
-    """The configured endpoint, or None when no LLM is set up (or it's turned off)."""
-    from openleads import settings
+    """The connected model (see :mod:`openleads.ai`), or None when there isn't one
+    (or AI writing is turned off)."""
+    from openleads import ai, settings
     o = overrides or {}
     if str(o.get("writing_llm") or settings.get("writing_llm") or "auto") == "off":
         return None
-    base = str(o.get("ai_base_url") or settings.get("ai_base_url") or "").strip()
-    key = str(o.get("api_key") or o.get("ai_api_key") or settings.get("ai_api_key")
-              or settings.get("openrouter_api_key") or "").strip()
-    model = str(o.get("model") or o.get("ai_model") or settings.get("ai_model")
-                or (settings.get("openrouter_model") if not base else "") or "").strip()
-    try:
-        timeout = float(o.get("ai_timeout") or settings.get("ai_timeout") or 20)
-    except (TypeError, ValueError):
-        timeout = 20.0
-    if not base and not key:
+    picked = {"ai_provider": o.get("ai_provider"), "ai_base_url": o.get("ai_base_url"),
+              "api_key": o.get("api_key") or o.get("ai_api_key"),
+              "ai_model": o.get("model") or o.get("ai_model")}
+    m = ai.resolve({k: v for k, v in picked.items() if v})
+    if m is None:
         return None
-    return LLMConfig(url=endpoint(base), api_key=key, model=model,
-                     timeout=max(3.0, min(timeout, 120.0)),
-                     provider="custom" if base else "openrouter")
+    if m.provider in ("openrouter", "custom"):
+        try:
+            timeout = float(o.get("ai_timeout") or settings.get("ai_timeout") or 20)
+        except (TypeError, ValueError):
+            timeout = 20.0
+        m.timeout = max(3.0, min(timeout, 120.0))
+    return LLMConfig(url=m.url, api_key=m.api_key, model=m.model, timeout=m.timeout,
+                     provider=m.provider, model_obj=m)
 
 
 def http_post_json(url: str, payload: dict, headers: dict, timeout: float) -> dict:
@@ -82,6 +87,13 @@ def http_post_json(url: str, payload: dict, headers: dict, timeout: float) -> di
 def chat(messages: list, cfg: LLMConfig, http=None, max_tokens: int = 900,
          temperature: float = 0.6) -> str:
     """One chat completion → the assistant's text. Raises :class:`LLMError`."""
+    if cfg.provider not in ("openrouter", "custom") and cfg.model_obj is not None:
+        from openleads import ai
+        try:
+            return ai.chat(messages, cfg.model_obj, http=http, max_tokens=max_tokens,
+                           temperature=temperature)
+        except ai.AIError as e:
+            raise LLMError(str(e)[:200]) from None
     http = http or http_post_json
     headers = {"Content-Type": "application/json"}
     if cfg.api_key:

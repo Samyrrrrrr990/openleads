@@ -475,3 +475,40 @@ def test_writer_never_emits_dashes_or_vacuous_lines(demo_leads):
             assert not any(r["code"] == "vacuous" for r in d.quality["reasons"])
             scores.append(d.quality["score"])
     assert sum(scores) / len(scores) >= 95
+
+
+# --- bring your own model (5.4) --------------------------------------------------- #
+def test_writer_uses_a_claude_subscription_once_chosen(monkeypatch):
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude" if name == "claude" else None)
+    seen = []
+
+    def run(cmd, stdin, timeout, cwd):
+        seen.append(cmd)
+        return 0, json.dumps({"is_error": False, "result": json.dumps(GOOD_LLM)}), ""
+    monkeypatch.setattr(ai, "_run", run)
+    settings.set("ai_provider", "claude")
+    d = write_email(DENTIST)
+    assert seen and seen[0][0] == "/bin/claude"
+    assert d.model == "claude:sonnet" and d.subject == "zocdoc and empty chairs"
+
+
+def test_writer_uses_an_anthropic_key_once_chosen(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant")
+    settings.set("ai_provider", "anthropic")
+    calls = []
+
+    def http(url, payload, headers, timeout):
+        calls.append(url)
+        return {"content": [{"type": "text", "text": json.dumps(GOOD_LLM)}]}
+    d = write_email(DENTIST, http=http)
+    assert calls == ["https://api.anthropic.com/v1/messages"] and d.model.startswith("anthropic:")
+
+
+def test_writer_falls_back_when_the_cli_fails(monkeypatch):
+    from openleads import ai
+    monkeypatch.setattr(ai, "_which", lambda name: "/bin/claude")
+    monkeypatch.setattr(ai, "_run", lambda *a: (1, "", "not logged in"))
+    settings.set("ai_provider", "claude")
+    d = write_email(DENTIST)
+    assert d.model == "writer" and "not used" in d.explain[0]["why"]

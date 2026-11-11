@@ -432,8 +432,8 @@ def cmd_write(args) -> int:
     if opts["llm"] is True:
         from openleads.writing.llm import config as llm_config
         if llm_config() is None:
-            print("[!] --llm: no LLM is configured (set an OpenRouter key or an OpenAI-compatible "
-                  "endpoint in `openleads config`); using the built-in writer.", file=sys.stderr)
+            print("[!] --llm: no model is connected (run `openleads setup ai`); "
+                  "using the built-in writer.", file=sys.stderr)
     db = DB()
     try:
         if args.to:

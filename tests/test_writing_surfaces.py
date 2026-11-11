@@ -78,7 +78,7 @@ def test_cli_write_from_csv_reads_v5_columns(capsys, tmp_path):
 def test_cli_write_llm_flag_without_config_warns(capsys):
     code = cli.main(["write", "--to", "maya@northwind.example", "--llm"])
     cap = capsys.readouterr()
-    assert code == 0 and "no LLM is configured" in cap.err
+    assert code == 0 and "no model is connected" in cap.err and "setup ai" in cap.err
 
 
 # --- web API ----------------------------------------------------------------------- #
