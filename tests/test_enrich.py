@@ -67,3 +67,13 @@ def test_normalize_understands_apollo_export_headers():
                                 "Company Website": "https://acme.example"})
     assert row["company"] == "Acme" and row["email"] == "jane@acme.example"
     assert row["linkedin_url"].endswith("/jane") and row["domain"] == "https://acme.example"
+
+
+def test_header_map_has_no_duplicate_keys():
+    import ast
+    import inspect
+    tree = ast.parse(inspect.getsource(enrich))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            keys = [k.value for k in node.keys if isinstance(k, ast.Constant)]
+            assert len(keys) == len(set(keys)), sorted({k for k in keys if keys.count(k) > 1})
