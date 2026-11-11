@@ -66,4 +66,5 @@ def test_find_request_uses_find_output(capsys, monkeypatch):
 
 
 def test_known_commands_unchanged(capsys):
-    assert cli.main(["sources"]) == 0
+    assert cli.main(["today", "--json"]) == 0
+    assert "counts" in json.loads(capsys.readouterr().out)

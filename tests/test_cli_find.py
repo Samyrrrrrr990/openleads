@@ -92,7 +92,8 @@ def test_empty_result_explains_itself(capsys):
 
 def test_help_lists_every_command_by_group():
     parser = cli.build_parser()
-    text = parser.format_help()
+    text = parser._full_epilog                   # `openleads help all`
+    assert "{find," not in parser.format_help()  # no flat alphabetical choice list
     reg = parser._registrar
     names = [n for n in reg.choices if n not in reg.aliases]
     assert len(names) >= 35
@@ -101,7 +102,6 @@ def test_help_lists_every_command_by_group():
     for group in ("find:", "outreach:", "automate:", "workspace:", "setup:", "legacy:",
                   "quick start:"):
         assert group in text
-    assert "{find," not in text                  # no flat alphabetical choice list
 
 
 def test_send_reports_bad_queries_cleanly(capsys):

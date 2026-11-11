@@ -586,7 +586,35 @@ def cmd_doctor(args) -> int:
     return doctor.run(args)
 
 
+def cmd_setup(args) -> int:
+    rest = list(getattr(args, "rest", None) or [])
+    if not rest:
+        return cmd_init(args)
+    if rest[0] not in ("config", "doctor", "cache", "init"):
+        print(f"[!] setup takes config, doctor or cache (got '{rest[0]}')", file=sys.stderr)
+        return 2
+    return main(rest, _tips=False)
+
+
+def cmd_help(args) -> int:
+    topic = list(getattr(args, "topic", None) or [])
+    parser = build_parser()
+    if not topic:
+        parser.print_help()
+        return 0
+    if topic[0] == "all":
+        print(parser.format_usage().rstrip())
+        print()
+        print(parser._full_epilog)
+        return 0
+    return main([topic[0], "--help"], _tips=False)
+
+
 def cmd_web(args) -> int:
+    if getattr(args, "demo", False):
+        from openleads import cli_workspace
+        return cli_workspace.cmd_demo(argparse.Namespace(
+            dir=None, reset=False, port=args.port or 8788, no_open=args.no_open, no_serve=False))
     try:
         from openleads.web.server import serve
     except ImportError as e:  # pragma: no cover
@@ -1005,7 +1033,8 @@ COMMAND_GROUPS = (
     ("Automate", ("workflow", "recipe", "watch", "schedule", "runs", "assistant")),
     ("Workspace", ("today", "people", "companies", "lists", "seq", "tasks", "deals", "import",
                    "export", "dedupe", "stats", "backup", "demo")),
-    ("Setup", ("init", "config", "doctor", "cache", "web", "chat", "mcp", "bench")),
+    ("Setup", ("setup", "help", "init", "config", "doctor", "cache", "web", "chat", "mcp",
+               "bench")),
     ("Legacy", ("send", "crm", "campaign")),
 )
 _LEGACY_NOTES = {"send": "= run", "campaign": "v2"}
@@ -1033,7 +1062,46 @@ class _Registrar:
         return self._sub.choices
 
 
-def _grouped_help(helps: dict) -> str:
+# 5.3: about ten commands up front. Everything else still works, listed under
+# `openleads help all`, and points at its new home the first time you use it.
+VISIBLE = (("Start", ("today", "web")),
+           ("Find", ("find", "verify")),
+           ("Reach out", ("write", "send")),
+           ("Work", ("people", "workflow")),
+           ("Setup", ("setup", "mcp")))
+RELATED = {"find": ("company", "enrich", "sources"),
+           "send": ("run", "drip", "inbox", "campaign"),
+           "people": ("companies", "lists", "seq", "tasks", "deals", "import", "export",
+                      "dedupe", "stats", "backup", "crm"),
+           "workflow": ("recipe", "watch", "schedule", "runs"),
+           "setup": ("init", "config", "doctor", "cache", "bench"),
+           "web": ("demo",)}
+HOME_OF = {old: new for new, olds in RELATED.items() for old in olds}
+HOME_OF.update({"assistant": '"..."', "chat": '"..."'})
+SHORT_START = (
+    ('openleads "find 30 rust devs in Berlin and email them"', "say it; see the plan; run it"),
+    ("openleads today", "replies, emails to approve, tasks"),
+    ('openleads find "dentists in Austin" -o leads.csv', "people + verified emails"),
+    ("openleads web", "the local dashboard"),
+)
+
+
+def _short_help(helps: dict) -> str:
+    width = max(len(cmd) for cmd, _ in SHORT_START)
+    lines = ["quick start:"] + [f"  {cmd:<{width}}  {what}" for cmd, what in SHORT_START]
+    for title, names in VISIBLE:
+        lines += ["", f"{title.lower()}:"]
+        for name in names:
+            text = helps.get(name, "")
+            also = RELATED.get(name)
+            if also:
+                text += f" (also: {', '.join(also)})"
+            lines.append(f"  {name:<10} {text}")
+    lines += ["", "More: openleads help all"]
+    return "\n".join(lines)
+
+
+def _full_help(helps: dict) -> str:
     width = max(len(cmd) for cmd, _ in QUICK_START)
     lines = ["quick start:"]
     lines += [f"  {cmd:<{width}}  {what}" for cmd, what in QUICK_START]
@@ -1170,7 +1238,19 @@ def build_parser() -> argparse.ArgumentParser:
     wb = sub.add_parser("web", help="launch the local web dashboard")
     wb.add_argument("--port", type=int, default=None, help="port (default 8787)")
     wb.add_argument("--no-open", action="store_true", help="don't open a browser")
+    wb.add_argument("--demo", action="store_true",
+                    help="open it on an invented demo workspace (your data is untouched)")
     wb.set_defaults(func=cmd_web)
+
+    st = sub.add_parser("setup", help="connect your mailbox and identity; config, doctor, cache",
+                        description="Set up OpenLeads. With no action: the friendly first-run "
+                                    "setup. Or: setup config | setup doctor | setup cache.")
+    st.add_argument("rest", nargs=argparse.REMAINDER, help="config | doctor | cache, then its args")
+    st.set_defaults(func=cmd_setup)
+
+    hp = sub.add_parser("help", help="help for a command, or `help all` for every command")
+    hp.add_argument("topic", nargs="*")
+    hp.set_defaults(func=cmd_help)
 
     c = sub.add_parser("cache", help="inspect or clear the cache")
     c.add_argument("action", nargs="?", choices=["info", "clear"], default="info")
@@ -1255,7 +1335,8 @@ def build_parser() -> argparse.ArgumentParser:
     cli_today.register(sub)
     cli_workflow.register(sub)
     cli_workspace.register(sub)
-    p.epilog = _grouped_help(sub.help)
+    p.epilog = _short_help(sub.help)
+    p._full_epilog = _full_help(sub.help)
     p._registrar = sub          # for tests / tooling: every registered command
     return p
 
@@ -1271,7 +1352,39 @@ def _utf8_streams() -> None:
                 pass
 
 
-def main(argv=None) -> int:
+def _stderr_tty() -> bool:
+    try:
+        return sys.stderr.isatty()
+    except (AttributeError, ValueError):
+        return False
+
+
+def _tip(command: str) -> None:
+    """Once per command, on a terminal: say where a hidden command lives now."""
+    new = HOME_OF.get(command)
+    if not new or not _stderr_tty():
+        return
+    import json
+
+    from openleads.config import home
+    path = home() / "tips.json"
+    try:
+        seen = json.loads(path.read_text()) if path.exists() else []
+    except (OSError, ValueError):
+        seen = []
+    if command in seen:
+        return
+    where = f"openleads {new}"
+    print(f"tip: `openleads {command}` now lives under `{where}` (it still works).",
+          file=sys.stderr)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(sorted(set(seen) | {command})))
+    except OSError:
+        pass
+
+
+def main(argv=None, _tips: bool = True) -> int:
     _utf8_streams()
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
@@ -1290,6 +1403,8 @@ def main(argv=None) -> int:
     if not getattr(args, "func", None):
         parser.print_help()
         return 0
+    if _tips:
+        _tip(getattr(args, "command", "") or "")
     try:
         return args.func(args)
     except intent.QueryError as e:          # unknown source, bad --seniority, …
