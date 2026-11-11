@@ -91,14 +91,24 @@ def record(db, email: str, subject: str, body: str, message_id: str, received: f
     return {"email": email, **data}
 
 
+def _close_reply_task(db, email: str) -> None:
+    """The automatic "Reply to <name>" task is the same job as the reply: close it too."""
+    from openleads.workspace import tasks
+    for row in db.query("SELECT id FROM tasks WHERE contact=? AND status='open' "
+                        "AND title LIKE 'Reply to %'", (email,)):
+        tasks.complete(db, row["id"])
+
+
 def mark_answered(db, email: str, when: float) -> None:
     email = _norm(email)
+    _close_reply_task(db, email)
     if not db.scalar("SELECT 1 FROM activity WHERE ref_type='contact' AND ref=? "
                      "AND kind='you_replied' AND ts=?", (email, float(when))):
         activity.log(db, "contact", email, "you_replied", "You replied", ts=float(when))
 
 
 def mark_done(db, email: str, now: float | None = None) -> None:
+    _close_reply_task(db, _norm(email))
     activity.log(db, "contact", _norm(email), "reply_done", "Marked handled",
                  ts=time.time() if now is None else float(now))
 

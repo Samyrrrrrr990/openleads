@@ -1003,7 +1003,7 @@ COMMAND_GROUPS = (
     ("Find", ("find", "company", "verify", "enrich", "sources")),
     ("Outreach", ("write", "run", "inbox", "drip")),
     ("Automate", ("workflow", "recipe", "watch", "schedule", "runs", "assistant")),
-    ("Workspace", ("people", "companies", "lists", "seq", "tasks", "deals", "import",
+    ("Workspace", ("today", "people", "companies", "lists", "seq", "tasks", "deals", "import",
                    "export", "dedupe", "stats", "backup", "demo")),
     ("Setup", ("init", "config", "doctor", "cache", "web", "chat", "mcp", "bench")),
     ("Legacy", ("send", "crm", "campaign")),
@@ -1251,7 +1251,8 @@ def build_parser() -> argparse.ArgumentParser:
     cp.add_argument("rest", nargs=argparse.REMAINDER)
     cp.set_defaults(func=cmd_campaign)
 
-    from openleads import cli_workflow, cli_workspace
+    from openleads import cli_today, cli_workflow, cli_workspace
+    cli_today.register(sub)
     cli_workflow.register(sub)
     cli_workspace.register(sub)
     p.epilog = _grouped_help(sub.help)

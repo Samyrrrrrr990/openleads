@@ -173,3 +173,15 @@ def test_snooze_unknown_task_raises(db):
 def test_snooze_unknown_kind_raises(db):
     with pytest.raises(ValueError):
         today.snooze(db, "deal", "1", 0.0)
+
+
+def test_reply_task_is_not_shown_twice(db):
+    _lead(db, "a@x.co", created=1.0)
+    db.set_status("a@x.co", "sent")
+    db.set_status("a@x.co", "replied")          # makes the automatic "Reply to A" task
+    db.execute("UPDATE tasks SET due=? WHERE title LIKE 'Reply to %'", (NOW,))
+    replies.record(db, "a@x.co", "Re: hi", "pricing?", "<m@x>", NOW - 500)
+    tasks.create(db, "Call A", contact="a@x.co", due=NOW + 60)
+    b = today.briefing(db, now=NOW)
+    titles = [t["title"] for t in b["tasks"]["overdue"] + b["tasks"]["today"]]
+    assert b["counts"]["replies"] == 1 and titles == ["Call A"] and b["counts"]["tasks"] == 1

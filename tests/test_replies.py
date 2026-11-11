@@ -184,3 +184,17 @@ def test_sent_folder_failure_does_not_fail_the_scan(db, imap):
     imap["server"] = server
     out = inbox.scan(db)
     assert out["recorded"] == 1 and out["error"] == ""
+
+
+def test_marking_done_closes_the_reply_task(db):
+    db.set_status("ada@globex.example", "replied")      # opens "Reply to Ada"
+    assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == 1
+    replies.record(db, "ada@globex.example", "Re: hi", "pricing?", "<a@x>", 1000.0)
+    replies.mark_done(db, "ada@globex.example", now=1500.0)
+    assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == 0
+
+
+def test_answering_closes_the_reply_task(db):
+    db.set_status("ada@globex.example", "replied")
+    replies.mark_answered(db, "ada@globex.example", 2000.0)
+    assert db.scalar("SELECT COUNT(*) FROM tasks WHERE status='open'") == 0

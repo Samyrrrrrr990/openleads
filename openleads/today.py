@@ -85,8 +85,14 @@ def briefing(db, now: float | None = None) -> dict:
     now = time.time() if now is None else float(now)
     waiting_replies = replies.waiting(db, now=now)
     waiting_drafts = drafts.waiting(db, limit=20)
-    due = {"overdue": tasks.list_tasks(db, bucket="overdue", now=now),
-           "today": tasks.list_tasks(db, bucket="today", now=now)}
+    # A waiting reply already says "answer this person": hide its automatic
+    # "Reply to <name>" task so the same job isn't listed twice.
+    shown = {r["email"] for r in waiting_replies}
+
+    def keep(t: dict) -> bool:
+        return not (t.get("contact") in shown and str(t.get("title", "")).startswith("Reply to "))
+    due = {b: [t for t in tasks.list_tasks(db, bucket=b, now=now) if keep(t)]
+           for b in ("overdue", "today")}
     new = _new_leads(db, _since(db, now))
     return {
         "replies": waiting_replies,
