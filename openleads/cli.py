@@ -590,8 +590,11 @@ def cmd_setup(args) -> int:
     rest = list(getattr(args, "rest", None) or [])
     if not rest:
         return cmd_init(args)
+    if rest[0] == "ai":
+        from openleads import cli_ai
+        return cli_ai.cmd(rest[1:])
     if rest[0] not in ("config", "doctor", "cache", "init"):
-        print(f"[!] setup takes config, doctor or cache (got '{rest[0]}')", file=sys.stderr)
+        print(f"[!] setup takes ai, config, doctor or cache (got '{rest[0]}')", file=sys.stderr)
         return 2
     return main(rest, _tips=False)
 
@@ -1242,9 +1245,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help="open it on an invented demo workspace (your data is untouched)")
     wb.set_defaults(func=cmd_web)
 
-    st = sub.add_parser("setup", help="connect your mailbox and identity; config, doctor, cache",
+    st = sub.add_parser("setup", help="connect your mailbox and identity; ai, config, doctor, cache",
                         description="Set up OpenLeads. With no action: the friendly first-run "
-                                    "setup. Or: setup config | setup doctor | setup cache.")
+                                    "setup. Or: setup ai | setup config | setup doctor | setup cache.")
     st.add_argument("rest", nargs=argparse.REMAINDER, help="config | doctor | cache, then its args")
     st.set_defaults(func=cmd_setup)
 
