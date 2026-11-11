@@ -672,3 +672,49 @@ def test_scheduler_tick_includes_workflows(db, monkeypatch):
     monkeypatch.setattr(runner, "tick", fake_tick)
     summary = scheduler.tick(db=db, dry_run=True, now=WED_10)
     assert called == {"dry": True} and summary["workflows_run"] == 2
+
+
+# --- 5.3: Send can wait for approval ------------------------------------------ #
+def _send_graph(**send_params):
+    return G([N("t", "trigger.manual"), N("f", "find", query="dentists"), N("w", "write"),
+              N("s", "send", **send_params)], [E("t", "f"), E("f", "w"), E("w", "s")])
+
+
+def test_scheduled_live_workflow_queues(db, set_setting):
+    from openleads.workspace import drafts
+    set_setting("approve_first_emails", "on")
+    fk = Fakes([L("a@a.example"), L("b@a.example")])
+    res = run(_send_graph(), db, fk, mode=RUN, live=True, trigger_label="schedule")
+    assert fk.calls["send"] == [] and drafts.count_waiting(db) == 2
+    [d, _] = drafts.waiting(db)
+    assert d["source"] == "workflow" and d["ref"]["workflow"] == "wf" and d["ref"]["step"] == 1
+    assert "waiting for approval" in " ".join(by_node(res)["s"]["notes"])
+
+
+def test_manual_live_workflow_sends(db, set_setting):
+    set_setting("approve_first_emails", "on")
+    fk = Fakes([L("a@a.example")])
+    run(_send_graph(), db, fk, mode=RUN, live=True, trigger_label="dashboard")
+    assert fk.calls["send"][-1]["dry_run"] is False
+
+
+def test_approve_always_queues_even_when_not_live(db):
+    from openleads.workspace import drafts
+    fk = Fakes([L("a@a.example")])
+    run(_send_graph(approve="always"), db, fk, mode=RUN, live=False)
+    assert fk.calls["send"] == [] and drafts.count_waiting(db) == 1
+
+
+def test_approve_never_sends_on_schedule(db, set_setting):
+    set_setting("approve_first_emails", "on")
+    fk = Fakes([L("a@a.example")])
+    run(_send_graph(approve="never"), db, fk, mode=RUN, live=True, trigger_label="schedule")
+    assert fk.calls["send"][-1]["dry_run"] is False
+
+
+def test_test_mode_never_queues(db, set_setting):
+    from openleads.workspace import drafts
+    set_setting("approve_first_emails", "on")
+    fk = Fakes([L("a@a.example")])
+    run(_send_graph(approve="always"), db, fk, mode=TEST, trigger_label="schedule")
+    assert drafts.count_waiting(db) == 0

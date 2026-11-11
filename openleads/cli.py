@@ -844,7 +844,8 @@ def cmd_drip(args) -> int:
         print(f"  sequences: {seq.get('due', 0)} due · {seq.get('sent', 0) or seq.get('previewed', 0)}"
               f" {verb} · {seq.get('tasks', 0)} tasks"
               + (f" · {seq['waiting_window']} waiting for the send window"
-                 if seq.get("waiting_window") else ""))
+                 if seq.get("waiting_window") else "")
+              + (f" · {seq['queued']} waiting for your approval" if seq.get("queued") else ""))
     if summary.get("failed"):
         print(ui.c(f"  {summary['failed']} job(s) failed — see `openleads runs`", ui.RED))
     if not live:

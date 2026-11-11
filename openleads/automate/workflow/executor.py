@@ -112,7 +112,8 @@ def _run(graph, db, cache, mode, live, triggers, items, resume, services, now, e
                              trigger_label) if record else None
     ctx = Context(db, g, mode=mode, live=live, cache=cache, services=services, now=now,
                   emit=emit, run_id=run_id, state=state,
-                  trigger={"items": list(items or [])})
+                  trigger={"items": list(items or [])},
+                  unattended=trigger_label == "schedule" or trigger_label.startswith("resume:"))
     ctx.emit({"type": "run", "id": run_id, "workflow": name, "mode": mode, "live": ctx.live})
 
     by_id = {n["id"]: n for n in g["nodes"]}
@@ -272,6 +273,7 @@ def _summary(g: dict, results: dict, ctx: Context, parked: int) -> dict:
             drafted += sum(r["out"].values())
     return {"found": found, "drafted": drafted, "sent": int(ctx.vars.get("sent", 0)),
             "previewed": int(ctx.vars.get("previewed", 0)),
+            "queued": int(ctx.vars.get("queued", 0)),
             "exported": int(ctx.vars.get("exported", 0)), "waiting": parked,
             "errors": sum(1 for r in results.values() if r["status"] == "error"),
             "nodes_run": sum(1 for r in results.values() if r["status"] in ("ok", "error",
@@ -284,8 +286,9 @@ def _history(name: str, mode: str, live: bool, status: str, seconds: float, summ
     from openleads.automate import history
     kind = "workflow" if mode == RUN else "wf-test"
     detail = {k: v for k, v in summary.items() if v and k in ("found", "drafted", "sent",
-                                                              "previewed", "exported",
-                                                              "waiting", "errors")}
+                                                              "previewed", "queued",
+                                                              "exported", "waiting",
+                                                              "errors")}
     if mode == RUN:
         detail["live"] = bool(live)
     history.record(kind, name, status in ("ok", "partial"), seconds, detail=detail, error=error)

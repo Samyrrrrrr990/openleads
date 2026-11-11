@@ -491,10 +491,12 @@ def process(db, now: float | None = None, dry_run: bool = True, send_window_ok: 
     previews it even while it is paused, so it can be checked before activating.
     """
     from openleads.outreach.sender import send_drafts
+    from openleads.workspace import drafts as draftsmod
     on_progress = on_progress or (lambda *_: None)
     now = time.time() if now is None else now
     out = {"due": 0, "sent": 0, "previewed": 0, "tasks": 0, "finished": 0,
-           "waiting_window": 0, "capped": 0, "errors": 0, "skipped": 0, "results": []}
+           "waiting_window": 0, "capped": 0, "errors": 0, "skipped": 0, "queued": 0,
+           "results": []}
     seqs: dict = {}
     batches: dict = {}                  # (seq_id, step_idx) → [(enr, variant, draft)]
     for enr in due_enrollments(db, now, seq_id, paused_ok=dry_run and seq_id is not None):
@@ -535,6 +537,15 @@ def process(db, now: float | None = None, dry_run: bool = True, send_window_ok: 
         if missing:
             on_progress("phase", f"{enr['email']}: blank variable(s) "
                         + ", ".join("{{" + m + "}}" for m in missing))
+        if idx == 0 and not dry_run and draftsmod.approval_on(db):
+            # First email: wait in Today for a yes. The enrollment stays active but off
+            # the schedule (next_due NULL) until the draft is approved or skipped.
+            draftsmod.enqueue(db, draft, "sequence",
+                              {"campaign": f"seq:{seq['id']}", "step": 1,
+                               "enrollment_id": enr["id"], "sequence_id": seq["id"]})
+            db.execute("UPDATE enrollments SET next_due=NULL WHERE id=?", (enr["id"],))
+            out["queued"] += 1
+            continue
         batches.setdefault((seq["id"], idx), []).append((enr, variant, draft))
 
     for (sid, idx), items in batches.items():

@@ -193,7 +193,7 @@ class Context:
     def __init__(self, db, workflow: dict, mode: str = TEST, live: bool = False, cache=None,
                  services: dict | None = None, now: datetime | None = None, emit=None,
                  run_id: int | None = None, state: dict | None = None,
-                 trigger: dict | None = None):
+                 trigger: dict | None = None, unattended: bool = False):
         self.db = db
         self.cache = cache
         self.workflow = workflow
@@ -205,6 +205,8 @@ class Context:
         self.run_id = run_id
         self.state = state if state is not None else {}
         self.trigger = trigger or {}
+        # Started by the scheduler or a Wait resuming, not by a person pressing Run.
+        self.unattended = bool(unattended)
         self.vars: dict = {}
         self.node: dict = {}
         self.notes: list = []

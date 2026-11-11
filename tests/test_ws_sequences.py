@@ -21,6 +21,8 @@ def db(tmp_path):
         d.upsert_lead({"email": e, "first_name": e.split("@")[0].capitalize(),
                        "organization": "Acme", "tier": tier})
     d.suppress("gone@beta.example", "unsubscribed")
+    # These tests cover sending; approve-before-send has its own tests below.
+    d.kv_set("approval.default", "off")
     yield d
     d.close()
 
@@ -226,3 +228,54 @@ def test_clone_copies_steps_and_settings_not_people(db):
     assert S.clone(db, "Q4", "Q1 2027")["name"] == "Q1 2027"
     with pytest.raises(ValueError):
         S.clone(db, 999)
+
+
+# --- 5.3: first emails wait for approval -------------------------------------- #
+@pytest.fixture
+def approval(set_setting):
+    def _set(on):
+        set_setting("approve_first_emails", "on" if on else "off")
+    return _set
+
+
+def _one_enrolled(db):
+    s = S.create(db, "Q4", [EMAIL, {**EMAIL, "delay_days": 2}])
+    S.set_status(db, s["id"], "active")
+    S.enroll(db, s["id"], ["jane@acme.example"])
+    return s
+
+
+def test_first_step_is_queued_when_approval_on(db, sent, approval):
+    from openleads.workspace import drafts
+    approval(True)
+    s = _one_enrolled(db)
+    out = S.process(db, dry_run=False)
+    assert out["queued"] == 1 and out["sent"] == 0 and sent == []
+    enr = db.query_one("SELECT * FROM enrollments")
+    assert enr["status"] == "active" and enr["next_due"] is None and enr["step"] == 0
+    [d] = drafts.waiting(db)
+    assert d["email"] == "jane@acme.example" and d["source"] == "sequence"
+    assert d["ref"] == {"campaign": f"seq:{s['id']}", "step": 1, "enrollment_id": enr["id"],
+                        "sequence_id": s["id"]}
+    assert S.process(db, dry_run=False)["queued"] == 0       # queued once, not every run
+
+
+def test_approval_off_sends_as_before(db, sent, approval):
+    approval(False)
+    _one_enrolled(db)
+    assert S.process(db, dry_run=False)["sent"] == 1 and len(sent) == 1
+
+
+def test_dry_run_previews_and_queues_nothing(db, sent, approval):
+    from openleads.workspace import drafts
+    approval(True)
+    _one_enrolled(db)
+    out = S.process(db, dry_run=True)
+    assert out["queued"] == 0 and out["previewed"] == 1 and drafts.count_waiting(db) == 0
+
+
+def test_followup_steps_are_not_queued(db, sent, approval):
+    approval(True)
+    _one_enrolled(db)
+    db.execute("UPDATE enrollments SET step=1, next_due=0")
+    assert S.process(db, dry_run=False)["sent"] == 1

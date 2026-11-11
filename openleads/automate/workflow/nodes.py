@@ -820,6 +820,36 @@ def run_wait(ctx, params, items):
     return {"out": []}
 
 
+def _should_queue(ctx, params) -> bool:
+    """Hold these emails in the approval queue instead of sending (real runs only)."""
+    if ctx.test or ctx.db is None:
+        return False
+    mode = params.get("approve") or "auto"
+    if mode == "always":
+        return True
+    if mode == "auto" and ctx.live and ctx.unattended:
+        from openleads.workspace import drafts as draftsmod
+        return draftsmod.approval_on(ctx.db)
+    return False
+
+
+def _queue(ctx, drafts, by_email, campaign) -> dict:
+    from openleads.models import Draft
+    from openleads.workspace import drafts as draftsmod
+    out = []
+    for d in drafts:
+        draftsmod.enqueue(ctx.db, Draft(email=d["email"], subject=d.get("subject", ""),
+                                        body=d.get("body", ""), quality=d.get("quality") or {}),
+                          "workflow", {"campaign": campaign, "step": 1, "workflow": ctx.name,
+                                       "run_id": ctx.run_id})
+        it = dict(by_email[d["email"].lower()])
+        it["send"] = {"status": "queued", "detail": "waiting for approval in Today"}
+        out.append(it)
+    ctx.vars["queued"] = ctx.vars.get("queued", 0) + len(out)
+    ctx.note(f"{len(out)} drafts waiting for approval in Today")
+    return {"out": []}
+
+
 @node("send", "Send", "Outreach", "send",
       "Sends each draft from your mailbox inside your warmup cap, skipping suppressed "
       "addresses. Previews unless the run is live. Live sends outside business hours "
@@ -828,7 +858,11 @@ def run_wait(ctx, params, items):
                     help="Groups the sends in reports. Empty uses the search keyword."),
               Param("respect_window", "Only send inside business hours", "bool", True),
               Param("followups", "Start the follow-up sequence", "bool", False,
-                    help="The classic follow-ups the drip sends to non-repliers.")],
+                    help="The classic follow-ups the drip sends to non-repliers."),
+              Param("approve", "Wait for approval", "select", "auto",
+                    options=(("auto", "When scheduled and approval is on"),
+                             ("always", "Always"), ("never", "Never")),
+                    help="Waiting emails show up in Today to approve, edit or skip.")],
       accepts="drafted", effect="send")
 def run_send(ctx, params, items):
     drafts, by_email = [], {}
@@ -852,6 +886,8 @@ def run_send(ctx, params, items):
         ctx.vars["previewed"] = ctx.vars.get("previewed", 0) + len(out)
         _would(ctx, f"send {len(out)} emails (nothing was sent)")
         return {"out": out}
+    if _should_queue(ctx, params):
+        return _queue(ctx, drafts, by_email, campaign)
     if ctx.live and params.get("respect_window", True) and not ctx.svc("in_send_window")(ctx.now):
         slot = ctx.svc("next_send_slot")(ctx.now)
         ctx.park([dict(by_email[d["email"].lower()]) for d in drafts], slot.timestamp())
