@@ -32,10 +32,13 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 PLACEHOLDER_RE = re.compile(r"[\[\{][^\]\}]{0,50}[\]\}]")  # [anything] or {anything}
 
 
+DASH_MAP = {"—": ",", "–": ","}     # long dashes read as AI copy; a comma reads as a person
+
+
 def clean_dashes(text: str) -> str:
     """Normalize exotic Unicode punctuation/spaces to plain ASCII (outreach style)."""
     repl = {
-        "—": ",", "–": ",",
+        **DASH_MAP,
         "‑": "-", "‐": "-", "−": "-",
         "’": "'", "‘": "'",
         "“": '"', "”": '"',

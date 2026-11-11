@@ -162,6 +162,12 @@ def _sentences(text: str) -> list:
             if len(s.split()) >= 6]
 
 
+VACUOUS = ("came across your profile", "came across your company",
+           "i hope this email finds you well", "i hope this finds you well",
+           "i noticed your company", "love what you're doing", "impressed by your work",
+           "you told us")
+
+
 def score_draft(subject: str, body: str, brief=None, *, step: int = 1, previous=None,
                 template: bool = False, final: bool = False) -> dict:
     """Quality report for one draft: ``{score, grade, reasons, …}``.
@@ -194,15 +200,25 @@ def score_draft(subject: str, body: str, brief=None, *, step: int = 1, previous=
         cost("placeholder", "Placeholder text left in: " + ", ".join(brackets[:3]), 40)
 
     n = len(words(body))
-    lo, hi = (50, 120) if step <= 1 else (20, 90)
+    lo, hi = (50, 125) if step <= 1 else (20, 90)
     if n < lo:
-        cost("short", f"Body is short ({n} words, aim for {lo}–{hi})", 6 if step > 1 else 10)
+        cost("short", f"Body is short ({n} words, aim for {lo} to {hi})", 6 if step > 1 else 10)
+    elif step <= 1 and n > hi:
+        # First emails: 110 to 125 words is the target; past that every word costs replies.
+        if n > hi + 60:
+            cost("long", f"Body is far too long ({n} words)", 20)
+        cost("long", f"Body is long ({n} words, aim for 110 to 125)", 4)
     elif n > hi + 60:
-        cost("long", f"Body is long ({n} words, aim for {lo}–{hi})", 20)
+        cost("long", f"Body is long ({n} words, aim for {lo} to {hi})", 20)
     elif n > hi:
-        cost("long", f"Body is a bit long ({n} words, aim for {lo}–{hi})", 8)
+        cost("long", f"Body is a bit long ({n} words, aim for {lo} to {hi})", 8)
     else:
         good.append(f"{n} words")
+    if "—" in text or "–" in text:
+        cost("dash", "Uses a long dash; use a comma, colon or full stop", 10)
+    low = body.lower().replace("’", "'")
+    if any(p in low for p in VACUOUS):
+        cost("vacuous", "Generic personalization: say something specific or leave it out", 8)
 
     grade = reading_grade(body)
     if grade > 12:

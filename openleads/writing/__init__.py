@@ -33,6 +33,17 @@ ANGLES, TONES, REWRITES = L.ANGLES, L.TONES, L.REWRITES
 KEYLESS_MODEL = "writer"
 
 
+def dashes(text: str) -> str:
+    """No long dashes in outgoing copy: " — " becomes ", " and a bare one a comma."""
+    import re
+
+    from openleads.outreach.compose import DASH_MAP
+    text = re.sub(r"\s+[—–]\s+", ", ", text or "")
+    for dash, plain in DASH_MAP.items():
+        text = text.replace(dash, plain)
+    return text
+
+
 def brief_for(lead, settings: dict | None = None) -> Brief:
     """The research brief for ``lead`` using the sender profile from Settings (+ overrides)."""
     return build_brief(lead, sender_profile(settings))
@@ -154,6 +165,7 @@ def write_email(lead, *, angle: str | None = None, step: int = 1, settings: dict
         notes.append({"slot": "writer", "text": KEYLESS_MODEL, "why": why})
 
     for em in emails:
+        em["subject"], em["body"] = dashes(em["subject"]), dashes(em["body"])
         em["quality"] = score_draft(em["subject"], em["body"], b, step=step, final=final,
                                     previous=prev if step > 1 else None)
     main = emails[0]

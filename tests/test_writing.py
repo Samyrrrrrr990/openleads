@@ -11,6 +11,7 @@ from openleads.writing import (
     build_brief,
     generate_template,
     improve_template,
+    quality,
     rewrite,
     score_draft,
     write_email,
@@ -415,3 +416,62 @@ def test_templates_never_greet_a_company_by_its_first_word():
     assert d.body.startswith("Hi there,") and "quality" in d.to_dict()
     f = followup_draft(inbox, 2, sender="Sam")
     assert "Northwind," not in f.body and f.subject.startswith("re: ")
+
+
+# --- copy rules: no long dashes, 110 to 125 words, nothing generic ------------- #
+@pytest.fixture
+def demo_leads(tmp_path):
+    from openleads import demo
+    from openleads.db import DB
+    db = DB(tmp_path / "demo.db")
+    try:
+        demo.seed(db)
+        return [dict(r) for r in db.query("SELECT * FROM leads ORDER BY email LIMIT 12")]
+    finally:
+        db.close()
+
+
+def test_dash_costs_points():
+    r = quality.score_draft("hi", "We help teams — fast.")
+    assert any(x["code"] == "dash" and x["impact"] == -10 for x in r["reasons"])
+    assert any(x["code"] == "dash" for x in quality.score_draft("a – b", "fine")["reasons"])
+
+
+def test_vacuous_line_costs_points():
+    r = quality.score_draft("hi", "I came across your profile and wanted to reach out.")
+    assert any(x["code"] == "vacuous" and x["impact"] == -8 for x in r["reasons"])
+    r = quality.score_draft("hi", "I HOPE THIS EMAIL FINDS YOU WELL.")
+    assert any(x["code"] == "vacuous" for x in r["reasons"])
+
+
+def test_first_email_over_125_words_is_long():
+    body = " ".join(["word"] * 130) + "."
+    r = quality.score_draft("quick question", body, step=1)
+    long_ = [x for x in r["reasons"] if x["code"] == "long"]
+    assert long_ and "110 to 125" in " ".join(x["message"] for x in long_)
+    assert not any(x["code"] == "long" for x in
+                   quality.score_draft("q", " ".join(["word"] * 124) + ".", step=1)["reasons"])
+
+
+def test_reason_messages_have_no_long_dashes():
+    for body in ("short.", " ".join(["word"] * 200)):
+        r = quality.score_draft("hi", body)
+        assert not any("–" in x["message"] or "—" in x["message"] for x in r["reasons"])
+
+
+def test_dashes_helper():
+    from openleads import writing
+    assert writing.dashes("fast — and cheap") == "fast, and cheap"
+    assert writing.dashes("2019–2024") == "2019,2024"
+    assert writing.dashes("no dash here") == "no dash here"
+
+
+def test_writer_never_emits_dashes_or_vacuous_lines(demo_leads):
+    scores = []
+    for lead in demo_leads:
+        for angle in ("mutual-signal", "compliment", "curiosity", "pain", "short-ask"):
+            d = write_email(lead, angle=angle, llm=False)
+            assert "—" not in d.subject + d.body and "–" not in d.subject + d.body
+            assert not any(r["code"] == "vacuous" for r in d.quality["reasons"])
+            scores.append(d.quality["score"])
+    assert sum(scores) / len(scores) >= 95

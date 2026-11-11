@@ -46,8 +46,8 @@ OPENERS = {
          "Saw {company} is in the Y Combinator directory{batch_detail}, and had a question about "
          "{topic_object}.",
          "a real signal: Y Combinator company"),
-        ("github", ("signal.github",),
-         "Came across {repo} on GitHub.",
+        ("github", ("signal.github", "repo_real"),
+         "Came across {repo_real} on GitHub.",
          "a real signal: their GitHub"),
         ("paper", ("signal.paper",),
          "Came across your paper, \"{paper}\".",
