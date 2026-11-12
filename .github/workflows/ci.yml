@@ -9,7 +9,8 @@ on:
 jobs:
   test:
     name: test (py${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    # Pinned: the newest runner image no longer ships Python 3.8, which we still support.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
