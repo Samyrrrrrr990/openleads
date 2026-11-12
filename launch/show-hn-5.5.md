@@ -1,6 +1,6 @@
 # Show HN for 5.5 (the app)
 
-Not posted. Samyar posts it by hand once 5.5 is released, and answers comments by hand.
+Not posted. 5.5.0 is out (PyPI and npm, 2026-11-12). Post it by hand and answer comments yourself, in your own words: HN wants human-written posts and replies.
 Check every number against the repo on the day; nothing below should be a claim the
 README can't back.
 
@@ -27,12 +27,15 @@ What's new is the front door. You type a sentence:
     every weekday at 9am email 20 agencies in Miami about our SEO audit
 
 and it shows a numbered plan (schedule, find, keep deliverable addresses, skip people
-you've already emailed, write, queue) and waits. Nothing runs until you press Run, and
-nothing sends until you approve each first email. A search streams results as it
+you've already emailed, write, queue) and waits. The button says what it will do ("Save
+this schedule", "Find them and write drafts"), and nothing sends until you approve each
+first email. A search streams results as it
 finds them. A schedule is saved as a workflow you can open in a node editor.
 
 The page it opens on is Today: who replied, which drafts are waiting for a yes, what's
-due. That replaced fifteen sidebar pages with six.
+due, and how the month went. That replaced fifteen sidebar pages with seven sections.
+Connecting a model or a mailbox is one page with each service's own mark, and a mailbox
+login is tested before anything is saved.
 
 Things that might interest people here:
 
@@ -75,13 +78,13 @@ in the post are enough.
 
 1. (0s) Today is open: three replies, three emails to approve, tasks. Hold one second.
 2. (2s) Press `/`. Type: `every weekday at 9am email 20 agencies in Miami about our SEO audit`.
-3. (9s) Enter. The plan appears with six steps and "read by the built-in rules".
-4. (13s) Press Enter on **Save schedule**. The answer says the workflow is saved.
+3. (9s) Enter. The plan appears with its steps.
+4. (13s) Press Enter on **Save this schedule**. The answer says the workflow is saved.
 5. (16s) Click **See the workflow**, then the workflow's name: the node editor opens
    inside the app with the same six steps as nodes.
-6. (22s) `g t` back to Today. Click the pencil on the first draft, show the email,
-   then **Approve**. (On the demo workspace no mailbox is connected, so it says to
-   connect one. Cut before that, or connect a test mailbox.)
+6. (22s) `g t` back to Today. Click the pencil on the first draft and show the email.
+   (On the demo workspace no mailbox is connected, so the button reads **Connect to
+   send**. Cut there, or connect a test mailbox to show **Approve and send**.)
 7. (28s) `⌘K`, type a name, Enter: the person's panel slides in. End.
 
 ## If asked

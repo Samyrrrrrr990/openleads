@@ -3,6 +3,13 @@
 Everything needed to launch OpenLeads publicly. Nothing here is posted automatically:
 each post goes out from your own accounts, and you edit it first.
 
+## Status (2026-11-12)
+
+5.5.0 is out on PyPI, npm and GitHub Releases, and the new site is live. The HN and
+Reddit plan with drafts is in [`campaign-5.5.md`](./campaign-5.5.md). Show HN goes out by
+hand (Composio can't submit to HN); Reddit goes out through Composio, one sub a day,
+after you approve each post.
+
 ## Status (2026-11-11)
 
 Numbers today: 65 stars, 15 forks, 246 PyPI downloads in the last week (pypistats.org). Goal before charging: 1,000
