@@ -460,14 +460,15 @@ def process(db, now: float | None = None, dry_run: bool = True, send_window_ok: 
     """Run every due step once. Dry-run previews emails and changes nothing.
 
     Returns counts: ``due, sent, previewed, tasks, finished, waiting_window, capped,
-    errors`` plus per-email ``results``. A dry run of one sequence (``seq_id``)
+    held, errors`` plus per-email ``results``. A dry run of one sequence (``seq_id``)
     previews it even while it is paused, so it can be checked before activating.
     """
+    from openleads.outreach import precleared
     from openleads.outreach.sender import send_drafts
     on_progress = on_progress or (lambda *_: None)
     now = time.time() if now is None else now
     out = {"due": 0, "sent": 0, "previewed": 0, "tasks": 0, "finished": 0,
-           "waiting_window": 0, "capped": 0, "errors": 0, "skipped": 0, "results": []}
+           "waiting_window": 0, "capped": 0, "held": 0, "errors": 0, "skipped": 0, "results": []}
     seqs: dict = {}
     batches: dict = {}                  # (seq_id, step_idx) → [(enr, variant, draft)]
     for enr in due_enrollments(db, now, seq_id, paused_ok=dry_run and seq_id is not None):
@@ -541,6 +542,14 @@ def process(db, now: float | None = None, dry_run: bool = True, send_window_ok: 
             elif res.status == "skipped" and (res.detail or "").startswith("suppressed"):
                 out["skipped"] += 1
                 _finish(db, enr, seq, "unsubscribed", now, res.detail)
+            elif res.status == "skipped" and (res.detail or "").startswith(precleared.PREFIX):
+                # Held by the cold-email legality check. A verdict (consent needed,
+                # blocked, unknown) pauses the contact with the reason showing, until
+                # you resume them; a check that couldn't run keeps them due.
+                out["held"] += 1
+                if precleared.held_verdict(res.detail):
+                    db.execute("UPDATE enrollments SET status='paused', last_error=? WHERE id=?",
+                               (res.detail, enr["id"]))
             else:
                 out["errors"] += 1
                 errors = int(enr.get("errors") or 0) + 1

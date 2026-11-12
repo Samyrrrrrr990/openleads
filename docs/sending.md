@@ -73,12 +73,17 @@ day's allowance and tells you how many remain. Tune these in `openleads config`
 1. **Suppression check**: skips anyone bounced / unsubscribed / replied /
    do-not-contact / duplicate. The suppression list is permanent and local.
 2. **Warmup check**: stops at the day's allowance.
-3. **Human pacing**: a randomized delay (`send_delay_min`–`send_delay_max` seconds,
+3. **Legality check** (opt-in, off by default): once you turn it on, before the
+   first email to a new address it asks [Precleared](https://precleared.dev) whether
+   a cold email is allowed and holds anything that is not `ok_to_email`, with the
+   reason in the send result and on the contact's timeline (`precleared_mode`: `off`,
+   `hold` or `warn`; see the README). Follow-ups and dry runs are not checked.
+4. **Human pacing**: a randomized delay (`send_delay_min`–`send_delay_max` seconds,
    default 25–90) between real sends.
-4. **Proper headers**: `Message-ID`, `Date`, threading headers, and
+5. **Proper headers**: `Message-ID`, `Date`, threading headers, and
    **`List-Unsubscribe` + `List-Unsubscribe-Post`** (one-click). Plain-text default;
    **no open-tracking pixels**.
-5. **Logged + resumable**: every attempt is written to the local CRM (`touches`), so
+6. **Logged + resumable**: every attempt is written to the local CRM (`touches`), so
    a crashed batch resumes cleanly and reporting is exact.
 
 By default OpenLeads sends **only to `safe`-tier** addresses. Opt into `risky` with
@@ -133,6 +138,7 @@ openleads write --to ann@acme.com --explain --variants 2   # a saved contact, wi
 
 - Dry-run everywhere; `--live` + confirm to send.
 - `safe`-tier only unless you opt into `risky`.
+- An opt-in legality check (Precleared) before the first email to each new address.
 - Hard daily cap + warmup ramp + human pacing.
 - Permanent suppression; one-click unsubscribe; no tracking pixels.
 - Per-recipient try/except, so one failure never aborts the batch.

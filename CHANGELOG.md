@@ -10,6 +10,17 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 - `pypi` source: maintainers of Python packages for a topic (a curated package
   list per topic, or an exact package name), with their published email when the
   package lists one (#29, thanks @Shalinipks).
+- **Cold-email legality check.** Before the first email to each new address the
+  sender asks [Precleared](https://precleared.dev) whether a cold email is allowed
+  (UK PECR and GDPR, US CAN-SPAM, CASL, UWG and others) and holds anything that is
+  not `ok_to_email`, with the reason, the next step and a receipt id in the send
+  result and on the contact's timeline; a sequence pauses a held contact with the
+  reason showing. Opt-in: `precleared_mode` is `off` by default, and nothing is sent
+  to Precleared until you set it to `hold` or `warn`. Works without a key (10 checks a
+  day); a free `precleared_api_key` gives more, and OpenLeads never signs you up for
+  one. `precleared_sender_country` sets where you send from. Follow-ups and dry runs are not checked; definite verdicts are kept
+  for 30 days. Stdlib only (`openleads/outreach/precleared.py`). Sequence runs
+  report a `held` count.
 
 ## [5.2.0] - 2026-11-04
 

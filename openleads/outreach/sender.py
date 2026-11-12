@@ -6,6 +6,9 @@ Built to protect your domain reputation and stay out of spam:
 * **Dry-run by default.** Nothing leaves your machine unless ``dry_run=False``.
 * **Suppression-aware.** Never emails anyone bounced/unsubscribed/do-not-contact,
   and never the same person twice (the DB tracks every touch).
+* **Legality check (opt-in).** Off by default. Once you turn it on, asks Precleared
+  whether a cold email to each new address is legal before the first one goes
+  (:mod:`outreach.precleared`) and holds the rest.
 * **Warmup-capped.** Honors the daily ramp from :mod:`outreach.deliverability`.
 * **Human-paced.** Randomized delays between real sends.
 * **Correct headers.** Real ``Message-ID``/``Date``, a one-click ``List-Unsubscribe``
@@ -24,13 +27,19 @@ from email.utils import formatdate, make_msgid
 from openleads import db as dbmod
 from openleads import settings
 from openleads.models import Draft, SendResult
-from openleads.outreach import providers
+from openleads.outreach import precleared, providers
 
 OPT_OUT_FOOTER = "\n\nP.S. If this isn't relevant, just reply and I'll leave you be."
 
 
 def _noop(_):
     pass
+
+
+def _first_email(db, email: str, campaign: str) -> bool:
+    """Nothing has been sent to this address in this campaign yet."""
+    return not any(t.get("status") == dbmod.STATUS_SENT and t.get("campaign") == campaign
+                   for t in db.touches_for(email))
 
 
 def build_message(draft: Draft, cfg: dict, add_footer: bool = True) -> EmailMessage:
@@ -56,8 +65,10 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
                 step: int = 1, on_progress=_noop) -> list[SendResult]:
     """Send (or preview) a list of drafts. Returns one :class:`SendResult` each.
 
-    Owns the DB lifecycle only if it opens one. Respects suppression + warmup caps;
-    real sends are throttled with randomized human-like delays.
+    Owns the DB lifecycle only if it opens one. Respects suppression + warmup caps
+    and, when it is turned on, the Precleared legality check (first real email of a
+    campaign only); real
+    sends are throttled with randomized human-like delays.
     """
     own_db = False
     if db is None:
@@ -75,6 +86,11 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
     # Warmup budget (real sends only).
     from openleads.outreach.deliverability import warmup_status
     remaining = warmup_status(db)["remaining"] if not dry_run else len(drafts)
+
+    # Legality check, once per new recipient, before the first real email of a
+    # campaign. Follow-ups (anyone already emailed in it) and previews are never checked.
+    checker = precleared.Checker(db)
+    check = checker.mode != "off" and not dry_run
 
     server = None
     results: list[SendResult] = []
@@ -98,20 +114,24 @@ def send_drafts(drafts: list[Draft], dry_run: bool = True, db=None,
             elif dry_run:
                 res = SendResult(email, "preview")
             else:
-                # human-paced gap between consecutive real sends
-                if last_real_index >= 0:
-                    time.sleep(random.uniform(delay_min, delay_max))
-                try:
-                    msg = build_message(d, cfg)
-                    server.send_message(msg)
-                    res = SendResult(email, "sent", message_id=msg["Message-ID"])
-                    sent_count += 1
-                    last_real_index = i
-                    if save_sent:
-                        ok, detail = providers.append_to_sent(msg.as_bytes(), cfg=imap_cfg)
-                        res.detail = "saved to Sent" if ok else f"not saved to Sent: {detail}"
-                except Exception as e:  # noqa: BLE001 — one failure must not abort the batch
-                    res = SendResult(email, "error", error=str(e))
+                held = checker.gate(email) if check and _first_email(db, email, campaign) else ""
+                if held:
+                    res = SendResult(email, "skipped", detail=held)
+                else:
+                    # human-paced gap between consecutive real sends
+                    if last_real_index >= 0:
+                        time.sleep(random.uniform(delay_min, delay_max))
+                    try:
+                        msg = build_message(d, cfg)
+                        server.send_message(msg)
+                        res = SendResult(email, "sent", message_id=msg["Message-ID"])
+                        sent_count += 1
+                        last_real_index = i
+                        if save_sent:
+                            ok, detail = providers.append_to_sent(msg.as_bytes(), cfg=imap_cfg)
+                            res.detail = "saved to Sent" if ok else f"not saved to Sent: {detail}"
+                    except Exception as e:  # noqa: BLE001 — one failure must not abort the batch
+                        res = SendResult(email, "error", error=str(e))
 
             db.record_touch(email, res.status, subject=d.subject, campaign=campaign,
                             step=step, message_id=res.message_id, error=res.error)

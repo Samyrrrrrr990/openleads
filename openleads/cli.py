@@ -825,7 +825,8 @@ def cmd_drip(args) -> int:
         if kind == "campaign":
             print(ui.c(f"  ◆ running campaign: {payload}", ui.FAINT))
         elif kind == "send":
-            print(f"  {payload.status:>7} → {payload.email}")
+            print(f"  {payload.status:>7} → {payload.email}"
+                  + (f" ({payload.detail})" if payload.detail else ""))
 
     summary = scheduler.tick(dry_run=not live, on_progress=on_progress)
     print(ui.rule())
@@ -844,7 +845,8 @@ def cmd_drip(args) -> int:
         print(f"  sequences: {seq.get('due', 0)} due · {seq.get('sent', 0) or seq.get('previewed', 0)}"
               f" {verb} · {seq.get('tasks', 0)} tasks"
               + (f" · {seq['waiting_window']} waiting for the send window"
-                 if seq.get("waiting_window") else ""))
+                 if seq.get("waiting_window") else "")
+              + (f" · {seq['held']} held by the cold-email check" if seq.get("held") else ""))
     if summary.get("failed"):
         print(ui.c(f"  {summary['failed']} job(s) failed — see `openleads runs`", ui.RED))
     if not live:

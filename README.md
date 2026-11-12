@@ -242,12 +242,39 @@ leads, drafts, mailbox credentials, learned patterns and the whole workspace liv
 `~/.openleads`. There is no hosted backend, no account and no telemetry.
 [Architecture](./docs/architecture.md).
 
+## Is it legal to email them?
+
+Whether a cold email is allowed depends on facts the address does not show: a UK
+recipient may be a limited company or a sole trader, and only one of them can be
+emailed without consent; Canada and Australia care how you got the address; the US
+wants an opt-out and a postal address. The check is opt-in: it is off until you turn
+it on, and nothing is sent to Precleared while it is off. With it on, before the
+**first** email to each new address, the sender asks
+[Precleared](https://precleared.dev) and gets one verdict back (`ok_to_email`,
+`consent_needed`, `blocked` or `unknown`) with the rule it applied, what to do next
+and a signed receipt id. Follow-ups, previews and dry runs
+are never checked, and a definite verdict is kept for 30 days, so a held lead you try
+again or email from another campaign costs no new check.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `precleared_mode` (`PRECLEARED_MODE`) | `off` | `off` makes no call and sends nothing to Precleared. `hold` sends only on `ok_to_email` and holds everything else, including a check that could not run. `warn` records the verdict and sends anyway. |
+| `precleared_api_key` (`PRECLEARED_API_KEY`) | unset | Optional. Without a key you get 10 checks a day; a [free key](https://precleared.dev/get-key) gives 100 a day for 14 days, then 25. When the keyless allowance runs out, the check stops for the day and says where to get a key; OpenLeads never signs you up for one. |
+| `precleared_sender_country` (`PRECLEARED_SENDER_COUNTRY`) | `GB` | Where your business is based: `GB`, `US` or `AE`. |
+
+A held lead is never skipped silently. The send result says why
+(`skipped → ada@globex.co.uk (precleared: consent_needed. …)`), the reason, next step
+and receipt id land on the contact's timeline (the dashboard record and
+`openleads people show`), and a sequence pauses that contact with the reason showing
+until you resume them. Turn it on with `openleads config set precleared_mode hold` (or
+`warn`), or in Settings → Sending policy. Precleared is decision support, not legal advice.
+
 ## Responsible use
 
 OpenLeads is for legitimate prospecting, recruiting and research. You are
 responsible for anti-spam law (CAN-SPAM, GDPR, CASL) and each source's terms. It
-ships the guardrails: dry runs by default, a suppression list, one-click
-unsubscribe, warmup caps and no tracking pixels.
+ships the guardrails: dry runs by default, a suppression list, an opt-in legality
+check before the first email, one-click unsubscribe, warmup caps and no tracking pixels.
 [Responsible use](./docs/responsible-use.md).
 
 ## License

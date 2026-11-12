@@ -448,7 +448,11 @@ def cmd_seq(db, args) -> int:
         verb = "sent" if live else "would send"
         print(f"[seq] {out['due']} due · {verb} {out['sent'] if live else out['previewed']} · "
               f"{out['tasks']} task(s) · {out['waiting_window']} waiting for business hours · "
-              f"{out['capped']} over the daily cap")
+              f"{out['capped']} over the daily cap"
+              + (f" · {out['held']} held by the cold-email check" if out.get("held") else ""))
+        for r in out["results"]:
+            if r["status"] == "skipped" and r.get("detail", "").startswith("precleared"):
+                print(f"      held {r['email']}: {r['detail']}")
         if not live:
             for r in out["results"][:15]:
                 print(f"      → {r['email']:<34} {_cut(r['subject'], 50)}")
