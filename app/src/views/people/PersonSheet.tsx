@@ -35,6 +35,10 @@ function Fact({ icon: Icon, children }: { icon: typeof PhoneIcon; children: Reac
   );
 }
 
+function words(slug: string): string {
+  return (slug || "").replace(/[_-]+/g, " ");
+}
+
 function Heading({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-2 text-xs font-medium text-muted-foreground">{children}</h3>;
 }
@@ -127,12 +131,12 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
           <div className="flex flex-col gap-1.5 text-[13px]">
             {enrollments.map((e, i) => (
               <div key={`e${i}`}>
-                Sequence <span className="font-medium">{e.sequence_name || "sequence"}</span> <span className="text-muted-foreground">({e.status})</span>
+                Sequence <span className="font-medium">{e.sequence_name || "sequence"}</span> <span className="text-muted-foreground">({words(e.status)})</span>
               </div>
             ))}
             {deals.map((d) => (
               <div key={`d${d.id}`}>
-                Deal <span className="font-medium">{d.name}</span> <span className="text-muted-foreground">({d.stage})</span>
+                Deal <span className="font-medium">{d.name}</span> <span className="text-muted-foreground">({words(d.stage)})</span>
               </div>
             ))}
             {tasks
@@ -157,7 +161,7 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
             <div key={n.id} className="rounded-lg border border-border bg-muted px-3 py-2 text-[13px] leading-5">
               {n.pinned ? <PinIcon className="me-1.5 inline size-3 text-muted-foreground" /> : null}
               {n.body}
-              <div className="mt-1 text-2xs text-muted-foreground">{ago(n.created)}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{ago(n.created)}</div>
             </div>
           ))}
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Add a note" aria-label="Add a note" />

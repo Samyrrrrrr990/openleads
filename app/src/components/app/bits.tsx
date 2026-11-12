@@ -131,7 +131,7 @@ export function Stat({
       <div className="mt-0.5 line-clamp-2 min-h-4 text-xs leading-4 text-muted-foreground">{note}</div>
     </>
   );
-  const cls = cn("block rounded-xl border border-border bg-card px-4 py-3.5", href && "transition-colors hover:border-input", className);
+  const cls = cn("block rounded-xl border border-border bg-card px-3.5 py-3.5", href && "transition-colors hover:border-input", className);
   return href ? (
     <a href={href} className={cls}>
       {body}

@@ -34,6 +34,11 @@ function title(name: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function sentence(text: string): string {
+  const t = (text || "").replace(/\b0(\d:\d\d)\b/, "$1");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 const STATUS: Record<string, string> = { ok: "Finished", error: "Failed", running: "Running", waiting: "Waiting for approval", paused: "Paused" };
 
 function when(iso: string): string {
@@ -72,29 +77,29 @@ export function Workflows() {
         </p>
         {res.error && <ErrorNote message={res.error} onRetry={() => void res.reload()} />}
         {!res.data && res.loading && <LoadingRows />}
-        {res.data && list.length === 0 && <Quiet>No workflows yet.</Quiet>}
+        {res.data && list.length === 0 && <Quiet>No workflows yet. Ask for something "every weekday" to make one, or use New workflow.</Quiet>}
         {list.map((w) => (
-          <section key={w.name} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+          <section key={w.name} className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <a href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)} className="font-medium hover:underline">
+                <a href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)} className="text-[13px] font-semibold hover:underline max-md:text-sm">
                   {title(w.name)}
                 </a>
-                <Badge variant="secondary">{w.when || "Run by hand"}</Badge>
+                <span className="text-xs text-muted-foreground">{sentence(w.when) || "Run by hand"}</span>
                 {w.live ? <Badge variant="warning">Sends without asking</Badge> : <Badge variant="secondary">Emails wait for approval</Badge>}
                 {w.waiting > 0 && <Badge variant="info">{w.waiting} waiting</Badge>}
               </div>
-              {w.description && <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground">{w.description}</p>}
+              {w.description && <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground max-md:text-sm">{w.description}</p>}
               <p className="mt-2 text-xs text-muted-foreground">
                 {w.nodes} steps. Last run: {when(w.last_run_at)}.{" "}
-                <a className="font-medium text-foreground underline underline-offset-2" href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)}>
+                <a className="font-medium text-foreground underline underline-offset-2 max-md:inline-flex max-md:min-h-10 max-md:items-center" href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)}>
                   Edit the steps
                 </a>
               </p>
             </div>
             <label className="flex min-h-10 shrink-0 items-center gap-2 text-xs text-muted-foreground">
               {w.active ? "On" : "Off"}
-              <Switch checked={w.active} onCheckedChange={(v) => setActive(w, v)} aria-label={`Turn ${title(w.name)} ${w.active ? "off" : "on"}`} />
+              <Switch checked={w.active} onCheckedChange={(v) => setActive(w, v)} aria-label={title(w.name)} />
             </label>
           </section>
         ))}

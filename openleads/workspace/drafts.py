@@ -155,7 +155,7 @@ def approve(db, draft_id, subject: str | None = None, body: str | None = None,
     except Exception as e:  # noqa: BLE001 — never strand a claimed draft in 'sending'
         status, detail = "error", f"{type(e).__name__}: {e}"[:300]
     if any(k in detail for k in _NO_MAILBOX):
-        detail = "Connect your mailbox first (`openleads setup`); the draft is still waiting."
+        detail = "Connect your mailbox in Settings, Connections. The draft is still waiting."
     if status == "error" or (status == "skipped" and "warmup" in detail):
         # Nothing went out and it may work later (cap resets tomorrow, SMTP recovers):
         # keep the draft, with any edits, in the queue.

@@ -29,7 +29,7 @@ export function Approvals() {
     <>
       <PageHeader section={SECTION} page="approvals" />
       <Body>
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground max-md:text-sm">
           First emails wait here until you say yes. Approve sends the email as written; open one to read or change it first.
         </p>
         {res.error && <ErrorNote message={res.error} onRetry={reload} />}
@@ -110,7 +110,7 @@ export function Sequences() {
         {list.map((s) => (
           <section key={s.id} className="rounded-xl border border-border bg-card">
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-3.5 pt-3.5">
-              <a href={classic("outreach", `sequences/${s.id}`)} className="font-medium hover:underline">
+              <a href={classic("outreach", `sequences/${s.id}`)} className="text-[13px] font-semibold hover:underline max-md:text-sm">
                 {s.name}
               </a>
               <Badge variant={s.status === "active" ? "success" : "secondary"}>{s.status === "active" ? "Running" : s.status === "paused" ? "Paused" : s.status}</Badge>
@@ -120,12 +120,16 @@ export function Sequences() {
                 {s.status === "active" ? "Pause" : "Start"}
               </Button>
             </div>
-            <p className="px-3.5 pt-1.5 text-[13px] leading-5 text-muted-foreground">{stepLine(s.steps)}</p>
+            <p className="px-3.5 pt-1.5 text-[13px] leading-5 text-muted-foreground max-md:text-sm">{stepLine(s.steps)}</p>
             <div className="mt-3 grid grid-cols-4 border-t border-border max-sm:grid-cols-2 [&>*]:border-border sm:[&>*:not(:last-child)]:border-e max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-e">
               <Figure label="Enrolled" value={s.stats.enrolled.toLocaleString()} note={s.stats.enrolled === 1 ? "person" : "people"} />
               <Figure label="Active now" value={s.stats.active.toLocaleString()} note="still getting steps" />
               <Figure label="Emails sent" value={s.stats.sent.toLocaleString()} note="so far" />
-              <Figure label="Reply rate" value={pct(s.stats.reply_rate)} note={s.stats.enrolled ? `${s.stats.replied} of ${s.stats.enrolled} replied` : "No one enrolled yet"} />
+              <Figure
+                label="Reply rate"
+                value={s.stats.enrolled ? pct((s.stats.replied / s.stats.enrolled) * 100) : "—"}
+                note={s.stats.enrolled ? `${s.stats.replied} of ${s.stats.enrolled} enrolled replied${s.stats.enrolled < 50 ? ". Too few to judge yet." : ""}` : "Enrol people to start"}
+              />
             </div>
           </section>
         ))}
@@ -166,8 +170,8 @@ function Blank({ children }: { children: React.ReactNode }) {
 /** A template with its blanks filled for a sample person, so it reads as an email. */
 function filled(text: string): React.ReactNode[] {
   // "{Hi|Hey}" means either wording is used; show the first.
-  return text.replace(/\{([^{}|]+)\|[^{}]*\}/g, "$1").split(/(\{\{[^}]+\}\})/g).map((part, i) => {
-    const m = /^\{\{\s*([\w.]+)\s*(?:\|([^}]*))?\}\}$/.exec(part);
+  return text.replace(/\{([^{}|]+)\|[^{}]*\}/g, "$1").split(/(\{\{[^}]+\}\}|\{[\w.]+\})/g).map((part, i) => {
+    const m = /^\{\{?\s*([\w.]+)\s*(?:\|([^}]*))?\}?\}$/.exec(part);
     if (!m) return part;
     return <Blank key={i}>{SAMPLE[m[1]] ?? (m[2]?.trim() || m[1].replace(/_/g, " "))}</Blank>;
   });
@@ -190,7 +194,7 @@ export function Templates() {
       <Body>
         {res.error && <ErrorNote message={res.error} onRetry={() => void res.reload()} />}
         {!res.data && res.loading && <LoadingRows />}
-        {res.data && list.length === 0 && <Quiet>No templates yet.</Quiet>}
+        {res.data && list.length === 0 && <Quiet>No templates yet. Use Edit templates to write your first one.</Quiet>}
         {list.length > 0 && (
           <p className="text-[13px] text-muted-foreground">
             Shown the way one would read for <Blank>Jane</Blank> at <Blank>Acme</Blank>. The marked words are filled in for each person.
@@ -198,14 +202,14 @@ export function Templates() {
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           {list.map((t) => (
-            <a key={t.id} href={classic("outreach", "templates")} className="flex flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-input">
+            <a key={t.id} href={classic("outreach", "templates")} className="flex flex-col rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-input">
               <div className="flex items-center gap-2">
-                <span className="truncate font-medium">{t.name}</span>
+                <span className="truncate text-[13px] font-semibold max-md:text-sm">{t.name}</span>
                 {t.category && <Badge variant="secondary">{t.category}</Badge>}
                 {t.used > 0 && <span className="ms-auto shrink-0 text-xs text-muted-foreground">Used {plural(t.used, "time", "times")}</span>}
               </div>
-              <p className="mt-2 truncate text-[13px]">{filled(t.subject)}</p>
-              <p className="mt-1 line-clamp-3 whitespace-pre-line text-[13px] leading-5 text-muted-foreground">{filled(t.body)}</p>
+              <p className="mt-2 truncate text-[13px] max-md:text-sm">{filled(t.subject)}</p>
+              <p className="mt-1 line-clamp-3 whitespace-pre-line text-[13px] leading-5 text-muted-foreground max-md:text-sm">{filled(t.body)}</p>
             </a>
           ))}
         </div>

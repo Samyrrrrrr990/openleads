@@ -43,7 +43,7 @@ export function FitDot({ score }: { score: number }) {
   // A score out of 100 is an amount, not a status: one colour, longer for more.
   return (
     <span className="inline-flex items-center gap-2 tabular-nums" title={`Fit ${score} out of 100`}>
-      <span className="h-1.5 w-8 rounded-full bg-accent" aria-hidden>
+      <span className="h-1.5 w-8 rounded-full bg-border" aria-hidden>
         <span className="block h-1.5 rounded-full bg-chart-1" style={{ width: `${Math.max(0, Math.min(100, score))}%` }} />
       </span>
       <span className="w-6 text-end">{score}</span>
@@ -138,8 +138,8 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
                             <span className="min-w-0 truncate text-sm font-medium">{p.name || p.email.split("@")[0]}</span>
                             <span className="ms-auto shrink-0">{st ? <ToneBadge tone={st.tone}>{st.label}</ToneBadge> : p.stage}</span>
                           </span>
-                          <span className="block truncate text-[13px] text-muted-foreground">{[p.title, p.organization].filter(Boolean).join(" at ")}</span>
-                          <span className="addr block truncate text-[13px] text-muted-foreground">{p.email}</span>
+                          <span className="block truncate text-sm text-muted-foreground">{[p.title, p.organization].filter(Boolean).join(" at ")}</span>
+                          <span className="addr block truncate text-sm text-muted-foreground">{p.email}</span>
                         </span>
                       </a>
                     </li>

@@ -123,13 +123,33 @@ export function Today() {
     setSwitching(false);
   };
 
+  const glance = h && (
+<Panel
+                title="At a glance"
+                action={
+                  <a className="text-xs text-muted-foreground hover:text-foreground" href={href("pipeline", "analytics")}>
+                    Analytics
+                  </a>
+                }
+              >
+                <div className="grid grid-cols-2 [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-e [&>*]:border-border">
+                  <Figure label="Emails sent" value={h.emails.sent_30d.toLocaleString()} note={`to ${plural(h.emails.contacted, "person", "people")}, last 30 days`} to={href("pipeline", "analytics")}>
+                    <Spark points={h.series.sent} label="Emails sent per day" />
+                  </Figure>
+                  <Figure label="Reply rate" value={pct(h.emails.reply_rate)} note={`${h.emails.replied} of ${h.emails.contacted} replied${h.emails.contacted < 50 ? ". Too few to judge yet." : ""}`} to={href("pipeline", "analytics")} />
+                  <Figure label="Open pipeline" value={money(h.deals.open_value)} note={`across ${plural(h.deals.open_count, "deal", "deals")}`} to={href("pipeline", "deals")} />
+                  <Figure label="People" value={h.contacts.total.toLocaleString()} note={`${h.contacts.new_7d} added this week`} to={href("people")} />
+                </div>
+              </Panel>
+  );
+
   return (
     <>
       <PageHeader
         section={sectionOf("today")}
         actions={
-          <Button size="sm" variant="outline" render={<a href={href("ask")} />}>
-            <SparklesIcon /> Ask OpenLeads <Kbd className="ms-0.5 max-md:hidden">/</Kbd>
+          <Button size="sm" variant="outline" className="max-md:hidden" render={<a href={href("ask")} />}>
+            <SparklesIcon /> Ask <Kbd className="ms-0.5 max-md:hidden">/</Kbd>
           </Button>
         }
       />
@@ -140,6 +160,8 @@ export function Today() {
         </div>
 
         {today.error && <ErrorNote message={today.error} onRetry={changed} />}
+        {/* On a phone the numbers come before the queue, not three screens under it. */}
+        <div className="lg:hidden">{glance}</div>
 
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="flex min-w-0 flex-col gap-5">
@@ -151,13 +173,13 @@ export function Today() {
                 </span>
                 <div className="min-w-48 flex-1">
                   <p className="text-sm font-medium">Connect your mailbox to send</p>
-                  <p className="text-[13px] leading-5 text-muted-foreground">
+                  <p className="text-[13px] leading-5 text-foreground/80 max-md:text-sm">
                     {setup.demo
                       ? "The emails in this demo are invented. Connect your own mailbox and approved emails go out from your address."
                       : "Approved emails wait here until you do. They go out from your own address, and replies come back to this page."}
                   </p>
                 </div>
-                <Button size="sm" render={<a href={mailTo} />}>
+                <Button size="sm" className="max-md:h-10" render={<a href={mailTo} />}>
                   Connect mailbox
                 </Button>
               </section>
@@ -167,25 +189,7 @@ export function Today() {
           </div>
 
           <aside className="flex min-w-0 flex-col gap-5" aria-label="How things are going">
-            {h && (
-              <Panel
-                title="Last 30 days"
-                action={
-                  <a className="text-xs text-muted-foreground hover:text-foreground" href={href("pipeline", "analytics")}>
-                    Analytics
-                  </a>
-                }
-              >
-                <div className="grid grid-cols-2 [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-e [&>*]:border-border">
-                  <Figure label="Emails sent" value={h.emails.sent_30d.toLocaleString()} note={plural(h.emails.contacted, "person", "people")} to={href("pipeline", "analytics")}>
-                    <Spark points={h.series.sent} label="Emails sent per day" />
-                  </Figure>
-                  <Figure label="Reply rate" value={pct(h.emails.reply_rate)} note={`${h.emails.replied} of ${h.emails.contacted} replied`} to={href("pipeline", "analytics")} />
-                  <Figure label="Open pipeline" value={money(h.deals.open_value)} note={plural(h.deals.open_count, "deal", "deals")} to={href("pipeline", "deals")} />
-                  <Figure label="People" value={h.contacts.total.toLocaleString()} note={`${h.contacts.new_7d} new this week`} to={href("people")} />
-                </div>
-              </Panel>
-            )}
+            <div className="max-lg:hidden">{glance}</div>
 
             {h && setup.mailbox && (
               <Panel
@@ -248,7 +252,7 @@ export function Today() {
                     )
                   }
                   title={model ? (PROVIDER_NAME[model.provider] ?? model.label) : found ? `${PROVIDER_NAME[found.provider] ?? found.label} is on this computer` : "AI model"}
-                  note={model ? "Reads requests, writes drafts, sorts replies" : found ? "Use it to read requests and write drafts" : "Optional. The built-in rules work without one"}
+                  note={model ? "Reads requests, writes drafts, sorts replies" : found ? "Built-in rules in use now. Use it to read requests and write drafts" : "Optional. The built-in rules work without one"}
                   action={
                     found && (
                       <Button size="xs" variant="outline" disabled={switching} onClick={useFound}>
@@ -257,6 +261,9 @@ export function Today() {
                     )
                   }
                 />
+                {!setup.mailbox && (
+                  <StatusRow to={mailTo} done={false} icon={<IconTile><MailIcon className="size-4" /></IconTile>} title="Mailbox" note="Not connected. Nothing can send yet" />
+                )}
                 {setup.mailbox && (
                   <>
                     <StatusRow to={mailTo} done icon={<IconTile><MailIcon className="size-4" /></IconTile>} title="Mailbox" note="Approved emails go out from your address" />
@@ -274,7 +281,7 @@ export function Today() {
 
             {b && b.new_leads.count > 0 && (
               <Panel
-                title="New people"
+                title="Added since your last visit"
                 count={b.new_leads.count}
                 action={
                   <a className="text-xs text-muted-foreground hover:text-foreground" href={href("people")}>

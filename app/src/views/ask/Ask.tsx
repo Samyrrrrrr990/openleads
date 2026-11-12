@@ -10,7 +10,7 @@ import { ask, clearTurns, dismiss, run, useTurns } from "~/views/today/useAsk";
 const STARTERS = [
   {
     icon: SearchIcon,
-    title: "Find people",
+    title: "Search for people",
     note: "A search. Nothing is sent.",
     examples: ["Find 20 dentists in Austin", "Find founders of YC fintech startups"],
   },
@@ -33,6 +33,8 @@ export function Ask() {
   const recent = useRequests();
   const busy = turns.some((t) => t.status === "reading" || t.status === "running");
   const empty = turns.length === 0;
+  // A request that is already one of the examples isn't worth showing twice.
+  const again = recent.filter((r) => !STARTERS.some((s) => s.examples.includes(r)));
 
   return (
     <>
@@ -48,7 +50,7 @@ export function Ask() {
       />
       {empty ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto flex min-h-full w-full max-w-[var(--content-max)] flex-col justify-center gap-6 px-5 py-8 max-md:px-3">
+          <div className="mx-auto flex min-h-full w-full max-w-[var(--content-max)] flex-col justify-center gap-6 px-5 py-8 max-md:px-4">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">What do you want to do?</h2>
               <p className="mt-1 text-[15px] text-muted-foreground">Say it in a sentence. You see the plan first, and emails wait for your yes.</p>
@@ -67,7 +69,7 @@ export function Ask() {
                         key={e}
                         type="button"
                         onClick={() => askFor(e)}
-                        className="cursor-pointer rounded-lg border border-border bg-card px-2.5 py-2 text-start text-[13px] leading-5 text-muted-foreground transition-colors hover:border-input hover:text-foreground"
+                        className="cursor-pointer rounded-lg border border-border bg-card px-2.5 py-2 text-start text-[13px] leading-5 text-muted-foreground transition-colors hover:border-input hover:text-foreground max-md:py-2.5 max-md:text-sm"
                       >
                         {e}
                       </button>
@@ -76,17 +78,17 @@ export function Ask() {
                 </section>
               ))}
             </div>
-            {recent.length > 0 && (
+            {again.length > 0 && (
               <section>
                 <h3 className="text-[13px] font-medium">Ask again</h3>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {recent.slice(0, 6).map((r) => (
+                  {again.slice(0, 6).map((r) => (
                     <button
                       key={r}
                       type="button"
                       title={r}
                       onClick={() => askFor(r)}
-                      className="h-7 max-w-full cursor-pointer truncate rounded-full border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-input hover:text-foreground"
+                      className="h-7 max-w-full cursor-pointer truncate rounded-full border border-border bg-card px-3 text-xs text-muted-foreground transition-colors hover:border-input hover:text-foreground max-md:h-10 max-md:text-sm"
                     >
                       {r}
                     </button>
@@ -99,11 +101,11 @@ export function Ask() {
       ) : (
         <>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-[var(--content-max)] px-5 py-6 max-md:px-3 max-md:py-4">
+            <div className="mx-auto w-full max-w-[var(--content-max)] px-5 py-6 max-md:px-4 max-md:py-4">
               <Thread turns={turns} onRun={(t, confirmed) => t.planId && run(t.id, t.planId, confirmed)} onDismiss={(t) => dismiss(t.id)} />
             </div>
           </div>
-          <div className="relative mx-auto w-full max-w-[var(--content-max)] px-5 pb-5 before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-linear-to-t before:from-background before:to-transparent max-md:px-3 max-md:pb-3">
+          <div className="relative mx-auto w-full max-w-[var(--content-max)] px-5 pb-5 before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-linear-to-t before:from-background before:to-transparent max-md:px-4 max-md:pb-3">
             <Composer onAsk={ask} busy={busy} autoFocus />
           </div>
         </>

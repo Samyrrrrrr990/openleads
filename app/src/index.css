@@ -139,7 +139,7 @@
   --secondary: #fafafa;
   --secondary-foreground: #27272a;
   --muted: #fafafa;
-  --muted-foreground: #71717a;
+  --muted-foreground: #6b6b74;
   --placeholder: #6b6b74;
   --message-surface: #f0f0f2;
   --accent: #f4f4f5;
@@ -258,7 +258,7 @@
 /* A row of tabs that scrolls sideways fades at the edge it runs off, as a hint. */
 @utility tabs-fade {
   scrollbar-width: none;
-  mask-image: linear-gradient(to right, transparent 0, #000 1rem, #000 calc(100% - 1.5rem), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 1rem, #000 calc(100% - 3rem), transparent 100%);
   &::-webkit-scrollbar { display: none; }
 }
 
@@ -282,6 +282,12 @@
   }
   *, ::before, ::after {
     outline-offset: -2px;
+  }
+  /* Links and focusable rows show a full-strength ring; the default is too faint. */
+  :where(a, [tabindex], [role="tab"]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
   html, body, #root {
     height: 100%;

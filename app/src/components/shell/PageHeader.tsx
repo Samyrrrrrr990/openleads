@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useRef } from "react";
 
 import { href } from "~/lib/router";
+import { useSetup } from "~/lib/setup";
 import { cn } from "~/lib/utils";
 
 import type { Section } from "./sections";
@@ -21,6 +22,7 @@ export function PageHeader({
   title?: ReactNode;
   actions?: ReactNode;
 }) {
+  const { demo } = useSetup();
   const current = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     current.current?.scrollIntoView({ inline: "center", block: "nearest" });
@@ -53,6 +55,7 @@ export function PageHeader({
       <div className="mx-auto w-full max-w-[var(--page-max)] px-6 max-md:px-4">
         <div className="flex h-[52px] items-center gap-3">
           <h1 className="shrink-0 text-sm font-semibold tracking-tight max-md:text-base">{title ?? section.label}</h1>
+          {demo && <span className="rounded-full border border-border px-1.5 py-px text-xs text-muted-foreground md:hidden">Demo</span>}
           <div className="min-w-0 max-md:hidden">{tabs}</div>
           <div className="ms-auto flex shrink-0 items-center gap-2">{actions}</div>
         </div>

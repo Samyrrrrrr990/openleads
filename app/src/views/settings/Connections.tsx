@@ -10,7 +10,7 @@ import { Input } from "~/components/ui/input";
 import { Spinner } from "~/components/ui/spinner";
 import { api } from "~/lib/api";
 import { classic } from "~/lib/router";
-import { PROVIDER_BRAND, refreshSetup, saveSettings, type Setup, switchModel, useSetup } from "~/lib/setup";
+import { PROVIDER_BRAND, PROVIDER_NAME, refreshSetup, saveSettings, type Setup, switchModel, useSetup } from "~/lib/setup";
 import { toast } from "~/lib/toast";
 import { useApi } from "~/lib/use-api";
 import { cn } from "~/lib/utils";
@@ -35,7 +35,7 @@ type Status = "on" | "ready" | "off";
 
 function Out({ link, className }: { link: Link; className?: string }) {
   return (
-    <a href={link.url} target="_blank" rel="noreferrer noopener" className={cn("inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline", className)}>
+    <a href={link.url} target="_blank" rel="noreferrer noopener" className={cn("inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline max-md:h-10 max-md:px-1 max-md:text-sm", className)}>
       {link.label} <ExternalLinkIcon className="size-3" />
     </a>
   );
@@ -111,8 +111,9 @@ function Connection({
               </span>
             )}
             {status === "ready" && <span className="rounded-full bg-primary-wash px-1.5 py-px text-xs font-medium text-primary-ink">{statusLabel ?? "Ready"}</span>}
+            {status === "off" && <span className="rounded-full border border-border px-1.5 py-px text-xs text-muted-foreground">Not connected</span>}
           </div>
-          <div className="text-[13px] leading-5 text-muted-foreground">{note}</div>
+          <div className="text-[13px] leading-5 text-muted-foreground max-md:text-sm">{note}</div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:justify-end">
           {children}
@@ -155,7 +156,11 @@ function Connection({
           )}
         </div>
       </div>
-      {problem && !(open && form) && <p className="px-3.5 pb-3 text-[13px] leading-5 text-error-foreground sm:ps-[3.75rem]">{problem}</p>}
+      {problem && !(open && form) && (
+        <p role="alert" className="px-3.5 pb-3 text-[13px] leading-5 text-error-foreground max-md:text-sm sm:ps-[3.75rem]">
+          {problem}
+        </p>
+      )}
       {open && form && (
         <form
           className="flex flex-col gap-2.5 px-3.5 pb-3.5 sm:ps-[3.75rem]"
@@ -174,7 +179,8 @@ function Connection({
                 <Input
                   nativeInput
                   size="lg"
-                  type={f.secret ? "password" : "text"}
+                  type={f.secret ? "password" : f.key === "smtp_user" ? "email" : "text"}
+                  inputMode={f.key === "smtp_user" ? "email" : undefined}
                   autoComplete="off"
                   spellCheck={false}
                   autoFocus={i === 0}
@@ -186,7 +192,7 @@ function Connection({
             </label>
           ))}
           {problem && (
-            <p role="alert" className="text-[13px] leading-5 text-error-foreground">
+            <p role="alert" className="text-[13px] leading-5 text-error-foreground max-md:text-sm">
               {problem}
             </p>
           )}
@@ -274,7 +280,7 @@ function Models({ setup, focus }: { setup: Setup; focus?: string }) {
   const current = setup.ai.current?.provider;
   const use = (p: Provider) => async () => {
     const said = await switchModel(p.key);
-    if (said) return `${p.title} didn't answer a test message, so nothing changed. ${said}`;
+    if (said) return `${p.title} didn't answer a test message, so nothing changed. Check that it is installed and signed in, then try again.`;
     toast(`${p.title} connected`);
   };
   return (
@@ -300,7 +306,21 @@ function Models({ setup, focus }: { setup: Setup; focus?: string }) {
             : undefined
         }
       />
-      {setup.ai.problem && <li className="border-b border-border bg-warning-surface px-3.5 py-2.5 text-[13px] leading-5 text-warning-foreground">{setup.ai.problem}</li>}
+      {setup.ai.problem && (
+        <li className="border-b border-border bg-warning-surface px-3.5 py-2.5 text-[13px] leading-5 text-warning-foreground max-md:text-sm">
+          The model you chose isn't reachable right now, so the built-in rules are doing the work. Pick it again below, or choose another.
+        </li>
+      )}
+      {current && !PROVIDERS.some((p) => p.key === current) && (
+        <Connection
+          icon={<BrandIcon name="" label={PROVIDER_NAME[current] ?? current} />}
+          title={PROVIDER_NAME[current] ?? "Your own server"}
+          note={setup.ai.current?.model ? `Using ${setup.ai.current.model}` : "Set up in More model settings"}
+          status="on"
+          statusLabel="In use"
+          remove={{ label: "Stop using", confirm: "Yes, stop using it", run: async () => void (await switchModel("off")) }}
+        />
+      )}
       {PROVIDERS.map((p) => {
         const detected = setup.ai.detected.some((d) => d.provider === p.key);
         const hasKey = p.setting ? !!setup.settings[p.setting]?.is_set : false;
@@ -338,9 +358,13 @@ function Models({ setup, focus }: { setup: Setup; focus?: string }) {
                       if (errors[p.setting!]) return errors[p.setting!];
                       const said = await switchModel(p.key);
                       if (said) {
-                        // A key that doesn't work isn't kept.
-                        await saveSettings({ [p.setting!]: "" });
-                        return `${p.title} didn't accept that key, so it wasn't saved. Check it and paste it again. (${said})`;
+                        // Only a key the provider turned down is thrown away. If the provider
+                        // was busy or unreachable, the key is kept to try again.
+                        if (/401|403|unauthor|forbidden|invalid|api key/i.test(said)) {
+                          await saveSettings({ [p.setting!]: "" });
+                          return `${p.title} didn't accept that key, so it wasn't saved. Check it and paste it again.`;
+                        }
+                        return `${p.title} didn't answer just now. Your key is saved; press Use ${p.title} in a minute.`;
                       }
                       toast(`${p.title} connected`);
                     }
@@ -353,7 +377,7 @@ function Models({ setup, focus }: { setup: Setup; focus?: string }) {
       })}
       <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 text-[13px] text-muted-foreground">
         <span className="min-w-0 flex-1 basis-56">Your own server, a specific model, or the tone drafts are written in</span>
-        <a className="shrink-0 font-medium text-foreground hover:underline" href={classic("settings", "settings/ai")}>
+        <a className="shrink-0 font-medium text-foreground hover:underline max-md:inline-flex max-md:h-10 max-md:items-center" href={classic("settings", "settings/ai")}>
           More model settings
         </a>
       </li>
@@ -400,8 +424,12 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
     const r = await api.post<{ ok: boolean; detail: string }>("/api/mailbox/test", { provider: m.key, host, port, user: v.smtp_user.trim(), password: v.smtp_pass });
     if (!r.ok) {
       return custom
-        ? `That didn't log in, so nothing was saved. Check the server name, the address and the password. (${r.detail})`
-        : `${m.title} didn't accept that, so nothing was saved. It needs an app password, not the password you sign in with. (${r.detail})`;
+        ? /auth/i.test(r.detail)
+          ? "The server was reached, but that address and password didn't log in. Nothing was saved."
+          : `Couldn't reach ${host || "that server"} on port ${port}. Check the server name and port. Nothing was saved.`
+        : /auth/i.test(r.detail)
+          ? `That password didn't work, so nothing was saved. ${m.title} needs an app password, not the one you sign in with.`
+          : `Couldn't reach ${m.title} just now, so nothing was saved. Check your internet connection and try again.`;
     }
     const errors = await saveSettings({
       smtp_provider: m.key,
@@ -453,7 +481,7 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
         />
         <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 text-[13px] text-muted-foreground">
           <span className="min-w-0 flex-1 basis-56">Daily limit, warm-up pace, and the name people see</span>
-          <a className="shrink-0 font-medium text-foreground hover:underline" href={classic("settings", "settings/sending")}>
+          <a className="shrink-0 font-medium text-foreground hover:underline max-md:inline-flex max-md:h-10 max-md:items-center" href={classic("settings", "settings/sending")}>
             Sending settings
           </a>
         </li>
@@ -553,9 +581,9 @@ const SEARCH: Tool[] = [
   },
 ];
 
-function Tools({ id, title, note, tools, setup }: { id: string; title: string; note: string; tools: Tool[]; setup: Setup }) {
+function Tools({ id, title, note, tools, setup, focus }: { id: string; title: string; note: string; tools: Tool[]; setup: Setup; focus?: string }) {
   return (
-    <Group id={id} title={title} note={note}>
+    <Group id={id} focus={focus} title={title} note={note}>
       {tools.map((x) => {
         const on = !!setup.settings[x.fields[0].key]?.is_set;
         return (
@@ -617,7 +645,7 @@ export function Connections({ focus }: { focus?: string }) {
             <div className="flex flex-col gap-8">
               <Mailbox setup={setup} focus={focus} />
               <Tools id="exports" title="Where people can go" note="Optional. Used only when you export, or when a workflow says so." tools={EXPORTS} setup={setup} />
-              <Tools id="search" title="Search" note="Optional. OpenLeads searches free public sources without any keys." tools={SEARCH} setup={setup} />
+              <Tools id="search" focus={focus} title="Search" note="Optional. OpenLeads searches free public sources without any keys." tools={SEARCH} setup={setup} />
             </div>
           </div>
         )}

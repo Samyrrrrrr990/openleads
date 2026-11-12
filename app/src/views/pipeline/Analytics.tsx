@@ -87,7 +87,7 @@ export function Analytics() {
   const sources = Object.entries(t?.by_source ?? {})
     .sort((a, b) => b[1] - a[1])
     .map<BarRow>(([k, v]) => ({ key: k, label: SOURCES[k] ?? words(k), value: v }));
-  const funnel = (h?.funnel ?? []).filter((f) => f.count > 0).map<BarRow>((f) => ({ key: f.key, label: f.label, value: f.count }));
+  const funnel = (h?.funnel ?? []).filter((f) => f.count > 0).map<BarRow>((f) => ({ key: f.key, label: f.key === "new" ? "Not contacted yet" : f.label, value: f.count }));
   const grades = ["A", "B", "C", "D"].map<BarRow>((g) => ({ key: g, label: `Grade ${g}`, value: h?.grades?.[g] ?? 0 }));
   const nothingSent = !!h && h.emails.sent_30d === 0;
   // Under this many people, a percentage is a hint, not a result.
@@ -115,12 +115,12 @@ export function Analytics() {
               <Stat
                 label="Reply rate"
                 value={pct(h.emails.reply_rate)}
-                note={`${h.emails.replied} of ${plural(h.emails.contacted, "person", "people")} contacted${few ? ". Too few to judge yet" : ""}`}
+                note={`${h.emails.replied} of ${plural(h.emails.contacted, "person", "people")} contacted${few ? ". Too few to judge yet." : ""}`}
               />
               <Stat
                 label="Bounce rate"
                 value={pct(h.emails.bounce_rate)}
-                note={`${h.emails.bounced} of ${h.emails.contacted} bounced. ${few ? "Too few to judge yet" : h.emails.bounce_rate > 5 ? "High: check Data health" : "Under 5% is healthy"}`}
+                note={`${h.emails.bounced} of ${h.emails.contacted} bounced. ${few ? "Too few to judge yet." : h.emails.bounce_rate > 5 ? "High: check Data health." : "Under 5% is healthy."}`}
               />
             </div>
 
@@ -136,6 +136,7 @@ export function Analytics() {
               ) : (
                 <div className="px-3.5 pt-4 pb-3">
                   <TrendChart
+                    height={250}
                     series={[
                       { key: "sent", label: "Sent", unit: ["email sent", "emails sent"], color: "var(--chart-1)", points: h.series.sent },
                       { key: "replied", label: "Replies", unit: ["reply", "replies"], color: "var(--chart-2)", points: h.series.replied },
@@ -168,7 +169,7 @@ export function Analytics() {
                 <div className="px-2 py-2">
                   <BarList rows={rows} max={100} empty="Reply rates show up after your first emails get answers." />
                   {rows.length > 0 && (
-                    <p className="px-1.5 pt-2 text-xs leading-5 text-muted-foreground">
+                    <p className="px-1.5 pt-2 text-[13px] leading-5 text-muted-foreground">
                       Share of the people contacted in each group who replied, with the count beside it.
                       {sample < 50 ? ` Only ${plural(sample, "person", "people")} contacted so far, so treat this as a hint.` : ""}
                     </p>

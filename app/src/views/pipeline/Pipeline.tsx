@@ -69,15 +69,17 @@ export function Deals() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <Stat label="Open deals" value={money(board.totals.open_value)} note={`Across ${plural(board.totals.open_count, "deal", "deals")}`} />
               <Stat label="Likely to close" value={money(board.totals.weighted)} note="Each deal counted by its stage's odds" />
-              <Stat label="Won" value={money(board.totals.won_value)} note="Deals marked won" />
-              <Stat label="Win rate" value={pct(board.totals.win_rate)} note={closed < 10 ? `From ${plural(closed, "closed deal", "closed deals")}. Too few to judge yet` : `From ${closed} closed deals`} />
+              <Stat label="Won" value={money(board.totals.won_value)} note={plural(board.columns.find((c) => c.key === "won")?.count ?? 0, "deal", "deals")} />
+              <Stat label="Win rate" value={pct(board.totals.win_rate)} note={closed < 10 ? `From ${plural(closed, "closed deal", "closed deals")}. Too few to judge yet.` : `From ${closed} closed deals`} />
             </div>
-            <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 max-md:-mx-4 max-md:snap-x max-md:px-4">
+            <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 max-md:-mx-4 max-md:snap-x max-md:scroll-px-4 max-md:px-4">
               {board.columns.map((col) => (
                 <section key={col.key} className="flex min-w-40 flex-1 flex-col rounded-xl border border-border bg-muted/60 max-md:min-w-[78vw] max-md:snap-start">
                   <header className="flex items-center gap-2 px-3 py-2.5">
                     <h2 className="text-[13px] font-semibold">{col.label}</h2>
-                    <span className="text-xs text-muted-foreground tabular-nums">{col.count}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums" title={`${col.count} deals, ${Math.round(col.probability <= 1 ? col.probability * 100 : col.probability)}% likely to close`}>
+                      {col.count}
+                    </span>
                     <span className="ms-auto text-xs text-muted-foreground tabular-nums">{col.total ? money(col.total) : ""}</span>
                   </header>
                   <div className="flex flex-col gap-2 px-2 pb-2">
@@ -191,11 +193,11 @@ export function Activity() {
       <Body>
         {res.error && <ErrorNote message={res.error} onRetry={() => void res.reload()} />}
         {!res.data && res.loading && <LoadingRows rows={8} />}
-        {res.data && rows.length === 0 && <Quiet>Nothing has happened yet.</Quiet>}
+        {res.data && rows.length === 0 && <Quiet>Nothing has happened yet. Finding people and sending emails shows up here.</Quiet>}
         {rows.length > 0 && (
           <Panel>
             {rows.map((a) => (
-              <div key={a.id} className="grid grid-cols-[7rem_minmax(0,1fr)_auto] items-baseline gap-x-3 border-b border-border px-3.5 py-2 text-[13px] last:border-b-0 max-md:grid-cols-[minmax(0,1fr)_auto] max-md:py-2.5 max-md:text-sm">
+              <div key={a.id} className="grid grid-cols-[7rem_minmax(0,1fr)_auto] items-baseline gap-x-3 border-b border-border px-3.5 py-2.5 text-[13px] last:border-b-0 max-md:grid-cols-[minmax(0,1fr)_auto] max-md:py-2.5 max-md:text-sm">
                 <span className="font-medium">{a.label}</span>
                 <span className="min-w-0 text-muted-foreground max-md:order-3 max-md:col-span-2 md:truncate">
                   {a.name && a.ref ? (

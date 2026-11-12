@@ -1,3 +1,4 @@
+import { useSetup } from "~/lib/setup";
 import { CheckIcon, ClockIcon, CopyIcon, InfoIcon, PencilIcon, ReplyIcon, SendIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -89,9 +90,16 @@ function ReplyRow({ r, onChanged }: { r: Reply; onChanged: () => void }) {
   );
 }
 
+const NOT_SENT: Record<string, string> = {
+  skipped: "Skipped: this person was already emailed or has unsubscribed.",
+  suppressed: "Not sent: this person has unsubscribed.",
+  error: "Not sent. The draft is still waiting.",
+};
+
 export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
+  const setup = useSetup();
   const [subject, setSubject] = useState(d.subject);
   const [body, setBody] = useState(d.body);
 
@@ -104,7 +112,7 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
       });
       setCounts(res.counts);
       if (res.status === "sent") toast(`Sent to ${d.email}`);
-      else toast(res.detail || `Not sent (${res.status})`, res.status === "error" ? "error" : "default");
+      else toast(res.detail || NOT_SENT[res.status] || "Not sent. The draft is still waiting.", res.status === "error" ? "error" : "default");
       onChanged();
     } catch (e) {
       fail(e);
@@ -122,7 +130,9 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
       setBusy(false);
     }
   };
-  const first = d.body.split("\n").find((l) => l.trim()) ?? "";
+  // The greeting is the same on every draft; show the first line that says something.
+  const lines = d.body.split("\n").filter((l) => l.trim());
+  const first = lines.find((l) => !/^(hi|hello|hey|dear)\b[^.!?]*[,!]?$/i.test(l.trim())) ?? lines[0] ?? "";
 
   return (
     <Row className="flex-col gap-2">
@@ -134,9 +144,11 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
               {d.email}
             </a>
             {/* A score is a number, not a status: it only takes a colour when it's a problem. */}
-            <span className={cn("ms-auto shrink-0 text-xs tabular-nums", d.quality >= 60 ? "text-muted-foreground" : "text-warning-foreground")}>
-              {d.quality < 60 ? "Weak draft, " : ""}quality {d.quality}
-            </span>
+            {d.quality < 60 && (
+              <span className="ms-auto shrink-0 text-xs text-warning-foreground" title={`Draft score ${d.quality} out of 100`}>
+                Weak draft, worth a read
+              </span>
+            )}
           </div>
           {!editing && (
             <>
@@ -152,9 +164,15 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
           <IconAction label="Skip, don't send this one" disabled={busy} onClick={skip}>
             <XIcon />
           </IconAction>
-          <Button size="xs" disabled={busy} onClick={approve} className="ms-1 max-md:h-10 max-md:px-3 max-md:text-sm">
-            <SendIcon /> Approve
-          </Button>
+          {setup.loaded && !setup.mailbox ? (
+            <Button size="xs" variant="outline" className="ms-1 max-md:h-10 max-md:px-3 max-md:text-sm" title="Connect a mailbox to send" render={<a href={href("settings", "connections", "mailbox")} />}>
+              Connect to send
+            </Button>
+          ) : (
+            <Button size="xs" disabled={busy} onClick={approve} className="ms-1 max-md:h-10 max-md:px-3 max-md:text-sm">
+              <SendIcon /> Approve and send
+            </Button>
+          )}
         </div>
       </div>
       {editing && (

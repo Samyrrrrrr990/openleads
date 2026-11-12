@@ -23,7 +23,7 @@ export function Sidebar({
   const counts = useCounts();
   const setup = useSetup();
   const theme = useTheme();
-  const waiting = counts.replies + counts.drafts;
+  const waiting = counts.replies + counts.drafts + counts.tasks;
 
   return (
     <aside
@@ -72,10 +72,8 @@ export function Sidebar({
               {s.key === "today" && waiting > 0 && (
                 <span className="ms-auto rounded-full bg-primary px-1.5 text-2xs font-semibold leading-4 text-primary-foreground tabular-nums">
                   {waiting}
+                  <span className="sr-only"> waiting on you</span>
                 </span>
-              )}
-              {s.key === "pipeline" && counts.tasks > 0 && (
-                <span className="ms-auto text-2xs text-sidebar-muted-foreground tabular-nums">{counts.tasks}</span>
               )}
             </a>
           );

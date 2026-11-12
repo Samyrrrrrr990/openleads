@@ -58,7 +58,7 @@ export function TrendChart({ series, height = 200, className }: { series: Series
   const id = useId();
   const n = series[0]?.points.length ?? 0;
   const W = 720;
-  const pad = { l: 28, r: 4, t: 10, b: 22 };
+  const pad = { l: 28, r: 4, t: 62, b: 22 };
   const max = Math.max(1, ...series.flatMap((s) => s.points.map((p) => p.count)));
   const { top, step } = niceMax(max);
   const slot = n ? (W - pad.l - pad.r) / n : 0;
@@ -131,7 +131,7 @@ export function TrendChart({ series, height = 200, className }: { series: Series
         ))}
         {at !== null && (
           <div
-            className={cn("absolute top-1 w-max rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs text-foreground shadow-lg", at > n / 2 ? "-translate-x-full" : "")}
+            className={cn("absolute top-0 w-max rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs text-foreground shadow-lg", at > n / 2 ? "-translate-x-full" : "")}
             style={{ left: `calc(${(x(at) / W) * 100}% + ${at > n / 2 ? -14 : 14}px)` }}
           >
             <div className="mb-0.5 text-muted-foreground">{shortDate(series[0].points[at].date)}</div>
@@ -189,11 +189,11 @@ export function BarList({ rows, max, color = "var(--chart-1)", empty = "Nothing 
   const top = max ?? Math.max(1, ...rows.map((r) => r.value));
   if (!rows.length) return <p className="px-1.5 py-3 text-[13px] text-muted-foreground">{empty}</p>;
   return (
-    <ul className="grid grid-cols-[minmax(0,max-content)_minmax(3rem,1fr)_auto] items-center gap-x-3">
+    <ul className="grid grid-cols-[8.5rem_minmax(3rem,1fr)_auto] max-sm:grid-cols-[6.5rem_minmax(2rem,1fr)_auto] items-center gap-x-3">
       {rows.map((r) => (
-        <li key={r.key} className="col-span-3 grid grid-cols-subgrid items-center rounded-md px-1.5 py-[5px] text-[13px] hover:bg-accent">
-          <span className="max-w-[11rem] leading-5">{r.label}</span>
-          <span className="h-2 rounded-full bg-accent">
+        <li key={r.key} className="col-span-3 grid grid-cols-subgrid items-center rounded-md px-1.5 py-[5px] text-[13px] hover:bg-accent/50">
+          <span className="leading-5">{r.label}</span>
+          <span className="h-2 rounded-full bg-border">
             <span className="block h-2 rounded-full" style={{ width: `${Math.max(r.value > 0 ? 2 : 0, (r.value / top) * 100)}%`, background: color }} />
           </span>
           <span className="text-end tabular-nums">
@@ -210,7 +210,7 @@ export function BarList({ rows, max, color = "var(--chart-1)", empty = "Nothing 
 export function Meter({ value, max, label }: { value: number; max: number; label: string }) {
   const share = max > 0 ? Math.min(1, value / max) : 0;
   return (
-    <div role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} aria-label={label} className="h-1.5 rounded-full bg-accent">
+    <div role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} aria-label={label} className="h-1.5 rounded-full bg-border">
       <span className="block h-1.5 rounded-full bg-chart-1" style={{ width: `${share * 100}%`, minWidth: value > 0 ? 6 : 0 }} />
     </div>
   );

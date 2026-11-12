@@ -72,14 +72,14 @@ function Lines({ title, lines }: { title: string; lines: Line[] }) {
       {lines.map((l) => {
         const { icon: Icon, cls, word } = MARK[l.state];
         return (
-          <Row key={l.key} className="items-start">
+          <Row key={l.key} className="items-start max-sm:flex-wrap">
             <Icon className={cn("mt-0.5 size-4 shrink-0", cls)} aria-label={word} />
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-medium max-md:text-sm">{l.title}</p>
-              <p className="text-[13px] leading-5 text-muted-foreground">{l.detail}</p>
+              <p className="text-[13px] leading-5 text-muted-foreground max-md:text-sm">{l.detail}</p>
             </div>
             {l.link && (
-              <Button size="sm" variant="outline" className="shrink-0 max-md:h-10" render={<a href={l.link.to} />}>
+              <Button size="sm" variant="outline" className="shrink-0 max-md:h-10 max-sm:ms-7" render={<a href={l.link.to} />}>
                 {l.link.label}
               </Button>
             )}
@@ -99,9 +99,12 @@ export function Doctor() {
   const model = setup.ai.current?.provider;
   const found = setup.ai.detected[0]?.provider;
   const name = (p: string) => PROVIDER_NAME[p] ?? p;
+  const login = checks.find((c) => /smtp login/i.test(c.label));
   const connections: Line[] = [
-    model
-      ? { key: "ai", state: setup.ai.problem ? "bad" : "ok", title: `AI model: ${name(model)}`, detail: setup.ai.problem || "Reads your requests and writes drafts.", link: setup.ai.problem ? { label: "Fix", to: href("settings", "connections", "model") } : undefined }
+    setup.ai.problem
+      ? { key: "ai", state: "bad", title: "AI model: the one you chose stopped working", detail: "It isn't reachable on this computer right now, so the built-in rules are doing the work.", link: { label: "Fix", to: href("settings", "connections", "model") } }
+      : model
+      ? { key: "ai", state: "ok", title: `AI model: ${name(model)}`, detail: "Reads your requests and writes drafts." }
       : {
           key: "ai",
           state: "todo",
@@ -109,7 +112,9 @@ export function Doctor() {
           detail: found ? `${name(found)} is on this computer and ready to use. Until then, drafts are written from your templates.` : "Drafts are written from your templates. A model writes them from what it found about each person.",
           link: { label: found ? `Use ${name(found)}` : "Connect a model", to: href("settings", "connections", "model") },
         },
-    setup.mailbox
+    setup.mailbox && login?.status === "bad"
+      ? { key: "mail", state: "bad", title: "Mailbox: stopped logging in", detail: "Your mail provider turned down the saved password. Make a new app password and connect again.", link: { label: "Fix", to: href("settings", "connections", "mailbox") } }
+      : setup.mailbox
       ? { key: "mail", state: "ok", title: "Mailbox: connected", detail: "Approved emails go out from your address." }
       : { key: "mail", state: "todo", title: "Mailbox: not connected", detail: "You can find people and write drafts. Nothing can be sent until a mailbox is connected.", link: { label: "Connect a mailbox", to: href("settings", "connections", "mailbox") } },
     ...(setup.mailbox
@@ -121,7 +126,7 @@ export function Doctor() {
       : []),
     setup.settings.github_token?.is_set
       ? { key: "gh", state: "ok", title: "GitHub token: saved", detail: "Developer searches can run longer." }
-      : { key: "gh", state: "todo", title: "GitHub token: not added", detail: "Developer searches work without one. A token lets them run longer before GitHub slows them down.", link: { label: "Add", to: href("settings", "connections") } },
+      : { key: "gh", state: "todo", title: "GitHub token: not added", detail: "Developer searches work without one. A token lets them run longer before GitHub slows them down.", link: { label: "Add", to: href("settings", "connections", "search") } },
   ];
   const net = network(checks);
   const all = [...connections, ...net];
@@ -154,7 +159,7 @@ export function Doctor() {
         {ready && (
           <>
             <div>
-              <p className="text-[15px] font-medium">{bad ? `${plural(bad, "thing", "things")} to fix.` : "Nothing is broken."}</p>
+              <p className="text-[15px] font-medium">{bad ? `${plural(bad, "thing", "things")} to fix.` : setup.mailbox ? "Nothing is broken." : "Nothing is broken, but nothing can send until a mailbox is connected."}</p>
               <p className="text-[13px] text-muted-foreground">
                 {todo ? `${plural(todo, "optional thing", "optional things")} you could still set up.` : "Everything optional is set up too."}
                 {setup.version ? ` OpenLeads ${setup.version}, running on this computer.` : ""}
