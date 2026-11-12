@@ -275,7 +275,7 @@ GH_PATH = ("M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
            " 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z")
 # Cache-busting for ../styles.css and docs.css. ?v=7 and ?v=8 were served with
 # older copies of styles.css and ?v=9 is the landing page's, so start past them.
-ASSET_V = "10"
+ASSET_V = "13"
 
 # Stroke icons on a 20px grid, drawn in currentColor. Defined once per page as
 # <symbol>s and placed with icon(); nothing else on the page is an icon.
