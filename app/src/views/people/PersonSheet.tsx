@@ -1,7 +1,7 @@
 import { BuildingIcon, CopyIcon, GlobeIcon, LinkedinIcon, MapPinIcon, PhoneIcon, PinIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Avatar, ErrorNote, LoadingRows, ToneBadge } from "~/components/app/bits";
+import { Avatar, ErrorNote, LoadingRows } from "~/components/app/bits";
 import { Pick } from "~/components/app/Pick";
 import { Button } from "~/components/ui/button";
 import { Sheet, SheetPopup, SheetTitle } from "~/components/ui/sheet";
@@ -49,7 +49,6 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
   if (!detail.data) return <LoadingRows rows={6} />;
   const { contact: c, notes, tasks, timeline, enrollments, deals } = detail.data;
   const stages = meta?.contact_stages ?? [];
-  const stage = stages.find((s) => s.key === c.stage);
   const place = [c.city, c.state, c.country].filter(Boolean).join(", ");
 
   const setStage = async (key: string) => {
@@ -94,17 +93,16 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
 
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-3">
         <Pick label="Stage" value={c.stage} onChange={setStage} options={stages} />
-        {stage && <ToneBadge tone={stage.tone}>{stage.label}</ToneBadge>}
-        <span className="text-xs text-muted-foreground">Fit {c.fit_score}</span>
+        <span className="text-xs text-muted-foreground">Fit {c.fit_score} of 100</span>
         {c.tier === "risky" && <span className="text-xs text-warning-foreground">Risky address</span>}
         {detail.data.suppressed && <span className="text-xs text-error-foreground">Unsubscribed</span>}
-        <Button size="xs" variant="outline" className="ms-auto" render={<a href={classic("people", `people/${encodeURIComponent(c.email)}`)} />}>
+        <Button size="sm" variant="outline" className="ms-auto max-md:h-10" render={<a href={classic("people", `people/${encodeURIComponent(c.email)}`)} />}>
           Full record
         </Button>
       </div>
 
       <div className="grid gap-2 border-b border-border px-5 py-4 sm:grid-cols-2">
-        {c.organization && <Fact icon={BuildingIcon}>{c.organization}{c.industry ? `, ${c.industry}` : ""}</Fact>}
+        {c.organization && <Fact icon={BuildingIcon}>{c.organization}{c.industry && !c.organization.toLowerCase().includes(c.industry.toLowerCase()) ? ` (${c.industry})` : ""}</Fact>}
         {place && <Fact icon={MapPinIcon}>{place}</Fact>}
         {c.phone && <Fact icon={PhoneIcon}>{c.phone}</Fact>}
         {safeUrl(c.website) && (
@@ -164,7 +162,7 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
           ))}
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Add a note" aria-label="Add a note" />
           <div>
-            <Button size="xs" variant="outline" disabled={!note.trim() || saving} onClick={addNote}>
+            <Button size="sm" variant="outline" className="max-md:h-10" disabled={!note.trim() || saving} onClick={addNote}>
               Save note
             </Button>
           </div>

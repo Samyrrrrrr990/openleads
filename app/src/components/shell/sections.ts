@@ -76,7 +76,7 @@ export const SECTIONS: Section[] = [
     jump: "s",
     pages: [
       { key: "connections", label: "Connections" },
-      { key: "doctor", label: "Doctor" },
+      { key: "doctor", label: "Health" },
       { key: "all", label: "All settings", classic: "settings" },
     ],
   },

@@ -28,6 +28,14 @@ interface Run {
   trigger?: string;
 }
 
+/** "reply-to-task" is how it's stored; "Reply to task" is how it's said. */
+function title(name: string): string {
+  const text = name.replace(/[-_]+/g, " ").trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+const STATUS: Record<string, string> = { ok: "Finished", error: "Failed", running: "Running", waiting: "Waiting for approval", paused: "Paused" };
+
 function when(iso: string): string {
   if (!iso) return "never";
   const d = new Date(iso);
@@ -42,7 +50,7 @@ export function Workflows() {
     res.set((prev) => (prev ? { workflows: prev.workflows.map((x) => (x.name === w.name ? { ...x, active } : x)) } : prev));
     try {
       await api.post("/api/workflows/flags", { name: w.name, active });
-      toast(active ? `${w.name} is on` : `${w.name} is off`);
+      toast(active ? `${title(w.name)} is on` : `${title(w.name)} is off`);
     } catch (e) {
       fail(e);
       void res.reload();
@@ -60,7 +68,7 @@ export function Workflows() {
       />
       <Body>
         <p className="text-[13px] text-muted-foreground">
-          A workflow is a saved plan: find, filter, write, send, on a schedule or when something happens. Asking for something "every weekday" on Today saves one here.
+          A workflow is a saved plan: find, filter, write, send, on a schedule or when something happens. Asking for something "every weekday" in Ask saves one here.
         </p>
         {res.error && <ErrorNote message={res.error} onRetry={() => void res.reload()} />}
         {!res.data && res.loading && <LoadingRows />}
@@ -70,23 +78,23 @@ export function Workflows() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <a href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)} className="font-medium hover:underline">
-                  {w.name}
+                  {title(w.name)}
                 </a>
-                <Badge variant="secondary">{w.when || "run by hand"}</Badge>
-                {w.live ? <Badge variant="warning">Sends for real</Badge> : <Badge variant="outline">Emails wait for approval</Badge>}
+                <Badge variant="secondary">{w.when || "Run by hand"}</Badge>
+                {w.live ? <Badge variant="warning">Sends without asking</Badge> : <Badge variant="secondary">Emails wait for approval</Badge>}
                 {w.waiting > 0 && <Badge variant="info">{w.waiting} waiting</Badge>}
               </div>
               {w.description && <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground">{w.description}</p>}
               <p className="mt-2 text-xs text-muted-foreground">
                 {w.nodes} steps. Last run: {when(w.last_run_at)}.{" "}
-                <a className="text-foreground hover:underline" href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)}>
-                  Open the editor
+                <a className="font-medium text-foreground underline underline-offset-2" href={classic("workflows", `workflows/${encodeURIComponent(w.name)}`)}>
+                  Edit the steps
                 </a>
               </p>
             </div>
-            <label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+            <label className="flex min-h-10 shrink-0 items-center gap-2 text-xs text-muted-foreground">
               {w.active ? "On" : "Off"}
-              <Switch checked={w.active} onCheckedChange={(v) => setActive(w, v)} aria-label={`Turn ${w.name} ${w.active ? "off" : "on"}`} />
+              <Switch checked={w.active} onCheckedChange={(v) => setActive(w, v)} aria-label={`Turn ${title(w.name)} ${w.active ? "off" : "on"}`} />
             </label>
           </section>
         ))}
@@ -95,9 +103,9 @@ export function Workflows() {
             <header className="flex h-10 items-center border-b border-border px-3.5 text-[13px] font-semibold">Recent runs</header>
             {runs.data.runs.slice(0, 10).map((r) => (
               <div key={r.id} className="flex items-center gap-3 border-b border-border px-3.5 py-2 text-[13px] last:border-b-0">
-                <span className="font-medium">{r.workflow}</span>
-                <Badge variant={r.status === "ok" ? "success" : r.status === "error" ? "error" : "secondary"}>{r.status}</Badge>
-                <span className="ms-auto text-xs text-muted-foreground">{when(r.started_at || "")}</span>
+                <span className="min-w-0 truncate font-medium">{title(r.workflow)}</span>
+                <Badge variant={r.status === "ok" ? "success" : r.status === "error" ? "error" : "secondary"}>{STATUS[r.status] ?? title(r.status)}</Badge>
+                <span className="ms-auto shrink-0 text-xs text-muted-foreground">{when(r.started_at || "")}</span>
               </div>
             ))}
           </section>

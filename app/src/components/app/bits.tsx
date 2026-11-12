@@ -7,18 +7,10 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { initials } from "~/lib/format";
 import { cn } from "~/lib/utils";
 
-/** A quiet round monogram. The colour is picked from the address so it stays the same. */
+/** A quiet round monogram in the app's own greys, so a list of people stays calm. */
 export function Avatar({ name, email, className }: { name?: string; email?: string; className?: string }) {
-  const seed = (email || name || "?").split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
   return (
-    <span
-      aria-hidden
-      className={cn("grid size-7 shrink-0 place-items-center rounded-full text-2xs font-semibold", className)}
-      style={{
-        background: `color-mix(in oklab, oklch(0.7 0.11 ${seed}) 22%, var(--card))`,
-        color: `color-mix(in oklab, oklch(0.5 0.13 ${seed}) 70%, var(--foreground))`,
-      }}
-    >
+    <span aria-hidden className={cn("grid size-7 shrink-0 place-items-center rounded-full bg-accent text-2xs font-semibold text-muted-foreground", className)}>
       {initials(name, email)}
     </span>
   );
@@ -54,7 +46,7 @@ export function Panel({
   return (
     <section className={cn("overflow-hidden rounded-xl border border-border bg-card", className)}>
       {title !== undefined && (
-        <header className="flex h-10 items-center gap-2 border-b border-border px-3.5">
+        <header className="flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border px-3.5 py-1.5">
           <h2 className="text-[13px] font-semibold">{title}</h2>
           {count !== undefined && <span className="text-xs text-muted-foreground tabular-nums">{count}</span>}
           <div className="ms-auto flex items-center gap-1.5">{action}</div>
@@ -67,7 +59,7 @@ export function Panel({
 
 export function Row({ children, className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div className={cn("flex items-start gap-3 border-b border-border px-3.5 py-2.5 last:border-b-0", className)} {...props}>
+    <div className={cn("flex items-start gap-3 border-b border-border px-3.5 py-2.5 last:border-b-0 max-md:py-3", className)} {...props}>
       {children}
     </div>
   );
@@ -101,11 +93,11 @@ export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () 
   );
 }
 
-/** The page body: scrolls, centred, with the reading width of the conversation column or wider. */
-export function Body({ children, wide, className }: { children: ReactNode; wide?: boolean; className?: string }) {
+/** The page body. Every screen shares one width and one left edge, the same as the header's. */
+export function Body({ children, className }: { children: ReactNode; wide?: boolean; className?: string }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className={cn("mx-auto flex w-full flex-col gap-5 px-5 py-6 max-md:px-3 max-md:py-4", wide ? "max-w-6xl" : "max-w-[var(--content-max)]", className)}>
+      <div className={cn("mx-auto flex w-full max-w-[var(--page-max)] flex-col gap-5 px-6 py-6 max-md:px-4 max-md:py-4", className)}>
         {children}
       </div>
     </div>
@@ -131,12 +123,12 @@ export function Stat({
   const body = (
     <>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 flex items-end gap-3">
+      <div className="mt-1 flex h-8 items-center gap-3">
         <div className="text-2xl font-semibold leading-8 tracking-tight tabular-nums">{value}</div>
         {/* A small trend rides beside the number, so every tile keeps the same height. */}
-        {children && <div className="mb-1 ms-auto w-24 max-w-[45%] shrink-0">{children}</div>}
+        {children && <div className="ms-auto w-24 max-w-[45%] shrink-0">{children}</div>}
       </div>
-      <div className="mt-0.5 min-h-4 truncate text-xs text-muted-foreground">{note}</div>
+      <div className="mt-0.5 line-clamp-2 min-h-4 text-xs leading-4 text-muted-foreground">{note}</div>
     </>
   );
   const cls = cn("block rounded-xl border border-border bg-card px-4 py-3.5", href && "transition-colors hover:border-input", className);
@@ -146,5 +138,26 @@ export function Stat({
     </a>
   ) : (
     <div className={cls}>{body}</div>
+  );
+}
+
+/** A smaller number inside a panel: what it is, the number, and what it is out of. */
+export function Figure({ label, value, note, to, children }: { label: string; value: ReactNode; note?: ReactNode; to?: string; children?: ReactNode }) {
+  const body = (
+    <>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-0.5 flex h-7 items-center gap-2">
+        <span className="text-lg font-semibold tabular-nums">{value}</span>
+        {children && <span className="ms-auto w-16 shrink-0">{children}</span>}
+      </div>
+      {note !== undefined && <div className="line-clamp-2 text-xs leading-4 text-muted-foreground">{note}</div>}
+    </>
+  );
+  return to ? (
+    <a href={to} className="block px-3.5 py-3 transition-colors hover:bg-accent/60">
+      {body}
+    </a>
+  ) : (
+    <div className="px-3.5 py-3">{body}</div>
   );
 }

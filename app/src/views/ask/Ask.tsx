@@ -78,7 +78,7 @@ export function Ask() {
             </div>
             {recent.length > 0 && (
               <section>
-                <h3 className="text-[13px] font-medium">Asked before</h3>
+                <h3 className="text-[13px] font-medium">Ask again</h3>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {recent.slice(0, 6).map((r) => (
                     <button

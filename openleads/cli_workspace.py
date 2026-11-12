@@ -754,6 +754,7 @@ def cmd_demo(args) -> int:
               file=sys.stderr)
         return 2
     os.environ["OPENLEADS_HOME"] = str(base)
+    os.environ["OPENLEADS_DEMO"] = "1"   # the dashboard says the data is invented
     from openleads import demo
     db = DB()
     try:

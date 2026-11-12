@@ -1,6 +1,6 @@
 import { PauseIcon, PlayIcon } from "lucide-react";
 
-import { Body, ErrorNote, LoadingRows, Panel, Quiet } from "~/components/app/bits";
+import { Body, ErrorNote, Figure, LoadingRows, Panel, Quiet } from "~/components/app/bits";
 import { PageHeader } from "~/components/shell/PageHeader";
 import { sectionOf } from "~/components/shell/sections";
 import { Badge } from "~/components/ui/badge";
@@ -41,7 +41,7 @@ export function Approvals() {
               <p className="mt-1 text-[13px] text-muted-foreground">Emails from sequences, workflows and requests show up here before they send.</p>
             </div>
           ) : (
-            <Panel title="Waiting for your yes" count={res.data.count}>
+            <Panel title="Emails to approve" count={res.data.count}>
               {res.data.drafts.map((d) => (
                 <DraftRow key={d.id} d={d} onChanged={reload} />
               ))}
@@ -70,7 +70,13 @@ const STEP_WORDS: Record<string, string> = {
 };
 
 function stepLine(steps: Sequence["steps"]): string {
-  return steps.map((s, i) => `${i === 0 ? "" : `+${s.delay_days}d `}${STEP_WORDS[s.type] ?? s.type}`).join("  →  ");
+  return steps
+    .map((s, i) => {
+      const what = STEP_WORDS[s.type] ?? s.type;
+      if (i === 0) return what.charAt(0).toUpperCase() + what.slice(1);
+      return `${what} ${s.delay_days === 0 ? "the same day" : s.delay_days === 1 ? "a day later" : `${s.delay_days} days later`}`;
+    })
+    .join(", then ");
 }
 
 export function Sequences() {
@@ -103,31 +109,24 @@ export function Sequences() {
         {res.data && list.length === 0 && <Quiet>No sequences yet. A sequence is a few emails and tasks spaced over days.</Quiet>}
         {list.map((s) => (
           <section key={s.id} className="rounded-xl border border-border bg-card">
-            <div className="flex items-center gap-2.5 px-4 pt-3.5">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-3.5 pt-3.5">
               <a href={classic("outreach", `sequences/${s.id}`)} className="font-medium hover:underline">
                 {s.name}
               </a>
               <Badge variant={s.status === "active" ? "success" : "secondary"}>{s.status === "active" ? "Running" : s.status === "paused" ? "Paused" : s.status}</Badge>
-              <span className="ms-auto text-xs text-muted-foreground">Updated {ago(s.updated)}</span>
-              <Button size="xs" variant="outline" onClick={() => toggle(s)}>
+              <span className="ms-auto text-xs text-muted-foreground max-sm:hidden">Updated {ago(s.updated)}</span>
+              <Button size="sm" variant="outline" className="max-md:h-10 max-sm:ms-auto" onClick={() => toggle(s)}>
                 {s.status === "active" ? <PauseIcon /> : <PlayIcon />}
                 {s.status === "active" ? "Pause" : "Start"}
               </Button>
             </div>
-            <p className="px-4 pt-1.5 text-[13px] text-muted-foreground">{stepLine(s.steps)}</p>
-            <dl className="mt-3 grid grid-cols-4 border-t border-border text-center">
-              {[
-                ["Enrolled", plural(s.stats.enrolled, "person", "people")],
-                ["Active", String(s.stats.active)],
-                ["Sent", String(s.stats.sent)],
-                ["Replied", `${s.stats.replied} (${pct(s.stats.reply_rate)})`],
-              ].map(([k, v]) => (
-                <div key={k} className="border-e border-border px-3 py-2.5 last:border-e-0">
-                  <dt className="text-xs text-muted-foreground">{k}</dt>
-                  <dd className="mt-0.5 text-[13px] font-medium tabular-nums">{v}</dd>
-                </div>
-              ))}
-            </dl>
+            <p className="px-3.5 pt-1.5 text-[13px] leading-5 text-muted-foreground">{stepLine(s.steps)}</p>
+            <div className="mt-3 grid grid-cols-4 border-t border-border max-sm:grid-cols-2 [&>*]:border-border sm:[&>*:not(:last-child)]:border-e max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-e">
+              <Figure label="Enrolled" value={s.stats.enrolled.toLocaleString()} note={s.stats.enrolled === 1 ? "person" : "people"} />
+              <Figure label="Active now" value={s.stats.active.toLocaleString()} note="still getting steps" />
+              <Figure label="Emails sent" value={s.stats.sent.toLocaleString()} note="so far" />
+              <Figure label="Reply rate" value={pct(s.stats.reply_rate)} note={s.stats.enrolled ? `${s.stats.replied} of ${s.stats.enrolled} replied` : "No one enrolled yet"} />
+            </div>
           </section>
         ))}
       </Body>
@@ -142,6 +141,36 @@ interface Template {
   body: string;
   category: string;
   used: number;
+}
+
+const SAMPLE: Record<string, string> = {
+  first_name: "Jane",
+  last_name: "Doe",
+  name: "Jane Doe",
+  organization: "Acme",
+  company: "Acme",
+  title: "Head of Operations",
+  city: "Austin",
+  industry: "software",
+  website: "acme.example",
+  sender_name: "your name",
+  my_name: "your name",
+  sender_org: "your company",
+  sender_context: "a line about what you offer",
+};
+
+function Blank({ children }: { children: React.ReactNode }) {
+  return <span className="rounded-sm bg-accent px-0.5 text-foreground">{children}</span>;
+}
+
+/** A template with its blanks filled for a sample person, so it reads as an email. */
+function filled(text: string): React.ReactNode[] {
+  // "{Hi|Hey}" means either wording is used; show the first.
+  return text.replace(/\{([^{}|]+)\|[^{}]*\}/g, "$1").split(/(\{\{[^}]+\}\})/g).map((part, i) => {
+    const m = /^\{\{\s*([\w.]+)\s*(?:\|([^}]*))?\}\}$/.exec(part);
+    if (!m) return part;
+    return <Blank key={i}>{SAMPLE[m[1]] ?? (m[2]?.trim() || m[1].replace(/_/g, " "))}</Blank>;
+  });
 }
 
 export function Templates() {
@@ -162,16 +191,21 @@ export function Templates() {
         {res.error && <ErrorNote message={res.error} onRetry={() => void res.reload()} />}
         {!res.data && res.loading && <LoadingRows />}
         {res.data && list.length === 0 && <Quiet>No templates yet.</Quiet>}
+        {list.length > 0 && (
+          <p className="text-[13px] text-muted-foreground">
+            Shown the way one would read for <Blank>Jane</Blank> at <Blank>Acme</Blank>. The marked words are filled in for each person.
+          </p>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
           {list.map((t) => (
             <a key={t.id} href={classic("outreach", "templates")} className="flex flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-input">
               <div className="flex items-center gap-2">
                 <span className="truncate font-medium">{t.name}</span>
                 {t.category && <Badge variant="secondary">{t.category}</Badge>}
-                <span className="ms-auto shrink-0 text-xs text-muted-foreground">used {t.used}×</span>
+                {t.used > 0 && <span className="ms-auto shrink-0 text-xs text-muted-foreground">Used {plural(t.used, "time", "times")}</span>}
               </div>
-              <p className="mt-2 truncate text-[13px]">{t.subject}</p>
-              <p className="mt-1 line-clamp-3 whitespace-pre-line text-[13px] leading-5 text-muted-foreground">{t.body}</p>
+              <p className="mt-2 truncate text-[13px]">{filled(t.subject)}</p>
+              <p className="mt-1 line-clamp-3 whitespace-pre-line text-[13px] leading-5 text-muted-foreground">{filled(t.body)}</p>
             </a>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { CheckIcon, ClockIcon, CopyIcon, InfoIcon, PencilIcon, SendIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import { CheckIcon, ClockIcon, CopyIcon, InfoIcon, PencilIcon, ReplyIcon, SendIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Avatar, Panel, Row } from "~/components/app/bits";
@@ -20,7 +20,7 @@ type Done = { counts?: Counts };
 function IconAction({ label, onClick, children, disabled }: { label: string; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
   return (
     <Tooltip>
-      <TooltipTrigger render={<Button size="icon-xs" variant="ghost-muted" aria-label={label} onClick={onClick} disabled={disabled} />}>{children}</TooltipTrigger>
+      <TooltipTrigger render={<Button size="icon-sm" variant="ghost-muted" className="max-md:size-10" aria-label={label} onClick={onClick} disabled={disabled} />}>{children}</TooltipTrigger>
       <TooltipPopup>{label}</TooltipPopup>
     </Tooltip>
   );
@@ -40,7 +40,7 @@ function ReplyRow({ r, onChanged }: { r: Reply; onChanged: () => void }) {
     }
   };
   return (
-    <Row>
+    <Row className="max-md:flex-wrap">
       <Avatar name={r.name} email={r.email} className="mt-0.5" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
@@ -51,7 +51,7 @@ function ReplyRow({ r, onChanged }: { r: Reply; onChanged: () => void }) {
           {r.likely_no && <Badge variant="secondary">Looks like a no</Badge>}
           <span className="ms-auto shrink-0 text-xs text-muted-foreground">{ago(r.received)}</span>
         </div>
-        <p className="mt-0.5 text-[13px] leading-5 text-foreground/90">{r.snippet || r.subject}</p>
+        <p className="mt-0.5 text-[13px] leading-5 max-md:text-sm">{r.snippet || r.subject}</p>
         {r.suggestion && (
           <div className="mt-2 rounded-lg border border-border bg-muted px-3 py-2">
             <div className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -68,7 +68,16 @@ function ReplyRow({ r, onChanged }: { r: Reply; onChanged: () => void }) {
           </div>
         )}
       </div>
-      <div className="flex shrink-0 items-center">
+      <div className="flex shrink-0 items-center gap-0.5 max-md:w-full max-md:justify-end">
+        {/* Answering happens in your own mail app, from your own address. */}
+        <Button
+          size="xs"
+          variant="outline"
+          className="me-1 max-md:h-10 max-md:px-3 max-md:text-sm"
+          render={<a href={`mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent(/^re:/i.test(r.subject) ? r.subject : `Re: ${r.subject}`)}${r.suggestion ? `&body=${encodeURIComponent(r.suggestion)}` : ""}`} />}
+        >
+          <ReplyIcon /> Reply
+        </Button>
         <IconAction label="Remind me tomorrow" disabled={busy} onClick={() => act("/api/today/snooze", { kind: "reply", ref: r.email, until: "tomorrow" }, "Back tomorrow")}>
           <ClockIcon />
         </IconAction>
@@ -124,14 +133,15 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
             <a href={href("people", "people", d.email)} className="truncate text-[13px] font-medium hover:underline">
               {d.email}
             </a>
-            <span className={cn("ms-auto shrink-0 text-xs tabular-nums", d.quality >= 80 ? "text-success-foreground" : d.quality >= 60 ? "text-muted-foreground" : "text-warning-foreground")}>
-              quality {d.quality}
+            {/* A score is a number, not a status: it only takes a colour when it's a problem. */}
+            <span className={cn("ms-auto shrink-0 text-xs tabular-nums", d.quality >= 60 ? "text-muted-foreground" : "text-warning-foreground")}>
+              {d.quality < 60 ? "Weak draft, " : ""}quality {d.quality}
             </span>
           </div>
           {!editing && (
             <>
-              <p className="truncate text-[13px] font-medium">{d.subject}</p>
-              <p className="truncate text-[13px] text-muted-foreground">{first}</p>
+              <p className="truncate text-[13px] font-medium max-md:text-sm">{d.subject}</p>
+              <p className="truncate text-[13px] text-muted-foreground max-md:text-sm">{first}</p>
             </>
           )}
         </div>
@@ -142,7 +152,7 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
           <IconAction label="Skip, don't send this one" disabled={busy} onClick={skip}>
             <XIcon />
           </IconAction>
-          <Button size="xs" disabled={busy} onClick={approve} className="ms-1">
+          <Button size="xs" disabled={busy} onClick={approve} className="ms-1 max-md:h-10 max-md:px-3 max-md:text-sm">
             <SendIcon /> Approve
           </Button>
         </div>
@@ -179,14 +189,14 @@ export function TaskRow({ t, onChanged }: { t: Task; onChanged: () => void }) {
         onClick={complete}
         aria-label={`Complete: ${t.title}`}
         className={cn(
-          "grid size-4.5 shrink-0 cursor-pointer place-items-center rounded-full border border-input text-transparent transition-colors hover:border-success hover:text-success",
+          "relative grid size-4.5 shrink-0 cursor-pointer place-items-center rounded-full border border-control-border text-transparent transition-colors after:absolute after:-inset-3 hover:border-success hover:text-success",
           done && "border-success bg-success text-white",
         )}
       >
         <CheckIcon className="size-3" />
       </button>
       <div className="min-w-0 flex-1">
-        <span className={cn("text-[13px]", done && "text-muted-foreground line-through")}>{t.title}</span>
+        <span className={cn("text-[13px] max-md:text-sm", done && "text-muted-foreground line-through")}>{t.title}</span>
         {(t.contact_name || t.contact_org) && (
           <a href={href("people", "people", t.contact)} className="ms-2 text-xs text-muted-foreground hover:underline">
             {[t.contact_name, t.contact_org].filter(Boolean).join(", ")}

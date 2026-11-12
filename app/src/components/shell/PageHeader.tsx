@@ -1,11 +1,15 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 import { href } from "~/lib/router";
 import { cn } from "~/lib/utils";
 
 import type { Section } from "./sections";
 
-/** The 52px bar on top of every screen: title, the section's pages as tabs, actions. */
+/**
+ * The bar on top of every screen: title, the section's pages as tabs, actions. Its
+ * content sits on the same left and right edges as the page body below it. On a phone
+ * the tabs get a row of their own that scrolls, with the current one kept in view.
+ */
 export function PageHeader({
   section,
   page,
@@ -17,30 +21,43 @@ export function PageHeader({
   title?: ReactNode;
   actions?: ReactNode;
 }) {
+  const current = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    current.current?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [page]);
+
+  const tabs = section.pages.length > 0 && (
+    <nav className="max-md:tabs-fade flex min-w-0 items-center gap-0.5 overflow-x-auto max-md:-mx-4 max-md:px-4 max-md:pb-2" aria-label={`${section.label} pages`}>
+      {section.pages.map((p) => {
+        const on = p.key === page;
+        return (
+          <a
+            key={p.key}
+            ref={on ? current : undefined}
+            href={href(section.key, p.key)}
+            aria-current={on ? "page" : undefined}
+            className={cn(
+              "h-7 shrink-0 rounded-md px-2.5 text-[13px] leading-7 text-muted-foreground transition-colors hover:text-foreground max-md:h-10 max-md:px-3 max-md:text-sm max-md:leading-10",
+              on && "bg-accent font-medium text-foreground",
+            )}
+          >
+            {p.label}
+          </a>
+        );
+      })}
+    </nav>
+  );
+
   return (
-    <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-border px-5 max-md:px-3">
-            <h1 className="shrink-0 text-sm font-semibold tracking-tight">{title ?? section.label}</h1>
-      {section.pages.length > 0 && (
-        <nav className="flex items-center gap-0.5 overflow-x-auto" aria-label={`${section.label} pages`}>
-          {section.pages.map((p) => {
-            const on = p.key === page;
-            return (
-              <a
-                key={p.key}
-                href={href(section.key, p.key)}
-                aria-current={on ? "page" : undefined}
-                className={cn(
-                  "h-7 shrink-0 rounded-md px-2.5 text-[13px] leading-7 text-muted-foreground transition-colors hover:text-foreground",
-                  on && "bg-accent font-medium text-foreground",
-                )}
-              >
-                {p.label}
-              </a>
-            );
-          })}
-        </nav>
-      )}
-      <div className="ms-auto flex items-center gap-2">{actions}</div>
+    <header className="shrink-0 border-b border-border">
+      <div className="mx-auto w-full max-w-[var(--page-max)] px-6 max-md:px-4">
+        <div className="flex h-[52px] items-center gap-3">
+          <h1 className="shrink-0 text-sm font-semibold tracking-tight max-md:text-base">{title ?? section.label}</h1>
+          <div className="min-w-0 max-md:hidden">{tabs}</div>
+          <div className="ms-auto flex shrink-0 items-center gap-2">{actions}</div>
+        </div>
+        <div className="md:hidden">{tabs}</div>
+      </div>
     </header>
   );
 }

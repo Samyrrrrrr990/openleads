@@ -1,33 +1,35 @@
-import { ArrowUpIcon, CheckIcon, ChevronRightIcon, InboxIcon, MailIcon, SparklesIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, InboxIcon, MailIcon, SparklesIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { Avatar, Body, ErrorNote, LoadingRows, Panel, Row, Stat } from "~/components/app/bits";
-import { Meter, type Point, Segments, Spark } from "~/components/app/charts";
+import { Avatar, Body, ErrorNote, Figure, LoadingRows, Panel, Row } from "~/components/app/bits";
+import { BarList, Meter, type Point, Spark } from "~/components/app/charts";
 import { BrandIcon } from "~/components/app/Mark";
 import { PageHeader } from "~/components/shell/PageHeader";
 import { sectionOf } from "~/components/shell/sections";
+import { Button } from "~/components/ui/button";
 import { Kbd } from "~/components/ui/kbd";
+import { Spinner } from "~/components/ui/spinner";
 import { api } from "~/lib/api";
 import { setCounts } from "~/lib/counts";
 import { dayLabel, money, pct, plural } from "~/lib/format";
-import { href, navigate } from "~/lib/router";
-import { PROVIDER_BRAND, useSetup } from "~/lib/setup";
+import { href } from "~/lib/router";
+import { PROVIDER_BRAND, PROVIDER_NAME, switchModel, useSetup } from "~/lib/setup";
+import { fail, toast } from "~/lib/toast";
 import type { Briefing as BriefingData } from "~/lib/types";
 import { useApi } from "~/lib/use-api";
-import { cn } from "~/lib/utils";
 
 import { HeadsUpList, Queue } from "./Briefing";
-import { ask, onRan } from "./useAsk";
+import { onRan } from "./useAsk";
 
 interface Home {
   contacts: { total: number; new_7d: number };
-  emails: { sent_30d: number; contacted: number; replied: number; reply_rate: number; warmup: { day: number; allowance: number; sent_today: number; remaining: number } };
+  emails: { sent_30d: number; contacted: number; replied: number; reply_rate: number; warmup: { day: number; allowance: number; sent_today: number } };
   deals: { open_count: number; open_value: number; weighted: number };
-  series: { sent: Point[]; replied: Point[]; added: Point[] };
+  series: { sent: Point[]; added: Point[] };
 }
 
 interface Board {
-  columns: { key: string; label: string; total: number; count: number }[];
+  columns: { key: string; label: string; total: number }[];
 }
 
 function summary(b: BriefingData): string {
@@ -40,67 +42,31 @@ function summary(b: BriefingData): string {
   return parts.length ? `${parts.join(", ")}.` : "Nothing needs you right now.";
 }
 
-/** Type a request here and it opens in Ask, where you see the plan before anything runs. */
-function AskBar() {
-  const [text, setText] = useState("");
-  const send = () => {
-    const t = text.trim();
-    if (!t) return;
-    navigate("ask");
-    void ask(t);
-    setText("");
-  };
-  return (
-    <form
-      className="flex h-10 w-full items-center gap-2 rounded-xl border border-input bg-card ps-3 pe-1.5 shadow-composer transition-shadow focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/15 lg:w-[26rem]"
-      onSubmit={(e) => {
-        e.preventDefault();
-        send();
-      }}
-    >
-      <SparklesIcon className="size-4 shrink-0 text-primary-ink" />
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Ask for leads, emails, or an answer"
-        aria-label="Ask OpenLeads"
-        data-ask-input
-        className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-placeholder"
-      />
-      {text.trim() ? (
-        <button type="submit" aria-label="Ask" className="grid size-7 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground">
-          <ArrowUpIcon className="size-4" />
-        </button>
-      ) : (
-        <Kbd className="me-1">/</Kbd>
-      )}
-    </form>
-  );
+function IconTile({ children }: { children: React.ReactNode }) {
+  return <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground">{children}</span>;
 }
 
-function SetupRow({ icon, title, note, done, to }: { icon: React.ReactNode; title: string; note: string; done: boolean; to: string }) {
+function StatusRow({ icon, title, note, done, to, action }: { icon: React.ReactNode; title: string; note: string; done: boolean; to: string; action?: React.ReactNode }) {
   return (
-    <a href={to} className="group flex items-center gap-3 border-b border-border px-3.5 py-2.5 last:border-b-0 hover:bg-accent/60">
+    <div className="flex items-center gap-3 border-b border-border px-3.5 py-2.5 last:border-b-0">
       {icon}
-      <span className="min-w-0 flex-1">
+      <a href={to} className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium">{title}</span>
-        <span className="block truncate text-xs text-muted-foreground">{note}</span>
-      </span>
+        <span className="line-clamp-2 text-xs leading-4 text-muted-foreground">{note}</span>
+      </a>
       {done ? (
-        <span className="grid size-5 place-items-center rounded-full bg-success-surface text-success-foreground" aria-label="Connected">
-          <CheckIcon className="size-3" />
+        <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-success-foreground">
+          <CheckIcon className="size-3.5" /> On
         </span>
       ) : (
-        <span className="flex items-center text-xs font-medium text-primary-ink">
-          Connect <ChevronRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-        </span>
+        (action ?? (
+          <a href={to} className="group flex shrink-0 items-center text-xs font-medium text-primary-ink">
+            Connect <ChevronRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          </a>
+        ))
       )}
-    </a>
+    </div>
   );
-}
-
-function IconTile({ children, on }: { children: React.ReactNode; on: boolean }) {
-  return <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-card", on ? "text-foreground" : "text-muted-foreground")}>{children}</span>;
 }
 
 export function Today() {
@@ -109,6 +75,7 @@ export function Today() {
   const deals = useApi<Board>("/api/deals");
   const setup = useSetup();
   const [line, setLine] = useState("");
+  const [switching, setSwitching] = useState(false);
   const reloadToday = today.reload;
   const reloadHome = home.reload;
   const changed = useCallback(() => {
@@ -136,54 +103,99 @@ export function Today() {
   const b = today.data;
   const h = home.data;
   const model = setup.ai.current;
+  const found = setup.ai.detected[0];
   const stages = (deals.data?.columns ?? []).filter((c) => c.key !== "won" && c.key !== "lost").map((c) => ({ key: c.key, label: c.label, value: c.total }));
-  // Setup problems are shown as connections below; anything else is a real heads-up.
+  // Setup problems are shown as connections; anything else is a real heads-up.
   const notes = (b?.heads_up ?? []).filter((x) => !x.message.includes("openleads setup"));
-  const waiting = b ? b.counts.replies + b.counts.drafts : 0;
+  const mailTo = href("settings", "connections", "mailbox");
+  const modelTo = href("settings", "connections", "model");
+
+  const useFound = async () => {
+    if (!found) return;
+    setSwitching(true);
+    try {
+      const said = await switchModel(found.provider);
+      if (said) fail(said);
+      else toast(`${PROVIDER_NAME[found.provider] ?? "Model"} connected`);
+    } catch (e) {
+      fail(e);
+    }
+    setSwitching(false);
+  };
 
   return (
     <>
-      <PageHeader section={sectionOf("today")} />
-      <Body wide>
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-2xl font-semibold tracking-tight">{dayLabel()}</h2>
-            <p className="mt-1 max-w-[62ch] text-[15px] leading-6 text-muted-foreground">{line || (b ? summary(b) : " ")}</p>
-          </div>
-          <AskBar />
+      <PageHeader
+        section={sectionOf("today")}
+        actions={
+          <Button size="sm" variant="outline" render={<a href={href("ask")} />}>
+            <SparklesIcon /> Ask OpenLeads <Kbd className="ms-0.5 max-md:hidden">/</Kbd>
+          </Button>
+        }
+      />
+      <Body>
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight">{dayLabel()}</h2>
+          <p className="mt-1 max-w-[62ch] text-[15px] leading-6 text-muted-foreground">{line || (b ? summary(b) : " ")}</p>
         </div>
 
         {today.error && <ErrorNote message={today.error} onRetry={changed} />}
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat
-            label="Waiting on you"
-            value={b ? waiting : "–"}
-            note={b ? (waiting ? `${plural(b.counts.replies, "reply", "replies")}, ${plural(b.counts.drafts, "approval", "approvals")}` : "All caught up") : ""}
-          />
-          <Stat label="Emails sent, 30 days" value={h ? h.emails.sent_30d : "–"} note={h ? `${pct(h.emails.reply_rate)} of people replied` : ""} href={href("pipeline", "analytics")}>
-            {h && <Spark points={h.series.sent} />}
-          </Stat>
-          <Stat
-            label="Open pipeline"
-            value={h ? money(h.deals.open_value) : "–"}
-            note={h ? `${plural(h.deals.open_count, "deal", "deals")}, ${money(h.deals.weighted)} weighted` : ""}
-            href={href("pipeline", "deals")}
-          />
-          <Stat label="People" value={h ? h.contacts.total.toLocaleString() : "–"} note={h ? `${h.contacts.new_7d} added this week` : ""} href={href("people")}>
-            {h && <Spark points={h.series.added} />}
-          </Stat>
-        </div>
-
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="flex min-w-0 flex-col gap-5">
+            {setup.loaded && !setup.mailbox && (
+              <section className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-primary/25 bg-primary-wash px-4 py-3.5">
+                <span className="flex shrink-0 -space-x-1.5">
+                  <BrandIcon name="gmail" />
+                  <BrandIcon name="microsoft" />
+                </span>
+                <div className="min-w-48 flex-1">
+                  <p className="text-sm font-medium">Connect your mailbox to send</p>
+                  <p className="text-[13px] leading-5 text-muted-foreground">
+                    {setup.demo
+                      ? "The emails in this demo are invented. Connect your own mailbox and approved emails go out from your address."
+                      : "Approved emails wait here until you do. They go out from your own address, and replies come back to this page."}
+                  </p>
+                </div>
+                <Button size="sm" render={<a href={mailTo} />}>
+                  Connect mailbox
+                </Button>
+              </section>
+            )}
             {!b && today.loading && <LoadingRows rows={6} />}
             {b && <Queue b={b} onChanged={changed} />}
           </div>
 
-          <aside className="flex min-w-0 flex-col gap-5" aria-label="Status">
+          <aside className="flex min-w-0 flex-col gap-5" aria-label="How things are going">
             {h && (
-              <Panel title="Sending today">
+              <Panel
+                title="Last 30 days"
+                action={
+                  <a className="text-xs text-muted-foreground hover:text-foreground" href={href("pipeline", "analytics")}>
+                    Analytics
+                  </a>
+                }
+              >
+                <div className="grid grid-cols-2 [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-e [&>*]:border-border">
+                  <Figure label="Emails sent" value={h.emails.sent_30d.toLocaleString()} note={plural(h.emails.contacted, "person", "people")} to={href("pipeline", "analytics")}>
+                    <Spark points={h.series.sent} label="Emails sent per day" />
+                  </Figure>
+                  <Figure label="Reply rate" value={pct(h.emails.reply_rate)} note={`${h.emails.replied} of ${h.emails.contacted} replied`} to={href("pipeline", "analytics")} />
+                  <Figure label="Open pipeline" value={money(h.deals.open_value)} note={plural(h.deals.open_count, "deal", "deals")} to={href("pipeline", "deals")} />
+                  <Figure label="People" value={h.contacts.total.toLocaleString()} note={`${h.contacts.new_7d} new this week`} to={href("people")} />
+                </div>
+              </Panel>
+            )}
+
+            {h && setup.mailbox && (
+              <Panel
+                title="Sending today"
+                action={
+                  <a className="text-xs text-muted-foreground hover:text-foreground" href={mailTo}>
+                    Mailbox
+                  </a>
+                }
+              >
                 <div className="px-3.5 py-3">
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-lg font-semibold tabular-nums">{h.emails.warmup.sent_today}</span>
@@ -204,12 +216,12 @@ export function Today() {
                 title="Pipeline by stage"
                 action={
                   <a className="text-xs text-muted-foreground hover:text-foreground" href={href("pipeline", "deals")}>
-                    Open deals
+                    Deals
                   </a>
                 }
               >
-                <div className="px-3.5 py-3">
-                  <Segments parts={stages} format={(n) => money(n)} />
+                <div className="px-2 py-2">
+                  <BarList rows={stages.filter((x) => x.value > 0).map((x) => ({ key: x.key, label: x.label, value: x.value, shown: money(x.value) }))} />
                 </div>
               </Panel>
             )}
@@ -223,27 +235,40 @@ export function Today() {
                   </a>
                 }
               >
-                <SetupRow
-                  to={href("settings", "connections")}
+                <StatusRow
+                  to={modelTo}
                   done={!!model}
-                  icon={model ? <BrandIcon name={PROVIDER_BRAND[model.provider] ?? model.provider} label={model.label} /> : <IconTile on={false}><SparklesIcon className="size-4" /></IconTile>}
-                  title={model ? model.label : "AI model"}
-                  note={model ? "Reads requests, writes drafts, sorts replies" : setup.ai.detected.length ? `${setup.ai.detected[0].label.split(" (")[0]} is on this computer` : "Optional. Built-in rules work without one"}
+                  icon={
+                    model || found ? (
+                      <BrandIcon name={PROVIDER_BRAND[(model ?? found).provider] ?? ""} label={(model ?? found).label} />
+                    ) : (
+                      <IconTile>
+                        <SparklesIcon className="size-4" />
+                      </IconTile>
+                    )
+                  }
+                  title={model ? (PROVIDER_NAME[model.provider] ?? model.label) : found ? `${PROVIDER_NAME[found.provider] ?? found.label} is on this computer` : "AI model"}
+                  note={model ? "Reads requests, writes drafts, sorts replies" : found ? "Use it to read requests and write drafts" : "Optional. The built-in rules work without one"}
+                  action={
+                    found && (
+                      <Button size="xs" variant="outline" disabled={switching} onClick={useFound}>
+                        {switching && <Spinner />} Use it
+                      </Button>
+                    )
+                  }
                 />
-                <SetupRow
-                  to={href("settings", "connections")}
-                  done={setup.mailbox}
-                  icon={<IconTile on={setup.mailbox}><MailIcon className="size-4" /></IconTile>}
-                  title="Mailbox for sending"
-                  note={setup.mailbox ? "Approved emails go out from your address" : "Nothing can send until you connect one"}
-                />
-                <SetupRow
-                  to={href("settings", "connections")}
-                  done={setup.inbox}
-                  icon={<IconTile on={setup.inbox}><InboxIcon className="size-4" /></IconTile>}
-                  title="Inbox for replies"
-                  note={setup.inbox ? "Replies show up on Today" : "Replies aren't being read yet"}
-                />
+                {setup.mailbox && (
+                  <>
+                    <StatusRow to={mailTo} done icon={<IconTile><MailIcon className="size-4" /></IconTile>} title="Mailbox" note="Approved emails go out from your address" />
+                    <StatusRow
+                      to={mailTo}
+                      done={setup.inbox}
+                      icon={<IconTile><InboxIcon className="size-4" /></IconTile>}
+                      title="Replies"
+                      note={setup.inbox ? "Read from your inbox and shown here" : "Not being read yet"}
+                    />
+                  </>
+                )}
               </Panel>
             )}
 

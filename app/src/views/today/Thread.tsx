@@ -6,7 +6,8 @@ import { Spinner } from "~/components/ui/spinner";
 import { BrandIcon } from "~/components/app/Mark";
 import { onAsk } from "~/lib/requests";
 import { href } from "~/lib/router";
-import { PROVIDER_BRAND, useSetup } from "~/lib/setup";
+import { PROVIDER_BRAND, PROVIDER_NAME, switchModel, useSetup } from "~/lib/setup";
+import { fail, toast } from "~/lib/toast";
 import { cn } from "~/lib/utils";
 
 import type { Turn } from "./useAsk";
@@ -17,8 +18,10 @@ export function Composer({ onAsk: submit, busy, autoFocus, className }: { onAsk:
   const ref = useRef<HTMLTextAreaElement>(null);
   const setup = useSetup();
   const model = setup.ai.current;
+  const found = setup.ai.detected[0];
+  const [switching, setSwitching] = useState(false);
 
-  // The sidebar and the palette can hand a request over.
+  // The Ask page's examples can hand a request over.
   useEffect(
     () =>
       onAsk((t) => {
@@ -71,15 +74,35 @@ export function Composer({ onAsk: submit, busy, autoFocus, className }: { onAsk:
         className="block w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] leading-6 outline-none placeholder:text-placeholder"
       />
       <div className="flex items-center gap-2 px-2.5 pb-2.5">
-        {/* Which model reads the request, and one click to change it. */}
-        <a
-          href={href("settings", "connections")}
-          className="flex h-7 min-w-0 items-center gap-1.5 rounded-lg px-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          {model ? <BrandIcon size="sm" name={PROVIDER_BRAND[model.provider] ?? model.provider} label={model.label} /> : <SparklesIcon className="size-3.5" />}
-          <span className="truncate">{model ? model.label.split(" (")[0] : "Built-in rules"}</span>
-          {!model && setup.loaded && <span className="shrink-0 text-primary-ink">Connect a model</span>}
-        </a>
+        {/* Which model reads the request. One found on this computer is one click away. */}
+        {model || !found ? (
+          <a href={href("settings", "connections", "model")} className="flex h-7 min-w-0 items-center gap-1.5 rounded-lg px-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground max-md:h-10">
+            {model ? <BrandIcon size="sm" name={PROVIDER_BRAND[model.provider] ?? model.provider} label={model.label} /> : <SparklesIcon className="size-3.5" />}
+            <span className="truncate">{model ? (PROVIDER_NAME[model.provider] ?? model.label) : "Built-in rules"}</span>
+            {!model && setup.loaded && <span className="shrink-0 font-medium text-primary-ink">Connect a model</span>}
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled={switching}
+            onClick={async () => {
+              setSwitching(true);
+              try {
+                const said = await switchModel(found.provider);
+                if (said) fail(said);
+                else toast(`${PROVIDER_NAME[found.provider] ?? "Model"} connected`);
+              } catch (e) {
+                fail(e);
+              }
+              setSwitching(false);
+            }}
+            className="flex h-7 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground max-md:h-10"
+          >
+            {switching ? <Spinner className="size-3.5" /> : <BrandIcon size="sm" name={PROVIDER_BRAND[found.provider] ?? ""} label={found.label} />}
+            <span className="truncate">Built-in rules</span>
+            <span className="shrink-0 font-medium text-primary-ink">Use {PROVIDER_NAME[found.provider] ?? "it"}</span>
+          </button>
+        )}
         <span className="ms-auto text-xs text-muted-foreground max-sm:hidden">Nothing runs until you say yes</span>
         <Button size="icon-sm-pill" className="max-sm:ms-auto" disabled={!text.trim() || busy} onClick={send} aria-label="Ask">
           {busy ? <Spinner /> : <ArrowUpIcon />}
@@ -89,49 +112,70 @@ export function Composer({ onAsk: submit, busy, autoFocus, className }: { onAsk:
   );
 }
 
+/** What pressing the button does, in the button's own words. */
+function runLabel(plan: Turn["plan"]): string {
+  if (!plan) return "Run it";
+  if (plan.schedule) return "Save this schedule";
+  if (plan.kind === "find") return "Find them";
+  return "Find them and write drafts";
+}
+
 function PlanCard({ turn, onRun, onDismiss }: { turn: Turn; onRun: (confirmed: boolean) => void; onDismiss: () => void }) {
   const plan = turn.plan!;
+  const setup = useSetup();
   const waiting = turn.status === "plan";
+  const writes = plan.kind !== "find" && plan.kind !== "unsupported";
+  const reader = plan.by && plan.by !== "rules" ? (PROVIDER_NAME[plan.by.split(":")[0]] ?? plan.by) : "";
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-3.5 py-2">
-        <span className="text-[13px] font-semibold">Plan</span>
-        <span className="text-xs text-muted-foreground">
-          {plan.by === "rules" ? "read by the built-in rules" : `read by ${plan.by}`}
-        </span>
+        <span className="text-[13px] font-semibold">{plan.kind === "unsupported" ? "Not something OpenLeads can do yet" : "Here's the plan"}</span>
+        {reader && <span className="text-xs text-muted-foreground">read by {reader}</span>}
         {plan.schedule && <span className="ms-auto text-xs text-muted-foreground">runs {plan.schedule}</span>}
       </div>
-      <ol className="flex flex-col gap-1.5 px-3.5 py-3">
-        {plan.steps.map((s, i) => (
-          <li key={i} className="flex gap-2.5 text-[13px] leading-5">
-            <span className="w-4 shrink-0 text-end text-muted-foreground tabular-nums">{i + 1}</span>
-            <span>{s}</span>
-          </li>
-        ))}
-      </ol>
-      {plan.kind === "unsupported" && (
-        <div className="border-t border-border px-3.5 py-2.5 text-[13px] text-muted-foreground">
-          OpenLeads can't do that from a sentence yet. In a terminal: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">{plan.suggestion}</code>
-        </div>
+      {plan.kind === "unsupported" ? (
+        <p className="px-3.5 py-3 text-[13px] leading-5 text-muted-foreground">
+          Try asking for people to find, emails to write to them, or a question about your workspace. Everything else has its own page in the sidebar.
+        </p>
+      ) : (
+        <ol className="flex flex-col gap-1.5 px-3.5 py-3">
+          {plan.steps.map((s, i) => (
+            <li key={i} className="flex gap-2.5 text-[13px] leading-5 max-md:text-sm">
+              <span className="w-4 shrink-0 text-end text-muted-foreground tabular-nums">{i + 1}</span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ol>
       )}
       {waiting && turn.runnable && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/60 px-3.5 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border bg-muted/60 px-3.5 py-2.5">
           {plan.needs_yes ? (
-            <span className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-warning-foreground">
+            <span className="flex min-w-48 flex-1 items-center gap-1.5 text-xs text-warning-foreground">
               <CircleAlertIcon className="size-3.5 shrink-0" />
               The model read this as more than a search. Check the steps before you say yes.
             </span>
           ) : (
-            <span className="min-w-0 flex-1 text-xs text-muted-foreground">
-              {plan.schedule ? "Saving it starts the schedule." : plan.kind === "find" ? "A search. Nothing is sent." : "Nothing sends without your approval."}
+            <span className="min-w-48 flex-1 text-xs leading-5 text-muted-foreground">
+              {plan.schedule
+                ? "Saving it starts the schedule. First emails still wait for your approval."
+                : !writes
+                  ? "A search. Nothing is written or sent."
+                  : setup.loaded && !setup.mailbox
+                    ? "Drafts will wait on Today. "
+                    : "Drafts wait on Today. Nothing sends until you approve it."}
+              {writes && !plan.schedule && setup.loaded && !setup.mailbox && (
+                <a className="font-medium text-foreground underline underline-offset-2" href={href("settings", "connections", "mailbox")}>
+                  Connect a mailbox to send them
+                </a>
+              )}
             </span>
           )}
-          <Button size="sm" variant="ghost" onClick={onDismiss}>
+          <Button size="sm" variant="ghost" className="max-md:h-10" onClick={onDismiss}>
             Not now
           </Button>
           {/* Enter runs an ordinary plan; one the model widened has to be clicked on purpose. */}
-          <Button size="sm" onClick={() => onRun(plan.needs_yes)} autoFocus={!plan.needs_yes}>
-            {plan.needs_yes ? "Yes, run it" : plan.schedule ? "Save schedule" : "Run it"}
+          <Button size="sm" className="max-md:h-10" onClick={() => onRun(plan.needs_yes)} autoFocus={!plan.needs_yes}>
+            {plan.needs_yes ? `Yes: ${runLabel(plan).toLowerCase()}` : runLabel(plan)}
           </Button>
         </div>
       )}
@@ -165,8 +209,8 @@ function Outcome({ turn }: { turn: Turn }) {
       {r && r.ok && (
         <div className="flex flex-wrap gap-2 ps-8">
           {r.drafts_waiting > 0 && (
-            <Button size="sm" variant="outline" render={<a href={href("outreach", "approvals")} />}>
-              Review {r.drafts_waiting} {r.drafts_waiting === 1 ? "draft" : "drafts"}
+            <Button size="sm" render={<a href={href("outreach", "approvals")} />}>
+              Review {r.drafts_waiting} {r.drafts_waiting === 1 ? "draft" : "drafts"} on Today
             </Button>
           )}
           {r.leads > 0 && (

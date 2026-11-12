@@ -4,8 +4,8 @@ import { Logo } from "~/components/app/Mark";
 import { Kbd } from "~/components/ui/kbd";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { useCounts } from "~/lib/counts";
-import { askFor, useRequests } from "~/lib/requests";
-import { href, navigate } from "~/lib/router";
+import { href } from "~/lib/router";
+import { useSetup } from "~/lib/setup";
 import { toggleTheme, useTheme } from "~/lib/theme";
 import { cn, IS_MAC } from "~/lib/utils";
 
@@ -21,7 +21,7 @@ export function Sidebar({
   onOpenPalette: () => void;
 }) {
   const counts = useCounts();
-  const requests = useRequests();
+  const setup = useSetup();
   const theme = useTheme();
   const waiting = counts.replies + counts.drafts;
 
@@ -33,6 +33,11 @@ export function Sidebar({
       <a href={href("today")} className="flex h-[52px] items-center gap-2.5 px-3.5" aria-label="OpenLeads, go to Today">
         <Logo />
         <span className="text-[15px] font-semibold tracking-tight">OpenLeads</span>
+        {setup.demo && (
+          <span className="ms-auto rounded-full border border-sidebar-border px-1.5 py-px text-xs text-sidebar-muted-foreground" title="A made-up workspace to look around in. Nothing here is real and nothing can send.">
+            Demo
+          </span>
+        )}
       </a>
 
       <div className="px-2">
@@ -77,30 +82,10 @@ export function Sidebar({
         })}
       </nav>
 
-      {requests.length > 0 && (
-        <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2">
-          <div className="px-2.5 pb-1 text-xs text-sidebar-muted-foreground">Asked before</div>
-          {requests.map((r) => (
-            <button
-              key={r}
-              type="button"
-              title={r}
-              onClick={() => {
-                navigate("ask");
-                window.setTimeout(() => askFor(r), 0);
-              }}
-              className="block h-7 w-full cursor-pointer truncate rounded-md px-2.5 text-start text-[13px] text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="mt-auto flex items-center gap-1 border-t border-sidebar-border px-2 py-2">
         <span className="flex min-w-0 items-center gap-1.5 px-1.5 text-xs text-sidebar-muted-foreground" title="Everything stays on this computer">
           <span className="size-1.5 shrink-0 rounded-full bg-success" />
-          <span className="truncate">Local{version ? `, version ${version}` : ""}</span>
+          <span className="truncate">Local{version || setup.version ? `, version ${version || setup.version}` : ""}</span>
         </span>
         <span className="ms-auto" />
         <Tooltip>

@@ -22,6 +22,9 @@ export interface ModelState {
 
 export interface Setup {
   loaded: boolean;
+  /** The invented demo workspace: its people and emails are made up. */
+  demo: boolean;
+  version: string;
   error: string;
   ai: ModelState;
   settings: Record<string, Setting>;
@@ -29,7 +32,7 @@ export interface Setup {
   inbox: boolean;
 }
 
-let state: Setup = { loaded: false, error: "", ai: { current: null, problem: "", detected: [] }, settings: {}, mailbox: false, inbox: false };
+let state: Setup = { loaded: false, demo: false, version: "", error: "", ai: { current: null, problem: "", detected: [] }, settings: {}, mailbox: false, inbox: false };
 const listeners = new Set<() => void>();
 let loading: Promise<void> | null = null;
 
@@ -42,11 +45,13 @@ export function refreshSetup(): Promise<void> {
     try {
       const [ai, s] = await Promise.all([
         api.get<ModelState>("/api/ai"),
-        api.get<{ settings: Setting[]; identity: { mailbox_configured: boolean } }>("/api/settings"),
+        api.get<{ settings: Setting[]; identity: { mailbox_configured: boolean }; demo?: boolean; version: string }>("/api/state"),
       ]);
       const settings = Object.fromEntries(s.settings.map((x) => [x.key, x]));
       state = {
         loaded: true,
+        demo: !!s.demo,
+        version: s.version,
         error: "",
         ai,
         settings,
@@ -90,4 +95,23 @@ export const PROVIDER_BRAND: Record<string, string> = {
   openrouter: "openrouter",
   ollama: "ollama",
   custom: "custom",
+};
+
+/** Start using a model (or "off" for the built-in rules). Returns a sentence when it didn't work. */
+export async function switchModel(provider: string): Promise<string | void> {
+  const r = await api.post<{ ok: boolean; detail?: string }>("/api/ai/use", { provider });
+  await refreshSetup();
+  if (!r.ok) return r.detail || "It didn't answer a test message.";
+}
+
+/** A short name for a model provider, as people say it. */
+export const PROVIDER_NAME: Record<string, string> = {
+  claude: "Claude",
+  codex: "ChatGPT",
+  anthropic: "Anthropic API",
+  openai: "OpenAI API",
+  gemini: "Gemini",
+  openrouter: "OpenRouter",
+  ollama: "Ollama",
+  custom: "Your endpoint",
 };

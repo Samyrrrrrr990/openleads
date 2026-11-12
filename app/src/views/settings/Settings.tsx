@@ -1,14 +1,13 @@
-import { type CheckIcon, CircleAlertIcon, CircleCheckIcon, TriangleAlertIcon } from "lucide-react";
+import { CircleAlertIcon, CircleCheckIcon, CircleDashedIcon, type LucideIcon } from "lucide-react";
 
 import { Body, ErrorNote, LoadingRows, Panel, Row } from "~/components/app/bits";
 import { PageHeader } from "~/components/shell/PageHeader";
 import { sectionOf } from "~/components/shell/sections";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
-import { api } from "~/lib/api";
-import { classic } from "~/lib/router";
-import { fail, toast } from "~/lib/toast";
+import { plural } from "~/lib/format";
+import { href } from "~/lib/router";
+import { PROVIDER_NAME, refreshSetup, useSetup } from "~/lib/setup";
 import { useApi } from "~/lib/use-api";
 import { cn } from "~/lib/utils";
 
@@ -21,53 +20,152 @@ interface Check {
   detail: string;
 }
 
-const MARK: Record<string, { icon: typeof CheckIcon; cls: string }> = {
-  ok: { icon: CircleCheckIcon, cls: "text-success" },
-  warn: { icon: TriangleAlertIcon, cls: "text-warning" },
-  bad: { icon: CircleAlertIcon, cls: "text-error" },
+/** "ok" works, "todo" is optional and not set up, "bad" is broken. */
+type State = "ok" | "todo" | "bad";
+
+interface Line {
+  key: string;
+  state: State;
+  title: string;
+  detail: string;
+  link?: { label: string; to: string };
+}
+
+const MARK: Record<State, { icon: LucideIcon; cls: string; word: string }> = {
+  ok: { icon: CircleCheckIcon, cls: "text-success-foreground", word: "Working" },
+  todo: { icon: CircleDashedIcon, cls: "text-muted-foreground", word: "Optional" },
+  bad: { icon: CircleAlertIcon, cls: "text-error-foreground", word: "Needs fixing" },
 };
 
+const stateOf = (c: Check | undefined, optional = false): State => (!c || c.status === "ok" ? "ok" : c.status === "bad" ? "bad" : optional ? "todo" : "bad");
+
+/** Checks the server runs, said the way you'd say them to a person. */
+function network(checks: Check[]): Line[] {
+  const find = (label: string) => checks.find((c) => c.label === label);
+  const dns = find("DNS-over-HTTPS");
+  const smtp = find("SMTP port 25");
+  const lines: Line[] = [];
+  if (dns)
+    lines.push({
+      key: "dns",
+      state: stateOf(dns),
+      title: "Looking up a company's mail server",
+      detail: dns.status === "ok" ? "Working. This is how OpenLeads tells whether a domain can receive email." : "Not reachable. Check your internet connection, then check again.",
+    });
+  if (smtp)
+    lines.push({
+      key: "smtp",
+      state: stateOf(smtp, true),
+      title: "Asking a mail server whether an address exists",
+      detail:
+        smtp.status === "ok"
+          ? "Working. Addresses are confirmed before anything is sent to them."
+          : "Your network blocks this, which is common on home and office internet. Addresses are still checked, less thoroughly.",
+    });
+  return lines;
+}
+
+function Lines({ title, lines }: { title: string; lines: Line[] }) {
+  if (!lines.length) return null;
+  return (
+    <Panel title={title}>
+      {lines.map((l) => {
+        const { icon: Icon, cls, word } = MARK[l.state];
+        return (
+          <Row key={l.key} className="items-start">
+            <Icon className={cn("mt-0.5 size-4 shrink-0", cls)} aria-label={word} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-medium max-md:text-sm">{l.title}</p>
+              <p className="text-[13px] leading-5 text-muted-foreground">{l.detail}</p>
+            </div>
+            {l.link && (
+              <Button size="sm" variant="outline" className="shrink-0 max-md:h-10" render={<a href={l.link.to} />}>
+                {l.link.label}
+              </Button>
+            )}
+          </Row>
+        );
+      })}
+    </Panel>
+  );
+}
+
 export function Doctor() {
-  const res = useApi<{ checks: Check[]; summary: { ok: number; warn: number; bad: number } }>("/api/doctor");
-  const groups = new Map<string, Check[]>();
-  for (const c of res.data?.checks ?? []) groups.set(c.group, [...(groups.get(c.group) ?? []), c]);
-  const s = res.data?.summary;
+  const res = useApi<{ checks: Check[] }>("/api/doctor");
+  const setup = useSetup();
+  const checks = res.data?.checks ?? [];
+  const ready = !!res.data && setup.loaded;
+
+  const model = setup.ai.current?.provider;
+  const found = setup.ai.detected[0]?.provider;
+  const name = (p: string) => PROVIDER_NAME[p] ?? p;
+  const connections: Line[] = [
+    model
+      ? { key: "ai", state: setup.ai.problem ? "bad" : "ok", title: `AI model: ${name(model)}`, detail: setup.ai.problem || "Reads your requests and writes drafts.", link: setup.ai.problem ? { label: "Fix", to: href("settings", "connections", "model") } : undefined }
+      : {
+          key: "ai",
+          state: "todo",
+          title: "AI model: none, using the built-in rules",
+          detail: found ? `${name(found)} is on this computer and ready to use. Until then, drafts are written from your templates.` : "Drafts are written from your templates. A model writes them from what it found about each person.",
+          link: { label: found ? `Use ${name(found)}` : "Connect a model", to: href("settings", "connections", "model") },
+        },
+    setup.mailbox
+      ? { key: "mail", state: "ok", title: "Mailbox: connected", detail: "Approved emails go out from your address." }
+      : { key: "mail", state: "todo", title: "Mailbox: not connected", detail: "You can find people and write drafts. Nothing can be sent until a mailbox is connected.", link: { label: "Connect a mailbox", to: href("settings", "connections", "mailbox") } },
+    ...(setup.mailbox
+      ? [
+          setup.inbox
+            ? ({ key: "inbox", state: "ok", title: "Replies: being read", detail: "New replies show on Today." } as Line)
+            : ({ key: "inbox", state: "todo", title: "Replies: not being read", detail: "Add the incoming mail server to see replies on Today.", link: { label: "Set up", to: href("settings", "connections", "mailbox") } } as Line),
+        ]
+      : []),
+    setup.settings.github_token?.is_set
+      ? { key: "gh", state: "ok", title: "GitHub token: saved", detail: "Developer searches can run longer." }
+      : { key: "gh", state: "todo", title: "GitHub token: not added", detail: "Developer searches work without one. A token lets them run longer before GitHub slows them down.", link: { label: "Add", to: href("settings", "connections") } },
+  ];
+  const net = network(checks);
+  const all = [...connections, ...net];
+  const bad = all.filter((l) => l.state === "bad").length;
+  const todo = all.filter((l) => l.state === "todo").length;
+
   return (
     <>
       <PageHeader
         section={SECTION}
         page="doctor"
         actions={
-          <Button size="sm" variant="outline" onClick={() => void res.reload()} disabled={res.loading}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="max-md:h-10"
+            onClick={() => {
+              void res.reload();
+              void refreshSetup();
+            }}
+            disabled={res.loading}
+          >
             {res.loading && <Spinner />} Check again
           </Button>
         }
       />
       <Body>
         {res.error && <ErrorNote message={res.error} onRetry={() => void res.reload()} />}
-        {!res.data && res.loading && <LoadingRows rows={6} />}
-        {s && (
-          <p className="text-[15px]">
-            {s.bad ? `${s.bad} thing${s.bad === 1 ? "" : "s"} to fix` : "Nothing is broken"}
-            {s.warn ? `, ${s.warn} optional.` : "."}
-          </p>
+        {!ready && !res.error && <LoadingRows rows={6} />}
+        {ready && (
+          <>
+            <div>
+              <p className="text-[15px] font-medium">{bad ? `${plural(bad, "thing", "things")} to fix.` : "Nothing is broken."}</p>
+              <p className="text-[13px] text-muted-foreground">
+                {todo ? `${plural(todo, "optional thing", "optional things")} you could still set up.` : "Everything optional is set up too."}
+                {setup.version ? ` OpenLeads ${setup.version}, running on this computer.` : ""}
+              </p>
+            </div>
+            <div className="grid items-start gap-5 lg:grid-cols-2">
+              <Lines title="What OpenLeads is connected to" lines={connections} />
+              <Lines title="Checking email addresses" lines={net} />
+            </div>
+          </>
         )}
-        {[...groups.entries()].map(([group, checks]) => (
-          <Panel key={group} title={group}>
-            {checks.map((c, i) => {
-              const { icon: Icon, cls } = MARK[c.status] ?? MARK.warn;
-              return (
-                <Row key={i} className="items-start">
-                  <Icon className={cn("mt-0.5 size-4 shrink-0", cls)} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium">{c.label}</p>
-                    {c.detail && <p className="text-[13px] text-muted-foreground">{c.detail}</p>}
-                  </div>
-                </Row>
-              );
-            })}
-          </Panel>
-        ))}
       </Body>
     </>
   );

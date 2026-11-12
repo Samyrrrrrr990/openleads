@@ -40,11 +40,13 @@ const SORTS = [
 ];
 
 export function FitDot({ score }: { score: number }) {
-  const cls = score >= 75 ? "bg-success" : score >= 50 ? "bg-info" : score >= 25 ? "bg-warning" : "bg-muted-foreground/40";
+  // A score out of 100 is an amount, not a status: one colour, longer for more.
   return (
-    <span className="inline-flex items-center gap-1.5 tabular-nums">
-      <span className={cn("size-1.5 rounded-full", cls)} />
-      {score}
+    <span className="inline-flex items-center gap-2 tabular-nums" title={`Fit ${score} out of 100`}>
+      <span className="h-1.5 w-8 rounded-full bg-accent" aria-hidden>
+        <span className="block h-1.5 rounded-full bg-chart-1" style={{ width: `${Math.max(0, Math.min(100, score))}%` }} />
+      </span>
+      <span className="w-6 text-end">{score}</span>
     </span>
   );
 }
@@ -95,7 +97,7 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
       />
       <Body wide className="gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-72 max-w-full">
+          <div className="relative w-72 max-w-full max-md:w-full">
             <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 z-10 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, company, title, email" className="*:ps-8" aria-label="Search people" />
           </div>
@@ -119,11 +121,32 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
             <LoadingRows rows={8} />
           ) : data && data.rows.length === 0 ? (
             <Quiet>
-              {dq || stage || tier ? "No one matches those filters." : "No people yet. Ask on Today, or use Find people."}
+              {dq || stage || tier ? "No one matches those filters." : "No people yet. Ask for some, or use Find people."}
             </Quiet>
           ) : (
             data && (
-              <Table>
+              <>
+              <ul className="md:hidden">
+                {data.rows.map((p) => {
+                  const st = stageOf(p.stage);
+                  return (
+                    <li key={p.email} className="border-b border-border last:border-b-0">
+                      <a href={listId ? href("people", "lists", String(listId), p.email) : href("people", "people", p.email)} className="flex items-start gap-3 px-3.5 py-3">
+                        <Avatar name={p.name} email={p.email} className="mt-0.5 size-8" />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="min-w-0 truncate text-sm font-medium">{p.name || p.email.split("@")[0]}</span>
+                            <span className="ms-auto shrink-0">{st ? <ToneBadge tone={st.tone}>{st.label}</ToneBadge> : p.stage}</span>
+                          </span>
+                          <span className="block truncate text-[13px] text-muted-foreground">{[p.title, p.organization].filter(Boolean).join(" at ")}</span>
+                          <span className="addr block truncate text-[13px] text-muted-foreground">{p.email}</span>
+                        </span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+              <Table className="max-md:hidden">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -169,6 +192,7 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
                   })}
                 </TableBody>
               </Table>
+              </>
             )
           )}
         </div>

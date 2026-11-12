@@ -22,12 +22,12 @@ export function Pick({
   className?: string;
 }) {
   return (
-    <label className={cn("relative inline-flex h-8 items-center rounded-lg border border-input bg-card text-[13px] shadow-xs/5 focus-within:border-ring sm:h-7", className)}>
+    <label className={cn("relative inline-flex h-10 items-center rounded-lg border border-input bg-card text-[13px] shadow-xs/5 focus-within:border-ring md:h-7", className)}>
       <span className="sr-only">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-full cursor-pointer appearance-none rounded-lg bg-transparent ps-2.5 pe-7 outline-none"
+        className="h-full w-full cursor-pointer appearance-none rounded-lg bg-transparent ps-2.5 pe-7 outline-none"
       >
         {options.map((o) => (
           <option key={o.key} value={o.key}>

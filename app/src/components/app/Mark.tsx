@@ -29,12 +29,14 @@ export function BrandIcon({ name, label, size = "md", className }: { name: strin
           <rect x="1" y="13" width="10" height="10" fill="#00a4ef" />
           <rect x="13" y="13" width="10" height="10" fill="#ffb900" />
         </svg>
+      ) : name === "zoho" ? (
+        <span className={cn("font-bold text-[#c8202b] dark:text-[#f0626b]", size === "sm" ? "text-2xs" : "text-sm")}>Z</span>
       ) : mark ? (
         <svg viewBox="0 0 24 24" className={glyph} fill={mark.color || "currentColor"}>
           <path d={mark.path} />
         </svg>
       ) : (
-        <span className={cn("font-semibold text-muted-foreground", size === "sm" ? "text-3xs" : "text-xs")}>{(label || name).slice(0, 1).toUpperCase()}</span>
+        <span className={cn("font-semibold text-muted-foreground", size === "sm" ? "text-2xs" : "text-xs")}>{(label || name).slice(0, 1).toUpperCase()}</span>
       )}
     </span>
   );

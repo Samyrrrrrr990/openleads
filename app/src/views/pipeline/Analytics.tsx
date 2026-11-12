@@ -73,14 +73,15 @@ export function Analytics() {
 
   const rows = (replies.data?.[dim] ?? [])
     .filter((r) => r.contacted > 0)
-    .sort((a, b) => b.rate - a.rate || b.contacted - a.contacted)
+    // Most-contacted first: a rate from two people shouldn't outrank one from twenty.
+    .sort((a, b) => b.contacted - a.contacted || b.rate - a.rate)
     .slice(0, 8)
     .map<BarRow>((r) => ({
       key: r.value || "unknown",
       label: dim === "source" ? (SOURCES[r.value] ?? words(r.value)) : words(r.value),
       value: r.rate,
-      shown: `${pct(r.rate)}`,
-      note: `${r.replied} of ${r.contacted} replied`,
+      shown: pct(r.rate),
+      note: `${r.replied} of ${r.contacted}`,
     }));
   const sample = (replies.data?.[dim] ?? []).reduce((a, r) => a + r.contacted, 0);
   const sources = Object.entries(t?.by_source ?? {})
@@ -89,11 +90,13 @@ export function Analytics() {
   const funnel = (h?.funnel ?? []).filter((f) => f.count > 0).map<BarRow>((f) => ({ key: f.key, label: f.label, value: f.count }));
   const grades = ["A", "B", "C", "D"].map<BarRow>((g) => ({ key: g, label: `Grade ${g}`, value: h?.grades?.[g] ?? 0 }));
   const nothingSent = !!h && h.emails.sent_30d === 0;
+  // Under this many people, a percentage is a hint, not a result.
+  const few = !!h && h.emails.contacted < 50;
 
   return (
     <>
       <PageHeader section={sectionOf("pipeline")} page="analytics" />
-      <Body wide>
+      <Body>
         {error && (
           <ErrorNote
             message={error}
@@ -109,11 +112,19 @@ export function Analytics() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <Stat label="People" value={t.total_leads.toLocaleString()} note={`${t.deliverable.toLocaleString()} with an email that will deliver`} />
               <Stat label="Emails sent, 30 days" value={h.emails.sent_30d.toLocaleString()} note={`${h.emails.sent_7d} in the last 7 days`} />
-              <Stat label="Reply rate" value={pct(h.emails.reply_rate)} note={`${h.emails.replied} of ${plural(h.emails.contacted, "person", "people")} contacted`} />
-              <Stat label="Bounce rate" value={pct(h.emails.bounce_rate)} note={h.emails.bounce_rate > 5 ? "High. Check Data health" : `${h.emails.bounced} bounced. Under 5% is healthy`} />
+              <Stat
+                label="Reply rate"
+                value={pct(h.emails.reply_rate)}
+                note={`${h.emails.replied} of ${plural(h.emails.contacted, "person", "people")} contacted${few ? ". Too few to judge yet" : ""}`}
+              />
+              <Stat
+                label="Bounce rate"
+                value={pct(h.emails.bounce_rate)}
+                note={`${h.emails.bounced} of ${h.emails.contacted} bounced. ${few ? "Too few to judge yet" : h.emails.bounce_rate > 5 ? "High: check Data health" : "Under 5% is healthy"}`}
+              />
             </div>
 
-            <Panel title="Emails and replies, last 30 days" action={<Legend series={[{ label: "Sent", color: "var(--chart-1)" }, { label: "Replies", color: "var(--chart-2)" }]} />}>
+            <Panel title="Emails and replies per day" action={<Legend series={[{ label: "Sent", color: "var(--chart-1)" }, { label: "Replies", color: "var(--chart-2)" }]} />}>
               {nothingSent ? (
                 <div className="px-5 py-10 text-center">
                   <p className="text-[15px] font-medium">No emails sent yet.</p>
@@ -126,8 +137,8 @@ export function Analytics() {
                 <div className="px-3.5 pt-4 pb-3">
                   <TrendChart
                     series={[
-                      { key: "sent", label: "Sent", color: "var(--chart-1)", points: h.series.sent },
-                      { key: "replied", label: "Replies", color: "var(--chart-2)", points: h.series.replied },
+                      { key: "sent", label: "Sent", unit: ["email sent", "emails sent"], color: "var(--chart-1)", points: h.series.sent },
+                      { key: "replied", label: "Replies", unit: ["reply", "replies"], color: "var(--chart-2)", points: h.series.replied },
                     ]}
                   />
                 </div>
@@ -135,53 +146,52 @@ export function Analytics() {
             </Panel>
 
             <div className="grid items-start gap-5 lg:grid-cols-2">
-              <Panel
-                title="Who replies"
-                action={
-                  <div className="flex items-center gap-0.5 overflow-x-auto" role="tablist" aria-label="Group replies by">
-                    {DIMENSIONS.map((d) => (
-                      <button
-                        key={d.key}
-                        type="button"
-                        role="tab"
-                        aria-selected={dim === d.key}
-                        onClick={() => setDim(d.key)}
-                        className={cn("h-6 shrink-0 cursor-pointer rounded-md px-2 text-xs text-muted-foreground transition-colors hover:text-foreground", dim === d.key && "bg-accent font-medium text-foreground")}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
-                  </div>
-                }
-              >
+              <div className="flex min-w-0 flex-col gap-5">
+              <Panel title="Who replies">
+                <div className="max-md:tabs-fade flex items-center gap-0.5 overflow-x-auto border-b border-border px-2 py-1.5" role="tablist" aria-label="Group replies by">
+                  {DIMENSIONS.map((d) => (
+                    <button
+                      key={d.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={dim === d.key}
+                      onClick={() => setDim(d.key)}
+                      className={cn(
+                        "h-7 shrink-0 cursor-pointer rounded-md px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground max-md:h-10 max-md:px-3 max-md:text-sm",
+                        dim === d.key && "bg-accent font-medium text-foreground",
+                      )}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="px-2 py-2">
-                  <BarList rows={rows} max={100} color="var(--chart-2)" empty="Reply rates show up after your first emails get answers." />
+                  <BarList rows={rows} max={100} empty="Reply rates show up after your first emails get answers." />
                   {rows.length > 0 && (
                     <p className="px-1.5 pt-2 text-xs leading-5 text-muted-foreground">
-                      Share of contacted people who replied. {sample < 50 ? `Only ${plural(sample, "person", "people")} contacted so far, so treat this as a hint.` : ""}
+                      Share of the people contacted in each group who replied, with the count beside it.
+                      {sample < 50 ? ` Only ${plural(sample, "person", "people")} contacted so far, so treat this as a hint.` : ""}
                     </p>
                   )}
                 </div>
               </Panel>
-
-              <div className="flex flex-col gap-5">
-                <Panel title="Where people stand">
-                  <div className="px-2 py-2">
-                    <BarList rows={funnel} empty="No people yet." />
-                  </div>
-                </Panel>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Panel title="Where they came from">
-                    <div className="px-2 py-2">
-                      <BarList rows={sources} empty="No people yet." />
-                    </div>
-                  </Panel>
-                  <Panel title="How well they fit">
-                    <div className="px-2 py-2">
-                      <BarList rows={grades} />
-                    </div>
-                  </Panel>
+              <Panel title="Where they came from">
+                <div className="px-2 py-2">
+                  <BarList rows={sources} empty="No people yet." />
                 </div>
+              </Panel>
+              </div>
+              <div className="flex min-w-0 flex-col gap-5">
+              <Panel title="Where people stand">
+                <div className="px-2 py-2">
+                  <BarList rows={funnel} empty="No people yet." />
+                </div>
+              </Panel>
+              <Panel title="How well they fit your ideal customer">
+                <div className="px-2 py-2">
+                  <BarList rows={grades} />
+                </div>
+              </Panel>
               </div>
             </div>
           </>

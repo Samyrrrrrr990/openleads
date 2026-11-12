@@ -22,7 +22,7 @@ export function TabBar({ active, onMore }: { active: string; onMore: () => void 
             <span className="relative">
               <s.icon className="size-5" />
               {s.key === "today" && waiting > 0 && (
-                <span className="absolute -end-2.5 -top-1 rounded-full bg-primary px-1 text-3xs font-semibold leading-3.5 text-primary-foreground tabular-nums">{waiting}</span>
+                <span className="absolute -end-2.5 -top-1 rounded-full bg-primary px-1 text-2xs font-semibold leading-4 text-primary-foreground tabular-nums">{waiting}</span>
               )}
             </span>
             {s.label}

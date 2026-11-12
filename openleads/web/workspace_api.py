@@ -720,10 +720,24 @@ def ai_use(db, p):
 
 @route(POST, "/api/mailbox/test")
 def mailbox_test(db, p):
-    """Log in to the saved mailbox, send nothing: does the address and app password work?"""
+    """Log in and send nothing: do this address and app password work?
+
+    With ``user`` and ``password`` it tries those (so the dashboard can check before it
+    saves anything); without, it tries the mailbox already saved."""
     from openleads.outreach import providers
+    cfg = None
+    if p.get("user") or p.get("password"):
+        name = str(p.get("provider") or "custom")
+        preset = providers.preset(name)
+        port = int(p.get("port") or preset["smtp_port"])
+        cfg = {"provider": name, "host": str(p.get("host") or preset["smtp_host"]),
+               "port": port, "ssl": port != 587 and (port == 465 or preset["ssl"]),
+               "user": str(p.get("user") or ""), "password": str(p.get("password") or ""),
+               "help": ""}
+        if not cfg["host"]:
+            return {"ok": False, "detail": "Add the outgoing server for this mailbox."}
     try:
-        ok, detail = providers.test_login()
+        ok, detail = providers.test_login(cfg)
     except Exception as e:  # noqa: BLE001 - any failure here is an answer, not a crash
         ok, detail = False, str(e)
     return {"ok": bool(ok), "detail": str(detail)[:300]}

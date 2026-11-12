@@ -44,6 +44,7 @@
   --glass-saturation: 1.14;
   --sidebar-width: 15rem;
   --content-max: 46rem;
+  --page-max: 72rem;
 }
 
 @theme {
@@ -79,6 +80,7 @@
   --color-destructive: var(--destructive);
   --color-ring: var(--ring);
   --color-input: var(--input);
+  --color-control-border: var(--control-border);
   --color-border: var(--border);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -138,13 +140,15 @@
   --secondary-foreground: #27272a;
   --muted: #fafafa;
   --muted-foreground: #71717a;
-  --placeholder: #8e8e97;
+  --placeholder: #6b6b74;
   --message-surface: #f0f0f2;
   --accent: #f4f4f5;
   --accent-foreground: #18181b;
   --border: #e4e4e7;
   --input: #d4d4d8;
   --ring: #1b4ed8;
+  /* The outline of something you can tick: must be visible on its own. */
+  --control-border: #8e8e97;
   --error: #d4382c;
   --error-foreground: #b3261e;
   --error-surface: #fcefee;
@@ -161,12 +165,12 @@
   --warning-surface: #fcf3e3;
   /* Chart series: checked for colour-blind separation on each surface. */
   --chart-1: #1b4ed8;
-  --chart-2: #d97706;
+  --chart-2: #0d9488;
   --chart-grid: #ececee;
   --sidebar: #fafafa;
   --sidebar-foreground: var(--foreground);
   --sidebar-muted-foreground: var(--muted-foreground);
-  --sidebar-row-hover: #fcfcfc;
+  --sidebar-row-hover: #f0f0f2;
   --sidebar-row-active: #ffffff;
   --sidebar-border: var(--border);
   /* The forked primitives read the contrast-adjusted names; OpenLeads has one contrast. */
@@ -190,13 +194,14 @@
     --secondary-foreground: #f1f3f7;
     --muted: rgb(255 255 255 / 3%);
     --muted-foreground: #a3a3a3;
-    --placeholder: #737373;
+    --placeholder: #8f8f8f;
     --message-surface: #161616;
     --accent: rgb(255 255 255 / 5%);
     --accent-foreground: #f1f3f7;
     --border: rgb(255 255 255 / 8%);
     --input: rgb(255 255 255 / 11%);
     --ring: #346bf1;
+    --control-border: rgb(255 255 255 / 34%);
     --error: #de4c3f;
     --error-foreground: #f2857a;
     --error-surface: #2c1715;
@@ -210,7 +215,7 @@
     --warning-foreground: #e4a84e;
     --warning-surface: #2a2112;
     --chart-1: #3b74f5;
-    --chart-2: #c9801f;
+    --chart-2: #14a394;
     --chart-grid: rgb(255 255 255 / 7%);
     --sidebar: #0c0c0c;
     --sidebar-row-hover: rgb(255 255 255 / 5%);
@@ -248,6 +253,13 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+/* A row of tabs that scrolls sideways fades at the edge it runs off, as a hint. */
+@utility tabs-fade {
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, #000 1rem, #000 calc(100% - 1.5rem), transparent 100%);
+  &::-webkit-scrollbar { display: none; }
 }
 
 @utility pop-in {

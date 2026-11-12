@@ -244,6 +244,22 @@ def test_mailbox_test_answers_without_crashing_when_nothing_is_connected(base):
     assert status == 200 and r["ok"] is False and r["detail"]
 
 
+def test_mailbox_test_tries_the_address_you_typed_before_anything_is_saved(base, monkeypatch):
+    from openleads import settings
+    from openleads.outreach import providers
+    seen = {}
+
+    def fake(cfg=None):
+        seen.update(cfg or {})
+        return True, "logged in"
+    monkeypatch.setattr(providers, "test_login", fake)
+    status, r = post(base, "/api/mailbox/test", {"provider": "gmail", "user": "me@x.example",
+                                                 "password": "app-pass"})
+    assert status == 200 and r["ok"] is True
+    assert seen["host"] == "smtp.gmail.com" and seen["user"] == "me@x.example"
+    assert not settings.get("smtp_user")
+
+
 def test_mail_presets_carry_the_inbox_host(base):
     _, _, body = get(base, "/api/providers")
     presets = json.loads(body)["presets"]

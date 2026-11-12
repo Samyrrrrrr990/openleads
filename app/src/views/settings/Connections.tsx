@@ -1,5 +1,5 @@
-import { CheckIcon, ExternalLinkIcon, MailIcon, RefreshCwIcon, WebhookIcon } from "lucide-react";
-import { useState } from "react";
+import { CheckIcon, ExternalLinkIcon, InboxIcon, ListChecksIcon, MailIcon, WebhookIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { Body, ErrorNote, LoadingRows } from "~/components/app/bits";
 import { BrandIcon } from "~/components/app/Mark";
@@ -10,8 +10,8 @@ import { Input } from "~/components/ui/input";
 import { Spinner } from "~/components/ui/spinner";
 import { api } from "~/lib/api";
 import { classic } from "~/lib/router";
-import { PROVIDER_BRAND, refreshSetup, saveSettings, type Setup, useSetup } from "~/lib/setup";
-import { fail, toast } from "~/lib/toast";
+import { PROVIDER_BRAND, refreshSetup, saveSettings, type Setup, switchModel, useSetup } from "~/lib/setup";
+import { toast } from "~/lib/toast";
 import { useApi } from "~/lib/use-api";
 import { cn } from "~/lib/utils";
 
@@ -25,11 +25,26 @@ interface Field {
   optional?: boolean;
 }
 
+interface Link {
+  label: string;
+  url: string;
+}
+
+/** "on" is in use or connected; "ready" needs one click; "off" needs something from you. */
 type Status = "on" | "ready" | "off";
+
+function Out({ link, className }: { link: Link; className?: string }) {
+  return (
+    <a href={link.url} target="_blank" rel="noreferrer noopener" className={cn("inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline", className)}>
+      {link.label} <ExternalLinkIcon className="size-3" />
+    </a>
+  );
+}
 
 /**
  * One thing OpenLeads can connect to. Closed, it is a row: the service's own mark, its
- * name, and where it stands. Open, it asks only for what that service needs.
+ * name, where it stands, and one button. Open, it asks only for what that service
+ * needs. The row stays put while it works, so a failure is shown right where you typed.
  */
 function Connection({
   icon,
@@ -41,7 +56,7 @@ function Connection({
   help,
   action = "Connect",
   onConnect,
-  onDisconnect,
+  remove,
   children,
 }: {
   icon: React.ReactNode;
@@ -50,11 +65,12 @@ function Connection({
   status: Status;
   statusLabel?: string;
   fields?: Field[];
-  help?: { label: string; url: string };
+  help?: Link;
   action?: string;
-  /** Returns a sentence when it did not work. */
+  /** Returns a sentence when it did not work. With fields, gets what was typed. */
   onConnect?: (values: Record<string, string>) => Promise<string | void>;
-  onDisconnect?: () => Promise<void>;
+  /** A second, quieter action: disconnect, turn off, or remove a saved key. */
+  remove?: { label: string; confirm: string; run: () => Promise<void> };
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -63,6 +79,7 @@ function Connection({
   const [problem, setProblem] = useState("");
   const [sure, setSure] = useState(false);
   const missing = fields.some((f) => !f.optional && !(values[f.key] ?? "").trim());
+  const form = status === "off" && fields.length > 0;
 
   const connect = async () => {
     if (!onConnect) return;
@@ -82,74 +99,81 @@ function Connection({
   };
 
   return (
-    <li className={cn("border-b border-border last:border-b-0", open && "bg-muted/60")}>
-      <div className="flex items-center gap-3 px-3.5 py-3">
+    <li className={cn("border-b border-border last:border-b-0", open && form && "bg-muted/60")}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-3">
         {icon}
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-medium">{title}</div>
-          <div className="truncate text-xs text-muted-foreground">{note}</div>
+        <div className="min-w-0 flex-1 basis-40">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="text-[13px] font-medium max-md:text-sm">{title}</span>
+            {status === "on" && (
+              <span className="flex items-center gap-1 rounded-full bg-success-surface px-1.5 py-px text-xs font-medium text-success-foreground">
+                <CheckIcon className="size-3" /> {statusLabel ?? "Connected"}
+              </span>
+            )}
+            {status === "ready" && <span className="rounded-full bg-primary-wash px-1.5 py-px text-xs font-medium text-primary-ink">{statusLabel ?? "Ready"}</span>}
+          </div>
+          <div className="text-[13px] leading-5 text-muted-foreground">{note}</div>
         </div>
-        {status === "on" ? (
-          <>
-            <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-success-foreground">
-              <CheckIcon className="size-3.5" /> {statusLabel ?? "Connected"}
-            </span>
-            {onDisconnect &&
-              (sure ? (
-                <Button
-                  size="xs"
-                  variant="destructive-outline"
-                  disabled={busy}
-                  onBlur={() => setSure(false)}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await onDisconnect();
-                    } catch (e) {
-                      fail(e);
-                    }
-                    setBusy(false);
-                    setSure(false);
-                  }}
-                >
-                  Yes, disconnect
-                </Button>
-              ) : (
-                <Button size="xs" variant="ghost" onClick={() => setSure(true)}>
-                  Disconnect
-                </Button>
-              ))}
-          </>
-        ) : fields.length ? (
-          <Button size="xs" variant={open ? "ghost" : "outline"} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-            {open ? "Cancel" : action}
-          </Button>
-        ) : onConnect ? (
-          <Button size="xs" variant="outline" disabled={busy} onClick={connect}>
-            {busy && <Spinner />} {action}
-          </Button>
-        ) : (
-          children
-        )}
+        <div className="flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:justify-end">
+          {children}
+          {remove &&
+            (sure ? (
+              <Button
+                size="sm"
+                variant="destructive-outline"
+                className="max-md:h-10"
+                disabled={busy}
+                autoFocus
+                onBlur={() => setSure(false)}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await remove.run();
+                  } catch (e) {
+                    setProblem((e as Error).message);
+                  }
+                  setBusy(false);
+                  setSure(false);
+                }}
+              >
+                {remove.confirm}
+              </Button>
+            ) : (
+              <Button size="sm" variant="ghost" className="text-muted-foreground max-md:h-10" onClick={() => setSure(true)}>
+                {remove.label}
+              </Button>
+            ))}
+          {status === "ready" && onConnect && (
+            <Button size="sm" className="max-md:h-10" disabled={busy} onClick={connect}>
+              {busy && <Spinner />} {action}
+            </Button>
+          )}
+          {form && (
+            <Button size="sm" variant={open ? "ghost" : "outline"} className="max-md:h-10" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+              {open ? "Cancel" : action}
+            </Button>
+          )}
+        </div>
       </div>
-      {!open && problem && <p className="px-3.5 pb-3 ps-[3.75rem] text-xs leading-5 text-error-foreground">{problem}</p>}
-      {open && (
+      {problem && !(open && form) && <p className="px-3.5 pb-3 text-[13px] leading-5 text-error-foreground sm:ps-[3.75rem]">{problem}</p>}
+      {open && form && (
         <form
-          className="flex flex-col gap-2.5 px-3.5 pb-3.5 ps-[3.75rem] max-sm:ps-3.5"
+          className="flex flex-col gap-2.5 px-3.5 pb-3.5 sm:ps-[3.75rem]"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!missing) void connect();
+            if (!missing && !busy) void connect();
           }}
         >
           {fields.map((f, i) => (
             <label key={f.key} className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[13px] text-muted-foreground">
                 {f.label}
                 {f.optional ? " (optional)" : ""}
               </span>
               <span className="rounded-lg border border-input bg-card shadow-xs/5 focus-within:border-ring">
                 <Input
                   nativeInput
+                  size="lg"
                   type={f.secret ? "password" : "text"}
                   autoComplete="off"
                   spellCheck={false}
@@ -161,17 +185,16 @@ function Connection({
               </span>
             </label>
           ))}
-          {problem && <p className="text-xs leading-5 text-error-foreground">{problem}</p>}
-          <div className="flex flex-wrap items-center gap-3">
-            <Button size="sm" type="submit" disabled={busy || missing}>
+          {problem && (
+            <p role="alert" className="text-[13px] leading-5 text-error-foreground">
+              {problem}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Button size="sm" type="submit" className="max-md:h-10" disabled={busy || missing}>
               {busy && <Spinner />} {busy ? "Checking" : action}
             </Button>
-            {help && (
-              <a href={help.url} target="_blank" rel="noreferrer noopener" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                {help.label} <ExternalLinkIcon className="size-3" />
-              </a>
-            )}
-            <span className="ms-auto text-xs text-muted-foreground max-sm:hidden">Kept on this computer, in a file only you can read</span>
+            {help && <Out link={help} />}
           </div>
         </form>
       )}
@@ -179,14 +202,23 @@ function Connection({
   );
 }
 
-function Group({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
+function Group({ id, title, note, focus, children }: { id: string; title: string; note: string; focus?: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  // A link from Today or Ask lands on the part it was about.
+  useEffect(() => {
+    if (focus === id) ref.current?.scrollIntoView({ block: "start" });
+  }, [focus, id]);
   return (
-    <section>
+    <section ref={ref} className="scroll-mt-6">
       <h2 className="text-[15px] font-semibold">{title}</h2>
-      <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">{note}</p>
+      <p className="mt-0.5 max-w-[70ch] text-[13px] leading-5 text-muted-foreground">{note}</p>
       <ul className="mt-3 overflow-hidden rounded-xl border border-border bg-card">{children}</ul>
     </section>
   );
+}
+
+function PlainTile({ children }: { children: React.ReactNode }) {
+  return <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground">{children}</span>;
 }
 
 // --- the model ----------------------------------------------------------------- //
@@ -198,91 +230,131 @@ interface Provider {
   kind: "subscription" | "key" | "local";
   /** The setting that holds its API key. */
   setting?: string;
-  help?: { label: string; url: string };
+  /** Where to get the key, or the app that has to be on this computer. */
+  get: Link;
+  /** Shown when the app isn't on this computer. */
   missing?: string;
 }
 
 const PROVIDERS: Provider[] = [
-  { key: "claude", title: "Claude", note: "Your Claude subscription, through the Claude app on this computer", kind: "subscription", missing: "Install Claude Code and sign in" },
-  { key: "codex", title: "ChatGPT", note: "Your ChatGPT subscription, through Codex on this computer", kind: "subscription", missing: "Install Codex and sign in" },
-  { key: "anthropic", title: "Anthropic API", note: "Pay as you go with an API key", kind: "key", setting: "anthropic_api_key", help: { label: "Get a key", url: "https://console.anthropic.com/settings/keys" } },
-  { key: "openai", title: "OpenAI API", note: "Pay as you go with an API key", kind: "key", setting: "openai_api_key", help: { label: "Get a key", url: "https://platform.openai.com/api-keys" } },
-  { key: "gemini", title: "Google Gemini", note: "An API key from Google AI Studio", kind: "key", setting: "gemini_api_key", help: { label: "Get a key", url: "https://aistudio.google.com/apikey" } },
-  { key: "openrouter", title: "OpenRouter", note: "One key for many models, some of them free", kind: "key", setting: "openrouter_api_key", help: { label: "Get a key", url: "https://openrouter.ai/keys" } },
-  { key: "ollama", title: "Ollama", note: "A model that runs on this computer. Nothing leaves it", kind: "local", missing: "Start Ollama" },
+  { key: "claude", title: "Claude", note: "Uses your Claude subscription, through Claude Code on this computer", kind: "subscription", get: { label: "Get Claude Code", url: "https://claude.com/product/claude-code" }, missing: "Claude Code isn't installed or signed in" },
+  { key: "codex", title: "ChatGPT", note: "Uses your ChatGPT subscription, through Codex on this computer", kind: "subscription", get: { label: "Get Codex", url: "https://developers.openai.com/codex/cli" }, missing: "Codex isn't installed or signed in" },
+  { key: "anthropic", title: "Anthropic API", note: "Pay for what you use, with an API key", kind: "key", setting: "anthropic_api_key", get: { label: "Get a key", url: "https://console.anthropic.com/settings/keys" } },
+  { key: "openai", title: "OpenAI API", note: "Pay for what you use, with an API key", kind: "key", setting: "openai_api_key", get: { label: "Get a key", url: "https://platform.openai.com/api-keys" } },
+  { key: "gemini", title: "Google Gemini", note: "An API key from Google AI Studio", kind: "key", setting: "gemini_api_key", get: { label: "Get a key", url: "https://aistudio.google.com/apikey" } },
+  { key: "openrouter", title: "OpenRouter", note: "One key for many models, some of them free", kind: "key", setting: "openrouter_api_key", get: { label: "Get a key", url: "https://openrouter.ai/keys" } },
+  { key: "ollama", title: "Ollama", note: "A model that runs on this computer. Nothing leaves it", kind: "local", get: { label: "Get Ollama", url: "https://ollama.com/download" }, missing: "Ollama isn't running" },
 ];
 
-async function switchModel(provider: string): Promise<string | void> {
-  const r = await api.post<{ ok: boolean; detail?: string }>("/api/ai/use", { provider });
-  await refreshSetup();
-  if (!r.ok) return r.detail || "It didn't answer a test message.";
-  toast(provider === "off" ? "Using the built-in rules" : "Model connected");
+/** A provider that wasn't found: where to get it, and a way to look again. */
+function Missing({ p }: { p: Provider }) {
+  const [state, setState] = useState<"" | "checking" | "none">("");
+  return (
+    <span className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+      {state === "none" && <span className="text-[13px] text-muted-foreground">Still not found</span>}
+      <Out link={p.get} />
+      <Button
+        size="sm"
+        variant="outline"
+        className="max-md:h-10"
+        disabled={state === "checking"}
+        onClick={async () => {
+          setState("checking");
+          await refreshSetup();
+          setState("none");
+        }}
+      >
+        {state === "checking" && <Spinner />} Check again
+      </Button>
+    </span>
+  );
 }
 
-function Models({ setup }: { setup: Setup }) {
+function Models({ setup, focus }: { setup: Setup; focus?: string }) {
   const current = setup.ai.current?.provider;
-  const [checking, setChecking] = useState(false);
+  const use = (p: Provider) => async () => {
+    const said = await switchModel(p.key);
+    if (said) return `${p.title} didn't answer a test message, so nothing changed. ${said}`;
+    toast(`${p.title} connected`);
+  };
   return (
-    <Group title="AI model" note="Reads your requests, writes drafts from the facts it found, sorts replies and sums up your morning. Optional: the built-in rules work without one.">
-      {setup.ai.problem && (
-        <li className="border-b border-border bg-warning-surface px-3.5 py-2.5 text-[13px] leading-5 text-warning-foreground">{setup.ai.problem}</li>
-      )}
+    <Group id="model" focus={focus} title="AI model" note="Reads your requests, writes drafts from the facts it found, sorts replies and sums up your morning. Keys stay on this computer, in a file only you can read.">
+      <Connection
+        icon={
+          <PlainTile>
+            <ListChecksIcon className="size-4" />
+          </PlainTile>
+        }
+        title="Built-in rules"
+        note="No model needed. Reads plain requests and writes from your templates"
+        status={current ? "ready" : "on"}
+        statusLabel={current ? "Always available" : "In use"}
+        action="Use the rules"
+        onConnect={
+          current
+            ? async () => {
+                const said = await switchModel("off");
+                if (said) return said;
+                toast("Using the built-in rules");
+              }
+            : undefined
+        }
+      />
+      {setup.ai.problem && <li className="border-b border-border bg-warning-surface px-3.5 py-2.5 text-[13px] leading-5 text-warning-foreground">{setup.ai.problem}</li>}
       {PROVIDERS.map((p) => {
         const detected = setup.ai.detected.some((d) => d.provider === p.key);
         const hasKey = p.setting ? !!setup.settings[p.setting]?.is_set : false;
         const on = current === p.key;
-        const icon = <BrandIcon name={PROVIDER_BRAND[p.key]} label={p.title} />;
-        if (on) {
-          return (
-            <Connection key={p.key} icon={icon} title={p.title} note={setup.ai.current?.model ? `Using ${setup.ai.current.model}` : p.note} status="on" statusLabel="In use" onDisconnect={async () => void (await switchModel("off"))} />
-          );
-        }
-        if (p.kind === "key" && !hasKey) {
-          return (
-            <Connection
-              key={p.key}
-              icon={icon}
-              title={p.title}
-              note={p.note}
-              status="off"
-              help={p.help}
-              fields={[{ key: p.setting!, label: "API key", secret: true }]}
-              onConnect={async (v) => {
-                const errors = await saveSettings({ [p.setting!]: v[p.setting!].trim() });
-                if (errors[p.setting!]) return errors[p.setting!];
-                return switchModel(p.key);
-              }}
-            />
-          );
-        }
-        if (detected || hasKey) {
-          return <Connection key={p.key} icon={icon} title={p.title} note={detected && p.kind !== "key" ? `${p.note.split(".")[0]}. Found and ready` : "Key saved"} status="ready" action="Use this" onConnect={() => switchModel(p.key)} />;
-        }
+        const ready = !on && (p.kind === "key" ? hasKey : detected);
+        const removeKey = p.setting
+          ? {
+              label: "Remove key",
+              confirm: "Yes, remove the key",
+              run: async () => {
+                if (on) await switchModel("off");
+                await saveSettings({ [p.setting!]: "" });
+                toast(`${p.title} key removed`);
+              },
+            }
+          : undefined;
         return (
-          <Connection key={p.key} icon={icon} title={p.title} note={p.note} status="off">
-            <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-              {p.missing}
-              <Button
-                size="icon-xs"
-                variant="ghost-muted"
-                aria-label={`Check again for ${p.title}`}
-                disabled={checking}
-                onClick={async () => {
-                  setChecking(true);
-                  await refreshSetup();
-                  setChecking(false);
-                }}
-              >
-                <RefreshCwIcon className={cn(checking && "animate-spin")} />
-              </Button>
-            </span>
+          <Connection
+            key={p.key}
+            icon={<BrandIcon name={PROVIDER_BRAND[p.key]} label={p.title} />}
+            title={p.title}
+            note={on && setup.ai.current?.model ? `Using ${setup.ai.current.model}` : p.kind !== "key" && !detected && !on ? (p.missing ?? p.note) : p.note}
+            status={on ? "on" : ready ? "ready" : "off"}
+            statusLabel={on ? "In use" : p.kind === "key" ? "Key saved" : "Found on this computer"}
+            action={ready ? `Use ${p.title}` : "Connect"}
+            help={p.get}
+            fields={p.kind === "key" ? [{ key: p.setting!, label: `${p.title} key`, secret: true }] : []}
+            remove={on || ready ? removeKey : undefined}
+            onConnect={
+              ready
+                ? use(p)
+                : p.kind === "key"
+                  ? async (v) => {
+                      const errors = await saveSettings({ [p.setting!]: v[p.setting!].trim() });
+                      if (errors[p.setting!]) return errors[p.setting!];
+                      const said = await switchModel(p.key);
+                      if (said) {
+                        // A key that doesn't work isn't kept.
+                        await saveSettings({ [p.setting!]: "" });
+                        return `${p.title} didn't accept that key, so it wasn't saved. Check it and paste it again. (${said})`;
+                      }
+                      toast(`${p.title} connected`);
+                    }
+                  : undefined
+            }
+          >
+            {p.kind !== "key" && !detected && !on && <Missing p={p} />}
           </Connection>
         );
       })}
-      <li className="flex items-center gap-3 px-3.5 py-2.5 text-xs text-muted-foreground">
-        <span className="min-w-0 flex-1">Another endpoint that speaks the OpenAI format, a specific model name, or the writing tone</span>
+      <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 text-[13px] text-muted-foreground">
+        <span className="min-w-0 flex-1 basis-56">Your own server, a specific model, or the tone drafts are written in</span>
         <a className="shrink-0 font-medium text-foreground hover:underline" href={classic("settings", "settings/ai")}>
-          Advanced
+          More model settings
         </a>
       </li>
     </Group>
@@ -299,65 +371,88 @@ interface Preset {
 }
 
 const MAIL = [
-  { key: "gmail", title: "Gmail", brand: "gmail" },
-  { key: "workspace", title: "Google Workspace", brand: "google" },
-  { key: "outlook", title: "Outlook", brand: "microsoft" },
-  { key: "office365", title: "Microsoft 365", brand: "microsoft" },
-  { key: "zoho", title: "Zoho Mail", brand: "zoho" },
-  { key: "custom", title: "Another provider", brand: "" },
+  { key: "gmail", also: ["workspace"], title: "Gmail", note: "Gmail and Google Workspace addresses", brand: "gmail" },
+  { key: "outlook", also: ["office365"], title: "Outlook", note: "Outlook.com and Microsoft 365 addresses", brand: "microsoft" },
+  { key: "zoho", also: [], title: "Zoho Mail", note: "Zoho addresses", brand: "zoho" },
+  { key: "custom", also: [], title: "Another provider", note: "Any mailbox you can reach with a server name and a password", brand: "" },
 ];
 
-function Mailbox({ setup }: { setup: Setup }) {
+function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
   const presets = useApi<{ presets: Record<string, Preset> }>("/api/providers").data?.presets ?? {};
   const provider = String(setup.settings.smtp_provider?.value ?? "custom");
-  const connected = MAIL.find((m) => m.key === provider) ?? MAIL[MAIL.length - 1];
+  const connected = MAIL.find((m) => m.key === provider || m.also.includes(provider)) ?? MAIL[MAIL.length - 1];
 
   const mark = (m: (typeof MAIL)[number]) =>
     m.brand ? (
       <BrandIcon name={m.brand} label={m.title} />
     ) : (
-      <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground">
+      <PlainTile>
         <MailIcon className="size-4" />
-      </span>
+      </PlainTile>
     );
 
+  // The login is tried first; an address that doesn't log in is never saved.
   const connect = (m: (typeof MAIL)[number]) => async (v: Record<string, string>) => {
     const preset = presets[m.key];
-    const host = m.key === "custom" ? v.smtp_host.trim() : (preset?.host ?? "");
+    const custom = m.key === "custom";
+    const host = custom ? (v.smtp_host ?? "").trim() : (preset?.host ?? "");
+    const port = custom ? Number(v.smtp_port) || 465 : (preset?.port ?? 465);
+    const r = await api.post<{ ok: boolean; detail: string }>("/api/mailbox/test", { provider: m.key, host, port, user: v.smtp_user.trim(), password: v.smtp_pass });
+    if (!r.ok) {
+      return custom
+        ? `That didn't log in, so nothing was saved. Check the server name, the address and the password. (${r.detail})`
+        : `${m.title} didn't accept that, so nothing was saved. It needs an app password, not the password you sign in with. (${r.detail})`;
+    }
     const errors = await saveSettings({
       smtp_provider: m.key,
       smtp_host: host,
-      smtp_port: m.key === "custom" ? Number(v.smtp_port) || 465 : (preset?.port ?? 465),
+      smtp_port: port,
       smtp_user: v.smtp_user.trim(),
       smtp_pass: v.smtp_pass,
-      imap_host: m.key === "custom" ? (v.imap_host ?? "").trim() : (preset?.imap ?? ""),
+      imap_host: custom ? (v.imap_host ?? "").trim() : (preset?.imap ?? ""),
     });
     const first = Object.values(errors)[0];
     if (first) return first;
-    const r = await api.post<{ ok: boolean; detail: string }>("/api/mailbox/test", {});
-    if (!r.ok) {
-      // A login that doesn't work is worse than none: nothing is left half-connected.
-      await saveSettings({ smtp_user: "", smtp_pass: "" });
-      return `That didn't log in. ${r.detail}`;
-    }
     toast(`${m.title} connected`);
   };
 
   if (setup.mailbox) {
     return (
-      <Group title="Mailbox" note="Approved emails go out from your own address, and replies come back to Today.">
+      <Group id="mailbox" focus={focus} title="Mailbox" note="Approved emails go out from your own address, and replies come back to Today.">
         <Connection
           icon={mark(connected)}
           title={connected.title}
-          note={setup.inbox ? "Sends your emails and reads replies" : "Sends your emails. Replies aren't being read"}
+          note="Sends the emails you approve, from your address"
           status="on"
-          onDisconnect={async () => {
-            await saveSettings({ smtp_user: "", smtp_pass: "", imap_user: "", imap_pass: "" });
-            toast("Mailbox disconnected");
+          remove={{
+            label: "Disconnect",
+            confirm: "Yes, disconnect",
+            run: async () => {
+              await saveSettings({ smtp_user: "", smtp_pass: "", imap_user: "", imap_pass: "", imap_host: "" });
+              toast("Mailbox disconnected");
+            },
           }}
         />
-        <li className="flex items-center gap-3 px-3.5 py-2.5 text-xs text-muted-foreground">
-          <span className="min-w-0 flex-1">Daily limit, warm-up pace, and the name people see</span>
+        <Connection
+          icon={
+            <PlainTile>
+              <InboxIcon className="size-4" />
+            </PlainTile>
+          }
+          title="Replies"
+          note={setup.inbox ? "Read from the same mailbox and shown on Today" : "Not being read yet. Add the incoming mail server to see replies on Today"}
+          status={setup.inbox ? "on" : "off"}
+          statusLabel="Reading"
+          action="Read replies"
+          fields={[{ key: "imap_host", label: "Incoming mail server", placeholder: "imap.yourhost.com" }]}
+          onConnect={async (v) => {
+            const errors = await saveSettings({ imap_host: v.imap_host.trim() });
+            if (errors.imap_host) return errors.imap_host;
+            toast("Replies will show on Today");
+          }}
+        />
+        <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 text-[13px] text-muted-foreground">
+          <span className="min-w-0 flex-1 basis-56">Daily limit, warm-up pace, and the name people see</span>
           <a className="shrink-0 font-medium text-foreground hover:underline" href={classic("settings", "settings/sending")}>
             Sending settings
           </a>
@@ -366,27 +461,26 @@ function Mailbox({ setup }: { setup: Setup }) {
     );
   }
   return (
-    <Group title="Mailbox" note="Pick where your email lives. OpenLeads sends from your own address, never from a shared one, and nothing sends without your approval.">
+    <Group id="mailbox" focus={focus} title="Mailbox" note="Pick where your email lives. OpenLeads sends from your own address and nothing sends without your approval. Your password stays on this computer, in a file only you can read.">
       {MAIL.map((m) => {
-        const preset = presets[m.key];
-        const url = /https?:\/\/\S+/.exec(preset?.help ?? "")?.[0];
+        const url = /https?:\/\/[^\s)]+/.exec(presets[m.key]?.help ?? "")?.[0];
         const custom = m.key === "custom";
         return (
           <Connection
             key={m.key}
             icon={mark(m)}
             title={m.title}
-            note={custom ? "Any mailbox with SMTP, and IMAP for replies" : "Your address and an app password"}
+            note={m.note}
             status="off"
             help={url ? { label: "How to make an app password", url } : undefined}
             fields={[
               { key: "smtp_user", label: "Email address", placeholder: "you@yourcompany.com" },
-              { key: "smtp_pass", label: custom ? "Password" : "App password, not your normal password", secret: true },
+              { key: "smtp_pass", label: custom ? "Password" : "App password (not the one you sign in with)", secret: true },
               ...(custom
                 ? [
-                    { key: "smtp_host", label: "Outgoing server (SMTP)", placeholder: "smtp.yourhost.com" },
+                    { key: "smtp_host", label: "Outgoing mail server", placeholder: "smtp.yourhost.com" },
                     { key: "smtp_port", label: "Port", placeholder: "465", optional: true },
-                    { key: "imap_host", label: "Incoming server (IMAP), to read replies", placeholder: "imap.yourhost.com", optional: true },
+                    { key: "imap_host", label: "Incoming mail server, to read replies", placeholder: "imap.yourhost.com", optional: true },
                   ]
                 : []),
             ]}
@@ -398,53 +492,80 @@ function Mailbox({ setup }: { setup: Setup }) {
   );
 }
 
-// --- where leads can go --------------------------------------------------------- //
+// --- where people can go, and where searches reach ---------------------------------- //
 
-interface Export {
+interface Tool {
   brand: string;
   title: string;
   note: string;
   fields: Field[];
-  help?: { label: string; url: string };
+  help: Link;
+  /** Pull an ID out of a pasted link, so nobody has to find it by hand. */
+  tidy?: (values: Record<string, string>) => Record<string, string>;
 }
 
-const EXPORTS: Export[] = [
-  { brand: "hubspot", title: "HubSpot", note: "Send people to your CRM as contacts", fields: [{ key: "hubspot_token", label: "Private app token", secret: true }] },
+const EXPORTS: Tool[] = [
+  {
+    brand: "hubspot",
+    title: "HubSpot",
+    note: "Send people to your CRM as contacts",
+    fields: [{ key: "hubspot_token", label: "Access token of a private app", secret: true }],
+    help: { label: "Where to find it", url: "https://developers.hubspot.com/docs/guides/apps/private-apps/overview" },
+  },
   {
     brand: "notion",
     title: "Notion",
     note: "Add people to a Notion database",
     fields: [
-      { key: "notion_token", label: "Integration token", secret: true },
-      { key: "notion_database_id", label: "Database ID" },
+      { key: "notion_token", label: "Integration secret", secret: true },
+      { key: "notion_database_id", label: "Link to the database", placeholder: "Paste the page link from Notion" },
     ],
+    help: { label: "Create an integration", url: "https://www.notion.so/profile/integrations" },
+    tidy: (v) => ({ ...v, notion_database_id: /[0-9a-f]{32}/i.exec((v.notion_database_id ?? "").replace(/-/g, ""))?.[0] ?? (v.notion_database_id ?? "").trim() }),
   },
   {
     brand: "airtable",
     title: "Airtable",
-    note: "Add people to a table in a base",
+    note: "Add people to a table called Leads in a base",
     fields: [
       { key: "airtable_token", label: "Personal access token", secret: true },
-      { key: "airtable_base", label: "Base ID", placeholder: "appXXXXXXXXXXXXXX" },
+      { key: "airtable_base", label: "Link to the base", placeholder: "Paste the link from your browser" },
     ],
+    help: { label: "Create a token", url: "https://airtable.com/create/tokens" },
+    tidy: (v) => ({ ...v, airtable_base: /app[A-Za-z0-9]{14}/.exec(v.airtable_base ?? "")?.[0] ?? (v.airtable_base ?? "").trim() }),
   },
-  { brand: "github", title: "GitHub", note: "A token lets developer searches go further before hitting limits", fields: [{ key: "github_token", label: "Personal access token", secret: true }] },
-  { brand: "webhook", title: "Webhook", note: "Post new people and replies to Zapier, Make, n8n or your own URL", fields: [{ key: "webhook_url", label: "URL", placeholder: "https://" }] },
+  {
+    brand: "webhook",
+    title: "Webhook",
+    note: "Post new people and replies to Zapier, Make, n8n or your own address",
+    fields: [{ key: "webhook_url", label: "Web address to post to", placeholder: "https://" }],
+    help: { label: "How webhooks work", url: "https://zapier.com/features/webhooks" },
+  },
 ];
 
-function Exports({ setup }: { setup: Setup }) {
+const SEARCH: Tool[] = [
+  {
+    brand: "github",
+    title: "GitHub",
+    note: "A token lets developer searches run longer",
+    fields: [{ key: "github_token", label: "Personal access token (no permissions needed)", secret: true }],
+    help: { label: "Create a token", url: "https://github.com/settings/tokens" },
+  },
+];
+
+function Tools({ id, title, note, tools, setup }: { id: string; title: string; note: string; tools: Tool[]; setup: Setup }) {
   return (
-    <Group title="Other tools" note="Optional places for people and replies to go. Each one is used only when you export or a workflow says so.">
-      {EXPORTS.map((x) => {
+    <Group id={id} title={title} note={note}>
+      {tools.map((x) => {
         const on = !!setup.settings[x.fields[0].key]?.is_set;
         return (
           <Connection
             key={x.brand}
             icon={
               x.brand === "webhook" ? (
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-card text-muted-foreground">
+                <PlainTile>
                   <WebhookIcon className="size-4" />
-                </span>
+                </PlainTile>
               ) : (
                 <BrandIcon name={x.brand} label={x.title} />
               )
@@ -452,17 +573,29 @@ function Exports({ setup }: { setup: Setup }) {
             title={x.title}
             note={x.note}
             status={on ? "on" : "off"}
+            statusLabel="Saved"
+            action="Add"
             fields={x.fields}
-            onConnect={async (v) => {
+            help={x.help}
+            onConnect={async (typed) => {
+              const v = x.tidy ? x.tidy(typed) : typed;
               const errors = await saveSettings(Object.fromEntries(x.fields.map((f) => [f.key, (v[f.key] ?? "").trim()])));
               const first = Object.values(errors)[0];
               if (first) return first;
-              toast(`${x.title} connected`);
+              toast(`${x.title} saved. It's used the next time you export`);
             }}
-            onDisconnect={async () => {
-              await saveSettings(Object.fromEntries(x.fields.map((f) => [f.key, ""])));
-              toast(`${x.title} disconnected`);
-            }}
+            remove={
+              on
+                ? {
+                    label: "Remove",
+                    confirm: "Yes, remove",
+                    run: async () => {
+                      await saveSettings(Object.fromEntries(x.fields.map((f) => [f.key, ""])));
+                      toast(`${x.title} removed`);
+                    },
+                  }
+                : undefined
+            }
           />
         );
       })}
@@ -470,20 +603,23 @@ function Exports({ setup }: { setup: Setup }) {
   );
 }
 
-export function Connections() {
+export function Connections({ focus }: { focus?: string }) {
   const setup = useSetup();
   return (
     <>
       <PageHeader section={SECTION} page="connections" />
-      <Body className="gap-8">
+      <Body>
         {setup.error && <ErrorNote message={setup.error} onRetry={() => void refreshSetup()} />}
         {!setup.loaded && <LoadingRows rows={6} />}
         {setup.loaded && !setup.error && (
-          <>
-            <Models setup={setup} />
-            <Mailbox setup={setup} />
-            <Exports setup={setup} />
-          </>
+          <div className="grid items-start gap-x-6 gap-y-8 lg:grid-cols-2">
+            <Models setup={setup} focus={focus} />
+            <div className="flex flex-col gap-8">
+              <Mailbox setup={setup} focus={focus} />
+              <Tools id="exports" title="Where people can go" note="Optional. Used only when you export, or when a workflow says so." tools={EXPORTS} setup={setup} />
+              <Tools id="search" title="Search" note="Optional. OpenLeads searches free public sources without any keys." tools={SEARCH} setup={setup} />
+            </div>
+          </div>
         )}
       </Body>
     </>

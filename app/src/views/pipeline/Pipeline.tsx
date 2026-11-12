@@ -1,7 +1,7 @@
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Body, ErrorNote, LoadingRows, Panel, Quiet } from "~/components/app/bits";
+import { Body, ErrorNote, LoadingRows, Panel, Quiet, Stat } from "~/components/app/bits";
 import { Pick } from "~/components/app/Pick";
 import { PageHeader } from "~/components/shell/PageHeader";
 import { sectionOf } from "~/components/shell/sections";
@@ -9,7 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { api } from "~/lib/api";
 import { refreshCounts } from "~/lib/counts";
-import { ago, money, pct } from "~/lib/format";
+import { ago, money, pct, plural } from "~/lib/format";
 import { classic, href } from "~/lib/router";
 import { fail, toast } from "~/lib/toast";
 import type { Activity as ActivityRow, Task } from "~/lib/types";
@@ -49,6 +49,7 @@ export function Deals() {
     }
   };
   const stages = board?.columns.map((c) => ({ key: c.key, label: c.label })) ?? [];
+  const closed = board?.columns.filter((c) => c.key === "won" || c.key === "lost").reduce((a, c) => a + c.count, 0) ?? 0;
   return (
     <>
       <PageHeader
@@ -60,27 +61,20 @@ export function Deals() {
           </Button>
         }
       />
-      <div className="min-h-0 flex-1 overflow-auto px-5 py-5">
+      <Body>
         {res.error && <ErrorNote message={res.error} onRetry={() => void res.reload()} />}
         {!board && res.loading && <LoadingRows />}
         {board && (
           <>
-            <dl className="mb-4 flex flex-wrap gap-x-8 gap-y-2">
-              {[
-                ["Open", `${money(board.totals.open_value)} in ${board.totals.open_count}`],
-                ["Weighted", money(board.totals.weighted)],
-                ["Won", money(board.totals.won_value)],
-                ["Win rate", pct(board.totals.win_rate)],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-xs text-muted-foreground">{k}</dt>
-                  <dd className="text-[15px] font-semibold tabular-nums">{v}</dd>
-                </div>
-              ))}
-            </dl>
-            <div className="flex min-w-max gap-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Stat label="Open deals" value={money(board.totals.open_value)} note={`Across ${plural(board.totals.open_count, "deal", "deals")}`} />
+              <Stat label="Likely to close" value={money(board.totals.weighted)} note="Each deal counted by its stage's odds" />
+              <Stat label="Won" value={money(board.totals.won_value)} note="Deals marked won" />
+              <Stat label="Win rate" value={pct(board.totals.win_rate)} note={closed < 10 ? `From ${plural(closed, "closed deal", "closed deals")}. Too few to judge yet` : `From ${closed} closed deals`} />
+            </div>
+            <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 max-md:-mx-4 max-md:snap-x max-md:px-4">
               {board.columns.map((col) => (
-                <section key={col.key} className="flex w-64 shrink-0 flex-col rounded-xl border border-border bg-muted/60">
+                <section key={col.key} className="flex min-w-40 flex-1 flex-col rounded-xl border border-border bg-muted/60 max-md:min-w-[78vw] max-md:snap-start">
                   <header className="flex items-center gap-2 px-3 py-2.5">
                     <h2 className="text-[13px] font-semibold">{col.label}</h2>
                     <span className="text-xs text-muted-foreground tabular-nums">{col.count}</span>
@@ -100,10 +94,8 @@ export function Deals() {
                             d.account_name
                           )}
                         </p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="text-[13px] font-semibold tabular-nums">{money(d.amount, d.currency || "USD")}</span>
-                          <Pick label={`Stage of ${d.name}`} value={d.stage} onChange={(s) => move(d, s)} options={stages} className="ms-auto h-6 text-xs sm:h-6" />
-                        </div>
+                        <p className="mt-2 text-[13px] font-semibold tabular-nums">{money(d.amount, d.currency || "USD")}</p>
+                        <Pick label={`Stage of ${d.name}`} value={d.stage} onChange={(s) => move(d, s)} options={stages} className="mt-2 w-full text-xs" />
                       </article>
                     ))}
                   </div>
@@ -112,7 +104,7 @@ export function Deals() {
             </div>
           </>
         )}
-      </div>
+      </Body>
     </>
   );
 }
@@ -184,6 +176,12 @@ export function Tasks() {
   );
 }
 
+function rest(a: ActivityRow): string {
+  const s = (a.summary ?? "").trim();
+  if (!a.name) return s;
+  return s.toLowerCase().startsWith(a.name.toLowerCase()) ? s.slice(a.name.length).replace(/^[\s,:.-]+/, "") : s;
+}
+
 export function Activity() {
   const res = useApi<{ activity: ActivityRow[] }>("/api/activity?limit=100");
   const rows = res.data?.activity ?? [];
@@ -197,18 +195,19 @@ export function Activity() {
         {rows.length > 0 && (
           <Panel>
             {rows.map((a) => (
-              <div key={a.id} className="flex items-baseline gap-3 border-b border-border px-3.5 py-2 text-[13px] last:border-b-0">
-                <span className="w-28 shrink-0 font-medium">{a.label}</span>
-                <span className="min-w-0 flex-1 truncate text-muted-foreground">
+              <div key={a.id} className="grid grid-cols-[7rem_minmax(0,1fr)_auto] items-baseline gap-x-3 border-b border-border px-3.5 py-2 text-[13px] last:border-b-0 max-md:grid-cols-[minmax(0,1fr)_auto] max-md:py-2.5 max-md:text-sm">
+                <span className="font-medium">{a.label}</span>
+                <span className="min-w-0 text-muted-foreground max-md:order-3 max-md:col-span-2 md:truncate">
                   {a.name && a.ref ? (
                     <a href={href("people", "people", a.ref)} className="text-foreground hover:underline">
                       {a.name}
                     </a>
                   ) : null}
-                  {a.name && a.summary ? "  " : ""}
-                  {a.summary}
+                  {/* The summary often starts with the same name; say it once. */}
+                  {a.name && rest(a) ? ", " : ""}
+                  {rest(a)}
                 </span>
-                <span className="shrink-0 text-xs text-muted-foreground">{ago(a.ts)}</span>
+                <span className="text-xs text-muted-foreground">{ago(a.ts)}</span>
               </div>
             ))}
           </Panel>

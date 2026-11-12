@@ -19,6 +19,8 @@ to the browser beyond masked previews.
 """
 from __future__ import annotations
 
+import os
+
 from typing import Callable
 
 from openleads import __version__, intent, settings
@@ -102,6 +104,7 @@ def state(params: dict | None = None) -> dict:
         db.close()
     return {
         "version": __version__,
+        "demo": os.environ.get("OPENLEADS_DEMO") == "1",
         "sources": _sources_list(),
         "settings": settings.all_settings(),
         "groups": settings.groups(),

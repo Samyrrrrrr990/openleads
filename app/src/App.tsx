@@ -58,8 +58,9 @@ function Screen() {
     case "pipeline/analytics":
       return <Analytics />;
     case "settings/connections":
+      return <Connections focus={arg} />;
     case "settings/model":
-      return <Connections />;
+      return <Connections focus="model" />;
     case "settings/doctor":
       return <Doctor />;
     default: {
