@@ -75,7 +75,14 @@ def get(db, draft_id) -> dict | None:
 def waiting(db, limit: int = 50) -> list:
     rows = db.query("SELECT * FROM drafts WHERE status='waiting' ORDER BY created ASC, id ASC "
                     "LIMIT ?", (int(limit),))
-    return [_row(r) for r in rows]
+    out = [_row(r) for r in rows]
+    # Who each draft is for, so the queue can show a person and not just an address.
+    for d in out:
+        who = db.query_one("SELECT name, organization FROM leads WHERE email=?",
+                           (d.get("email") or "",)) or {}
+        d["name"] = who.get("name") or ""
+        d["organization"] = who.get("organization") or ""
+    return out
 
 
 def count_waiting(db) -> int:

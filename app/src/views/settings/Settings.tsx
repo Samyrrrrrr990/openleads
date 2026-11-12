@@ -7,7 +7,8 @@ import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
 import { plural } from "~/lib/format";
 import { href } from "~/lib/router";
-import { PROVIDER_NAME, refreshSetup, useSetup } from "~/lib/setup";
+import { PROVIDER_NAME, refreshSetup, switchModel, useSetup } from "~/lib/setup";
+import { fail, toast } from "~/lib/toast";
 import { useApi } from "~/lib/use-api";
 import { cn } from "~/lib/utils";
 
@@ -28,7 +29,7 @@ interface Line {
   state: State;
   title: string;
   detail: string;
-  link?: { label: string; to: string };
+  link?: { label: string; to: string; run?: () => void };
 }
 
 const MARK: Record<State, { icon: LucideIcon; cls: string; word: string }> = {
@@ -78,10 +79,16 @@ function Lines({ title, lines }: { title: string; lines: Line[] }) {
               <p className="text-[13px] font-medium max-md:text-sm">{l.title}</p>
               <p className="text-[13px] leading-5 text-muted-foreground max-md:text-sm">{l.detail}</p>
             </div>
-            {l.link && (
-              <Button size="sm" variant="outline" className="shrink-0 max-md:h-10 max-sm:ms-7" render={<a href={l.link.to} />}>
-                {l.link.label}
-              </Button>
+            {l.link &&
+              (              l.link.run ? (
+                <Button size="sm" variant="outline" className="shrink-0 max-md:h-10 max-sm:ms-7" onClick={l.link.run}>
+                  {l.link.label}
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" className="shrink-0 max-md:h-10 max-sm:ms-7" render={<a href={l.link.to} />}>
+                  {l.link.label}
+                </Button>
+              )
             )}
           </Row>
         );
@@ -110,7 +117,7 @@ export function Doctor() {
           state: "todo",
           title: "AI model: none, using the built-in rules",
           detail: found ? `${name(found)} is on this computer and ready to use. Until then, drafts are written from your templates.` : "Drafts are written from your templates. A model writes them from what it found about each person.",
-          link: { label: found ? `Use ${name(found)}` : "Connect a model", to: href("settings", "connections", "model") },
+          link: { label: found ? `Use ${name(found)}` : "Connect a model", to: href("settings", "connections", "model"), run: found ? () => void switchModel(found).then((said) => (said ? fail(said) : toast(`${name(found)} connected`))) : undefined },
         },
     setup.mailbox && login?.status === "bad"
       ? { key: "mail", state: "bad", title: "Mailbox: stopped logging in", detail: "Your mail provider turned down the saved password. Make a new app password and connect again.", link: { label: "Fix", to: href("settings", "connections", "mailbox") } }

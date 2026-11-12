@@ -54,6 +54,9 @@ const DIMENSIONS = [
   { key: "source", label: "Source" },
 ] as const;
 
+// The same cut-offs the scoring uses.
+const FIT: Record<string, string> = { A: "75 to 100", B: "55 to 74", C: "35 to 54", D: "under 35" };
+
 function words(value: string): string {
   if (!value) return "Unknown";
   if (value === "c_suite") return "C-suite";
@@ -82,13 +85,14 @@ export function Analytics() {
       value: r.rate,
       shown: pct(r.rate),
       note: `${r.replied} of ${r.contacted}`,
+      faint: r.contacted < 5,
     }));
   const sample = (replies.data?.[dim] ?? []).reduce((a, r) => a + r.contacted, 0);
   const sources = Object.entries(t?.by_source ?? {})
     .sort((a, b) => b[1] - a[1])
     .map<BarRow>(([k, v]) => ({ key: k, label: SOURCES[k] ?? words(k), value: v }));
   const funnel = (h?.funnel ?? []).filter((f) => f.count > 0).map<BarRow>((f) => ({ key: f.key, label: f.key === "new" ? "Not contacted yet" : f.label, value: f.count }));
-  const grades = ["A", "B", "C", "D"].map<BarRow>((g) => ({ key: g, label: `Grade ${g}`, value: h?.grades?.[g] ?? 0 }));
+  const grades = ["A", "B", "C", "D"].map<BarRow>((g) => ({ key: g, label: `${g} (${FIT[g]})`, value: h?.grades?.[g] ?? 0 }));
   const nothingSent = !!h && h.emails.sent_30d === 0;
   // Under this many people, a percentage is a hint, not a result.
   const few = !!h && h.emails.contacted < 50;
@@ -155,8 +159,20 @@ export function Analytics() {
                       key={d.key}
                       type="button"
                       role="tab"
+                      id={`who-${d.key}`}
                       aria-selected={dim === d.key}
+                      aria-controls="who-panel"
+                      tabIndex={dim === d.key ? 0 : -1}
                       onClick={() => setDim(d.key)}
+                      onKeyDown={(e) => {
+                        const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+                        if (!step) return;
+                        e.preventDefault();
+                        const i = DIMENSIONS.findIndex((x) => x.key === dim);
+                        const next = DIMENSIONS[(i + step + DIMENSIONS.length) % DIMENSIONS.length];
+                        setDim(next.key);
+                        document.getElementById(`who-${next.key}`)?.focus();
+                      }}
                       className={cn(
                         "h-7 shrink-0 cursor-pointer rounded-md px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground max-md:h-10 max-md:px-3 max-md:text-sm",
                         dim === d.key && "bg-accent font-medium text-foreground",
@@ -166,11 +182,11 @@ export function Analytics() {
                     </button>
                   ))}
                 </div>
-                <div className="px-2 py-2">
+                <div className="px-2 py-2" role="tabpanel" id="who-panel" aria-labelledby={`who-${dim}`}>
                   <BarList rows={rows} max={100} empty="Reply rates show up after your first emails get answers." />
                   {rows.length > 0 && (
                     <p className="px-1.5 pt-2 text-[13px] leading-5 text-muted-foreground">
-                      Share of the people contacted in each group who replied, with the count beside it.
+                      Share of the people contacted in each group who replied, with the count beside it. Lighter bars rest on fewer than 5 people.
                       {sample < 50 ? ` Only ${plural(sample, "person", "people")} contacted so far, so treat this as a hint.` : ""}
                     </p>
                   )}
@@ -188,7 +204,7 @@ export function Analytics() {
                   <BarList rows={funnel} empty="No people yet." />
                 </div>
               </Panel>
-              <Panel title="How well they fit your ideal customer">
+              <Panel title="How well they fit your ideal customer, by score">
                 <div className="px-2 py-2">
                   <BarList rows={grades} />
                 </div>

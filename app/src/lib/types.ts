@@ -20,6 +20,8 @@ export interface Draft {
   quality: number;
   status: string;
   created: number;
+  name?: string;
+  organization?: string;
 }
 
 export interface Task {

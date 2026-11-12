@@ -159,7 +159,7 @@ export function Spark({ points, label, color = "var(--chart-1)", className }: { 
   const max = Math.max(1, ...points.map((p) => p.count));
   const W = 120;
   const H = 32;
-  const line = points.map((p, i) => `${i ? "L" : "M"}${((i * W) / (n - 1)).toFixed(1)} ${(H - 2 - (p.count / max) * (H - 5)).toFixed(1)}`).join(" ");
+  const slot = W / n;
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -168,8 +168,9 @@ export function Spark({ points, label, color = "var(--chart-1)", className }: { 
       role="img"
       aria-label={`${label}, last ${n} days: from ${points[0].count} to ${points[n - 1].count}, highest ${max}`}
     >
-      <path d={`${line} L${W} ${H} L0 ${H} Z`} fill={color} opacity="0.1" />
-      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      {/* The same form as the big chart: a day's count is a bar, not a point on a slope. */}
+      <rect x="0" y={H - 1} width={W} height="1" fill="var(--chart-grid)" />
+      {points.map((p, i) => (p.count ? <rect key={i} x={i * slot + slot * 0.2} width={slot * 0.6} y={H - 1 - (p.count / max) * (H - 3)} height={(p.count / max) * (H - 3)} fill={color} /> : null))}
     </svg>
   );
 }
@@ -182,6 +183,8 @@ export interface BarRow {
   shown?: string;
   /** Context printed beside the value in quieter text, e.g. "2 of 4". */
   note?: string;
+  /** Drawn lighter: the number rests on too few cases to lean on. */
+  faint?: boolean;
 }
 
 /** Horizontal bars for comparing a handful of named things on one scale. */
@@ -194,7 +197,7 @@ export function BarList({ rows, max, color = "var(--chart-1)", empty = "Nothing 
         <li key={r.key} className="col-span-3 grid grid-cols-subgrid items-center rounded-md px-1.5 py-[5px] text-[13px] hover:bg-accent/50">
           <span className="leading-5">{r.label}</span>
           <span className="h-2 rounded-full bg-border">
-            <span className="block h-2 rounded-full" style={{ width: `${Math.max(r.value > 0 ? 2 : 0, (r.value / top) * 100)}%`, background: color }} />
+            <span className="block h-2 rounded-full" style={{ width: `${Math.max(r.value > 0 ? 2 : 0, (r.value / top) * 100)}%`, background: color, opacity: r.faint ? 0.45 : 1 }} />
           </span>
           <span className="text-end tabular-nums">
             {r.shown ?? r.value.toLocaleString()}

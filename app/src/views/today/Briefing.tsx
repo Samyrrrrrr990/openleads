@@ -75,6 +75,7 @@ function ReplyRow({ r, onChanged }: { r: Reply; onChanged: () => void }) {
           size="xs"
           variant="outline"
           className="me-1 max-md:h-10 max-md:px-3 max-md:text-sm"
+          title="Opens your mail app, so the answer goes from your own address"
           render={<a href={`mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent(/^re:/i.test(r.subject) ? r.subject : `Re: ${r.subject}`)}${r.suggestion ? `&body=${encodeURIComponent(r.suggestion)}` : ""}`} />}
         >
           <ReplyIcon /> Reply
@@ -137,12 +138,13 @@ export function DraftRow({ d, onChanged }: { d: Draft; onChanged: () => void }) 
   return (
     <Row className="flex-col gap-2">
       <div className="flex w-full flex-wrap items-start gap-x-3 gap-y-2">
-        <Avatar email={d.email} className="mt-0.5" />
+        <Avatar name={d.name} email={d.email} className="mt-0.5" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <a href={href("people", "people", d.email)} className="truncate text-[13px] font-medium hover:underline">
-              {d.email}
+            <a href={href("people", "people", d.email)} className="truncate text-[13px] font-medium hover:underline max-md:text-sm">
+              {d.name || d.email}
             </a>
+            <span className="truncate text-xs text-muted-foreground">{d.name ? d.organization || d.email : ""}</span>
             {/* A score is a number, not a status: it only takes a colour when it's a problem. */}
             {d.quality < 60 && (
               <span className="ms-auto shrink-0 text-xs text-warning-foreground" title={`Draft score ${d.quality} out of 100`}>
@@ -221,7 +223,7 @@ export function TaskRow({ t, onChanged }: { t: Task; onChanged: () => void }) {
           </a>
         )}
       </div>
-      {t.priority === "high" && <Badge variant="warning">High</Badge>}
+      {t.priority === "high" && <Badge variant="secondary">High priority</Badge>}
       <span className={cn("shrink-0 text-xs", d.late ? "text-error-foreground" : "text-muted-foreground")}>{d.label}</span>
     </Row>
   );

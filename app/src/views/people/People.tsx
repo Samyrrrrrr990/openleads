@@ -164,16 +164,16 @@ export function People({ open, listId, listName }: { open?: string; listId?: num
                     return (
                       <TableRow
                         key={p.email}
-                        tabIndex={0}
                         className="cursor-pointer"
                         data-state={open === p.email ? "selected" : undefined}
                         onClick={() => show(p.email)}
-                        onKeyDown={(e) => e.key === "Enter" && show(p.email)}
                       >
                         <TableCell>
                           <span className="flex items-center gap-2.5">
                             <Avatar name={p.name} email={p.email} className="size-6" />
-                            <span className="truncate font-medium">{p.name || p.email.split("@")[0]}</span>
+                            <a href={listId ? href("people", "lists", String(listId), p.email) : href("people", "people", p.email)} onClick={(e) => e.stopPropagation()} className="truncate font-medium hover:underline">
+                              {p.name || p.email.split("@")[0]}
+                            </a>
                           </span>
                         </TableCell>
                         <TableCell className="max-w-56 truncate text-muted-foreground max-xl:hidden">{p.title}</TableCell>

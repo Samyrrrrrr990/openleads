@@ -77,6 +77,7 @@ export function Deals() {
                 <section key={col.key} className="flex min-w-40 flex-1 flex-col rounded-xl border border-border bg-muted/60 max-md:min-w-[78vw] max-md:snap-start">
                   <header className="flex items-center gap-2 px-3 py-2.5">
                     <h2 className="text-[13px] font-semibold">{col.label}</h2>
+                    {col.key !== "won" && col.key !== "lost" && <span className="text-xs text-muted-foreground tabular-nums">{Math.round(col.probability <= 1 ? col.probability * 100 : col.probability)}% odds</span>}
                     <span className="text-xs text-muted-foreground tabular-nums" title={`${col.count} deals, ${Math.round(col.probability <= 1 ? col.probability * 100 : col.probability)}% likely to close`}>
                       {col.count}
                     </span>

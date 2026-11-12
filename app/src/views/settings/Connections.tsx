@@ -326,7 +326,8 @@ function Models({ setup, focus }: { setup: Setup; focus?: string }) {
         const hasKey = p.setting ? !!setup.settings[p.setting]?.is_set : false;
         const on = current === p.key;
         const ready = !on && (p.kind === "key" ? hasKey : detected);
-        const removeKey = p.setting
+        const fromEnv = p.setting ? setup.settings[p.setting]?.source === "env" : false;
+        const removeKey = p.setting && !fromEnv
           ? {
               label: "Remove key",
               confirm: "Yes, remove the key",
@@ -342,7 +343,7 @@ function Models({ setup, focus }: { setup: Setup; focus?: string }) {
             key={p.key}
             icon={<BrandIcon name={PROVIDER_BRAND[p.key]} label={p.title} />}
             title={p.title}
-            note={on && setup.ai.current?.model ? `Using ${setup.ai.current.model}` : p.kind !== "key" && !detected && !on ? (p.missing ?? p.note) : p.note}
+            note={fromEnv && (on || ready) ? `Key set in this computer's environment, so it is changed there, not here${on && setup.ai.current?.model ? `. Using ${setup.ai.current.model}` : ""}` : on && setup.ai.current?.model ? `Using ${setup.ai.current.model}` : p.kind !== "key" && !detected && !on ? (p.missing ?? p.note) : p.note}
             status={on ? "on" : ready ? "ready" : "off"}
             statusLabel={on ? "In use" : p.kind === "key" ? "Key saved" : "Found on this computer"}
             action={ready ? `Use ${p.title}` : "Connect"}
@@ -403,6 +404,8 @@ const MAIL = [
 
 function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
   const presets = useApi<{ presets: Record<string, Preset> }>("/api/providers").data?.presets ?? {};
+  const [tested, setTested] = useState("");
+  const [testing, setTesting] = useState(false);
   const provider = String(setup.settings.smtp_provider?.value ?? "custom");
   const connected = MAIL.find((m) => m.key === provider || m.also.includes(provider)) ?? MAIL[MAIL.length - 1];
 
@@ -450,7 +453,7 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
         <Connection
           icon={mark(connected)}
           title={connected.title}
-          note="Sends the emails you approve, from your address"
+          note={String(setup.settings.smtp_user?.value || "") ? `Sends the emails you approve, from ${setup.settings.smtp_user?.value}` : "Sends the emails you approve, from your address"}
           status="on"
           remove={{
             label: "Disconnect",
@@ -461,6 +464,29 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
             },
           }}
         />
+        <li className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-3.5 py-2.5 text-[13px] text-muted-foreground max-md:text-sm">
+          <span className="min-w-0 flex-1 basis-56" role="status">
+            {tested === "" ? "Changed your password? Check that the mailbox still logs in." : tested}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="max-md:h-10"
+            disabled={testing}
+            onClick={async () => {
+              setTesting(true);
+              try {
+                const r = await api.post<{ ok: boolean; detail: string }>("/api/mailbox/test", {});
+                setTested(r.ok ? "It logs in. Sending works." : "It didn't log in. Make a new app password, disconnect, and connect again.");
+              } catch {
+                setTested("Couldn't run the check just now. Try again.");
+              }
+              setTesting(false);
+            }}
+          >
+            {testing && <Spinner />} Test it
+          </Button>
+        </li>
         <Connection
           icon={
             <PlainTile>
@@ -473,6 +499,7 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
           statusLabel="Reading"
           action="Read replies"
           fields={[{ key: "imap_host", label: "Incoming mail server", placeholder: "imap.yourhost.com" }]}
+          remove={setup.inbox ? { label: "Stop reading", confirm: "Yes, stop reading", run: async () => void (await saveSettings({ imap_host: "" })) } : undefined}
           onConnect={async (v) => {
             const errors = await saveSettings({ imap_host: v.imap_host.trim() });
             if (errors.imap_host) return errors.imap_host;
@@ -607,6 +634,9 @@ function Tools({ id, title, note, tools, setup, focus }: { id: string; title: st
             help={x.help}
             onConnect={async (typed) => {
               const v = x.tidy ? x.tidy(typed) : typed;
+              if (x.brand === "notion" && !/^[0-9a-f]{32}$/i.test(v.notion_database_id ?? "")) return "That link doesn't have a database in it. In Notion, open the database, press Share, then Copy link, and paste that.";
+              if (x.brand === "airtable" && !/^app[A-Za-z0-9]{14}$/.test(v.airtable_base ?? "")) return "That link doesn't have a base in it. Open the base in your browser and paste the address from the address bar.";
+              if (x.brand === "webhook" && !/^https?:\/\/\S+$/.test((v.webhook_url ?? "").trim())) return "That isn't a web address. It should start with https://";
               const errors = await saveSettings(Object.fromEntries(x.fields.map((f) => [f.key, (v[f.key] ?? "").trim()])));
               const first = Object.values(errors)[0];
               if (first) return first;

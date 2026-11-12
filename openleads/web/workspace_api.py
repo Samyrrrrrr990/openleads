@@ -731,7 +731,7 @@ def mailbox_test(db, p):
         preset = providers.preset(name)
         port = int(p.get("port") or preset["smtp_port"])
         cfg = {"provider": name, "host": str(p.get("host") or preset["smtp_host"]),
-               "port": port, "ssl": port != 587 and (port == 465 or preset["ssl"]),
+               "port": port, "ssl": port == 465,
                "user": str(p.get("user") or ""), "password": str(p.get("password") or ""),
                "help": ""}
         if not cfg["host"]:

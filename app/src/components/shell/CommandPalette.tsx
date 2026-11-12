@@ -144,7 +144,16 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   <CommandItem key={entry.id} value={entry} onClick={() => run(entry)}>
                     <Icon className="size-4 shrink-0 text-icon-muted" />
                     <span className="truncate">{entry.label}</span>
-                    {entry.hint && <span className="ms-auto shrink-0 truncate ps-3 text-xs text-secondary-label">{entry.hint}</span>}
+                    {entry.hint &&
+                      (entry.id.startsWith("go:") ? (
+                        <span className="ms-auto flex shrink-0 items-center gap-1 ps-3" aria-label={`Shortcut: ${entry.hint.split(" ").join(" then ")}`}>
+                          {entry.hint.split(" ").map((k, i) => (
+                            <Kbd key={i}>{k}</Kbd>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="ms-auto shrink-0 truncate ps-3 text-xs text-secondary-label">{entry.hint}</span>
+                      ))}
                   </CommandItem>
                 );
               }}

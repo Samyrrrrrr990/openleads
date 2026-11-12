@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { CommandPalette } from "~/components/shell/CommandPalette";
 import { SECTIONS, sectionOf } from "~/components/shell/sections";
+import { MoreSheet } from "~/components/shell/MoreSheet";
 import { Sidebar } from "~/components/shell/Sidebar";
 import { TabBar } from "~/components/shell/TabBar";
 import { Toasts } from "~/components/shell/Toasts";
@@ -78,6 +79,7 @@ function isTyping(target: EventTarget | null): boolean {
 export function App() {
   const route = useRoute();
   const [palette, setPalette] = useState(false);
+  const [more, setMore] = useState(false);
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export function App() {
         return;
       }
       if (k === "g") pendingG = Date.now();
-      else if (k === "t" && !e.shiftKey) toggleTheme();
+      else if (k === "t" && e.shiftKey) toggleTheme(); // Shift+T: a bare letter is too easy to hit by accident
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -142,10 +144,11 @@ export function App() {
         <Sidebar active={sectionOf(route.section).key} version={version} onOpenPalette={() => setPalette(true)} />
         <main className="flex min-w-0 flex-1 flex-col bg-background">
           <Screen />
-          <TabBar active={sectionOf(route.section).key} onMore={() => setPalette(true)} />
+          <TabBar active={sectionOf(route.section).key} onMore={() => setMore(true)} />
         </main>
       </div>
       <CommandPalette open={palette} onOpenChange={setPalette} />
+      <MoreSheet open={more} active={sectionOf(route.section).key} onClose={() => setMore(false)} onSearch={() => setPalette(true)} />
       <Toasts />
     </TooltipProvider>
   );

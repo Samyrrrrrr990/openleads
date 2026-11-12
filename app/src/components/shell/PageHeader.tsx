@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef } from "react";
 
+import { Logo } from "~/components/app/Mark";
 import { href } from "~/lib/router";
 import { useSetup } from "~/lib/setup";
 import { cn } from "~/lib/utils";
@@ -54,6 +55,7 @@ export function PageHeader({
     <header className="shrink-0 border-b border-border">
       <div className="mx-auto w-full max-w-[var(--page-max)] px-6 max-md:px-4">
         <div className="flex h-[52px] items-center gap-3">
+          <Logo className="size-5 md:hidden" />
           <h1 className="shrink-0 text-sm font-semibold tracking-tight max-md:text-base">{title ?? section.label}</h1>
           {demo && <span className="rounded-full border border-border px-1.5 py-px text-xs text-muted-foreground md:hidden">Demo</span>}
           <div className="min-w-0 max-md:hidden">{tabs}</div>

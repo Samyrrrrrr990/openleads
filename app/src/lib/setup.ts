@@ -11,6 +11,8 @@ export interface Setting {
   secret: boolean;
   value: string | number | boolean;
   is_set: boolean;
+  /** "env" when it comes from this computer's environment, which the app can't change. */
+  source?: string;
   choices: string[];
 }
 
