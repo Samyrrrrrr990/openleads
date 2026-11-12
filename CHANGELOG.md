@@ -8,6 +8,18 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 **The app.** A new dashboard, forked from T3 Code's web app, with Today as home.
 
+- Today is a dashboard: the queue of replies, emails to approve and tasks on the
+  left; the month at a glance, pipeline by stage and connections on the right.
+- Ask has its own tab. The plan card's button says what it will do, and nothing
+  sends until you approve each email.
+- Analytics is native, with small samples flagged instead of dressed up.
+- Settings, Connections: connect a model or a mailbox with each service's own
+  mark. A mailbox login is tested before anything is saved, and a key that the
+  provider turns down is not kept.
+- Settings, Health replaces Doctor, in plain words.
+- On phones: a bottom tab bar, a More sheet, and stacked rows instead of tables.
+- The theme shortcut is now Shift+T.
+
 - `openleads web` opens on Today: replies, emails to approve, tasks, new people,
   and an ask box. Type a request, read the plan, press Run, watch it stream.
   Emails it writes wait for approval; a schedule is saved as a workflow.
