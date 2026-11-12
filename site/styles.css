@@ -222,6 +222,10 @@ button { font: inherit; color: inherit; }
 .shot { margin: 0; border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; background: var(--bg-2); }
 .shot img { width: 100%; height: auto; }
 .shot-cap { margin-top: 12px; font-size: 14px; color: var(--faint); }
+.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 40px; }
+.shots figure { margin: 0; }
+.shots figcaption { margin-top: 12px; font-size: 15px; color: var(--muted); }
+.shots figcaption b { display: block; color: var(--text); font-weight: 650; }
 .caps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 40px; margin: 56px 0 0; }
 .caps > div { padding: 18px 0 22px; border-top: 1px solid var(--line); }
 .caps dt { font-weight: 650; font-size: 17px; margin-bottom: 6px; }
@@ -302,7 +306,7 @@ pre.code .c { color: var(--faint); }
   .mark-row { grid-template-columns: 24px minmax(0, 1fr); }
   .mark-row p { grid-column: 2; }
   .checks { columns: 1; }
-  .caps, .ways { grid-template-columns: minmax(0, 1fr); }
+  .caps, .ways, .shots { grid-template-columns: minmax(0, 1fr); }
   .bench td:nth-child(n+4), .bench th:nth-child(n+4) { display: none; }
   .strip { gap: 2px; }
   .strip .ev { width: 10px; height: 10px; }

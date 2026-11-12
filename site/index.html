@@ -17,7 +17,7 @@
 <meta name="twitter:image" content="https://samyrrrrrr990.github.io/openleads/og.png" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="preload" href="fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="styles.css?v=10" />
+<link rel="stylesheet" href="styles.css?v=11" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"OpenLeads","applicationCategory":"BusinessApplication","operatingSystem":"macOS, Linux, Windows","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","url":"https://samyrrrrrr990.github.io/openleads/","downloadUrl":"https://pypi.org/project/openleads/"}
 </script>
@@ -142,20 +142,43 @@
 <section class="section" id="workspace">
   <div class="container">
     <div class="section__grid">
-      <h2>A sales workspace on localhost.</h2>
+      <h2>Say what you want. Approve what it wrote.</h2>
       <div class="section__body">
-        <p class="section__lead">Run <code>openleads web</code> and everything you find lands in one place: people and companies with Apollo-style filters, lists, sequences, tasks, deals and analytics. It is a single SQLite file in <code>~/.openleads</code>, and it never leaves your machine.</p>
-        <p class="section__lead">Want to look first? <code>openleads demo</code> opens it on an invented workspace.</p>
+        <p class="section__lead">Run <code>openleads web</code> and you get a workspace on your own machine. Today shows the replies to answer, the emails waiting for your approval and how the last month went. Ask takes a sentence, shows you the plan, and waits for your yes. Nothing sends until you approve it.</p>
+        <p class="section__lead">Bring your own model, or none. OpenLeads works with the built-in rules, and it can use your Claude or ChatGPT subscription, an API key from Anthropic, OpenAI, Google or OpenRouter, or a local model in Ollama. It is a single SQLite file in <code>~/.openleads</code>, and it never leaves your machine. Want to look first? <code>openleads demo</code> opens it on an invented workspace.</p>
       </div>
     </div>
     <figure class="shot" style="margin-top:48px">
       <picture>
-        <source srcset="assets/dashboard-people-dark.webp" media="(prefers-color-scheme: dark)" />
-        <img src="assets/dashboard-people.webp" width="2160" height="1290" loading="lazy" decoding="async"
-             alt="The People page of the OpenLeads dashboard: a filter column, and a table of contacts with their title, company, email with its evidence mark, stage and last contact." />
+        <source srcset="assets/app-today-dark.webp" media="(prefers-color-scheme: dark)" />
+        <img src="assets/app-today.webp" width="2560" height="1530" loading="lazy" decoding="async"
+             alt="The Today page of OpenLeads: replies to answer, emails waiting for approval and tasks due on the left; the month at a glance, pipeline by stage and connections on the right." />
       </picture>
     </figure>
-    <p class="shot-cap">The People page, on the demo workspace.</p>
+    <p class="shot-cap">Today, on the demo workspace. The people and emails are invented.</p>
+    <div class="shots">
+      <figure><div class="shot">
+      <picture>
+        <source srcset="assets/app-ask-dark.webp" media="(prefers-color-scheme: dark)" />
+        <img src="assets/app-ask.webp" width="2560" height="1530" loading="lazy" decoding="async"
+             alt="The Ask page: a request to email 15 agencies in Miami, answered with a four step plan and a button to find them and write drafts." />
+      </picture>
+      </div><figcaption><b>Ask</b> One sentence in, a plan back. It runs only on your yes.</figcaption></figure>
+      <figure><div class="shot">
+      <picture>
+        <source srcset="assets/app-analytics-dark.webp" media="(prefers-color-scheme: dark)" />
+        <img src="assets/app-analytics.webp" width="2560" height="1530" loading="lazy" decoding="async"
+             alt="The Analytics page: people, emails sent, reply rate and bounce rate, a chart of emails and replies per day, and who replies by seniority." />
+      </picture>
+      </div><figcaption><b>Analytics</b> Emails, replies and who answers, with small samples flagged.</figcaption></figure>
+      <figure><div class="shot">
+      <picture>
+        <source srcset="assets/app-connections-dark.webp" media="(prefers-color-scheme: dark)" />
+        <img src="assets/app-connections.webp" width="2560" height="1530" loading="lazy" decoding="async"
+             alt="The Connections page: AI models including Claude, ChatGPT, Gemini, OpenRouter and Ollama, mailboxes including Gmail and Outlook, and export tools." />
+      </picture>
+      </div><figcaption><b>Connections</b> Your model and your mailbox, one click or one key each.</figcaption></figure>
+    </div>
     <dl class="caps">
       <div><dt>Find</dt><dd>Plain-English search across ten free sources. Company lookups with tech stack, socials and phone numbers. Enrich any CSV.</dd></div>
       <div><dt>Verify</dt><dd>Found, pattern or guessed on every address, seven deliverability checks, and automatic suppression of bounces and unsubscribes.</dd></div>
