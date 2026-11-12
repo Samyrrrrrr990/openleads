@@ -6,6 +6,8 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [5.5.0] - 2026-11-12
+
 **The app.** A new dashboard, forked from T3 Code's web app, with Today as home.
 
 - Today is a dashboard: the queue of replies, emails to approve and tasks on the
