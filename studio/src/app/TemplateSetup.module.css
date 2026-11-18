@@ -1,0 +1,309 @@
+/*
+ * The template set-up dialog.
+ *
+ * Two panes: the page on the left at the size it will actually be, the three
+ * choices on the right. The preview is the larger of the two on purpose — it is
+ * the thing being decided about, and the controls are three fields.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-6);
+  background: rgba(6, 7, 10, 0.62);
+}
+
+.panel {
+  width: min(1000px, 100%);
+  overflow: hidden;
+  background: var(--ink-800);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-12, 12px);
+  box-shadow: var(--shadow-panel);
+}
+
+/*
+ * A fixed height, not a max.
+ *
+ * The preview's spacer is as tall as the page it is showing, which is several
+ * thousand pixels — so with `max-height` the grid row sized itself to the
+ * content, overflowed the panel, and took the buttons with it off the bottom.
+ * `min-height: 0` on both columns is what lets each one scroll inside the row
+ * rather than stretch it.
+ */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  height: min(680px, 88vh);
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* On a narrow screen the choices matter more than the picture of the page. */
+  .previewPane {
+    display: none;
+  }
+}
+
+/* ---- Preview ---- */
+
+.previewPane {
+  min-width: 0;
+  min-height: 0;
+  padding: var(--s-4);
+  background: var(--ink-900, #0b0c0f);
+  border-right: 1px solid var(--line);
+}
+
+.previewViewport {
+  position: relative;
+  height: 100%;
+  min-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-8, 8px);
+}
+
+/*
+ * The page itself, laid out wide and transformed down.
+ *
+ * Width and scale are set inline from a measurement, so the page always fills
+ * the pane exactly. `transform` does not affect layout, so the scaled element
+ * still claims its full unscaled height inside the scroll container, so the
+ * spacer reserves the height the transform actually occupies and the scrollbar
+ * matches what is on screen.
+ */
+.previewSpacer {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.previewScale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+/* ---- Form ---- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s-5);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kind {
+  color: var(--text-lo);
+  font-size: var(--t-11, 11px);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.title {
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  font-size: var(--t-20, 20px);
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  color: var(--text-lo);
+  font-size: var(--t-13);
+  line-height: 1.55;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 0;
+}
+
+.label {
+  color: var(--text-mid);
+  font-size: var(--t-12, 12px);
+  font-weight: 550;
+}
+
+.note {
+  color: var(--text-lo);
+  font-size: var(--t-12, 12px);
+  line-height: 1.5;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 9px 11px;
+  color: var(--text-hi);
+  font-family: inherit;
+  font-size: var(--t-13);
+  background: var(--ink-900, #0b0c0f);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-8, 8px);
+}
+
+.input:focus-visible,
+.select:focus-visible {
+  border-color: var(--accent, #5b9dff);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-lo);
+}
+
+/* ---- Palette ---- */
+
+.swatchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--r-8, 8px);
+  cursor: pointer;
+}
+
+.swatch:hover {
+  border-color: var(--line-strong);
+}
+
+.swatchOn {
+  border-color: var(--accent, #5b9dff);
+}
+
+.swatchChip {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.swatchInk {
+  position: absolute;
+  top: 8px;
+  left: 7px;
+  width: 26px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.swatchAccent {
+  position: absolute;
+  bottom: 8px;
+  left: 7px;
+  width: 14px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.swatchLabel {
+  color: var(--text-mid);
+  font-size: var(--t-11, 11px);
+}
+
+/* ---- Actions ---- */
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: var(--s-2, 8px);
+}
+
+.primary,
+.ghost {
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: var(--t-13);
+  font-weight: 550;
+  border-radius: var(--r-8, 8px);
+  cursor: pointer;
+}
+
+.primary {
+  color: var(--ink-900, #0b0c0f);
+  background: var(--text-hi);
+  border: 1px solid transparent;
+}
+
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ghost {
+  color: var(--text-mid);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+}
+
+.ghost:hover:not(:disabled) {
+  color: var(--text-hi);
+}
+
+/*
+ * One page of the preview, captioned.
+ *
+ * A three-page template scrolls as three pages here, and without a marker
+ * between them the second one reads as more of the first — a menu appearing
+ * below a footer looks like a mistake rather than a page.
+ */
+.previewPage + .previewPage {
+  margin-top: 40px;
+}
+
+.previewPageName {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-mid);
+  /* Counter-scaled: the caption is chrome, and chrome should stay legible
+     while the page it labels shrinks. */
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: var(--track-tight);
+}
+
+.previewPagePath {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 22px;
+}

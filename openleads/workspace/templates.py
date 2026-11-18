@@ -41,6 +41,7 @@ VARIABLES = (
     ("sender_offer", "Your offer (Settings)", "a 15-minute walkthrough"),
     ("sender_proof", "Your proof (Settings)", "Northside Dental filled 31 more slots."),
     ("day", "Weekday today", "Thursday"),
+    ("site_url", "Demo site link (Studio)", "https://demos.youragency.com/northwind/"),
 )
 VARIABLE_NAMES = tuple(v[0] for v in VARIABLES)
 _ALIASES = {
@@ -133,6 +134,10 @@ def render_draft(subject: str, body: str, contact: dict, sender: dict | None = N
     other draft (``step`` > 1 scores it as a follow-up)."""
     from openleads.outreach.compose import spam_lint
     values = context_for(contact, sender)
+    if "site_url" in (subject or "") + (body or ""):
+        # Only looked up when the template uses it: a bulk render shouldn't pay for it.
+        from openleads import sites
+        values["site_url"] = contact.get("site_url") or sites.url_for_email(contact.get("email", ""))
     seed = seed if seed is not None else contact.get("email", "")
     subj, miss1 = render(subject, values, seed=f"{seed}:s")
     text, miss2 = render(body, values, seed=f"{seed}:b")

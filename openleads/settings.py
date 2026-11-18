@@ -135,7 +135,19 @@ SCHEMA: tuple[Setting, ...] = (
     Setting("warmup_start", (), False, "int", 10,
             "sending", "Warmup: emails on day 1 of a fresh mailbox."),
     Setting("warmup_step", (), False, "int", 5,
-            "sending", "Warmup: how many more emails allowed each day."),
+            "sending", "Warmup: how many more emails allowed each day (the 'linear' plan)."),
+    Setting("warmup_plan", (), False, "str", "standard",
+            "sending", "Warm-up plan: how fast a new mailbox ramps to the daily cap. "
+                       "gentle ~30 days, standard ~3 weeks, fast ~12 days; linear uses "
+                       "warmup_start/warmup_step; off = only the daily cap.",
+            ("gentle", "standard", "fast", "linear", "off")),
+    Setting("warmup_window", (), False, "str", "09:00-17:00",
+            "sending", "Hours warm-up emails go out, your local time, e.g. 09:00-17:00."),
+    Setting("warmup_weekends", (), False, "str", "quiet",
+            "sending", "Weekends: quiet sends about a third as much, off sends nothing, "
+                       "normal treats them like weekdays.", ("quiet", "off", "normal")),
+    Setting("warmup_volume", (), False, "int", 0,
+            "sending", "Most warm-up emails to send in a day (0 = set by the plan)."),
     Setting("send_delay_min", (), False, "int", 25,
             "sending", "Minimum seconds between sends (human-like pacing)."),
     Setting("send_delay_max", (), False, "int", 90,
@@ -154,6 +166,13 @@ SCHEMA: tuple[Setting, ...] = (
                        "or send it anyway.", ("hold", "send")),
     Setting("presend_hook_timeout", (), False, "int", 10,
             "sending", "Seconds to wait for the pre-send hook."),
+    # Studio sites (demo websites for leads)
+    Setting("site_base_url", ("OPENLEADS_SITE_BASE_URL",), False, "str", "",
+            "sites", "Where you host published demo sites, e.g. https://demos.youragency.com. "
+                     "{{site_url}} becomes this + the site's slug. Blank = Netlify URL, if any."),
+    Setting("netlify_token", ("NETLIFY_AUTH_TOKEN",), True, "str", "",
+            "sites", "Netlify personal access token: Publish deploys each demo site to its "
+                     "own free Netlify URL."),
     # Web dashboard
     Setting("web_port", ("OPENLEADS_WEB_PORT",), False, "int", 8787,
             "web", "Port for the local web dashboard (openleads web)."),

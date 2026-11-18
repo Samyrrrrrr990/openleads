@@ -12,6 +12,8 @@ import { refreshCounts } from "~/lib/counts";
 import { navigate, useRoute } from "~/lib/router";
 import { toggleTheme } from "~/lib/theme";
 import { Approvals, Sequences, Templates } from "~/views/outreach/Outreach";
+import { Warmup } from "~/views/outreach/Warmup";
+import { Sites } from "~/views/sites/Sites";
 import { Companies } from "~/views/people/Companies";
 import { Lists } from "~/views/people/Lists";
 import { People } from "~/views/people/People";
@@ -31,6 +33,8 @@ function Screen() {
   const arg = route.rest[1];
   // "#/<section>/classic/<path>": a classic screen under this section.
   if (route.rest[0] === "classic" && arg) return <Embedded section={section} path={arg} label={section.label} />;
+  // "#/workflows/<name>" opens that workflow on the canvas.
+  if (section.key === "workflows") return <Workflows open={route.rest[0]} />;
   switch (`${section.key}/${page ?? ""}`) {
     case "today/":
       return <Today />;
@@ -48,8 +52,10 @@ function Screen() {
       return <Sequences />;
     case "outreach/templates":
       return <Templates />;
-    case "workflows/":
-      return <Workflows />;
+    case "outreach/warmup":
+      return <Warmup />;
+    case "sites/":
+      return <Sites />;
     case "pipeline/deals":
       return <Deals />;
     case "pipeline/tasks":

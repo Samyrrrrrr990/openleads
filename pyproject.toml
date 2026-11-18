@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openleads"
-version = "5.5.0"
+version = "5.6.0"
 description = "A free, local-first Apollo alternative: find B2B leads with honest email evidence from public sources (no API keys), then work them in a local CRM with lists, ICP scoring, multi-step sequences, tasks, a deal pipeline, a web dashboard and an MCP server for AI tools. $0."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -58,7 +58,7 @@ py-modules = ["lead_engine", "automation"]
 [tool.setuptools.package-data]
 # Ship the pre-built local dashboard (no Node/build needed by end users): the 5.5 app
 # (built from app/ into openleads/web/app by the release workflow) and the classic one.
-"openleads.web" = ["static/*", "static/**/*", "app/*", "app/**/*"]
+"openleads.web" = ["static/*", "static/**/*", "app/*", "app/**/*", "studio/*", "studio/**/*"]
 # Given-name list for the person-name quality gate; the offline metro gazetteer.
 "openleads.discover" = ["given_names.txt", "places.tsv"]
 

@@ -1,0 +1,298 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 14vh;
+  background: rgba(6, 7, 10, 0.5);
+  animation: fade var(--d-fast) var(--ease-out);
+}
+
+.panel {
+  width: min(560px, calc(100vw - 32px));
+  background: var(--ink-800);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-10);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+  animation: rise var(--d-base) var(--ease-out);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.99);
+  }
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 50px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.spark {
+  flex: 0 0 auto;
+  color: var(--signal);
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: none;
+  border: none;
+  color: var(--text-hi);
+  font-size: var(--t-16);
+  letter-spacing: -0.005em;
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:focus {
+  outline: none;
+}
+
+.target {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  height: 21px;
+  padding: 0 8px;
+  border-radius: var(--r-full);
+  background: var(--ink-700);
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.targetEmpty {
+  color: var(--text-faint);
+}
+
+.body {
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+/* ---- Proposal ---- */
+
+.proposal {
+  padding: 12px 14px;
+}
+
+.proposalHead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 9px;
+  color: var(--text-lo);
+  font-size: var(--t-11);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.changeList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.change {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 11px;
+  background: var(--ink-750);
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  font-size: var(--t-13);
+  color: var(--text-hi);
+  line-height: 1.45;
+  animation: slideIn var(--d-base) var(--ease-out) backwards;
+}
+
+.change:nth-child(2) {
+  animation-delay: 30ms;
+}
+.change:nth-child(3) {
+  animation-delay: 60ms;
+}
+.change:nth-child(n + 4) {
+  animation-delay: 90ms;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+.changeType {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--signal-wash);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ---- Suggestions ---- */
+
+.suggestions {
+  padding: 10px 14px 14px;
+}
+
+.suggestionLabel {
+  margin-bottom: 8px;
+  color: var(--text-faint);
+  font-size: var(--t-11);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.chip {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--r-4);
+  border: 1px solid var(--line);
+  background: var(--ink-750);
+  color: var(--text-mid);
+  font-size: var(--t-12);
+  transition:
+    border-color var(--d-fast) var(--ease-out),
+    color var(--d-fast) var(--ease-out),
+    background var(--d-fast) var(--ease-out);
+}
+
+.chip:hover {
+  border-color: var(--signal-edge);
+  background: var(--signal-wash);
+  color: var(--signal);
+}
+
+/* ---- Error ---- */
+
+.error {
+  display: flex;
+  gap: 9px;
+  padding: 11px 14px;
+  color: var(--danger-hi);
+  font-size: var(--t-13);
+  line-height: 1.5;
+  background: var(--danger-wash);
+}
+
+/* ---- Footer ---- */
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line-subtle);
+  background: var(--ink-850);
+}
+
+.footerNote {
+  flex: 1 1 auto;
+  color: var(--text-faint);
+  font-size: var(--t-11);
+  line-height: 1.4;
+}
+
+.provider {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.providerDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--positive);
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid var(--line-strong);
+  border-top-color: var(--signal);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .panel,
+  .change {
+    animation: none;
+  }
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+
+/*
+ * What Intent was asked for and would not do.
+ *
+ * Quieter than the accepted list and directly under it, so it reads as a
+ * footnote to the change rather than as an error about it — nothing here
+ * failed, some of it was simply refused.
+ */
+.skipped {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+  opacity: 0.75;
+}
+
+.skippedHead {
+  font-family: var(--font-mono);
+  font-size: var(--t-10);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+  margin: 0 0 var(--s-2);
+}

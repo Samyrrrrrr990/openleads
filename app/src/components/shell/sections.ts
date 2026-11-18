@@ -1,5 +1,6 @@
 import {
   CircleCheckIcon,
+  GlobeIcon,
   HouseIcon,
   KanbanSquareIcon,
   type LucideIcon,
@@ -26,7 +27,7 @@ export interface Section {
   pages: Page[];
 }
 
-// The seven sections of 5.5. Everything the old sidebar had lives under one of them.
+// The sections (5.6 added Sites: demo websites built in Studio). Everything the old sidebar had lives under one of them.
 export const SECTIONS: Section[] = [
   { key: "today", label: "Today", icon: HouseIcon, jump: "t", pages: [] },
   { key: "ask", label: "Ask", icon: SparklesIcon, jump: "a", pages: [] },
@@ -53,9 +54,11 @@ export const SECTIONS: Section[] = [
       { key: "approvals", label: "Approvals" },
       { key: "sequences", label: "Sequences" },
       { key: "templates", label: "Templates" },
+      { key: "warmup", label: "Warm-up" },
       { key: "compose", label: "Compose & send", classic: "compose" },
     ],
   },
+  { key: "sites", label: "Sites", icon: GlobeIcon, jump: "b", pages: [] },
   { key: "workflows", label: "Workflows", icon: WorkflowIcon, jump: "w", pages: [] },
   {
     key: "pipeline",

@@ -1,0 +1,190 @@
+/*
+ * A page, at thumbnail scale.
+ *
+ * Everything is in fractions of the tile rather than pixels, so the same
+ * markup is legible at 120px in the dashboard grid and at 240px if this is
+ * ever reused somewhere larger.
+ */
+
+/*
+ * The fade is not decoration.
+ *
+ * This is the top of a page, not a picture of a whole one, and without
+ * something at the bottom edge the last band reads as the end of the design
+ * rather than as the point the crop happens to fall.
+ */
+.thumb::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 22%;
+  background: linear-gradient(transparent, rgb(0 0 0 / 12%));
+  pointer-events: none;
+}
+
+.thumb {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4%;
+  padding: 6% 7%;
+  overflow: hidden;
+  /* The template's own colours land as inline styles; this is the fallback. */
+  color: inherit;
+}
+
+/* --- nav --- */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4%;
+  border-bottom: 1px solid;
+  opacity: 0.9;
+}
+
+.mark {
+  width: 9px;
+  height: 4px;
+  border-radius: 1px;
+  opacity: 0.95;
+}
+
+.navLinks {
+  display: flex;
+  gap: 4px;
+}
+
+.navLink {
+  width: 7px;
+  height: 2px;
+  border-radius: 1px;
+  opacity: 0.45;
+}
+
+/* --- hero --- */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4% 0 2%;
+}
+
+.heroTitle {
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.95;
+}
+
+.heroBar {
+  width: 62%;
+  height: 6px;
+  border-radius: 1px;
+  opacity: 0.9;
+}
+
+.heroLine {
+  width: 78%;
+  height: 2px;
+  border-radius: 1px;
+  opacity: 0.34;
+}
+
+.heroButton {
+  width: 22px;
+  height: 6px;
+  margin-top: 2px;
+  border-radius: 2px;
+}
+
+/* --- repeating blocks --- */
+
+.grid {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-height: 14px;
+}
+
+.cell {
+  border: 1px solid;
+  border-radius: 2px;
+  opacity: 0.75;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-height: 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-height: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid;
+  opacity: 0.7;
+}
+
+.rowLine {
+  width: 44%;
+  height: 2px;
+  border-radius: 1px;
+  opacity: 0.5;
+}
+
+.media {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  min-height: 16px;
+}
+
+.frame {
+  flex: 1;
+  border: 1px solid;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.band {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2% 0;
+}
+
+.bandLine {
+  height: 2px;
+  border-radius: 1px;
+  opacity: 0.3;
+}
+
+/* --- footer --- */
+
+.footer {
+  display: flex;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 4%;
+  border-top: 1px solid;
+}
+
+.footLink {
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  opacity: 0.35;
+}

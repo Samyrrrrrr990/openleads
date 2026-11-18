@@ -151,3 +151,22 @@ jobs:
       - run: npm run build
       - name: The build lands in the Python package
         run: test -f ../openleads/web/app/index.html
+
+  studio:
+    name: Studio (typecheck, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: The build lands in the Python package
+        run: test -f ../openleads/web/studio/index.html

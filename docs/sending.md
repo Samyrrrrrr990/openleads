@@ -51,20 +51,44 @@ Missing pieces are the #1 reason cold email hits spam. `doctor` and the dashboar
 Doctor page (the **Deliverability** badge in the sidebar) both surface the grade and
 the exact fixes.
 
-## 3. Warmup
+## 3. Warm-up
 
-Brand-new mailboxes that suddenly blast 200 emails get flagged. The warmup planner
-(`deliverability.warmup_status`) computes today's allowance from a ramp:
+A brand-new mailbox that suddenly sends 200 cold emails gets flagged. Warm-up
+(**Outreach, Warm-up** in `openleads web`) brings it up to full volume and does
+two things every day:
 
-```
-warmup_start = 10     # day 1 allowance
-warmup_step  = 5      # +5 each subsequent day
-daily_cap    = 40     # hard ceiling
-```
+1. **Ramps cold volume** along a smooth curve to your `daily_cap`: slow at first,
+   steady in the middle. Pick a plan:
 
-Day 1 → 10, day 2 → 15, … capped at `daily_cap`. The sender refuses to exceed the
-day's allowance and tells you how many remain. Tune these in `openleads config`
-(group `sending`).
+   | Plan | Takes | For |
+   |---|---|---|
+   | `gentle` | about a month | a brand-new domain |
+   | `standard` (default) | about three weeks | most new mailboxes |
+   | `fast` | about twelve days | a mailbox with some history |
+   | `linear` | until the cap | the old ramp: `warmup_start` on day 1, `+warmup_step` a day |
+   | `off` | | just the daily cap |
+
+   Weekends are quieter by default (`warmup_weekends`: `quiet` sends about a third,
+   `off` nothing, `normal` like a weekday).
+
+2. **Sends warm-up emails to seed inboxes**: your other mailboxes, a friend, a
+   colleague. Short, plain notes, spread across `warmup_window` (default
+   09:00-17:00). Give a seed an app password and it works by itself: OpenLeads logs
+   in, records whether each note landed in the inbox or in spam, moves it out of
+   spam if needed, and answers some of them. Those are the signals providers read
+   as "people want this mail". Seed passwords live in `warmup_seeds.json` in your
+   OpenLeads folder, readable only by you, and are never shown in the dashboard.
+
+It also **watches health**: bounces, spam placement, unsubscribes and replies over
+the last two weeks, plus your SPF, DKIM and DMARC grade. A healthy day moves the
+ramp forward. A warning (say, 3 to 8% bounces) holds it where it is. A bad bounce
+rate or heavy spam placement pauses cold sending until you fix it, while warm-up
+keeps going. The page says why, in plain words.
+
+Every send path checks the day's allowance, and the 15-minute scheduler heartbeat
+sends due warm-up emails (`openleads schedule on`; see [Timed runs](timed-runs.md)).
+Settings: `warmup_plan`, `warmup_window`, `warmup_weekends`, `warmup_volume`
+(0 lets the plan decide), `daily_cap`, all in `openleads config` (group `sending`).
 
 ## 4. How a send actually goes out
 
@@ -74,7 +98,7 @@ day's allowance and tells you how many remain. Tune these in `openleads config`
    do-not-contact / duplicate. The suppression list is permanent and local.
 2. **Pre-send hook** (optional, off by default): asks your own check whether this
    email may go. See [the pre-send hook](#the-pre-send-hook) below.
-3. **Warmup check**: stops at the day's allowance.
+3. **Warm-up check**: stops at the day's allowance.
 4. **Human pacing**: a randomized delay (`send_delay_min`–`send_delay_max` seconds,
    default 25–90) between real sends.
 5. **Proper headers**: `Message-ID`, `Date`, threading headers, and
@@ -215,7 +239,7 @@ Thanks to @gabrielaoimevbore-beep, whose PR #31 started this.
 
 - Dry-run everywhere; `--live` + confirm to send.
 - `safe`-tier only unless you opt into `risky`.
-- Hard daily cap + warmup ramp + human pacing.
+- Hard daily cap + warm-up ramp + human pacing.
 - Permanent suppression; one-click unsubscribe; no tracking pixels.
 - Per-recipient try/except, so one failure never aborts the batch.
 

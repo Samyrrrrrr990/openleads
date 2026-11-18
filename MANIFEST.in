@@ -3,6 +3,9 @@ recursive-include openleads/web/static *
 # The 5.5 app, built from app/ (the source and node_modules stay out of the sdist).
 recursive-include openleads/web/app *
 prune app
+# Studio, the site builder, built from studio/ into openleads/web/studio.
+recursive-include openleads/web/studio *
+prune studio
 # Data files read at runtime: given names (person-name gate), metro gazetteer.
 include openleads/discover/given_names.txt openleads/discover/places.tsv
 

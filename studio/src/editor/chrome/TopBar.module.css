@@ -1,0 +1,226 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: var(--topbar-h);
+  flex: 0 0 var(--topbar-h);
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ink-850);
+}
+
+.left,
+.right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.right {
+  justify-content: flex-end;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: var(--r-6);
+  color: var(--signal);
+  transition: background var(--d-instant) var(--ease-out);
+}
+
+.home:hover {
+  background: var(--ink-700);
+}
+
+.nameField {
+  min-width: 60px;
+  max-width: 260px;
+  height: 26px;
+  padding: 0 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-4);
+  color: var(--text-hi);
+  font-size: var(--t-13);
+  font-weight: 550;
+  text-overflow: ellipsis;
+  transition: background var(--d-instant) var(--ease-out);
+}
+
+.nameField:hover {
+  background: var(--ink-750);
+}
+
+.nameField:focus {
+  background: var(--ink-800);
+  border-color: var(--select);
+  outline: none;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  flex: 0 0 auto;
+  background: var(--line);
+  margin: 0 2px;
+}
+
+/* ---- Save state ---- */
+
+.save {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: var(--r-full);
+  font-size: var(--t-11);
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-lo);
+  transition: color var(--d-base) var(--ease-out);
+}
+
+.saveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.saveSaved {
+  color: var(--text-faint);
+}
+
+.saveUnsaved {
+  color: var(--signal);
+}
+
+.saveSaving {
+  color: var(--text-mid);
+}
+
+.saveSaving .saveDot {
+  animation: pulse 1.1s var(--ease-in-out) infinite;
+}
+
+.saveError {
+  color: var(--danger);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---- Zoom ---- */
+
+.zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.zoomValue {
+  min-width: 42px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: var(--r-4);
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  transition: background var(--d-instant) var(--ease-out), color var(--d-instant) var(--ease-out);
+}
+
+.zoomValue:hover {
+  background: var(--ink-700);
+  color: var(--text-hi);
+}
+
+.intentButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  border-radius: var(--r-6);
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-mid);
+  font-size: var(--t-12);
+  font-weight: 500;
+  transition:
+    border-color var(--d-fast) var(--ease-out),
+    color var(--d-fast) var(--ease-out),
+    background var(--d-fast) var(--ease-out);
+}
+
+.intentButton:hover {
+  border-color: var(--signal-edge);
+  background: var(--signal-wash);
+  color: var(--signal);
+}
+
+.intentKbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--ink-700);
+  /* text-faint measures 4.3:1 on ink-700, just under AA. text-mid clears it. */
+  color: var(--text-mid);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/*
+ * The settings link.
+ *
+ * Sized and coloured to sit with the icon buttons beside it rather than to
+ * announce itself — it is a destination somebody looks for, not one the top
+ * bar should keep offering.
+ */
+.settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-6);
+  color: var(--fg-3);
+  transition:
+    background-color var(--d-fast) ease,
+    color var(--d-fast) ease;
+}
+
+.settings:hover {
+  background: var(--bg-3);
+  color: var(--fg);
+}
+
+.settings:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}

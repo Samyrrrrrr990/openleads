@@ -16,6 +16,7 @@ cross-site Origin is refused.
     POST /api/workflows/flags           {name, active?, live?}
     POST /api/workflows/new             {template, name}
     POST /api/workflows/import          {doc, name?}
+    POST /api/workflows/draft           {text}  a sentence → an unsaved graph to edit
     POST /api/workflows/run   (NDJSON)  {name | workflow, mode: test|run, live?}
 
 Runs from the dashboard are test runs unless the request says ``mode: "run"``;
@@ -201,6 +202,18 @@ def workflows_import(db, p):
                                                          name=p.get("name") or None)}
     except graph.GraphError as e:
         return _graph_error(e)
+
+
+@_route(POST, "/api/workflows/draft")
+def workflows_draft(db, p):
+    """Describe it in a sentence; get a graph back to look at (nothing is saved)."""
+    from openleads.automate.workflow import describe, graph
+    text = " ".join(str(p.get("text") or "").split())
+    if len(text) > 1000:
+        raise ValueError("keep the description under 1000 characters")
+    out = describe.from_sentence(text)
+    out["problems"] = graph.validate(out["workflow"], check_name=False)
+    return out
 
 
 @_route(STREAM, "/api/workflows/run")

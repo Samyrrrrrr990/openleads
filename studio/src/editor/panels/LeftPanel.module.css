@@ -1,0 +1,850 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--panel-left-w);
+  flex: 0 0 var(--panel-left-w);
+  border-right: 1px solid var(--line);
+  background: var(--ink-800);
+  overflow: hidden;
+}
+
+/*
+ * Two rows of four.
+ *
+ * Seven panels do not fit one row in a 260px column, and the alternatives were
+ * both worse: a horizontal scroller hides features from the person who most
+ * needs to discover them, and free wrapping leaves a single stretched tab
+ * orphaned on its own row.
+ *
+ * The icons went with it. At 12px they were decoration rather than
+ * identification — the word is what people read — and dropping them is what
+ * makes every label fit its cell without truncation.
+ */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 6px 6px 0;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: 4px;
+  white-space: nowrap;
+  height: 26px;
+  border-radius: var(--r-4) var(--r-4) 0 0;
+  color: var(--text-lo);
+  font-size: var(--t-11);
+  font-weight: 500;
+  transition: color var(--d-instant) var(--ease-out), background var(--d-instant) var(--ease-out);
+}
+
+.tab:hover {
+  color: var(--text-hi);
+  background: var(--ink-750);
+}
+
+.tabActive {
+  color: var(--text-hi);
+  background: var(--ink-750);
+  box-shadow: inset 0 -1.5px 0 var(--signal);
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0 16px;
+}
+
+.sectionLabel {
+  padding: 8px 12px 4px;
+  color: var(--text-faint);
+  font-size: var(--t-10);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---- Layers ---- */
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: var(--row-h);
+  padding-right: 8px;
+  color: var(--text-mid);
+  font-size: var(--t-12);
+  text-align: left;
+  transition: background var(--d-instant) var(--ease-out), color var(--d-instant) var(--ease-out);
+}
+
+.row:hover {
+  background: var(--ink-750);
+  color: var(--text-hi);
+}
+
+.rowSelected {
+  background: var(--select-soft);
+  color: var(--text-hi);
+}
+
+.rowSelected:hover {
+  background: var(--select-soft);
+}
+
+.rowSelected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--select);
+}
+
+.rowHovered {
+  background: var(--ink-750);
+}
+
+.rowHidden .rowName {
+  opacity: 0.45;
+}
+
+.twisty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  color: var(--text-faint);
+  transition: transform var(--d-fast) var(--ease-out), color var(--d-instant) var(--ease-out);
+}
+
+.twisty:hover {
+  color: var(--text-hi);
+}
+
+.twistyOpen {
+  transform: rotate(90deg);
+}
+
+.twistySpacer {
+  width: 14px;
+  flex: 0 0 auto;
+}
+
+.rowIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--text-faint);
+}
+
+.rowSelected .rowIcon {
+  color: var(--select);
+}
+
+.rowName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowBadge {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+}
+
+/* Drop indicators while dragging a layer */
+.dropBefore::after,
+.dropAfter::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--signal);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.dropBefore::after {
+  top: -1px;
+}
+
+.dropAfter::after {
+  bottom: -1px;
+}
+
+.dropInside {
+  box-shadow: inset 0 0 0 1.5px var(--signal);
+  border-radius: var(--r-4);
+}
+
+.dragging {
+  opacity: 0.4;
+}
+
+/* ---- Insert palette ---- */
+
+.paletteGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.paletteItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  background: var(--ink-750);
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  font-weight: 500;
+  text-align: left;
+  transition:
+    border-color var(--d-fast) var(--ease-out),
+    background var(--d-fast) var(--ease-out),
+    color var(--d-fast) var(--ease-out);
+}
+
+.paletteItem:hover {
+  border-color: var(--ink-600);
+  background: var(--ink-700);
+  color: var(--text-hi);
+}
+
+.paletteIcon {
+  color: var(--text-faint);
+}
+
+.paletteItem:hover .paletteIcon {
+  color: var(--signal);
+}
+
+/* ---- Pages ---- */
+
+.pageRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: 30px;
+  padding: 0 12px;
+  color: var(--text-mid);
+  font-size: var(--t-12);
+  text-align: left;
+  transition: background var(--d-instant) var(--ease-out), color var(--d-instant) var(--ease-out);
+}
+
+.pageRow:hover {
+  background: var(--ink-750);
+  color: var(--text-hi);
+}
+
+.pageRowActive {
+  background: var(--ink-750);
+  color: var(--text-hi);
+}
+
+.pagePath {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--t-10);
+}
+
+/* ---- Assets ---- */
+
+.assetGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.assetTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  background: var(--ink-750);
+  transition: border-color var(--d-fast) var(--ease-out);
+}
+
+.assetTile:hover {
+  border-color: var(--ink-600);
+}
+
+.assetThumb {
+  width: 100%;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--r-4);
+  background: var(--ink-850);
+}
+
+.assetName {
+  color: var(--text-mid);
+  font-size: var(--t-10);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetActions {
+  display: flex;
+  gap: 4px;
+}
+
+.assetAction {
+  flex: 1 1 0;
+  height: 20px;
+  border-radius: var(--r-4);
+  background: var(--ink-700);
+  color: var(--text-mid);
+  font-size: var(--t-10);
+  font-weight: 500;
+  transition: background var(--d-instant) var(--ease-out), color var(--d-instant) var(--ease-out);
+}
+
+.assetAction:hover {
+  background: var(--ink-650);
+  color: var(--text-hi);
+}
+
+.uploadZone {
+  margin: 8px 12px;
+  padding: 16px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-6);
+  color: var(--text-lo);
+  font-size: var(--t-11);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out);
+}
+
+.uploadZone:hover {
+  border-color: var(--signal);
+  color: var(--text-mid);
+}
+
+.panelEmpty {
+  padding: 20px 16px;
+  color: var(--text-faint);
+  font-size: var(--t-11);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.error {
+  margin: 6px 12px 0;
+  padding: 7px 9px;
+  border-radius: var(--r-4);
+  background: var(--danger-wash);
+  color: var(--danger-hi);
+  font-size: var(--t-11);
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------- integrations --- */
+
+.integrations {
+  padding: 8px 10px 16px;
+}
+
+.integrationsIntro {
+  margin: 2px 0 10px;
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  line-height: 1.5;
+}
+
+.integration {
+  border: 1px solid var(--line);
+  border-radius: var(--r-8);
+  background: var(--ink-800);
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.integrationHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text-hi);
+  font-size: var(--t-12);
+  font-weight: 500;
+}
+
+.integrationHead:hover {
+  background: var(--ink-750);
+}
+
+.integrationName {
+  flex: 1 1 auto;
+}
+
+/* Connected reads as state, so it gets the one accent. */
+.integrationOn {
+  flex: 0 0 auto;
+  color: var(--positive);
+  font-size: var(--t-10);
+  font-weight: 500;
+}
+
+.integrationFree {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: var(--t-10);
+}
+
+.integrationBody {
+  padding: 2px 10px 10px;
+  border-top: 1px solid var(--line-subtle);
+}
+
+.integrationSummary {
+  margin: 8px 0 10px;
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  line-height: 1.5;
+}
+
+.integrationField {
+  display: block;
+  margin-bottom: 9px;
+}
+
+.integrationLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--text-mid);
+  font-size: var(--t-11);
+}
+
+/* Marks the fields that must never reach a browser bundle. */
+.integrationSecret {
+  padding: 1px 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-4);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.integrationInput {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  background: var(--ink-750);
+  color: var(--text-hi);
+  font-family: var(--font-mono);
+  font-size: var(--t-11);
+}
+
+.integrationInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-wash);
+  outline: none;
+}
+
+.integrationHint {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-faint);
+  font-size: var(--t-10);
+  line-height: 1.45;
+}
+
+.integrationActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.integrationLink {
+  color: var(--accent-hi);
+  font-size: var(--t-11);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.integrationClear {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: var(--t-11);
+}
+
+.integrationClear:hover {
+  color: var(--danger-hi);
+}
+
+.integrationsFoot {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-subtle);
+  color: var(--text-faint);
+  font-size: var(--t-10);
+  line-height: 1.5;
+}
+
+/* -------------------------------------------------------------- workspace --- */
+
+.workspacePath {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  background: var(--ink-750);
+  color: var(--text-hi);
+  font-family: var(--font-mono);
+  font-size: var(--t-11);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--text-mid);
+  font-size: var(--t-11);
+}
+
+.workspaceDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: 0 0 auto;
+}
+
+.workspace_synced .workspaceDot { background: var(--positive); }
+.workspace_writing .workspaceDot { background: var(--signal); }
+.workspace_error .workspaceDot { background: var(--danger); }
+.workspace_external .workspaceDot { background: var(--warn); }
+
+.workspaceDetail {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: var(--t-10);
+}
+
+.workspaceWarn {
+  margin-top: 8px;
+  padding: 8px 9px;
+  border-radius: var(--r-6);
+  background: var(--ink-800);
+  border: 1px solid var(--line-strong);
+  color: var(--text-mid);
+  font-size: var(--t-10);
+  line-height: 1.5;
+}
+
+.workspaceButtons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.workspaceButton {
+  flex: 1 1 auto;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-6);
+  background: var(--ink-750);
+  color: var(--text-hi);
+  font-size: var(--t-11);
+}
+
+.workspaceButton:hover {
+  background: var(--ink-700);
+  border-color: var(--ink-600);
+}
+
+/* The other direction: code back into the design. */
+.workspacePull {
+  width: 100%;
+  height: 30px;
+  margin-top: 10px;
+  border: 1px solid var(--signal-edge);
+  border-radius: var(--r-6);
+  background: var(--signal-wash);
+  color: var(--signal-hi);
+  font-size: var(--t-11);
+  font-weight: 500;
+}
+
+.workspacePull:hover {
+  background: var(--ink-700);
+}
+
+/* --------------------------------------------------------------- library -- */
+
+.libraryForm {
+  display: grid;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+
+.libraryFormActions {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.libraryList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.libraryItem {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  background: var(--ink-850);
+  overflow: hidden;
+}
+
+.libraryItem:hover {
+  border-color: var(--line-strong);
+}
+
+.libraryInsert {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.librarySwatches {
+  display: flex;
+  flex: 0 0 auto;
+  border-radius: var(--r-4);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  height: 22px;
+}
+
+.librarySwatch {
+  width: 9px;
+  height: 100%;
+}
+
+.libraryMeta {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.libraryName {
+  font-size: var(--t-12);
+  color: var(--text-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.libraryKind {
+  font-size: var(--t-10);
+  color: var(--text-lo);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.libraryRemove {
+  flex: 0 0 auto;
+  width: 26px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--line);
+  color: var(--text-lo);
+  cursor: pointer;
+}
+
+.libraryRemove:hover {
+  color: var(--danger-hi);
+  background: var(--danger-wash);
+}
+
+.sectionCount {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--t-10);
+  color: var(--text-lo);
+}
+
+/* ---------------------------------------------------------------- design -- */
+
+.tokenRow {
+  padding-block: 6px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.tokenRow:last-of-type {
+  border-bottom: 0;
+}
+
+.tokenMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin: 3px 0 0;
+}
+
+.tokenVar {
+  font-family: var(--font-mono);
+  font-size: var(--t-10);
+  color: var(--text-faint);
+}
+
+.tokenUsage {
+  font-size: var(--t-10);
+  color: var(--text-lo);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tokenVar {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------- versions -- */
+
+.versionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.versionItem {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  background: var(--ink-850);
+}
+
+.versionItem:hover {
+  border-color: var(--line-strong);
+}
+
+.versionMeta {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.versionLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-12);
+  color: var(--text-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versionPin {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border: 1px solid var(--signal-edge);
+  border-radius: var(--r-full);
+  background: var(--signal-wash);
+  font-family: var(--font-mono);
+  font-size: var(--t-10);
+  color: var(--signal-hi);
+}
+
+.versionAge {
+  font-size: var(--t-10);
+  color: var(--text-lo);
+}
+
+.versionActions {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.versionConfirm {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.versionButton {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-4);
+  background: transparent;
+  color: var(--text-lo);
+  cursor: pointer;
+}
+
+.versionButton:hover {
+  background: var(--ink-750);
+  color: var(--text-hi);
+}

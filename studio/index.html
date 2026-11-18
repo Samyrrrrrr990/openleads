@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Studio | OpenLeads</title>
+    <link rel="icon" href="/studio/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        try {
+          // Follows the OpenLeads app's theme ("ol-theme"), so both look the same.
+          var choice = localStorage.getItem('ol-theme') || localStorage.getItem('zory.theme');
+          if (choice === 'light' || choice === 'dark') document.documentElement.setAttribute('data-theme', choice);
+        } catch (error) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

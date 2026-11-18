@@ -1,0 +1,174 @@
+/*
+ * The first-run guide.
+ *
+ * Deliberately a card in the corner rather than a tour that seizes the screen.
+ * Coach marks that dim the interface and drive a cursor around it teach the
+ * tour, not the tool: the person is watching a demo of a thing they are
+ * sitting in front of, and the moment it ends they are exactly where they
+ * started with one more thing to dismiss.
+ *
+ * This sits beside the work instead. Every step ticks itself when the person
+ * does the thing, so the card is a record of what they have already found
+ * rather than a list of instructions they have to obey in order.
+ */
+
+.card {
+  position: absolute;
+  left: var(--s-4);
+  bottom: var(--s-4);
+  z-index: 40;
+  width: 268px;
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-12);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: rise var(--d-slow) var(--ease-out) both;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.title {
+  font-size: var(--t-13);
+  font-weight: 500;
+  color: var(--fg);
+  margin: 0;
+}
+
+.count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--t-10);
+  color: var(--fg-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.dismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--r-6);
+  background: transparent;
+  color: var(--fg-4);
+  cursor: pointer;
+}
+
+.dismiss:hover {
+  background: var(--bg-3);
+  color: var(--fg);
+}
+
+.dismiss:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* ------------------------------------------------------------- progress -- */
+
+.track {
+  height: 2px;
+  border-radius: var(--r-full);
+  background: var(--bg-4);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--d-slow) var(--ease-out);
+}
+
+/* ---------------------------------------------------------------- steps -- */
+
+.steps {
+  display: grid;
+  gap: 1px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: var(--t-12);
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+
+.stepDone {
+  color: var(--fg-4);
+}
+
+.stepDone .label {
+  text-decoration: line-through;
+  text-decoration-color: var(--border-3);
+}
+
+.tick {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-3);
+  border-radius: var(--r-full);
+  color: transparent;
+  transition:
+    background-color var(--d-fast) ease,
+    border-color var(--d-fast) ease,
+    color var(--d-fast) ease;
+}
+
+.tickDone {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* The step the person is on: the only one carrying its hint. */
+.stepNow .label {
+  color: var(--fg);
+}
+
+.hint {
+  display: block;
+  font-size: var(--t-11);
+  color: var(--fg-4);
+  margin-top: 1px;
+}
+
+.done {
+  font-size: var(--t-12);
+  line-height: 1.5;
+  color: var(--fg-2);
+  margin: 0;
+}

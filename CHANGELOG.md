@@ -6,6 +6,54 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [5.6.0] - 2026-11-17
+
+**Workflows you can describe, warm-up that warms, and Sites.**
+
+### Workflows, redone in T3 Code's style
+- Your workflows are a list on the left, like T3's threads: a dot for on, off or
+  waiting on approval, and when each last ran.
+- Describe one in a sentence in the composer at the bottom. A new workflow fills in
+  at once; on one with steps you get T3's proposed-plan card first, and **Use this**
+  swaps them in.
+- **Steps** reads the workflow top to bottom the way a run walks it, branches
+  indented under the step that splits. Test runs stream into it: a running count on
+  each step, then items in and out, and the run's log underneath. **Canvas** is
+  still there for wiring branches by hand.
+- Undo and redo everywhere (`⌘Z`, `⌘⇧Z`), built on Studio's command history: a
+  burst of typing, one drag or one described workflow is a single step, and the
+  button says what it will undo.
+- The sentence reader now maps stage names ("meeting booked" becomes Meeting) and
+  reads a list source followed by a colon.
+
+### Warm-up
+- Plans that ramp cold volume along a curve: gentle (about a month), standard
+  (about three weeks), fast (about twelve days), the old linear ramp, or off.
+  Quieter weekends by default.
+- Seed inboxes: OpenLeads sends short notes to your other mailboxes inside a send
+  window. Give a seed an app password and it checks inbox or spam placement, moves
+  notes out of spam and answers some.
+- Health from bounces, spam placement, unsubscribes, replies and your DNS grade:
+  healthy days move the ramp forward, a warning holds it, a bad bounce rate pauses
+  cold sending. The Health tile now says what the ramp is doing, not just the score.
+- New page: **Outreach, Warm-up**. New settings: `warmup_plan`, `warmup_window`,
+  `warmup_weekends`, `warmup_volume`.
+
+### Sites and Studio
+- **Studio**, the drag-and-drop site builder (formerly Zory), now ships inside
+  OpenLeads at `/studio/` with every template and feature included.
+- **Sites** lists the demo sites you've built. **Build for a lead** opens Studio
+  with a template filled in from that person's business.
+- `{{site_url}}` in templates and sequences is the link to the site you built for
+  that lead. Sites preview at `/s/<slug>/`; **Publish** writes a static folder and,
+  with `netlify_token`, deploys to Netlify. New settings: `site_base_url`,
+  `netlify_token`.
+
+### Under the hood
+- Schema migration 6: `warmup_log` and `sites` tables.
+- New endpoints: `/api/warmup/*`, `/api/sites/*`, `POST /api/workflows/draft`.
+- The release builds Studio into the wheel next to the app.
+
 ## [5.5.0] - 2026-11-12
 
 **The app.** A new dashboard, forked from T3 Code's web app, with Today as home.

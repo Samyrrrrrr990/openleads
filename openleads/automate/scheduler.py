@@ -314,6 +314,8 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
     4. **follow-ups** — send due sequence steps to leads who haven't replied/bounced.
     5. **workspace sequences** — send due automatic emails (inside the send window)
        and turn due manual steps into tasks.
+    6. **warm-up** — send due warm-up emails to seed inboxes and work the seeds
+       (placement, rescue from spam, replies). See :mod:`openleads.outreach.warmup`.
 
     Every job is timed and written to the run history; a failing job sends an alert
     and the tick carries on.
@@ -436,6 +438,13 @@ def tick(db=None, dry_run: bool = True, campaign: str = "default", on_progress=N
         summary["sequences"] = {k: v for k, v in seq_res.items() if k != "results"}
         summary["sequence_sent"] = seq_res.get("sent", 0)
         summary["sequence_tasks"] = seq_res.get("tasks", 0)
+
+        # 6) warm-up — send due warm-up emails to seeds, then check automatic seeds
+        #    (placement, rescue from spam, replies). Live runs only.
+        if not dry_run:
+            from openleads.outreach import warmup
+            wres, _ = history.timed("warm-up", "mailbox", warmup.tick, db)
+            summary["warmup"] = wres or {"error": "warm-up failed"}
         cache.close()
         return summary
     finally:

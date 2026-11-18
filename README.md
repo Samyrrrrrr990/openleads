@@ -183,11 +183,17 @@ on its own that something goes out. [Your model](./docs/ai.md)
 
 ## Automate it
 
-Workflows are n8n-style node graphs you draw in the dashboard: triggers (schedule,
-new leads, a reply), find, verify, filter and split by tier, write email, wait, send,
-add to a list or sequence, create tasks, and export. Test runs never send; every run
-shows what each node did. Sends stay inside your daily cap, warmup ramp and business
-hours, and stop for anyone who replies.
+Describe a workflow in a sentence and read it back as steps, or wire it on a
+canvas: triggers (schedule, new leads, a reply), find, verify, filter and split by
+tier, write email, wait, send, add to a list or sequence, create tasks, and export.
+Test runs never send; every run shows what each step did. Sends stay inside your
+daily cap, warm-up ramp and business hours, and stop for anyone who replies.
+Warm-up sends to seed inboxes, checks inbox placement and holds the ramp when
+health slips. [Sending and warm-up](./docs/sending.md)
+
+Running a web agency? **Sites** builds a lead a better website in Studio, the
+drag-and-drop builder, filled in from their details, and `{{site_url}}` puts the
+link in your email. [Sites](./docs/sites.md)
 
 ```bash
 openleads workflow templates                       # 7 ready-made workflows

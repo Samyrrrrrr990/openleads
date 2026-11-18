@@ -6,7 +6,7 @@ and export nodes act on them. Leads travel along the connections as *items*, one
 lead per item, so you can see exactly how many reached each step.
 
 ```bash
-openleads web        # then open Workflows (under Automate) in the sidebar
+openleads web        # then open Workflows in the sidebar
 openleads workflow templates
 openleads workflow new miami --from local-business-outreach
 ```
@@ -16,43 +16,63 @@ changes your workspace, so you can try any workflow safely.
 
 ## The editor
 
+Open **Workflows** in `openleads web`. Your workflows are listed on the left, each
+with a dot (green when it's on, amber when emails wait for approval) and when it
+last ran. Pick one, or start a new one.
+
+**Describe it.** Type what should happen and when, in a sentence, in the box at
+the bottom: *every weekday at 9 find 20 dentists in Toronto, write emails and send
+them*. A new workflow fills in at once. On one that already has steps, you get the
+proposed steps first, and **Use this** swaps them in. Nothing is saved until you
+press Save. The reader understands triggers (a schedule, *when someone replies*,
+*when new leads come in*), where people come from (*find 20 …*, *people in list
+X*, *people tagged X*) and the steps you name, in the order you name them. What it
+can't place, it leaves out.
+
+**Steps** is the workflow read top to bottom, the way a run walks it. Branches
+(a split by tier, a filter) are indented under the step that splits, labelled with
+the branch they take. Click a step to open its settings on the right. Hover a step
+to add one after it or delete it.
+
+**Canvas** draws the same workflow as boxes and wires, for wiring branches by hand:
+
 | Do this | How |
 |---|---|
-| Add a node | **Add node** (or press `A`), search, then click a node or drag it onto the canvas. With a node selected, the new one is placed after it and connected. |
-| Connect two nodes | Drag from an output port (the dot on a node's right edge) onto another node. Drop on empty canvas to pick the next node from the list. From the keyboard, use **Connections** in the inspector. |
-| Move | Drag a node, or select it and use the arrow keys (`Shift` moves further). |
-| Pan and zoom | Drag the empty canvas, hold `Space` and drag, or scroll. `⌘`/`Ctrl` + scroll zooms; **Fit** or `0` frames the whole graph. |
-| Edit a node | Click it. The inspector shows its settings as a form, its connections, what to do if it fails, and the output of the last run. |
-| Delete | Select a node or a connection and press `Delete`, or use the inspector. |
-| Duplicate a node | `⌘D` / `Ctrl+D`. |
-| Undo, redo | `⌘Z` and `⌘⇧Z` (`Ctrl+Z`, `Ctrl+Y`). |
-| Save | **Save** or `⌘S`. Problems (a missing audience, a loop, a Send with no Write before it) are listed in the inspector and marked on the node. |
+| Add a step | **Add step**, or press `Tab`, then search. With a step selected, the new one goes after it and is connected. |
+| Connect two steps | Drag from an output port (the dot on a step's right edge) onto another step. Drop on empty canvas to pick the next step from the list. |
+| Move, pan, zoom | Drag a step. Drag the empty canvas, or scroll. `⌘`/`Ctrl` + scroll zooms; the fit button or `Shift+1` frames the whole graph. |
+| Delete | Select a step or a connection and press `Delete`. |
 
-On a phone the graph is shown as a read-only list of steps in run order, with
-the last run's counts. Animations follow your system's reduced-motion setting.
+In both views:
+
+| Do this | How |
+|---|---|
+| Undo, redo | `⌘Z` and `⌘⇧Z` (`Ctrl+Z`, `Ctrl+Y`), or the arrows in the header. A burst of typing in one field, one drag, or one described workflow is a single undo step, and the button says what it will undo. |
+| Save | **Save** or `⌘S`. Problems (a missing audience, a loop, a Send with no Write before it) are listed under the step they belong to. |
+| Test run | **Test** or `⌘↵`. |
 
 ### Test run and run history
 
-**Test run** saves the workflow, runs it as a dry run and streams progress: each
-node lights up while it works, shows *items in → items out* when it finishes, and
-connections show how many items passed along them. Branches that received nothing
-stay dark. The **Run log** tab shows every step; **History** lists earlier runs.
-Click a run to put its counts back on the canvas, then click a node to see sample
-items from that run (who, which company, email evidence, the drafted subject).
+**Test** runs the workflow as a dry run, saved or not, and streams progress: each
+step shows a spinner and a running count while it works, then *items in → items
+out* and how long it took. The run's log reads underneath, and **Earlier runs**
+lists the last few. A test run never sends, exports, notifies or changes your
+workspace.
 
 ### Activate, live, pause
 
-- **Active** lets the workflow's triggers fire on the scheduler. Install the
+- **On** (the switch in the header) lets the workflow's triggers fire on the scheduler. Install the
   scheduler once with `openleads schedule on`; see [Timed runs](timed-runs.md).
-- **Send for real on scheduled runs** (in the workflow settings, shown when no
-  node is selected) decides what Send does on those runs. Off, Send previews.
-  On, it sends inside your warmup cap, suppression list and business hours.
+- **Send for real on scheduled runs** decides what Send does on those runs. Off
+  (the header says *Emails wait for approval*), drafts wait on Today. On, it
+  sends inside your warm-up cap, suppression list and business hours.
 - **Paused** workflows don't fire. Items waiting in a Wait step stay parked and
   continue once you activate the workflow again.
 
 ### Copy one
 
-**Duplicate** opens an unsaved copy of the current workflow, including your latest
+In the classic editor (`/classic/`, or `openleads web --classic`), **Duplicate**
+opens an unsaved copy of the current workflow, including your latest
 edits. The name starts with `<name>-copy`; if that is taken it uses `<name>-copy-2`,
 then `-3`, and so on. An untitled workflow becomes `workflow-copy`. The original
 stays unchanged, and the copy starts with no run history. Duplicating doesn't save
@@ -171,8 +191,8 @@ AI assistants connected with `openleads mcp` get `list_workflows` and
 
 The dashboard uses `/api/workflows` (list), `/api/workflows/get`, `/catalog`,
 `/templates`, `/runs`, `/run`, `/export`, and POSTs to `/save`, `/validate`,
-`/delete`, `/flags`, `/new`, `/import` and `/run` (which streams NDJSON node
-events). They follow the dashboard's rules: loopback only, JSON bodies only, and
+`/delete`, `/flags`, `/new`, `/import`, `/draft` (a sentence in, an unsaved
+graph out) and `/run` (which streams NDJSON node events). They follow the dashboard's rules: loopback only, JSON bodies only, and
 cross-site requests are refused. Only saved workflows can run for real.
 
 > **Note:** the dashboard only listens on `127.0.0.1`. Export, Notify and

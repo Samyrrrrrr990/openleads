@@ -1,0 +1,70 @@
+/*
+ * The one place a paywall is drawn.
+ *
+ * Deliberately quiet. A gate in an editor is a thing somebody meets while
+ * doing something else, and the loud version — a modal, a gradient, a
+ * countdown — makes the tool feel like it is selling rather than working. This
+ * is a hairline, a sentence and a link, at the exact place the capability
+ * would have been.
+ */
+
+.note {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  border: 1px solid var(--accent-hair);
+  border-radius: var(--r-8);
+  background: var(--accent-tint);
+}
+
+.inline {
+  padding: var(--s-2) var(--s-3);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-12);
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.mark {
+  display: inline-flex;
+  color: var(--accent-hi);
+  flex: 0 0 auto;
+}
+
+.plan {
+  margin-left: auto;
+  font-size: var(--t-10);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-hi);
+  white-space: nowrap;
+}
+
+.body {
+  font-size: var(--t-12);
+  line-height: 1.5;
+  color: var(--fg-2);
+  margin: 0;
+}
+
+.link {
+  justify-self: start;
+  font-size: var(--t-12);
+  color: var(--accent-hi);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-2);
+}

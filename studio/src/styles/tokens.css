@@ -1,0 +1,428 @@
+/**
+ * Zory design tokens.
+ *
+ * Direction: the precision school. Hairline borders doing the structural work,
+ * typography carrying the hierarchy, and one accent that means something.
+ *
+ * The type proportions here are measured from the reference class of sites
+ * rather than guessed:
+ *   - display runs LOW weight (400 to 500) at LARGE size with heavy negative
+ *     tracking (-0.055em) and line-height 1.0. That combination is what makes
+ *     a headline read as engineered rather than shouted.
+ *   - body sits at 16px / 1.5 in a muted grey, never at full contrast.
+ *   - UI text is 14px, weight 400. Small text is not made bold to compensate.
+ *
+ * ## Two themes, one set of names
+ *
+ * Every surface in Zory reads semantic names (`--bg-1`, `--fg-2`, `--border`)
+ * and never a raw colour. Light and dark are two definitions of those names,
+ * which is what lets a few thousand lines of component CSS theme without being
+ * touched.
+ *
+ * Dark is the original and stays the default: it is what the editor was
+ * designed against, and a canvas tool that glows at you competes with the work
+ * on the canvas. Light exists because plenty of people work in daylight, and a
+ * product that refuses is a product they close.
+ *
+ * Three states, in precedence order:
+ *   [data-theme="light"]   the person chose light
+ *   [data-theme="dark"]    the person chose dark
+ *   neither                follow the system
+ *
+ * Contrast ratios below are measured, not estimated, and each names the ground
+ * it was measured against. Read the second number before reusing a grey on a
+ * lifted surface.
+ */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('./fonts/Geist-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('./fonts/GeistMono-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* ============================================================== shared === */
+/* Everything that does not change between themes. */
+
+:root {
+  /* ---- Type ------------------------------------------------------------- */
+  --font-display: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-ui: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-hand: 'Geist', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --t-10: 0.625rem;
+  --t-11: 0.6875rem;
+  --t-12: 0.75rem;
+  --t-13: 0.8125rem;
+  --t-14: 0.875rem;
+  --t-16: 1rem;
+  --t-18: 1.125rem;
+  --t-21: 1.3125rem;
+  --t-26: 1.625rem;
+  --t-33: 2.0625rem;
+  --t-42: 2.625rem;
+  --t-54: 3.375rem;
+  --t-68: 4.25rem;
+
+  /* Display tracking, keyed to size. Larger type needs proportionally more
+     negative tracking to hold together. */
+  --track-display: -0.055em;
+  --track-title: -0.04em;
+  --track-tight: -0.02em;
+
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.25rem;
+  --s-6: 1.5rem;
+  --s-8: 2rem;
+  --s-10: 2.5rem;
+  --s-12: 3rem;
+  --s-16: 4rem;
+  --s-20: 5rem;
+  --s-24: 6rem;
+  --s-32: 8rem;
+
+  /* ---- Radius -----------------------------------------------------------
+     One scale, used everywhere. Nothing is a pill except by explicit choice. */
+  --r-2: 2px;
+  --r-4: 4px;
+  --r-6: 6px;
+  --r-8: 8px;
+  --r-10: 10px;
+  --r-12: 12px;
+  --r-14: 14px;
+  --r-18: 16px;
+  --r-24: 20px;
+  --r-full: 999px;
+
+  /* ---- Motion -----------------------------------------------------------
+     One rule: things entering or leaving use ease-out, things already on
+     screen that move use ease-in-out, hovers use ease. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-snap: cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  --d-instant: 90ms;
+  --d-fast: 140ms;
+  --d-base: 200ms;
+  --d-slow: 320ms;
+
+  --topbar-h: 44px;
+  --panel-left-w: 260px;
+  --panel-right-w: 288px;
+  --row-h: 26px;
+}
+
+/* ================================================================ dark === */
+/*
+ * The original palette, and the default.
+ *
+ * True black at the base with a very short ramp above it. The steps sit close
+ * together on purpose: separation comes from borders, not from stacking
+ * progressively lighter greys.
+ */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #000000;
+  --bg-1: #0a0a0a;
+  --bg-2: #101010;
+  --bg-3: #161616;
+  --bg-4: #1c1c1c;
+  --bg-5: #242424;
+
+  --border: #1f1f1f;
+  --border-2: #2e2e2e;
+  --border-3: #3d3d3d;
+
+  --fg: #ededed;  /* 17.9:1 on #000 | 15.0:1 on #1c1c1c */
+  --fg-2: #a1a1a1; /* 8.1:1 on #000 |  6.8:1 on #1c1c1c, body copy */
+  --fg-3: #8a8a8a; /* 6.1:1 on #000 |  4.9:1 on #1c1c1c, safe anywhere */
+  --fg-4: #878787; /* 5.9:1 on --bg, 4.7:1 on --bg-4 */
+
+  --accent: #4b8cf5;
+  --accent-hi: #7aa9f8;
+  --accent-lo: #2f6feb;
+  --accent-wash: rgba(75, 140, 245, 0.12);
+  --accent-edge: rgba(75, 140, 245, 0.34);
+  --accent-tint: rgba(75, 140, 245, 0.055);
+  --accent-tint-2: rgba(75, 140, 245, 0.1);
+  --accent-hair: rgba(75, 140, 245, 0.16);
+  --accent-glow: rgba(75, 140, 245, 0.16);
+  /* Text sitting on a solid accent fill. White measures 3.2:1 here and fails. */
+  --on-accent: #06152e;
+
+  --success: #3fb950;
+  --warn: #d29922;
+  --danger: #f85149;
+  --danger-hi: #ff7b72;
+  --danger-wash: rgba(248, 81, 73, 0.12);
+  --positive: #3fb950;
+  --positive-wash: rgba(63, 185, 80, 0.12);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.7);
+  --shadow-panel: 0 24px 64px rgba(0, 0, 0, 0.8);
+  --shadow-hero: 0 40px 120px rgba(0, 0, 0, 0.75);
+
+  /* A translucent version of the ground, for sticky bars that blur what is
+     under them. Hard-coding rgba(0,0,0,.72) here is what made every sticky
+     bar in the app stay black when the light palette arrived. */
+  --scrim: rgba(0, 0, 0, 0.72);
+  --scrim-soft: rgba(0, 0, 0, 0.6);
+
+  /*
+   * Overlay colours.
+   *
+   * These are the four places a surface is lit rather than filled: the hover
+   * state of a solid button, an ambient glow, a hairline grid, a moving sheen.
+   * All four were hard-coded white, which is invisible on a white page — the
+   * glow disappeared, the grid vanished, and the primary button turned white
+   * on white the moment a pointer touched it. Each one needs a value per
+   * theme, so each one is a token.
+   */
+
+  /* Hover for a button filled with --fg. Brighter here, darker in light. */
+  --fill-hover: #ffffff;
+  /* Ambient light behind the hero and inside spotlight cards. */
+  --glow: rgba(255, 255, 255, 0.055);
+  --glow-strong: rgba(255, 255, 255, 0.09);
+  /* The faint construction grid. */
+  --grid-line: rgba(255, 255, 255, 0.022);
+  /* A moving highlight across a dark surface. */
+  --sheen: rgba(255, 255, 255, 0.45);
+  /* A hairline that fades out at both ends. */
+  --rule-fade: rgba(255, 255, 255, 0.3);
+}
+
+/* =============================================================== light === */
+/*
+ * The same structure, inverted.
+ *
+ * Not a tint of the dark theme. A near-white ground needs its own ramp: the
+ * gap between #ffffff and #fafafa reads as a seam where the same step in the
+ * dark palette reads as nothing. The accent goes a shade darker to clear
+ * 4.5:1 against paper, and shadows are tinted to the ground rather than pure
+ * black so a card reads as lifted rather than as a hole.
+ */
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+
+    --bg: #ffffff;
+    --bg-1: #fafafa;
+    --bg-2: #f4f4f5;
+    --bg-3: #ededee;
+    --bg-4: #e6e6e8;
+    --bg-5: #dededf;
+
+    --border: #e6e6e8;
+    --border-2: #d4d4d6;
+    --border-3: #b9b9bd;
+
+    --fg: #111113;  /* 18.7:1 on #ffffff */
+    --fg-2: #56565c; /* 7.6:1 on #ffffff, body copy */
+    --fg-3: #6b6b72; /* 5.6:1 on #ffffff */
+    --fg-4: #6e6e75; /* 5.1:1 on --bg, 4.6:1 on --bg-2 */
+
+    --accent: #2f6feb;  /* 4.9:1 on #ffffff */
+    --accent-hi: #1d54c4;
+    --accent-lo: #4b8cf5;
+    --accent-wash: rgba(47, 111, 235, 0.09);
+    --accent-edge: rgba(47, 111, 235, 0.3);
+    --accent-tint: rgba(47, 111, 235, 0.045);
+    --accent-tint-2: rgba(47, 111, 235, 0.085);
+    --accent-hair: rgba(47, 111, 235, 0.2);
+    --accent-glow: rgba(47, 111, 235, 0.13);
+    --on-accent: #ffffff; /* 5.4:1 on #2f6feb */
+
+    --success: #16803c;
+    --warn: #9a6700;
+    --danger: #c92a2a;
+    --danger-hi: #a51111;
+    --danger-wash: rgba(201, 42, 42, 0.08);
+    --positive: #16803c;
+    --positive-wash: rgba(22, 128, 60, 0.09);
+
+    --shadow-sm: 0 1px 2px rgba(17, 17, 19, 0.06);
+    --shadow-md: 0 2px 8px rgba(17, 17, 19, 0.07);
+    --shadow-lg: 0 12px 32px rgba(17, 17, 19, 0.09);
+    --shadow-panel: 0 24px 56px rgba(17, 17, 19, 0.12);
+    --shadow-hero: 0 30px 80px rgba(17, 17, 19, 0.13);
+
+    --scrim: rgba(255, 255, 255, 0.78);
+    --scrim-soft: rgba(255, 255, 255, 0.66);
+
+    /* A near-black fill lifts on hover rather than brightening to white. */
+    --fill-hover: #33333a;
+    /* White light on white does nothing, so the glow becomes accent light. */
+    --glow: rgba(47, 111, 235, 0.07);
+    --glow-strong: rgba(47, 111, 235, 0.11);
+    --grid-line: rgba(17, 17, 19, 0.045);
+    --sheen: rgba(17, 17, 19, 0.14);
+    --rule-fade: rgba(17, 17, 19, 0.22);
+  }
+}
+
+/* The same palette again, for an explicit choice. */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg-1: #fafafa;
+  --bg-2: #f4f4f5;
+  --bg-3: #ededee;
+  --bg-4: #e6e6e8;
+  --bg-5: #dededf;
+
+  --border: #e6e6e8;
+  --border-2: #d4d4d6;
+  --border-3: #b9b9bd;
+
+  --fg: #111113;
+  --fg-2: #56565c;
+  --fg-3: #6b6b72;
+  --fg-4: #6e6e75; /* 5.1:1 on --bg, 4.6:1 on --bg-2 */
+
+  --accent: #2f6feb;
+  --accent-hi: #1d54c4;
+  --accent-lo: #4b8cf5;
+  --accent-wash: rgba(47, 111, 235, 0.09);
+  --accent-edge: rgba(47, 111, 235, 0.3);
+  --accent-tint: rgba(47, 111, 235, 0.045);
+  --accent-tint-2: rgba(47, 111, 235, 0.085);
+  --accent-hair: rgba(47, 111, 235, 0.2);
+  --accent-glow: rgba(47, 111, 235, 0.13);
+  --on-accent: #ffffff;
+
+  --success: #16803c;
+  --warn: #9a6700;
+  --danger: #c92a2a;
+  --danger-hi: #a51111;
+  --danger-wash: rgba(201, 42, 42, 0.08);
+  --positive: #16803c;
+  --positive-wash: rgba(22, 128, 60, 0.09);
+
+  --shadow-sm: 0 1px 2px rgba(17, 17, 19, 0.06);
+  --shadow-md: 0 2px 8px rgba(17, 17, 19, 0.07);
+  --shadow-lg: 0 12px 32px rgba(17, 17, 19, 0.09);
+  --shadow-panel: 0 24px 56px rgba(17, 17, 19, 0.12);
+  --shadow-hero: 0 30px 80px rgba(17, 17, 19, 0.13);
+
+  --scrim: rgba(255, 255, 255, 0.78);
+  --scrim-soft: rgba(255, 255, 255, 0.66);
+
+  --fill-hover: #33333a;
+  --glow: rgba(47, 111, 235, 0.07);
+  --glow-strong: rgba(47, 111, 235, 0.11);
+  --grid-line: rgba(17, 17, 19, 0.045);
+  --sheen: rgba(17, 17, 19, 0.14);
+  --rule-fade: rgba(17, 17, 19, 0.22);
+}
+
+/* ======================================================= editor aliases == */
+/*
+ * The editor chrome was built against these names before the palette had two
+ * halves. Mapping rather than renaming is what let the whole editor theme
+ * without a line of its own CSS being touched.
+ */
+
+:root {
+  --ink-1000: var(--bg);
+  --ink-900: var(--bg);
+  --ink-850: var(--bg-1);
+  --ink-800: var(--bg-2);
+  --ink-750: var(--bg-3);
+  --ink-700: var(--bg-4);
+  --ink-650: var(--bg-5);
+  --ink-600: var(--border-3);
+
+  --line-subtle: var(--bg-3);
+  --line: var(--border);
+  --line-strong: var(--border-2);
+
+  --text-hi: var(--fg);
+  --text: var(--fg-2);
+  --text-mid: var(--fg-2);
+  --text-lo: var(--fg-3);
+  --text-faint: var(--fg-3);
+
+  --brand: var(--accent);
+  --brand-hi: var(--accent-hi);
+  --brand-wash: var(--accent-wash);
+  --brand-edge: var(--accent-edge);
+  --on-brand: var(--on-accent);
+  --signal: var(--accent);
+  --signal-hi: var(--accent-hi);
+  --signal-dim: var(--accent-lo);
+  --signal-wash: var(--accent-wash);
+  --signal-edge: var(--accent-edge);
+  --on-signal: var(--on-accent);
+
+  --select: var(--accent);
+  --select-soft: var(--accent-wash);
+
+  /*
+   * The selection badge.
+   *
+   * Its own blue, darker than `--select`, and the same in both themes. The
+   * badge is the one piece of selection chrome that carries text, and white on
+   * `--select` measures 3.29:1 — it had been failing since the badge was
+   * added, on every theme, because no audit had ever looked at the canvas with
+   * something selected. The outline and the handles keep the lighter blue,
+   * which is right for a hairline over a white page and irrelevant to text.
+   *
+   * White on it is not the measure, though, because the badge's second half is
+   * dimmed to mark the node's kind as secondary. What has to clear 4.5:1 is
+   * that dimmed text, and at #2563d6 it did not: 4.44:1 in the marketing
+   * figure at 0.85, and 3.63:1 on the real canvas at 0.72. A shade deeper buys
+   * the dim enough room to stay dim — 4.64:1 at 0.72, 5.79:1 at 0.85 — instead
+   * of the label being brightened until it is white in all but name.
+   */
+  --select-chip: #1d4fb8; /* 7.34:1 under white, 4.64:1 under white at 0.72 */
+  --on-select-chip: #ffffff;
+  --hover-outline: var(--accent-edge);
+
+  --focus: var(--accent);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
+
+  --shadow-brand: none;
+  --sticker: none;
+  --sticker-sm: none;
+  --sticker-lg: none;
+}
+
+/*
+ * Touch targets.
+ *
+ * The editor's density is designed for a mouse: a 26px row is comfortable to
+ * click and too small to hit reliably with a thumb. `--row-h` drives the layer
+ * tree, the inspector rows and several shared controls, so raising it here
+ * lifts every one of them on a coarse pointer and leaves desktop untouched.
+ */
+@media (pointer: coarse) {
+  :root {
+    --row-h: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-instant: 1ms;
+    --d-fast: 1ms;
+    --d-base: 1ms;
+    --d-slow: 1ms;
+  }
+}

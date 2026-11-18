@@ -1,0 +1,541 @@
+/* Editor control surface. Dense, precise, quiet — panels support the canvas
+   rather than compete with it. */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: var(--r-6);
+  border: 1px solid transparent;
+  background: var(--ink-700);
+  color: var(--text);
+  font-size: var(--t-13);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background var(--d-instant) var(--ease-out),
+    color var(--d-instant) var(--ease-out),
+    border-color var(--d-instant) var(--ease-out),
+    opacity var(--d-instant) var(--ease-out);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--ink-650);
+  color: var(--text-hi);
+}
+
+.button:active:not(:disabled) {
+  background: var(--ink-700);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/*
+ * Solid foreground fill, matching the landing page and the sign-in card, so
+ * "primary action" looks the same everywhere in the product.
+ *
+ * It is not the accent blue: white on #4b8cf5 measures 3.29:1, which fails AA
+ * for body-size text, and every lighter blue that would work as a hover state
+ * fails harder. Black on #ededed is 17.9:1 and leaves the blue free to mean
+ * selection and focus, which is the only job it has here.
+ */
+.primary {
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 500;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--fill-hover);
+  color: var(--bg);
+}
+
+.primary:active:not(:disabled) {
+  background: var(--fg);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-mid);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--ink-700);
+  color: var(--text-hi);
+}
+
+.outline {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.outline:hover:not(:disabled) {
+  background: var(--ink-750);
+  border-color: var(--ink-600);
+  color: var(--text-hi);
+}
+
+.danger {
+  background: transparent;
+  color: var(--danger);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--danger-wash);
+  color: var(--danger-hi);
+}
+
+.large {
+  height: 34px;
+  padding: 0 16px;
+  font-size: var(--t-14);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: var(--r-6);
+  color: var(--text-mid);
+  background: transparent;
+  transition:
+    background var(--d-instant) var(--ease-out),
+    color var(--d-instant) var(--ease-out),
+    opacity var(--d-instant) var(--ease-out);
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--ink-700);
+  color: var(--text-hi);
+}
+
+.iconButton:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.iconButtonActive {
+  background: var(--ink-700);
+  color: var(--signal);
+}
+
+/* ---- Fields ---- */
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--row-h);
+}
+
+.fieldStacked {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  flex: 0 0 auto;
+  width: 62px;
+  color: var(--text-lo);
+  font-size: var(--t-11);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  user-select: none;
+}
+
+.labelWide {
+  width: auto;
+}
+
+.control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 7px;
+  background: var(--ink-750);
+  border: 1px solid transparent;
+  border-radius: var(--r-4);
+  color: var(--text-hi);
+  font-size: var(--t-12);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background var(--d-instant) var(--ease-out),
+    border-color var(--d-instant) var(--ease-out);
+}
+
+.input:hover:not(:disabled) {
+  background: var(--ink-700);
+}
+
+.input:focus {
+  background: var(--ink-800);
+  border-color: var(--select);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.textarea {
+  min-height: 68px;
+  padding: 6px 7px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: var(--font-ui);
+}
+
+.select {
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 22px 0 7px;
+  background: var(--ink-750);
+  border: 1px solid transparent;
+  border-radius: var(--r-4);
+  color: var(--text-hi);
+  font-size: var(--t-12);
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2.5 4L5 6.5L7.5 4' stroke='%23939cad' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  transition:
+    background-color var(--d-instant) var(--ease-out),
+    border-color var(--d-instant) var(--ease-out);
+}
+
+.select:hover {
+  background-color: var(--ink-700);
+}
+
+.select:focus {
+  border-color: var(--select);
+  outline: none;
+}
+
+.select option {
+  background: var(--ink-800);
+  color: var(--text-hi);
+}
+
+/* ---- Segmented control ---- */
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--ink-750);
+  border-radius: var(--r-6);
+}
+
+.segmentedFull {
+  display: flex;
+  width: 100%;
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  height: 22px;
+  min-width: 26px;
+  padding: 0 8px;
+  border-radius: var(--r-4);
+  color: var(--text-lo);
+  font-size: var(--t-11);
+  font-weight: 500;
+  transition:
+    background var(--d-fast) var(--ease-out),
+    color var(--d-fast) var(--ease-out);
+}
+
+.segment:hover:not(:disabled) {
+  color: var(--text-hi);
+}
+
+.segmentActive {
+  background: var(--ink-650);
+  color: var(--text-hi);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Colour ---- */
+
+.colorField {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 6px 0 4px;
+  background: var(--ink-750);
+  border: 1px solid transparent;
+  border-radius: var(--r-4);
+  transition: background var(--d-instant) var(--ease-out);
+}
+
+.colorField:hover {
+  background: var(--ink-700);
+}
+
+.colorField:focus-within {
+  border-color: var(--select);
+}
+
+.swatch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: var(--r-4);
+  border: 1px solid var(--border-2);
+  overflow: hidden;
+  cursor: pointer;
+  /* Chequerboard shows through transparent values. */
+  background-image:
+    linear-gradient(45deg, #3a4150 25%, transparent 25%),
+    linear-gradient(-45deg, #3a4150 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #3a4150 75%),
+    linear-gradient(-45deg, transparent 75%, #3a4150 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
+.swatchFill {
+  position: absolute;
+  inset: 0;
+}
+
+.swatchInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.colorText {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: none;
+  border: none;
+  color: var(--text-hi);
+  font-family: var(--font-mono);
+  font-size: var(--t-11);
+  text-transform: lowercase;
+}
+
+.colorText:focus {
+  outline: none;
+}
+
+/* ---- Sections ---- */
+
+.section {
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color var(--d-instant) var(--ease-out);
+}
+
+.sectionHeader:hover {
+  color: var(--text-hi);
+}
+
+.sectionChevron {
+  color: var(--text-faint);
+  transition: transform var(--d-fast) var(--ease-out);
+}
+
+.sectionChevronOpen {
+  transform: rotate(90deg);
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 2px 12px 14px;
+}
+
+/* ---- Override marker ---- */
+
+.overrideDot {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  margin-left: -9px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--signal);
+}
+
+/*
+ * A pinned value: set on this instance, no longer following its component.
+ * Square rather than round, and on the accent rather than the signal colour,
+ * so "differs from the component" reads as a different fact from "differs at
+ * this breakpoint" rather than a louder version of it. A button, because
+ * clicking it is how the value is given back.
+ */
+.pinDot {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  margin-left: -9px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 1px;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.pinDot:hover,
+.pinDot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.overrideSlot {
+  flex: 0 0 auto;
+  width: 5px;
+  margin-left: -9px;
+  margin-right: 4px;
+}
+
+/* ---- Misc ---- */
+
+.hint {
+  color: var(--text-faint);
+  font-size: var(--t-11);
+  line-height: 1.5;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  background: var(--ink-700);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  color: var(--text-mid);
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.pairGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.quadGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+/* -------------------------------------------------------- design tokens -- */
+
+/*
+ * The project's colours, offered under the field.
+ *
+ * Small and unlabelled on purpose: this is a shortcut for people who already
+ * think in tokens, not a second colour system competing with the hex field
+ * above it. The chosen one gets a ring rather than a tick, because a tick
+ * would obscure the colour it is describing.
+ */
+.colorStack {
+  display: grid;
+  gap: 0;
+  width: 100%;
+}
+
+.tokenRow {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.tokenChip {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-4);
+  border: 1px solid var(--line-strong);
+  padding: 0;
+  cursor: pointer;
+  transition: box-shadow var(--d-fast) ease, transform var(--d-fast) ease;
+}
+
+.tokenChip:hover {
+  transform: translateY(-1px);
+}
+
+.tokenChipActive {
+  box-shadow: 0 0 0 1px var(--ink-900), 0 0 0 2px var(--select);
+}
+
+/*
+ * Shared controls on a coarse pointer.
+ *
+ * These sizes are mouse sizes. A 28px button and a 22px segment are both under
+ * the 44px this design system asks for on touch, and the editor chrome is
+ * built almost entirely out of them. Scoped to the pointer type so desktop
+ * density does not move.
+ */
+@media (pointer: coarse) {
+  .button,
+  .iconButton {
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .segment {
+    height: 38px;
+    padding: 0 12px;
+  }
+
+  .segmented {
+    padding: 3px;
+  }
+}

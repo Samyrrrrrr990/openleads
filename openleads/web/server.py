@@ -30,10 +30,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from openleads import settings
-from openleads.web import api, workflow_api, workspace_api
+from openleads.web import api, sites_api, warmup_api, workflow_api, workspace_api
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"   # the classic dashboard
 APP_DIR = Path(__file__).resolve().parent / "app"         # the 5.5 app (built from app/)
+STUDIO_DIR = Path(__file__).resolve().parent / "studio"   # Studio, the site builder (studio/)
 CLASSIC = False                                           # `openleads web --classic`
 
 _MIME = {
@@ -45,6 +46,10 @@ _MIME = {
     ".png": "image/png",
     ".ico": "image/x-icon",
     ".woff2": "font/woff2",
+    ".woff": "font/woff",
+    ".webp": "image/webp",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
     ".webmanifest": "application/manifest+json",
 }
 
@@ -123,6 +128,11 @@ _POST_STREAM.update(workspace_api.STREAM)
 _GET_API.update(workflow_api.GET)
 _POST_JSON.update(workflow_api.POST)
 _POST_STREAM.update(workflow_api.STREAM)
+# Warm-up and Studio sites.
+for _mod in (warmup_api, sites_api):
+    _GET_API.update(_mod.GET)
+    _POST_JSON.update(_mod.POST)
+    _POST_STREAM.update(_mod.STREAM)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -134,19 +144,22 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     # ---- helpers ------------------------------------------------------- #
-    def _security_headers(self, frameable: bool = False) -> None:
-        """``frameable``: the classic dashboard under /classic/, which the app shows
-        inside itself. Only this same origin may frame it; nothing else is frameable."""
+    def _security_headers(self, frameable: bool = False, media: bool = False) -> None:
+        """``frameable``: the classic dashboard under /classic/ and demo sites under
+        /s/, which the app shows inside itself. Only this same origin may frame them.
+        ``media``: Studio and demo sites, whose pages may show images from the web."""
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Frame-Options", "SAMEORIGIN" if frameable else "DENY")
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
-        # Same-origin only; no third-party anything. The app is fully local.
+        # Same-origin only; no third-party scripts or requests. The app is fully local.
+        img = "img-src 'self' data: blob: https:; " if media else "img-src 'self' data:; "
+        font = "font-src 'self' data:; " if media else "font-src 'self'; "
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-            "script-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'none'; "
+            "default-src 'self'; " + img + "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self'; connect-src 'self'; " + font + "base-uri 'none'; "
             "form-action 'none'; frame-ancestors " + ("'self'" if frameable else "'none'"),
         )
 
@@ -213,11 +226,18 @@ class Handler(BaseHTTPRequestHandler):
         Unknown paths fall back to the index of whichever one they belong to."""
         app = APP_DIR.resolve()
         classic = STATIC_DIR.resolve()
-        if path == "/classic":
-            path = "/classic/"
+        studio = STUDIO_DIR.resolve()
+        if path in ("/classic", "/studio"):
+            path += "/"
+        if path.startswith("/s/"):
+            self._serve_site(path)
+            return
         framed = path.startswith("/classic/")
+        media = path.startswith("/studio/")
         if framed:
             root, rel = classic, path[len("/classic/"):]
+        elif media:
+            root, rel = studio, path[len("/studio/"):]
         elif CLASSIC or not (app / "index.html").is_file():
             root, rel = classic, path.lstrip("/")
         else:
@@ -235,12 +255,44 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", _MIME.get(target.suffix, "application/octet-stream"))
         self.send_header("Content-Length", str(len(body)))
-        if root == app and target.parent.name == "assets":
+        if root in (app, studio) and target.parent.name == "assets":
             # the app's build names every asset by its content hash
             self.send_header("Cache-Control", "public, max-age=31536000, immutable")
         else:
             self.send_header("Cache-Control", "no-cache")
-        self._security_headers(frameable=framed)
+        self._security_headers(frameable=framed, media=media)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_site(self, path: str) -> None:
+        """A Studio demo site at ``/s/<slug>/<page>``: the pages Studio rendered on save."""
+        from openleads import sites
+        from openleads.db import DB
+        parts = path[len("/s/"):].split("/", 1)
+        slug = urllib.parse.unquote(parts[0])
+        route = "/" + (parts[1] if len(parts) > 1 else "")
+        if route != "/" and route.endswith("/"):
+            route = route.rstrip("/")
+        if route.endswith("/index.html"):
+            route = route[: -len("/index.html")] or "/"
+        db = DB()
+        try:
+            row = sites.by_slug(db, slug)
+        finally:
+            db.close()
+        html = sites.page_html(row, route) if row else None
+        if html is None:
+            msg = ("This site has no rendered pages yet. Open it in Studio once."
+                   if row else "No site here.")
+            body = f"<!doctype html><meta charset=utf-8><title>Not found</title><p>{msg}</p>".encode()
+            status = HTTPStatus.NOT_FOUND
+        else:
+            body, status = html.encode("utf-8"), HTTPStatus.OK
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self._security_headers(frameable=True, media=True)
         self.end_headers()
         self.wfile.write(body)
 

@@ -1,0 +1,835 @@
+.page {
+  min-height: 100vh;
+  background: var(--ink-900);
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 52px;
+  padding: 0 var(--s-6);
+  border-bottom: 1px solid var(--line);
+  /* Neutral, not the blue-grey this used to be: the ground is true black now,
+     and a tinted bar reads as a seam across the top of the page. */
+  background: var(--scrim);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  font-size: var(--t-16);
+  font-weight: 500;
+  letter-spacing: var(--track-tight);
+}
+
+.brandMark {
+  color: var(--signal);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+/*
+ * Same 1200px measure and the same pair of vertical hairlines as the landing
+ * page, so crossing from the marketing site into the app does not feel like
+ * arriving at a different product.
+ */
+.main {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--s-10) clamp(20px, 4vw, 40px) var(--s-20);
+}
+
+@media (min-width: 1280px) {
+  .main::before,
+  .main::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+    pointer-events: none;
+  }
+
+  .main::before {
+    left: 0;
+  }
+
+  .main::after {
+    right: 0;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-6);
+  margin-bottom: var(--s-8);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--t-42);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: var(--track-title);
+  color: var(--text-hi);
+}
+
+.subtitle {
+  margin-top: 6px;
+  color: var(--text-mid);
+  font-size: var(--t-14);
+  line-height: 1.55;
+  max-width: 56ch;
+}
+
+/* ---- Starter picker ---- */
+
+.starters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin-bottom: var(--s-10);
+}
+
+@media (max-width: 900px) {
+  .starters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .starters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.starter {
+  /*
+   * Fills its column.
+   *
+   * The blank tile is a direct grid child and stretches on its own. The
+   * template tiles are nested inside `.starterWrap` (which carries the remove
+   * button), and a <button> shrink-wraps to its content rather than filling
+   * its parent — so every template rendered at about half the width of the
+   * blank one and its preview was unreadable. Stated here rather than on the
+   * wrapper, so it holds wherever the tile is used.
+   */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-10);
+  background: var(--ink-800);
+  text-align: left;
+  transition:
+    border-color var(--d-base) var(--ease-out),
+    transform var(--d-base) var(--ease-out),
+    background var(--d-base) var(--ease-out);
+}
+
+.starter:hover:not(:disabled) {
+  border-color: var(--ink-600);
+  background: var(--ink-750);
+  transform: translateY(-2px);
+}
+
+.starter:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* A miniature of the starter's own palette and type — an honest preview,
+   built from the same values the project uses. */
+.starterPreview {
+  position: relative;
+  height: 108px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+
+.starterBar {
+  height: 5px;
+  border-radius: 2px;
+  margin-bottom: 9px;
+}
+
+.starterHeading {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 7px;
+}
+
+.starterLines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.starterLine {
+  height: 4px;
+  border-radius: 2px;
+  opacity: 0.4;
+}
+
+.starterMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px 13px;
+}
+
+.starterName {
+  color: var(--text-hi);
+  font-size: var(--t-13);
+  font-weight: 550;
+}
+
+.starterKind {
+  color: var(--text-lo);
+  font-size: var(--t-11);
+}
+
+.starterBlank .starterPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(var(--line-subtle) 1px, transparent 1px) 0 0 / 100% 16px,
+    linear-gradient(90deg, var(--line-subtle) 1px, transparent 1px) 0 0 / 16px 100%,
+    var(--ink-850);
+  color: var(--text-faint);
+}
+
+/* ---- Project list ---- */
+
+.listHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.listTitle {
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.listCount {
+  color: var(--text-faint);
+  font-size: var(--t-12);
+  font-variant-numeric: tabular-nums;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: 13px 12px 13px 14px;
+  margin: 0 -12px;
+  border-radius: var(--r-8);
+  border-bottom: 1px solid var(--line-subtle);
+  transition: background var(--d-fast) var(--ease-out);
+}
+
+.row:hover {
+  background: var(--ink-800);
+}
+
+.rowMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.rowName {
+  color: var(--text-hi);
+  font-size: var(--t-14);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-lo);
+  font-size: var(--t-12);
+}
+
+.rowDot {
+  color: var(--text-faint);
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  opacity: 0;
+  transition: opacity var(--d-fast) var(--ease-out);
+}
+
+.row:hover .rowActions,
+.row:focus-within .rowActions {
+  opacity: 1;
+}
+
+.renameInput {
+  width: 100%;
+  height: 26px;
+  padding: 0 7px;
+  background: var(--ink-850);
+  border: 1px solid var(--select);
+  border-radius: var(--r-4);
+  color: var(--text-hi);
+  font-size: var(--t-14);
+}
+
+.renameInput:focus {
+  outline: none;
+}
+
+/* ---- Empty & loading ---- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-16) var(--s-6);
+  text-align: center;
+  /* Solid hairline, matching every other boundary in the product. The dashed
+     variant was the only one on either surface. */
+  border: 1px solid var(--line);
+  border-radius: var(--r-10);
+  background: var(--bg-1);
+}
+
+.emptyTitle {
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  font-size: var(--t-18);
+  font-weight: 500;
+  letter-spacing: var(--track-tight);
+}
+
+.emptyBody {
+  max-width: 48ch;
+  color: var(--text-mid);
+  font-size: var(--t-13);
+  line-height: 1.6;
+}
+
+.skeleton {
+  height: 54px;
+  margin-bottom: 1px;
+  border-radius: var(--r-6);
+  background: linear-gradient(90deg, var(--ink-850) 25%, var(--ink-800) 50%, var(--ink-850) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.error {
+  padding: var(--s-4);
+  border: 1px solid var(--danger-wash);
+  border-radius: var(--r-8);
+  background: var(--danger-wash);
+  color: var(--danger-hi);
+  font-size: var(--t-13);
+  line-height: 1.55;
+}
+
+/* ---- Confirm dialog ---- */
+
+.confirmScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-6);
+  background: rgba(6, 7, 10, 0.55);
+}
+
+.confirm {
+  width: min(400px, 100%);
+  padding: var(--s-5);
+  background: var(--ink-800);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-10);
+  box-shadow: var(--shadow-panel);
+}
+
+.confirmTitle {
+  margin-bottom: 6px;
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  font-size: var(--t-16);
+  font-weight: 550;
+}
+
+.confirmBody {
+  margin-bottom: var(--s-5);
+  color: var(--text-mid);
+  font-size: var(--t-13);
+  line-height: 1.6;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+/* -------------------------------------------------------------- templates - */
+
+/*
+ * A template card is a button with a second control on top of it. Nesting a
+ * button inside a button is invalid, so the remove control is a sibling
+ * positioned over the corner instead.
+ */
+.starterWrap {
+  position: relative;
+}
+
+.starterRemove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-4);
+  background: var(--scrim-soft);
+  backdrop-filter: blur(6px);
+  color: var(--text-lo);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--d-fast) ease, color var(--d-fast) ease;
+}
+
+.starterWrap:hover .starterRemove,
+.starterRemove:focus-visible {
+  opacity: 1;
+}
+
+.starterRemove:hover {
+  color: var(--danger-hi);
+  border-color: var(--danger-hi);
+}
+
+/* ------------------------------------------------------------ shared work -- */
+
+/*
+ * The workspace list sits above your own, separated by a rule.
+ *
+ * Above, because shared work is what a team opens first. Separated, because
+ * the two lists behave differently — one lives in this browser, the other
+ * comes down from the workspace when you open it — and running them together
+ * would hide that.
+ */
+.sharedSection {
+  margin-bottom: var(--s-10);
+  padding-bottom: var(--s-8);
+  border-bottom: 1px solid var(--line);
+}
+
+/* -------------------------------------------------------------------- tabs --
+   Two destinations, not a filter. Templates is a catalogue somebody browses;
+   projects is what they came back for. Putting both in one scroll made the
+   thing they own compete with two dozen things they do not. */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: var(--s-6);
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--text-lo);
+  font: inherit;
+  font-size: var(--t-14);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color var(--d-fast) ease,
+    border-color var(--d-fast) ease;
+}
+
+.tab:hover {
+  color: var(--text-hi);
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-4) var(--r-4) 0 0;
+}
+
+.tabActive {
+  color: var(--text-hi);
+  border-bottom-color: var(--accent);
+}
+
+.tabCount {
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  background: var(--ink-750);
+  color: var(--text-lo);
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabActive .tabCount {
+  background: var(--accent-tint-2);
+  color: var(--accent-hi);
+}
+
+/*
+ * The UA rule `[hidden] { display: none }` loses to a class that sets display,
+ * so an inactive panel would render underneath the active one and stay in the
+ * tab order. This has caught us once before, on the landing page.
+ */
+.panel {
+  display: block;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.panelLede {
+  max-width: 64ch;
+  margin: 0 0 var(--s-8);
+  font-size: var(--t-14);
+  line-height: 1.65;
+  color: var(--text-lo);
+}
+
+.group {
+  margin-bottom: var(--s-10);
+}
+
+.groupHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--t-16);
+  font-weight: 550;
+  letter-spacing: var(--track-tight);
+  color: var(--text-hi);
+}
+
+.groupCount {
+  font-size: var(--t-12);
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A link that lives inside a sentence but has to be a button, because it
+   changes what is on screen rather than going anywhere. */
+.emptyLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-hi);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.emptyLink:hover {
+  color: var(--text-hi);
+}
+
+.emptyLink:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-4);
+}
+
+/* The way into settings from the dashboard. See ProjectsPage. */
+.settingsLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-8);
+  color: var(--fg-3);
+  transition:
+    background-color var(--d-fast) ease,
+    color var(--d-fast) ease;
+}
+
+.settingsLink:hover {
+  background: var(--bg-2);
+  color: var(--fg);
+}
+
+.settingsLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------- the premium bank --
+   Locked tiles are shown rather than hidden. See ProjectsPage. */
+
+.starterLocked {
+  cursor: not-allowed;
+}
+
+.starterLocked .starterPreview {
+  opacity: 0.42;
+  filter: saturate(0.55);
+  transition: opacity var(--d-fast) ease;
+}
+
+.starterLocked:hover .starterPreview {
+  opacity: 0.6;
+}
+
+.starterLocked .starterName {
+  color: var(--fg-3);
+}
+
+/* The mark, over the preview rather than beside the name: it belongs to the
+   picture somebody is looking at, not to the caption they read second. */
+.starterLock {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-full);
+  background: var(--bg);
+  color: var(--fg-2);
+  box-shadow: var(--shadow-sm);
+}
+
+/* The way into Zory Code, from the dashboard header. */
+.codeLink {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding-inline: 10px;
+  border-radius: var(--r-8);
+  color: var(--fg-2);
+  font-size: var(--t-13);
+  transition:
+    background-color var(--d-fast) ease,
+    color var(--d-fast) ease;
+}
+
+.codeLink:hover {
+  background: var(--bg-2);
+  color: var(--fg);
+}
+
+.codeLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+
+/* ---- Template catalogue: filtering ---- */
+
+/*
+ * A search box and four chips.
+ *
+ * Two dozen tiles in four groups is a page somebody scrolls rather than a set
+ * they choose from. This is the smallest thing that turns it back into
+ * choosing, and it sits above the groups rather than inside one so it is
+ * obviously filtering all of them.
+ */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin: 0 0 var(--s-6);
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 210px;
+  padding: 0 10px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-8);
+  background: var(--ink-850);
+  color: var(--text-faint);
+  transition: border-color var(--d-fast) var(--ease-out);
+}
+
+.searchField:focus-within {
+  border-color: var(--focus);
+  color: var(--text-lo);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: var(--t-12);
+  color: var(--text-hi);
+}
+
+.searchInput::placeholder {
+  color: var(--text-faint);
+}
+
+/* Safari draws its own clear affordance that does not match anything here. */
+.searchInput::-webkit-search-decoration,
+.searchInput::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  padding: 0 10px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-8);
+  background: none;
+  color: var(--text-lo);
+  font-size: var(--t-12);
+  cursor: pointer;
+  transition:
+    color var(--d-fast) var(--ease-out),
+    border-color var(--d-fast) var(--ease-out),
+    background var(--d-fast) var(--ease-out);
+}
+
+.chip:hover {
+  color: var(--text-hi);
+  border-color: var(--ink-600);
+}
+
+.chipOn {
+  color: var(--text-hi);
+  background: var(--ink-750);
+  border-color: var(--ink-600);
+}
+
+.noMatch {
+  margin: 0 0 var(--s-8);
+  font-size: var(--t-13);
+  color: var(--text-lo);
+}
+
+.linkButton {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--text-hi);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---- Template card meta ---- */
+
+.starterKind {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.starterKindText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.starterDot {
+  opacity: 0.5;
+}
+
+/*
+ * The plan, on the card rather than instead of the kind.
+ *
+ * The old tile replaced "Restaurant" with "Pro", which removed the one line
+ * telling somebody what the template was in order to tell them they could not
+ * have it. Both fit.
+ */
+.starterPro {
+  margin-left: auto;
+  padding: 0 5px;
+  border: 1px solid var(--accent-edge);
+  border-radius: var(--r-full);
+  font-size: var(--t-10);
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-wash);
+}

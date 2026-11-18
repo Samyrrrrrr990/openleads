@@ -365,3 +365,27 @@ def _m5_drafts(conn):
     if used:
         conn.execute("INSERT OR REPLACE INTO kv (k, v, ts) VALUES ('approval.default', ?, "
                      "strftime('%s','now'))", (json.dumps("off"),))
+
+
+@register(6, "warm-up log and Studio sites")
+def _m6_warmup_and_sites(conn):
+    # Warm-up: every warm-up email sent, every seed-inbox check (placement), every
+    # rescue from spam and every seed reply. Cold sends stay in ``touches``.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS warmup_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL NOT NULL, day TEXT NOT NULL,
+            kind TEXT NOT NULL, seed TEXT, message_id TEXT, subject TEXT,
+            folder TEXT, detail TEXT
+        )""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_warmup_log_day ON warmup_log (day, kind)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_warmup_log_msg ON warmup_log (message_id)")
+    # Studio: sites built in the drag-and-drop editor. ``data`` is the project graph,
+    # ``html`` the rendered pages ({route: html}) served at /s/<slug>/.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sites (
+            id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
+            lead_email TEXT, company TEXT, starter_id TEXT, data TEXT NOT NULL,
+            html TEXT, page_count INTEGER DEFAULT 0, node_count INTEGER DEFAULT 0,
+            published_url TEXT, created REAL, updated REAL
+        )""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sites_lead ON sites (lead_email)")

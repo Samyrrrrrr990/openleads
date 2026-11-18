@@ -46,9 +46,16 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: |
+            app/package-lock.json
+            studio/package-lock.json
       - name: Build the app into the package
         working-directory: app
+        run: |
+          npm ci
+          npm run build
+      - name: Build Studio (the site builder) into the package
+        working-directory: studio
         run: |
           npm ci
           npm run build
@@ -66,11 +73,13 @@ jobs:
           need = ["openleads/web/static/index.html", "openleads/web/static/app.js",
                   "openleads/web/static/styles.css",
                   "openleads/web/static/fonts/atkinson-next-latin.woff2",
-                  "openleads/web/app/index.html"]
+                  "openleads/web/app/index.html", "openleads/web/studio/index.html"]
           missing = [n for n in need if n not in names]
           assert any(n.startswith("openleads/web/app/assets/") and n.endswith(".js")
                      for n in names), "the app's script is missing from the wheel"
-          assert not any(n.startswith("app/") or "node_modules" in n for n in names), \
+          assert any(n.startswith("openleads/web/studio/assets/") and n.endswith(".js")
+                     for n in names), "Studio's script is missing from the wheel"
+          assert not any(n.startswith(("app/", "studio/")) or "node_modules" in n for n in names), \
               "app sources leaked into the wheel"
           print("wheel:", whl)
           assert not missing, f"missing from wheel: {missing}"

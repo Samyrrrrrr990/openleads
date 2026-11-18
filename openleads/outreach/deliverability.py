@@ -87,22 +87,14 @@ def preflight(domain: str | None = None, cache=None) -> dict:
 
 
 def warmup_status(db) -> dict:
-    """Compute today's send allowance from the warmup ramp + daily cap.
+    """Today's cold-send allowance: the warm-up plan's ramp, held by health, capped.
 
-    A fresh mailbox starts at ``warmup_start`` and gains ``warmup_step`` per day,
-    never exceeding ``daily_cap``. ``remaining`` is what's left to send today.
-    """
-    start = int(settings.get("warmup_start"))
-    step = int(settings.get("warmup_step"))
-    cap = int(settings.get("daily_cap"))
-
-    first = db.first_send_date() if db else None
-    if first is None:
-        day = 1
-    else:
-        day = (date.today() - first).days + 1
-    allowance = min(cap, start + step * (day - 1))
-    sent = db.sent_today() if db else 0
-    remaining = max(0, allowance - sent)
-    return {"day": day, "allowance": allowance, "cap": cap,
-            "sent_today": sent, "remaining": remaining}
+    ``remaining`` is what's left to send today. Without a database (previews) it's
+    the plain first-day number of the linear ramp."""
+    if db is None:
+        start, cap = int(settings.get("warmup_start")), int(settings.get("daily_cap"))
+        allowance = min(cap, start)
+        return {"day": 1, "allowance": allowance, "cap": cap, "sent_today": 0,
+                "remaining": allowance}
+    from openleads.outreach import warmup
+    return warmup.allowance(db)

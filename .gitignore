@@ -44,3 +44,6 @@ npm/LICENSE
 # release workflow builds into the wheel. Without it the classic dashboard is served.
 app/node_modules/
 openleads/web/app/
+# Studio (the site builder): source in studio/, built into openleads/web/studio.
+studio/node_modules/
+openleads/web/studio/

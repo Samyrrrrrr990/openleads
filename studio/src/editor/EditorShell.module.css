@@ -1,0 +1,142 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--ink-900);
+}
+
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* The containing block for the first-run guide, which is absolute against
+     the editing area rather than against the viewport. */
+  position: relative;
+}
+
+.loading,
+.missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  height: 100vh;
+  padding: var(--s-8);
+  text-align: center;
+}
+
+.loadingMark {
+  color: var(--signal);
+  animation: breathe 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.missingTitle {
+  font-family: var(--font-display);
+  font-size: var(--t-21);
+  color: var(--text-hi);
+}
+
+.missingBody {
+  max-width: 44ch;
+  color: var(--text-mid);
+  font-size: var(--t-14);
+  line-height: 1.6;
+}
+
+/* Below tablet the three-pane editor stops being usable, so say so rather
+   than shipping a cramped version of it. */
+.narrowNotice {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .body {
+    display: none;
+  }
+
+  .narrowNotice {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-3);
+    padding: var(--s-8);
+    text-align: center;
+  }
+}
+
+/* ---- Preview overlay ---- */
+
+.previewScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--ink-1000);
+  animation: fadeIn var(--d-base) var(--ease-out);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.previewBar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ink-850);
+}
+
+.previewLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-mid);
+  font-size: var(--t-12);
+  font-weight: 500;
+}
+
+.previewSpacer {
+  flex: 1 1 auto;
+}
+
+.previewStage {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  padding: 20px;
+  background: var(--ink-1000);
+}
+
+.previewFrame {
+  flex: 0 0 auto;
+  background: #fff;
+  border-radius: var(--r-4);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  height: fit-content;
+  min-height: 100%;
+  transition: width var(--d-base) var(--ease-out);
+}

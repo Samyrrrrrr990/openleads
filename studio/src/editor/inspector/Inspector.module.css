@@ -1,0 +1,305 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: var(--panel-right-w);
+  flex: 0 0 var(--panel-right-w);
+  border-left: 1px solid var(--line);
+  background: var(--ink-800);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.kindIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: var(--r-4);
+  background: var(--ink-700);
+  color: var(--text-mid);
+}
+
+.nameInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 22px;
+  padding: 0 5px;
+  margin-left: -5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-4);
+  color: var(--text-hi);
+  font-size: var(--t-13);
+  font-weight: 550;
+  text-overflow: ellipsis;
+}
+
+.nameInput:hover {
+  background: var(--ink-750);
+}
+
+.nameInput:focus {
+  background: var(--ink-850);
+  border-color: var(--select);
+  outline: none;
+}
+
+.kindLabel {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--t-10);
+  letter-spacing: 0.02em;
+}
+
+/* The breakpoint scope strip — the single most important piece of state in
+   the inspector, because it changes what every field below writes to. */
+.scope {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: var(--r-4);
+  background: var(--ink-750);
+  font-size: var(--t-11);
+  color: var(--text-lo);
+}
+
+.scopeOverride {
+  background: var(--signal-wash);
+  color: var(--signal);
+  box-shadow: inset 0 0 0 1px var(--signal-edge);
+}
+
+.scopeDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.scopeCount {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  padding: var(--s-8) var(--s-6);
+  text-align: center;
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-8);
+  background: var(--ink-750);
+  color: var(--text-faint);
+}
+
+.emptyTitle {
+  color: var(--text-mid);
+  font-size: var(--t-13);
+  font-weight: 550;
+}
+
+.emptyBody {
+  color: var(--text-faint);
+  font-size: var(--t-12);
+  line-height: 1.6;
+  max-width: 30ch;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 0;
+}
+
+.clearButton {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--r-4);
+  background: var(--signal-wash);
+  color: var(--signal);
+  font-size: var(--t-10);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background var(--d-instant) var(--ease-out);
+}
+
+.clearButton:hover {
+  background: var(--signal-edge);
+}
+
+.spacingGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.spacingLabels {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-bottom: -2px;
+}
+
+.spacingLabel {
+  color: var(--text-faint);
+  font-size: var(--t-10);
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+.footerNote {
+  padding: 12px;
+  color: var(--text-faint);
+  font-size: var(--t-11);
+  line-height: 1.55;
+  border-top: 1px solid var(--line-subtle);
+}
+
+/* ---------------------------------------------------------------- motion -- */
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+}
+
+.slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--select);
+}
+
+.sliderValue {
+  flex: 0 0 auto;
+  min-width: 46px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--t-11);
+  color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------- actions -- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+/* ----------------------------------------------------------------- align -- */
+
+.alignGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  width: 100%;
+}
+
+.alignButton {
+  display: grid;
+  place-items: center;
+  height: var(--row-h);
+  border: 1px solid transparent;
+  border-radius: var(--r-4);
+  background: var(--ink-750);
+  color: var(--text-mid);
+  cursor: pointer;
+  transition:
+    background var(--d-instant) var(--ease-out),
+    color var(--d-instant) var(--ease-out);
+}
+
+.alignButton:hover {
+  background: var(--ink-700);
+  color: var(--text-hi);
+}
+
+.alignButton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/*
+ * Says the selected node belongs to a component. Quiet on purpose: it is a
+ * standing fact about the node, not an alert, and it sits above every section
+ * where an alert-coloured band would fight the panel for attention.
+ */
+.instanceNote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+}
+
+.instanceOf {
+  font-size: 11px;
+  color: var(--fg-3);
+}
+
+.instanceOf strong {
+  font-weight: 500;
+  color: var(--fg-2);
+}
+
+/*
+ * A line under a field explaining what the value does.
+ *
+ * Only the anchor field uses it so far, where it earns its place: an id on its
+ * own means nothing until you can see the link that would use it.
+ */
+.hint {
+  margin-top: 6px;
+  color: var(--fg-3);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.hint code {
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+}

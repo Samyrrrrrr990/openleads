@@ -1,0 +1,66 @@
+/**
+ * The theme control.
+ *
+ * A track with three cells and a filled indicator on the chosen one. Same
+ * grammar as every other segmented control in Zory, at the smallest size the
+ * type still reads at.
+ */
+
+.group {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-full);
+  background: var(--bg-1);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding-inline: 10px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--fg-4);
+  font: inherit;
+  font-size: var(--t-12);
+  cursor: pointer;
+  transition:
+    background-color var(--d-fast) ease,
+    color var(--d-fast) ease;
+}
+
+.option:hover {
+  color: var(--fg);
+}
+
+.option:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.active {
+  background: var(--bg-4);
+  color: var(--fg);
+}
+
+.active:hover {
+  color: var(--fg);
+}
+
+.label {
+  letter-spacing: var(--track-tight);
+}
+
+/* Icon-only, for the editor top bar and anywhere else space is the constraint. */
+.compact .option {
+  padding-inline: 8px;
+}
+
+@media (pointer: coarse) {
+  .option {
+    height: 44px;
+  }
+}

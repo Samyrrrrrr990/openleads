@@ -1,0 +1,309 @@
+.viewport {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background:
+    /* A faint grid reads as "surface", not decoration — it makes the page
+       edge legible when the design itself is white on white. */
+    linear-gradient(var(--line-subtle) 1px, transparent 1px) 0 0 / 100% 32px,
+    linear-gradient(90deg, var(--line-subtle) 1px, transparent 1px) 0 0 / 32px 100%,
+    var(--ink-1000);
+  background-attachment: local;
+}
+
+.stage {
+  display: flex;
+  justify-content: center;
+  min-height: 100%;
+  padding: 32px 32px 96px;
+}
+
+.frameWrap {
+  position: relative;
+  flex: 0 0 auto;
+  transform-origin: top center;
+  transition: width var(--d-base) var(--ease-out);
+}
+
+.frame {
+  position: relative;
+  min-height: 400px;
+  background: #ffffff;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--r-4);
+  overflow: hidden;
+}
+
+/* Keep the page's own links from navigating away from the editor. */
+.frame a {
+  cursor: default;
+}
+
+.frame [data-zory-id] {
+  cursor: default;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.outline {
+  position: absolute;
+  pointer-events: none;
+  border: 1px solid var(--hover-outline);
+  border-radius: 1px;
+  transition:
+    top var(--d-instant) var(--ease-out),
+    left var(--d-instant) var(--ease-out),
+    width var(--d-instant) var(--ease-out),
+    height var(--d-instant) var(--ease-out);
+}
+
+.selected {
+  border: 1.5px solid var(--select);
+  box-shadow: 0 0 0 1px var(--scrim-soft);
+}
+
+/* Corner ticks: precise, and cheaper to read than eight resize handles the
+   MVP cannot honour yet. */
+.selected::before,
+.selected::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: var(--select);
+  border-radius: 1px;
+}
+
+.selected::before {
+  top: -3px;
+  left: -3px;
+}
+
+.selected::after {
+  bottom: -3px;
+  right: -3px;
+}
+
+.badge {
+  position: absolute;
+  top: -19px;
+  left: -1.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 17px;
+  padding: 0 6px;
+  background: var(--select-chip);
+  color: var(--on-select-chip);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 3px 3px 0 0;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+}
+
+.badgeKind {
+  /*
+     4.64:1 against `--select-chip`, which is the whole reason that token is a
+     shade deeper than `--select`. At the old #2563d6 this measured 3.63:1 —
+     the worst contrast in the editor, and never caught, because the axe run
+     looks at the marketing pages and nothing selects a node for it.
+  */
+  opacity: 0.72;
+  font-weight: 500;
+}
+
+/* When the element sits at the very top of the page, tuck the badge inside. */
+.badgeInside {
+  top: 1.5px;
+  border-radius: 0 0 3px 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  min-height: 420px;
+  padding: var(--s-12);
+  text-align: center;
+  color: var(--text-lo);
+}
+
+.emptyTitle {
+  font-size: var(--t-14);
+  font-weight: 550;
+  color: var(--text-mid);
+}
+
+.emptyBody {
+  font-size: var(--t-13);
+  max-width: 40ch;
+  line-height: 1.6;
+}
+
+/* ---- Breadcrumb ---- */
+
+.breadcrumb {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 auto;
+  padding: 5px 8px;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  overflow-x: auto;
+  /*
+   * The ground, nearly opaque, so the bar reads as chrome rather than as part
+   * of the page under it. Hard-coding a near-black here made the breadcrumbs
+   * dark-grey-on-black the moment the light palette arrived.
+   */
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-6);
+  box-shadow: var(--shadow-md);
+  scrollbar-width: none;
+}
+
+.breadcrumb::-webkit-scrollbar {
+  display: none;
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-4);
+  color: var(--text-mid);
+  font-size: var(--t-11);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background var(--d-instant) var(--ease-out), color var(--d-instant) var(--ease-out);
+}
+
+.crumb:hover {
+  background: var(--ink-700);
+  color: var(--text-hi);
+}
+
+.crumbActive {
+  color: var(--text-hi);
+  background: var(--ink-700);
+}
+
+.crumbSep {
+  color: var(--text-faint);
+  font-size: 9px;
+  user-select: none;
+}
+
+/* ------------------------------------------------------------------ drag --- */
+
+/*
+ * The insertion line. Deliberately the selection colour rather than a new one:
+ * it is answering "where would this land", which is a selection question.
+ */
+.dropLine {
+  position: absolute;
+  border-radius: 2px;
+  background: var(--select);
+  box-shadow: 0 0 0 1px var(--select-soft);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/*
+ * While dragging, the page must not intercept the pointer or start selecting
+ * text — the drag is tracked on the window, and text selection mid-drag leaves
+ * a blue smear across the canvas.
+ */
+.frameDragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/*
+ * Alignment guides.
+ *
+ * Deliberately thin and unfilled: they appear and vanish constantly during a
+ * drag, so anything heavier reads as flicker. One pixel in the selection
+ * colour is enough to say "this edge lines up".
+ */
+.guideX,
+.guideY {
+  position: absolute;
+  background: var(--select);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.guideX {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.guideY {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+/* ------------------------------------------------------------- resize --- */
+
+/*
+ * Handles sit on the selection outline. The outline itself is
+ * pointer-events: none so it never blocks the canvas, so each handle has to
+ * opt back in.
+ */
+.handle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -5px 0 0 -5px;
+  border: 1px solid var(--select);
+  border-radius: 2px;
+  background: var(--ink-900);
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.handle:hover,
+.handleActive {
+  background: var(--select);
+}
+
+.handle_nw { top: 0; left: 0; cursor: nwse-resize; }
+.handle_n  { top: 0; left: 50%; cursor: ns-resize; }
+.handle_ne { top: 0; left: 100%; cursor: nesw-resize; }
+.handle_e  { top: 50%; left: 100%; cursor: ew-resize; }
+.handle_se { top: 100%; left: 100%; cursor: nwse-resize; }
+.handle_s  { top: 100%; left: 50%; cursor: ns-resize; }
+.handle_sw { top: 100%; left: 0; cursor: nesw-resize; }
+.handle_w  { top: 50%; left: 0; cursor: ew-resize; }
+
+/*
+ * A secondary selection.
+ *
+ * Dimmer than the primary and without handles: the primary is the one the
+ * inspector is describing and the one "match size" measures from, so the two
+ * have to be tellable apart at a glance.
+ */
+.selectedSecondary {
+  border-color: var(--select);
+  opacity: 0.55;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
