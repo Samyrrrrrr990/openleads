@@ -46,18 +46,19 @@
  * selection and focus, which is the only job it has here.
  */
 .primary {
-  background: var(--fg);
-  color: var(--bg);
+  /* OpenLeads' primary button: its blue, white text. */
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 500;
 }
 
 .primary:hover:not(:disabled) {
-  background: var(--fill-hover);
-  color: var(--bg);
+  background: color-mix(in srgb, var(--accent) 88%, var(--fg));
+  color: var(--on-accent);
 }
 
 .primary:active:not(:disabled) {
-  background: var(--fg);
+  background: var(--accent);
 }
 
 .ghost {

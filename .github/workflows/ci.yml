@@ -153,7 +153,7 @@ jobs:
         run: test -f ../openleads/web/app/index.html
 
   studio:
-    name: Studio (typecheck, build)
+    name: Studio (typecheck, tests, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -167,6 +167,10 @@ jobs:
           cache-dependency-path: studio/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
       - name: The build lands in the Python package
-        run: test -f ../openleads/web/studio/index.html
+        run: |
+          test -f ../openleads/web/studio/index.html
+          test -f ../openleads/web/studio/theme.js
+          grep -q "pickTemplate" ../openleads/web/studio/auto.js

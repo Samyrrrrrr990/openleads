@@ -145,7 +145,7 @@ export function HistoryPanel(): React.ReactElement {
       ) : (
         <>
           <p className={styles.integrationsIntro}>
-            Zory saves a version every few minutes while you work, and keeps them for{' '}
+            Studio saves a version every few minutes while you work, and keeps them for{' '}
             {retentionDays} days. Ones you name are kept regardless.
           </p>
           <Button variant="outline" onClick={() => setNaming(true)}>

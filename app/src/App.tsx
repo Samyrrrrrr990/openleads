@@ -35,6 +35,8 @@ function Screen() {
   if (route.rest[0] === "classic" && arg) return <Embedded section={section} path={arg} label={section.label} />;
   // "#/workflows/<name>" opens that workflow on the canvas.
   if (section.key === "workflows") return <Workflows open={route.rest[0]} />;
+  // "#/sites/<id>" opens a site; "#/sites/new/<email>" builds one for that lead.
+  if (section.key === "sites") return <Sites open={route.rest[0]} lead={route.rest[1]} />;
   switch (`${section.key}/${page ?? ""}`) {
     case "today/":
       return <Today />;
@@ -54,8 +56,6 @@ function Screen() {
       return <Templates />;
     case "outreach/warmup":
       return <Warmup />;
-    case "sites/":
-      return <Sites />;
     case "pipeline/deals":
       return <Deals />;
     case "pipeline/tasks":

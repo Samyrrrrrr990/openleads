@@ -64,7 +64,7 @@ export function expandProposals(project: Project, raw: unknown[]): ZoryCommand[]
       const request = item as unknown as InsertBlockRequest;
       const block = findBlock(String(request.block ?? ''));
       if (!block) {
-        throw new IntentError(`Zory has no "${String(request.block)}" block to insert.`);
+        throw new IntentError(`Studio has no "${String(request.block)}" block to insert.`);
       }
 
       // A parent named in this batch resolves to the node just created.

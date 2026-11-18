@@ -70,7 +70,7 @@ export function IntegrationsPanel(): React.ReactElement {
 
       <p className={styles.integrationsFoot}>
         Keys live in this browser only. They are not synced, not exported as part of the design,
-        and not sent to Zory.
+        and not sent anywhere else.
       </p>
     </div>
   );

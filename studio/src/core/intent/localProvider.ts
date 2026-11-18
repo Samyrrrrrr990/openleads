@@ -275,7 +275,7 @@ const RULES: Rule[] = [
     pattern: /^(?:make|set)\s+(?:the\s+)?background\s+(?:colou?r\s+)?(?:to\s+)?(.+?)\s*$/,
     run: ({ node, breakpoint, match }) => {
       const colour = parseColour(match[1]!);
-      if (!colour) throw new IntentError(`"${match[1]}" is not a colour Zory recognises.`, [
+      if (!colour) throw new IntentError(`"${match[1]}" is not a colour Studio recognises.`, [
         'make the background white',
         'make the background #f5f5f5',
       ]);
@@ -287,7 +287,7 @@ const RULES: Rule[] = [
     run: ({ node, breakpoint, match }) => {
       const raw = match[1] ?? match[2] ?? '';
       const colour = parseColour(raw);
-      if (!colour) throw new IntentError(`"${raw}" is not a colour Zory recognises.`, [
+      if (!colour) throw new IntentError(`"${raw}" is not a colour Studio recognises.`, [
         'set the colour to black',
         'set the colour to #2f6feb',
       ]);
@@ -892,7 +892,7 @@ export const localIntentProvider: IntentProvider = {
     }
 
     throw new IntentError(
-      `Zory does not know how to "${trimmed}" yet.`,
+      `Studio does not know how to "${trimmed}" yet.`,
       EXAMPLE_PROMPTS.slice(0, 4),
     );
   },

@@ -66,7 +66,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className={styles.panel} role="alert">
-        <h2 className={styles.title}>Something in {this.props.area ?? 'Zory'} stopped working</h2>
+        <h2 className={styles.title}>Something in {this.props.area ?? 'Studio'} stopped working</h2>
         <p className={styles.body}>
           Your projects are stored on this device and none of them were touched by this. Reloading
           is safe.

@@ -194,7 +194,7 @@ export function ProjectsPage(): React.ReactElement {
       setError(null);
     } catch {
       setError(
-        'Zory could not reach this browser’s storage. Private browsing windows and blocked site data will both do this.',
+        'Studio could not reach your OpenLeads workspace. Check that OpenLeads is still running, then reload.',
       );
       setProjects([]);
     }
@@ -797,7 +797,7 @@ export function ProjectsPage(): React.ReactElement {
                 <button type="button" className={styles.emptyLink} onClick={() => setTab('templates')}>
                   start from one of {templates?.length ?? 20} templates
                 </button>{' '}
-                to see how Zory works on a finished page.
+                to see how Studio works on a finished page.
               </p>
             </div>
           ) : (
@@ -992,7 +992,7 @@ function ConfirmDelete({
           Delete {project.name}?
         </h2>
         <p id="confirm-body" className={styles.confirmBody}>
-          This removes the project from this browser. Zory keeps no copy elsewhere, so this cannot
+          This removes the site from your OpenLeads workspace. No copy is kept elsewhere, so this cannot
           be undone.
         </p>
         <div className={styles.confirmActions}>

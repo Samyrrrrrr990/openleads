@@ -194,7 +194,7 @@ function ProjectNameField({ name }: { name: string }): React.ReactElement {
 }
 
 const SAVE_COPY: Record<string, { label: string; className: string }> = {
-  saved: { label: 'Saved locally', className: 'saveSaved' },
+  saved: { label: 'Saved', className: 'saveSaved' },
   unsaved: { label: 'Unsaved changes', className: 'saveUnsaved' },
   saving: { label: 'Saving', className: 'saveSaving' },
   error: { label: 'Could not save', className: 'saveError' },

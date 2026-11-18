@@ -173,12 +173,12 @@ function agentBriefing(project: Project): string {
 
   return `# ${project.name}
 
-This folder is written by [Zory](https://zory.ca) and kept in step with a
+This folder is written by [OpenLeads Studio](https://github.com/Samyrrrrrr990/openleads) and kept in step with a
 visual project as it is edited.
 
 ## What this is
 
-Plain React and TypeScript on Vite. There is no Zory runtime, no proprietary
+Plain React and TypeScript on Vite. There is no Studio runtime, no proprietary
 format and no build plugin — delete this file and the project still builds and
 runs exactly as it does now.
 
@@ -204,7 +204,7 @@ rewrites files whose contents actually differ. Two consequences worth knowing:
   routes, configuration — Zory writes its own output and does not remove what
   it did not create. This is the safe place to work.
 
-If you are refactoring generated components heavily, unlink the folder in Zory
+If you are refactoring generated components heavily, unlink the folder in Studio
 first. The project is yours at that point and Zory will stop writing to it.
 
 ## Environment

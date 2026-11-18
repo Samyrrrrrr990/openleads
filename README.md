@@ -191,9 +191,10 @@ daily cap, warm-up ramp and business hours, and stop for anyone who replies.
 Warm-up sends to seed inboxes, checks inbox placement and holds the ramp when
 health slips. [Sending and warm-up](./docs/sending.md)
 
-Running a web agency? **Sites** builds a lead a better website in Studio, the
-drag-and-drop builder, filled in from their details, and `{{site_url}}` puts the
-link in your email. [Sites](./docs/sites.md)
+Running a web agency? Pick a lead in **Sites** and it builds them a better
+website: the right template, their name, phone and city, and the words written
+for them by your Claude subscription. Ask for changes in plain words, preview
+it, and send the owner the link. [Sites](./docs/sites.md)
 
 ```bash
 openleads workflow templates                       # 7 ready-made workflows

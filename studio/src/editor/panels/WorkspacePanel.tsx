@@ -31,7 +31,7 @@ const STATE_LABEL: Record<string, string> = {
   writing: 'Writing…',
   synced: 'In sync',
   error: 'Could not write',
-  external: 'Changed outside Zory',
+  external: 'Changed outside Studio',
 };
 
 export function WorkspacePanel(): React.ReactElement {
@@ -127,9 +127,9 @@ export function WorkspacePanel(): React.ReactElement {
       <div className={styles.integrations}>
         <p className={styles.sectionLabel}>Local folder</p>
         <p className={styles.integrationsIntro}>
-          Link a folder and Zory keeps it filled with the real React and TypeScript for this
+          Link a folder and Studio keeps it filled with the real React and TypeScript for this
           project, rewritten as you edit. Open it in your editor, run it, commit it — it is an
-          ordinary project with no Zory runtime in it.
+          ordinary project with no Studio runtime in it.
         </p>
         <Button variant="primary" onClick={() => void link()}>
           Choose a folder
@@ -154,7 +154,7 @@ export function WorkspacePanel(): React.ReactElement {
 
       {status.state === 'external' && (
         <p className={styles.workspaceWarn}>
-          Something changed this folder outside Zory. Bring those edits back into the design, or
+          Something changed this folder outside Studio. Bring those edits back into the design, or
           keep editing here and they will be rewritten.
         </p>
       )}
@@ -186,7 +186,7 @@ export function WorkspacePanel(): React.ReactElement {
       {launchError && <p className={styles.workspaceWarn}>{launchError}</p>}
 
       <p className={styles.integrationsIntro} style={{ marginTop: 14 }}>
-        For Claude Code, open the terminal here and run <code>claude</code>. Zory writes a{' '}
+        For Claude Code, open the terminal here and run <code>claude</code>. Studio writes a{' '}
         <code>CLAUDE.md</code> into the folder describing the project and which files it owns, so
         an agent knows what it can safely change.
       </p>

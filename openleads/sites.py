@@ -69,7 +69,10 @@ def list_sites(db, lead: str = "") -> list:
     if lead:
         sql += " WHERE lead_email=?"
         params = (lead.lower().strip(),)
-    return [_summary(r) for r in db.query(sql + " ORDER BY updated DESC", params)]
+    out = [_summary(r) for r in db.query(sql + " ORDER BY updated DESC", params)]
+    for site in out:
+        site["sent"] = bool(db.kv_get(f"sites.sent.{site['id']}"))
+    return out
 
 
 def get(db, site_id: str) -> dict | None:
@@ -81,7 +84,25 @@ def get(db, site_id: str) -> dict | None:
         out["project"] = json.loads(row["data"])
     except ValueError:
         out["project"] = None
+    out["log"] = db.kv_get(f"sites.log.{site_id}") or []
+    out["sent"] = db.kv_get(f"sites.sent.{site_id}") or None
     return out
+
+
+LOG_MAX = 120
+
+
+def add_log(db, site_id: str, lines: list) -> list:
+    """Remember what happened to a site (built, Claude's edits, sent), newest last."""
+    if not db.query_one("SELECT id FROM sites WHERE id=?", (site_id,)):
+        raise ValueError("no such site")
+    now = time.time()
+    keep = [{"text": str(x.get("text") or "")[:400], "kind": str(x.get("kind") or "info")[:20],
+             "ts": now}
+            for x in (lines or []) if isinstance(x, dict) and str(x.get("text") or "").strip()]
+    log = (db.kv_get(f"sites.log.{site_id}") or []) + keep
+    db.kv_set(f"sites.log.{site_id}", log[-LOG_MAX:])
+    return log[-LOG_MAX:]
 
 
 def by_slug(db, slug: str) -> dict | None:
@@ -215,6 +236,88 @@ def lead_brief(db, email: str) -> dict | None:
 
 
 # --------------------------------------------------------------------------- #
+# Sending the site to the lead                                                 #
+# --------------------------------------------------------------------------- #
+LINK = "{{site_url}}"
+
+
+def _first(name: str) -> str:
+    first = (name or "").strip().split(" ")[0]
+    return first if first[:1].isalpha() else ""
+
+
+def email_for(db, site_id: str) -> dict:
+    """A short first email offering the site. ``{{site_url}}`` becomes the link on send."""
+    row = db.query_one("SELECT * FROM sites WHERE id=?", (site_id,))
+    if not row:
+        raise ValueError("no such site")
+    lead = (row.get("lead_email") or "").strip()
+    brief = lead_brief(db, lead) if lead else None
+    business = (brief or {}).get("business") or row.get("company") or row.get("name") or ""
+    city = (brief or {}).get("city") or ""
+    hi = _first((brief or {}).get("contact") or "")
+    me = (settings.get("sender_name") or "").strip()
+    body = "\n".join([
+        f"Hi {hi}," if hi else "Hi,",
+        "",
+        f"I put together a new website for {business}{' in ' + city if city else ''}, "
+        "to show what it could look like:",
+        "",
+        LINK,
+        "",
+        "It's yours if you'd like it. I can change anything on it and get it live on "
+        "your own address.",
+        "",
+        "Worth a quick call this week?",
+        *(["", me] if me else []),
+    ])
+    url = public_url(row)
+    return {"to": lead, "name": (brief or {}).get("contact") or "", "business": business,
+            "subject": f"A new website for {business}" if business else "A new website for you",
+            "body": body, "url": url,
+            "can_publish": bool(url or settings.get("netlify_token") or settings.get("site_base_url")),
+            "sent": db.kv_get(f"sites.sent.{site_id}") or None}
+
+
+def send(db, site_id: str, subject: str, body: str) -> dict:
+    """Publish the site if it isn't live yet, then email the lead its link.
+
+    Goes through the approval queue and the normal sender, so suppression, warm-up
+    limits and the pre-send hook all apply; a send that can't happen now (warm-up
+    cap, mailbox down) stays waiting in Today instead of being lost.
+    """
+    from openleads.models import Draft
+    from openleads.workspace import drafts
+    row = db.query_one("SELECT * FROM sites WHERE id=?", (site_id,))
+    if not row:
+        raise ValueError("no such site")
+    to = (row.get("lead_email") or "").strip().lower()
+    if not to:
+        raise ValueError("this site isn't for a lead yet")
+    subject, body = (subject or "").strip(), (body or "").strip()
+    if not subject or not body:
+        raise ValueError("the email needs a subject and a message")
+    url = public_url(row)
+    if not row.get("published_url") and (settings.get("netlify_token") or settings.get("site_base_url")):
+        url = publish(db, site_id).get("url") or url
+    if (LINK in subject or LINK in body) and not url:
+        raise ValueError("this site has no public link yet: add a Netlify token or your "
+                         "site address in Settings, then send")
+    subject, body = subject.replace(LINK, url), body.replace(LINK, url)
+    step = 2 if db.scalar("SELECT 1 FROM touches WHERE email=? AND status='sent' LIMIT 1",
+                          (to,)) else 1
+    queued = drafts.enqueue(db, Draft(email=to, subject=subject, body=body, step=step), "site",
+                            {"campaign": "sites", "step": step, "site": site_id})
+    res = drafts.approve(db, queued["id"])
+    if res.get("status") == "sent":
+        db.kv_set(f"sites.sent.{site_id}", {"to": to, "ts": time.time(), "url": url})
+        add_log(db, site_id, [{"text": f"Sent to {to}", "kind": "sent"}])
+    elif res.get("detail"):
+        add_log(db, site_id, [{"text": f"Not sent yet: {res['detail']}", "kind": "info"}])
+    return {**res, "url": url, "draft_id": queued["id"]}
+
+
+# --------------------------------------------------------------------------- #
 # Publishing                                                                   #
 # --------------------------------------------------------------------------- #
 def _files(row: dict) -> dict:
@@ -271,6 +374,8 @@ def publish(db, site_id: str) -> dict:
     token = settings.get("netlify_token") or ""
     out = {"folder": str(folder), "url": public_url(row), "deployed": False}
     if not token:
+        add_log(db, site_id, [{"text": f"Published at {out['url']}" if out["url"]
+                               else f"Exported to {folder}", "kind": "publish"}])
         return out
     netlify_id = db.kv_get(f"sites.netlify.{site_id}")
     if not netlify_id:
@@ -288,4 +393,6 @@ def publish(db, site_id: str) -> dict:
         url = url.rstrip("/") + "/"
         db.execute("UPDATE sites SET published_url=?, updated=? WHERE id=?", (url, time.time(), site_id))
     out.update({"url": url, "deployed": True})
+    add_log(db, site_id, [{"text": f"Live on Netlify at {url}" if url else "Deployed to Netlify",
+                           "kind": "publish"}])
     return out

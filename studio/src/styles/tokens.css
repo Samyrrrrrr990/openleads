@@ -1,5 +1,5 @@
 /**
- * Zory design tokens.
+ * Studio's design tokens, in OpenLeads' type and colours.
  *
  * Direction: the precision school. Hairline borders doing the structural work,
  * typography carrying the hierarchy, and one accent that means something.
@@ -34,6 +34,23 @@
  * lifted surface.
  */
 
+/* OpenLeads' family, served by the same local server as the app and the classic
+   dashboard, so Studio reads as part of OpenLeads rather than a second product.
+   (Geist stays bundled for the templates that pick it for a site.) */
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  src: url('/classic/fonts/atkinson-next-latin.woff2') format('woff2');
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible Mono';
+  src: url('/classic/fonts/atkinson-mono-latin.woff2') format('woff2');
+  font-weight: 200 800;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'Geist';
   src: url('./fonts/Geist-Variable.woff2') format('woff2-variations');
@@ -53,10 +70,10 @@
 
 :root {
   /* ---- Type ------------------------------------------------------------- */
-  --font-display: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-ui: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-hand: 'Geist', sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-display: 'Atkinson Hyperlegible Next', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-ui: 'Atkinson Hyperlegible Next', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-hand: 'Atkinson Hyperlegible Next', sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   --t-10: 0.625rem;
   --t-11: 0.6875rem;
@@ -134,38 +151,39 @@
 :root {
   color-scheme: dark;
 
+  /* OpenLeads' dark palette (app/src/index.css), on Studio's names. */
   --bg: #000000;
-  --bg-1: #0a0a0a;
-  --bg-2: #101010;
+  --bg-1: #0c0c0c;
+  --bg-2: #111111;
   --bg-3: #161616;
   --bg-4: #1c1c1c;
   --bg-5: #242424;
 
-  --border: #1f1f1f;
-  --border-2: #2e2e2e;
-  --border-3: #3d3d3d;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-2: rgba(255, 255, 255, 0.11);
+  --border-3: rgba(255, 255, 255, 0.2);
 
-  --fg: #ededed;  /* 17.9:1 on #000 | 15.0:1 on #1c1c1c */
-  --fg-2: #a1a1a1; /* 8.1:1 on #000 |  6.8:1 on #1c1c1c, body copy */
-  --fg-3: #8a8a8a; /* 6.1:1 on #000 |  4.9:1 on #1c1c1c, safe anywhere */
-  --fg-4: #878787; /* 5.9:1 on --bg, 4.7:1 on --bg-4 */
+  --fg: #f1f3f7;
+  --fg-2: #a3a3a3;
+  --fg-3: #8f8f8f;
+  --fg-4: #8a8a8a;
 
-  --accent: #4b8cf5;
-  --accent-hi: #7aa9f8;
-  --accent-lo: #2f6feb;
-  --accent-wash: rgba(75, 140, 245, 0.12);
-  --accent-edge: rgba(75, 140, 245, 0.34);
-  --accent-tint: rgba(75, 140, 245, 0.055);
-  --accent-tint-2: rgba(75, 140, 245, 0.1);
-  --accent-hair: rgba(75, 140, 245, 0.16);
-  --accent-glow: rgba(75, 140, 245, 0.16);
-  /* Text sitting on a solid accent fill. White measures 3.2:1 here and fails. */
-  --on-accent: #06152e;
+  --accent: #346bf1;
+  --accent-hi: #77a2fc;
+  --accent-lo: #1b4ed8;
+  --accent-wash: rgba(52, 107, 241, 0.14);
+  --accent-edge: rgba(52, 107, 241, 0.4);
+  --accent-tint: rgba(52, 107, 241, 0.06);
+  --accent-tint-2: rgba(52, 107, 241, 0.11);
+  --accent-hair: rgba(52, 107, 241, 0.18);
+  --accent-glow: rgba(52, 107, 241, 0.16);
+  /* White on the app's dark primary, the same as every OpenLeads button. */
+  --on-accent: #ffffff;
 
-  --success: #3fb950;
-  --warn: #d29922;
-  --danger: #f85149;
-  --danger-hi: #ff7b72;
+  --success: #33a865;
+  --warn: #cf8f22;
+  --danger: #de4c3f;
+  --danger-hi: #f2857a;
   --danger-wash: rgba(248, 81, 73, 0.12);
   --positive: #3fb950;
   --positive-wash: rgba(63, 185, 80, 0.12);
@@ -221,39 +239,39 @@
   :root:not([data-theme='dark']) {
     color-scheme: light;
 
-    --bg: #ffffff;
+    --bg: #fcfcfc;
     --bg-1: #fafafa;
     --bg-2: #f4f4f5;
-    --bg-3: #ededee;
-    --bg-4: #e6e6e8;
-    --bg-5: #dededf;
+    --bg-3: #efeff1;
+    --bg-4: #e8e8eb;
+    --bg-5: #e0e0e3;
 
-    --border: #e6e6e8;
-    --border-2: #d4d4d6;
-    --border-3: #b9b9bd;
+    --border: #e4e4e7;
+    --border-2: #d4d4d8;
+    --border-3: #b9b9bf;
 
-    --fg: #111113;  /* 18.7:1 on #ffffff */
-    --fg-2: #56565c; /* 7.6:1 on #ffffff, body copy */
-    --fg-3: #6b6b72; /* 5.6:1 on #ffffff */
-    --fg-4: #6e6e75; /* 5.1:1 on --bg, 4.6:1 on --bg-2 */
+    --fg: #18181b;  /* 18.7:1 on #ffffff */
+    --fg-2: #52525b; /* 7.6:1 on #ffffff, body copy */
+    --fg-3: #6b6b74; /* 5.6:1 on #ffffff */
+    --fg-4: #6b6b74; /* 5.1:1 on --bg, 4.6:1 on --bg-2 */
 
-    --accent: #2f6feb;  /* 4.9:1 on #ffffff */
-    --accent-hi: #1d54c4;
-    --accent-lo: #4b8cf5;
-    --accent-wash: rgba(47, 111, 235, 0.09);
-    --accent-edge: rgba(47, 111, 235, 0.3);
-    --accent-tint: rgba(47, 111, 235, 0.045);
-    --accent-tint-2: rgba(47, 111, 235, 0.085);
-    --accent-hair: rgba(47, 111, 235, 0.2);
-    --accent-glow: rgba(47, 111, 235, 0.13);
-    --on-accent: #ffffff; /* 5.4:1 on #2f6feb */
+    --accent: #1b4ed8;  /* 6.6:1 on #ffffff */
+    --accent-hi: #163fae;
+    --accent-lo: #3d68e0;
+    --accent-wash: rgba(27, 78, 216, 0.09);
+    --accent-edge: rgba(27, 78, 216, 0.3);
+    --accent-tint: rgba(27, 78, 216, 0.045);
+    --accent-tint-2: rgba(27, 78, 216, 0.085);
+    --accent-hair: rgba(27, 78, 216, 0.2);
+    --accent-glow: rgba(27, 78, 216, 0.13);
+    --on-accent: #ffffff; /* 6.6:1 on #1b4ed8 */
 
-    --success: #16803c;
-    --warn: #9a6700;
-    --danger: #c92a2a;
-    --danger-hi: #a51111;
+    --success: #23964f;
+    --warn: #9a5800;
+    --danger: #d4382c;
+    --danger-hi: #b3261e;
     --danger-wash: rgba(201, 42, 42, 0.08);
-    --positive: #16803c;
+    --positive: #23964f;
     --positive-wash: rgba(22, 128, 60, 0.09);
 
     --shadow-sm: 0 1px 2px rgba(17, 17, 19, 0.06);
@@ -268,8 +286,8 @@
     /* A near-black fill lifts on hover rather than brightening to white. */
     --fill-hover: #33333a;
     /* White light on white does nothing, so the glow becomes accent light. */
-    --glow: rgba(47, 111, 235, 0.07);
-    --glow-strong: rgba(47, 111, 235, 0.11);
+    --glow: rgba(27, 78, 216, 0.07);
+    --glow-strong: rgba(27, 78, 216, 0.11);
     --grid-line: rgba(17, 17, 19, 0.045);
     --sheen: rgba(17, 17, 19, 0.14);
     --rule-fade: rgba(17, 17, 19, 0.22);
@@ -280,39 +298,39 @@
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --bg: #ffffff;
+  --bg: #fcfcfc;
   --bg-1: #fafafa;
   --bg-2: #f4f4f5;
-  --bg-3: #ededee;
-  --bg-4: #e6e6e8;
-  --bg-5: #dededf;
+  --bg-3: #efeff1;
+  --bg-4: #e8e8eb;
+  --bg-5: #e0e0e3;
 
-  --border: #e6e6e8;
-  --border-2: #d4d4d6;
-  --border-3: #b9b9bd;
+  --border: #e4e4e7;
+  --border-2: #d4d4d8;
+  --border-3: #b9b9bf;
 
-  --fg: #111113;
-  --fg-2: #56565c;
-  --fg-3: #6b6b72;
-  --fg-4: #6e6e75; /* 5.1:1 on --bg, 4.6:1 on --bg-2 */
+  --fg: #18181b;
+  --fg-2: #52525b;
+  --fg-3: #6b6b74;
+  --fg-4: #6b6b74; /* 5.1:1 on --bg, 4.6:1 on --bg-2 */
 
-  --accent: #2f6feb;
-  --accent-hi: #1d54c4;
-  --accent-lo: #4b8cf5;
-  --accent-wash: rgba(47, 111, 235, 0.09);
-  --accent-edge: rgba(47, 111, 235, 0.3);
-  --accent-tint: rgba(47, 111, 235, 0.045);
-  --accent-tint-2: rgba(47, 111, 235, 0.085);
-  --accent-hair: rgba(47, 111, 235, 0.2);
-  --accent-glow: rgba(47, 111, 235, 0.13);
+  --accent: #1b4ed8;
+  --accent-hi: #163fae;
+  --accent-lo: #3d68e0;
+  --accent-wash: rgba(27, 78, 216, 0.09);
+  --accent-edge: rgba(27, 78, 216, 0.3);
+  --accent-tint: rgba(27, 78, 216, 0.045);
+  --accent-tint-2: rgba(27, 78, 216, 0.085);
+  --accent-hair: rgba(27, 78, 216, 0.2);
+  --accent-glow: rgba(27, 78, 216, 0.13);
   --on-accent: #ffffff;
 
-  --success: #16803c;
-  --warn: #9a6700;
-  --danger: #c92a2a;
-  --danger-hi: #a51111;
+  --success: #23964f;
+  --warn: #9a5800;
+  --danger: #d4382c;
+  --danger-hi: #b3261e;
   --danger-wash: rgba(201, 42, 42, 0.08);
-  --positive: #16803c;
+  --positive: #23964f;
   --positive-wash: rgba(22, 128, 60, 0.09);
 
   --shadow-sm: 0 1px 2px rgba(17, 17, 19, 0.06);
@@ -325,8 +343,8 @@
   --scrim-soft: rgba(255, 255, 255, 0.66);
 
   --fill-hover: #33333a;
-  --glow: rgba(47, 111, 235, 0.07);
-  --glow-strong: rgba(47, 111, 235, 0.11);
+  --glow: rgba(27, 78, 216, 0.07);
+  --glow-strong: rgba(27, 78, 216, 0.11);
   --grid-line: rgba(17, 17, 19, 0.045);
   --sheen: rgba(17, 17, 19, 0.14);
   --rule-fade: rgba(17, 17, 19, 0.22);
@@ -391,7 +409,7 @@
    * the dim enough room to stay dim — 4.64:1 at 0.72, 5.79:1 at 0.85 — instead
    * of the label being brightened until it is white in all but name.
    */
-  --select-chip: #1d4fb8; /* 7.34:1 under white, 4.64:1 under white at 0.72 */
+  --select-chip: #1b4ed8; /* 7.34:1 under white, 4.64:1 under white at 0.72 */
   --on-select-chip: #ffffff;
   --hover-outline: var(--accent-edge);
 

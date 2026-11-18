@@ -123,7 +123,7 @@ export function ExportDialog(): React.ReactElement | null {
         <div className={styles.head}>
           <div>
             <div className={styles.title}>Export {project.name}</div>
-            <div className={styles.subtitle}>React + TypeScript + Vite · runs without Zory</div>
+            <div className={styles.subtitle}>React + TypeScript + Vite · runs without Studio</div>
           </div>
           <span className={styles.spacer} />
           <IconButton label="Close export" onClick={() => setOpen(false)}>

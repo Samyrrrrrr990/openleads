@@ -279,25 +279,23 @@ export const GitHubIcon = ({ size = 16, ...rest }: IconProps): React.ReactElemen
   </svg>
 );
 
+/** The OpenLeads mark: Studio is part of OpenLeads, so it wears the same logo. */
 export const ZoryMark = ({ size = 18, ...rest }: IconProps): React.ReactElement => (
   <svg
     width={size}
     height={size}
-    viewBox="0 0 20 20"
+    viewBox="0 0 32 32"
     fill="none"
     aria-hidden="true"
     focusable="false"
     {...rest}
   >
-    {/*
-      The mark is a Z read as a stack of three planes, a base row, a shifted
-      middle, and a top row: the override model the whole product runs on.
-    */}
-    <rect x="2" y="2.5" width="16" height="3.4" rx="1" fill="currentColor" />
-    <rect x="6.6" y="8.3" width="6.8" height="3.4" rx="1" fill="currentColor" opacity="0.62" />
-    <rect x="2" y="14.1" width="16" height="3.4" rx="1" fill="currentColor" />
+    <rect width="32" height="32" rx="8" fill="var(--brand-mark, var(--accent))" />
+    <path d="M8 8h16L8 24z" fill="#fff" />
   </svg>
 );
+
+export const BrandMark = ZoryMark;
 
 export const CheckIcon = (p: IconProps) => (
   <Icon {...p}>

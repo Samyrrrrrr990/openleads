@@ -3,11 +3,11 @@
  *
  * Three states rather than two. "System" is not a fallback for having no
  * preference, it is a preference: somebody whose laptop flips at sunset wants
- * Zory to flip with it, and collapsing that to a stored boolean the first time
+ * Studio to flip with it, and collapsing that to a stored boolean the first time
  * they touch a toggle is how products lose that.
  *
  * The choice is written to `<html data-theme>` and to localStorage. There is a
- * matching inline script in `index.html` that applies it before first paint,
+ * matching script, `public/theme.js`, that applies it before first paint,
  * because a dark-mode user seeing a white flash on every page load is the one
  * bug that makes theming feel bolted on.
  */
@@ -17,7 +17,8 @@ export type ThemeChoice = 'light' | 'dark' | 'system';
 /** What the page is actually showing, once `system` has been resolved. */
 export type ResolvedTheme = 'light' | 'dark';
 
-const STORAGE_KEY = 'zory.theme';
+// Shared with the OpenLeads app and the classic dashboard, so all three agree.
+const STORAGE_KEY = 'ol-theme';
 
 export const THEME_LABEL: Record<ThemeChoice, string> = {
   light: 'Light',

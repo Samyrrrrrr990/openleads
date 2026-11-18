@@ -1,13 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- The Zory mark: a Z read as three stacked planes — base, shifted middle,
-       top — the breakpoint override model the product is built on.
-
-       Palette matches the product: true black ground, #ededed foreground, and
-       the system blue on the middle plane so the mark carries the one accent
-       the interface uses. At 16px the shifted middle reads as a step rather
-       than as a letter, which is the intent. -->
-  <rect width="32" height="32" rx="7" fill="#000000"/>
-  <rect x="6" y="7" width="20" height="4.2" rx="1.3" fill="#ededed"/>
-  <rect x="11.8" y="13.9" width="8.4" height="4.2" rx="1.3" fill="#4b8cf5"/>
-  <rect x="6" y="20.8" width="20" height="4.2" rx="1.3" fill="#ededed"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>.b{fill:#1b4ed8}.f{fill:#fff}@media (prefers-color-scheme:dark){.b{fill:#346bf1}}</style><rect class="b" width="32" height="32" rx="8"/><path class="f" d="M8 8h16L8 24z"/></svg>

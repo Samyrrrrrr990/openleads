@@ -59,7 +59,7 @@ export function buildEnvFiles(values: IntegrationValues): ExportFile[] {
   if (configured.length === 0) return [];
 
   const header = [
-    '# Written by Zory from the services you connected.',
+    '# Written by OpenLeads Studio from the services you connected.',
     '#',
     '# Anything named VITE_* is compiled into the browser bundle and is public.',
     '# Anything else is read only by server code and stays private.',

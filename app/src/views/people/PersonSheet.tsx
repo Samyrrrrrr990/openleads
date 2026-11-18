@@ -9,7 +9,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/lib/api";
 import { ago, due, safeUrl } from "~/lib/format";
 import { useMeta } from "~/lib/meta";
-import { classic } from "~/lib/router";
+import { classic, href } from "~/lib/router";
 import { fail, toast } from "~/lib/toast";
 import type { Activity, Person, Task } from "~/lib/types";
 import { useApi } from "~/lib/use-api";
@@ -100,7 +100,10 @@ function Content({ email, onChanged }: { email: string; onChanged: () => void })
         <span className="text-xs text-muted-foreground">Fit {c.fit_score} of 100</span>
         {c.tier === "risky" && <span className="text-xs text-warning-foreground">Risky address</span>}
         {detail.data.suppressed && <span className="text-xs text-error-foreground">Unsubscribed</span>}
-        <Button size="sm" variant="outline" className="ms-auto max-md:h-10" render={<a href={classic("people", `people/${encodeURIComponent(c.email)}`)} />}>
+        <Button size="sm" variant="outline" className="ms-auto max-md:h-10" render={<a href={href("sites", "new", c.email)} />} title="Build them a better website">
+          <GlobeIcon /> Build site
+        </Button>
+        <Button size="sm" variant="outline" className="max-md:h-10" render={<a href={classic("people", `people/${encodeURIComponent(c.email)}`)} />}>
           Full record
         </Button>
       </div>

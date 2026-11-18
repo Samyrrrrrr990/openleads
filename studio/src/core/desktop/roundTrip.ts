@@ -242,7 +242,7 @@ export function readStylesheets(
 /** A one-line summary for the UI. */
 export function describeRoundTrip(result: RoundTripResult): string {
   const count = result.changes.length;
-  if (count === 0) return 'No changes Zory can read';
+  if (count === 0) return 'No changes Studio can read';
   const nodes = new Set(result.changes.map((change) => change.nodeId)).size;
   return `${count} change${count === 1 ? '' : 's'} across ${nodes} element${nodes === 1 ? '' : 's'}`;
 }

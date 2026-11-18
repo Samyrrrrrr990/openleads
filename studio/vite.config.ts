@@ -16,6 +16,18 @@ export default defineConfig({
     outDir: fileURLToPath(new URL('../openleads/web/studio', import.meta.url)),
     emptyOutDir: true,
     chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      // The editor, plus `auto.js`: Studio's engines for the app's Sites screen
+      // (templates, the command validator, the renderer) with no editor attached.
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        auto: fileURLToPath(new URL('./src/auto/index.ts', import.meta.url)),
+      },
+      preserveEntrySignatures: 'exports-only',
+      output: {
+        entryFileNames: (chunk) => (chunk.name === 'auto' ? 'auto.js' : 'assets/[name]-[hash].js'),
+      },
+    },
   },
   server: {
     port: 5174,

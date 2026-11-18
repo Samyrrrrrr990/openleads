@@ -360,7 +360,7 @@ export function authReadmeSection(provider: AuthProvider): string {
     '',
     '## Authentication',
     '',
-    `Email and password sign in, wired to your own ${name} project. Zory does not`,
+    `Email and password sign in, wired to your own ${name} project. Studio does not`,
     'run an auth service and holds none of your users — this is ordinary',
     `${name} code against the keys in \`.env\`.`,
     '',

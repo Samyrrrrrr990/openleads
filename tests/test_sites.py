@@ -98,6 +98,101 @@ def test_rename_link_delete(db):
     assert sites.delete(db, "site_abc123") is False
 
 
+def _lead(db, email="owner@northwind.example"):
+    db.upsert_lead({"email": email, "first_name": "Ann", "name": "Ann Lee",
+                    "organization": "Northwind Dental", "city": "Toronto", "tier": "safe"})
+
+
+def test_log_keeps_the_newest_lines(db):
+    sites.save(db, _project(), None, "", HTML)
+    sites.add_log(db, "site_abc123", [{"text": "Built", "kind": "build"}, {"text": " "}])
+    assert [x["text"] for x in sites.get(db, "site_abc123")["log"]] == ["Built"]
+    sites.add_log(db, "site_abc123", [{"text": f"line {i}"} for i in range(200)])
+    log = sites.get(db, "site_abc123")["log"]
+    assert len(log) == sites.LOG_MAX and log[-1]["text"] == "line 199"
+    with pytest.raises(ValueError):
+        sites.add_log(db, "site_nope", [{"text": "x"}])
+
+
+def test_email_offers_the_site(db, monkeypatch):
+    monkeypatch.setenv("OPENLEADS_SENDER_NAME", "Sam")
+    _lead(db)
+    sites.save(db, _project(), None, "owner@northwind.example", HTML)
+    out = sites.email_for(db, "site_abc123")
+    assert out["to"] == "owner@northwind.example"
+    assert out["subject"] == "A new website for Northwind Dental"
+    assert out["body"].startswith("Hi Ann,") and "{{site_url}}" in out["body"]
+    assert "in Toronto" in out["body"]
+    assert out["can_publish"] is False
+
+
+@pytest.fixture()
+def fake_send(monkeypatch):
+    from openleads.models import SendResult
+    calls = []
+
+    def send(drafts_, dry_run=True, db=None, campaign="", step=1, **kw):
+        calls.append((drafts_[0], campaign, step))
+        for d in drafts_:
+            db.record_touch(d.email, "sent", subject=d.subject, campaign=campaign, step=step)
+        return [SendResult(d.email, "sent", message_id="<m>") for d in drafts_]
+    monkeypatch.setattr("openleads.outreach.sender.send_drafts", send)
+    return calls
+
+
+def test_send_needs_a_link_when_the_email_uses_one(db, fake_send):
+    _lead(db)
+    sites.save(db, _project(), None, "owner@northwind.example", HTML)
+    with pytest.raises(ValueError, match="public link"):
+        sites.send(db, "site_abc123", "Hi", "See {{site_url}}")
+    assert fake_send == []
+
+
+def test_send_publishes_then_sends_the_link(db, fake_send, monkeypatch):
+    monkeypatch.setenv("OPENLEADS_SITE_BASE_URL", "https://demos.example.com")
+    _lead(db)
+    sites.save(db, _project(), None, "owner@northwind.example", HTML)
+    out = sites.send(db, "site_abc123", "A site for you", "Here: {{site_url}}")
+    assert out["status"] == "sent"
+    [(draft, campaign, step)] = fake_send
+    assert draft.body == "Here: https://demos.example.com/northwind-dental/"
+    assert (campaign, step) == ("sites", 1)
+    assert sites.get(db, "site_abc123")["sent"]["to"] == "owner@northwind.example"
+    # a second email to the same person is a follow-up
+    sites.send(db, "site_abc123", "Again", "Still here: {{site_url}}")
+    assert fake_send[1][2] == 2
+
+
+def test_send_refuses_a_site_with_no_lead(db, fake_send):
+    sites.save(db, _project(), None, "", HTML)
+    with pytest.raises(ValueError, match="isn't for a lead"):
+        sites.send(db, "site_abc123", "Hi", "There")
+
+
+def test_model_endpoint_waits_for_a_chosen_model(db, monkeypatch):
+    from openleads.web import sites_api
+    monkeypatch.setenv("OPENLEADS_AI_PROVIDER", "auto")
+    out = sites_api.POST["/api/sites/ai"]({"system": "s", "user": "u"})
+    assert out["ok"] is False and out["code"] == "no_model"
+    with pytest.raises(ValueError):
+        sites_api.POST["/api/sites/ai"]({"system": "", "user": "u"})
+
+
+def test_model_endpoint_returns_the_reply(db, monkeypatch):
+    from openleads import ai
+    from openleads.web import sites_api
+    seen = {}
+    monkeypatch.setattr(ai, "chosen", lambda: ai.Model(provider="anthropic", model="m", api_key="k"))
+
+    def chat(messages, model, **kw):
+        seen.update(kw)
+        return '[{"type":"SET_TEXT","nodeId":"a","text":"x"}]'
+    monkeypatch.setattr(ai, "chat", chat)
+    out = sites_api.POST["/api/sites/ai"]({"system": "s", "user": "u"})
+    assert out["ok"] is True and out["text"].startswith("[")
+    assert seen["untrusted"] is True     # lead details are other people's words
+
+
 def test_publish_without_token_writes_a_folder(db, tmp_path):
     sites.save(db, _project(), None, "", HTML)
     out = sites.publish(db, "site_abc123")

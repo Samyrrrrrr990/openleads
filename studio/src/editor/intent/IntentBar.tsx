@@ -110,7 +110,7 @@ export function IntentBar(): React.ReactElement | null {
     });
 
     if (!result.ok) {
-      setError({ message: `Zory refused that change: ${result.reason}`, suggestions: [] });
+      setError({ message: `Studio refused that change: ${result.reason}`, suggestions: [] });
       setProposal(null);
       return;
     }

@@ -54,8 +54,11 @@ the exact fixes.
 ## 3. Warm-up
 
 A brand-new mailbox that suddenly sends 200 cold emails gets flagged. Warm-up
-(**Outreach, Warm-up** in `openleads web`) brings it up to full volume and does
-two things every day:
+brings it up to full volume, and it starts the moment you connect a mailbox
+(**Settings, Connections, Mailbox**). The warm-up row right under your mailbox
+shows today's allowance, switches the plan (Gentle, Standard, Fast or Off) and
+adds seed inboxes in place; **Outreach, Warm-up** has the schedule and health.
+Every day it does two things:
 
 1. **Ramps cold volume** along a smooth curve to your `daily_cap`: slow at first,
    steady in the middle. Pick a plan:

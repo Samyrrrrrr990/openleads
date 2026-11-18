@@ -127,7 +127,7 @@ export const INTEGRATIONS: Integration[] = [
       {
         id: 'GITHUB_TOKEN',
         label: 'Fine-grained token',
-        hint: 'Give it Contents: read and write on the repositories you want Zory to push to. Nothing else.',
+        hint: 'Give it Contents: read and write on the repositories you want Studio to push to. Nothing else.',
         secret: true,
         placeholder: 'github_pat_…',
       },

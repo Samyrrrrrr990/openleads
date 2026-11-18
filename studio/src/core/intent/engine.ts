@@ -133,7 +133,7 @@ function buildProposal(
     if (accepted.length >= MAX_COMMANDS_PER_PROPOSAL) {
       skipped.push({
         what: `${commands.length - accepted.length} further changes`,
-        reason: `Zory applies at most ${MAX_COMMANDS_PER_PROPOSAL} changes at once.`,
+        reason: `Studio applies at most ${MAX_COMMANDS_PER_PROPOSAL} changes at once.`,
       });
       break;
     }
@@ -151,7 +151,7 @@ function buildProposal(
   if (accepted.length === 0) {
     throw new IntentError(
       skipped[0]
-        ? `Zory refused that change: ${skipped[0].reason}`
+        ? `Studio refused that change: ${skipped[0].reason}`
         : 'That produced no changes.',
     );
   }
@@ -218,7 +218,7 @@ export async function propose(
 
   throw (
     lastUserError ??
-    new IntentError('Zory could not turn that into a change. Try naming the property you want.')
+    new IntentError('Studio could not turn that into a change. Try naming the property you want.')
   );
 }
 

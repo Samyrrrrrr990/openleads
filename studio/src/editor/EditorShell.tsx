@@ -148,7 +148,7 @@ export function EditorShell({ local = false }: { local?: boolean } = {}): React.
         </h1>
         <p className={styles.missingBody}>
           {errorMessage ??
-            'Zory stores projects in this browser. If you opened this link on another machine, or cleared site data, the project will not be here.'}
+            'Studio keeps sites in your OpenLeads workspace. This one may have been deleted, or the link belongs to another workspace.'}
         </p>
         <Link to="/app/projects">
           <Button variant="primary" size="large">
@@ -177,7 +177,7 @@ export function EditorShell({ local = false }: { local?: boolean } = {}): React.
       <div className={styles.narrowNotice}>
         <h2 className={styles.missingTitle}>The editor needs a wider screen</h2>
         <p className={styles.missingBody}>
-          Zory’s canvas, layers and inspector need at least 900px to work side by side. Open this
+          Studio’s canvas, layers and inspector need at least 900px to work side by side. Open this
           project on a laptop or desktop.
         </p>
         <Link to="/app/projects">

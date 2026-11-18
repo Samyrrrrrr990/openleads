@@ -167,7 +167,7 @@ const ADAPTERS: Adapter[] = [
     call: openAiShaped(
       'https://openrouter.ai/api/v1/chat/completions',
       'google/gemma-4-26b-a4b-it:free',
-      { 'http-referer': 'https://zory.ca', 'x-title': 'Zory' },
+      { 'http-referer': 'https://github.com/Samyrrrrrr990/openleads', 'x-title': 'OpenLeads Studio' },
     ),
   },
 ];

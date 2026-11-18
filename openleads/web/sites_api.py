@@ -9,6 +9,10 @@ Studio's JSON API: the drag-and-drop editor stores its projects here.
     POST /api/sites/link             {id, lead}
     POST /api/sites/delete           {id}
     POST /api/sites/publish          {id}   static folder (+ Netlify deploy with a token)
+    POST /api/sites/log              {id, lines: [{text, kind}]}  what happened to it
+    GET  /api/sites/email?id=        a first email offering the site to its lead
+    POST /api/sites/send             {id, subject, body}  publish if needed, then send
+    POST /api/sites/ai               {system, user}  one answer from the model you chose
 """
 from __future__ import annotations
 
@@ -89,3 +93,45 @@ def sites_delete(db, p):
 @_route(POST, "/api/sites/publish")
 def sites_publish(db, p):
     return sites.publish(db, _id(p))
+
+
+@_route(POST, "/api/sites/log")
+def sites_log(db, p):
+    return {"log": sites.add_log(db, _id(p), p.get("lines") or [])}
+
+
+@_route(GET, "/api/sites/email")
+def sites_email(db, p):
+    return sites.email_for(db, _id(p))
+
+
+@_route(POST, "/api/sites/send")
+def sites_send(db, p):
+    """Email the lead their site. This really sends (through the approval queue)."""
+    return sites.send(db, _id(p), str(p.get("subject") or ""), str(p.get("body") or ""))
+
+
+AI_MAX_CHARS = 250_000
+
+
+@_route(POST, "/api/sites/ai")
+def sites_ai(db, p):
+    """Studio's prompts, answered by the model you picked (your Claude subscription,
+    a key, or a local model). The reply is a list of Zory commands; the browser
+    validates every one against the site before anything changes."""
+    from openleads import ai
+    system, user = str(p.get("system") or ""), str(p.get("user") or "")
+    if not system or not user:
+        raise ValueError("system and user are required")
+    if len(system) + len(user) > AI_MAX_CHARS:
+        raise ValueError("that site is too big to send to the model in one go")
+    m = ai.chosen()
+    if m is None:
+        return {"ok": False, "code": "no_model",
+                "detail": ai.problem() or "Pick a model first: Settings, Model."}
+    try:
+        text = ai.chat([{"role": "system", "content": system}, {"role": "user", "content": user}],
+                       m, max_tokens=8000, temperature=0.3, untrusted=True, timeout=300)
+    except ai.AIError as e:
+        return {"ok": False, "code": "failed", "detail": ai.public_error(str(e))}
+    return {"ok": True, "text": text, "model": m.label}

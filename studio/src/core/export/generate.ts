@@ -813,6 +813,6 @@ regenerated.
 
 ---
 
-Exported from Zory as \`${slug}\`.
+Exported from OpenLeads Studio as \`${slug}\`.
 `;
 }

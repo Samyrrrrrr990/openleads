@@ -6,6 +6,47 @@ All notable changes to OpenLeads are documented here. Format loosely follows
 
 ## [Unreleased]
 
+## [5.6.1] - 2026-11-18
+
+**Sites builds the whole thing for you, and warm-up starts with your mailbox.**
+
+### Sites, in one screen
+- Pick a lead (on Sites, or **Build site** on anyone in People) and OpenLeads
+  picks the template that fits their trade, puts their name, phone, email and
+  city on it, and has your model write the words for that business. Then you see
+  the site, live, next to a log of what was done. No trip to Studio.
+- The words come from your Claude subscription (or whatever model you picked).
+  It never invents awards, prices, years or reviews: those become short
+  placeholders in square brackets. **Use Claude** turns it on in one click.
+- Ask for changes in plain words ("make the headline shorter", "warmer colours").
+  The model writes Studio's editing commands and every one is checked against
+  the site before it's applied. **Undo** steps back through each change,
+  template switches and Claude's copy pass included.
+- **Send** drafts a short email offering the site to the lead, publishes it if
+  it isn't live, and sends it through your mailbox with the usual warm-up and
+  unsubscribe rules. A second send goes as a follow-up.
+- Desktop and phone previews, a template switcher, and **Studio** one click away
+  for hand layout.
+
+### Warm-up, part of connecting a mailbox
+- Connecting a mailbox starts the warm-up and says so. The row under your mailbox
+  shows today's allowance, switches the plan (Gentle, Standard, Fast, Off) and
+  adds seed inboxes in place.
+
+### Studio looks like OpenLeads
+- The OpenLeads logo, typeface, colours and blue buttons, in light and dark.
+- It follows the theme you chose in OpenLeads. Before, the server's security
+  policy blocked the script that read it, so Studio only followed the system.
+- No more "Zory" anywhere you can see, and save messages that say your sites
+  live in your workspace, not in this browser.
+
+### Under the hood
+- `/studio/auto.js`: Studio's engines (templates, the validator, the renderer)
+  as one module the app imports.
+- New endpoints: `GET /api/sites/email`, `POST /api/sites/send`, `/api/sites/log`,
+  `/api/sites/ai`. Site emails go through the approval queue as source `site`.
+- CI runs Studio's tests.
+
 ## [5.6.0] - 2026-11-17
 
 **Workflows you can describe, warm-up that warms, and Sites.**

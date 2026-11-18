@@ -39,7 +39,7 @@ NAV = [
         ("sequences", "Sequences", "Multi-step email, call and LinkedIn cadences that run themselves."),
         ("from-apollo", "Moving from Apollo", "Bring your contacts, lists and stages over from Apollo."),
         ("workflows", "Workflows", "Describe an automation in a sentence, read it as steps or wire it on a canvas, run it on a schedule."),
-        ("sites", "Sites", "Build a lead a better website in Studio and send them the link with {{site_url}}."),
+        ("sites", "Sites", "Pick a lead: the template, their details and the words are done for you. Preview it, then send the link."),
         ("ai", "Your model", "Use your Claude or ChatGPT subscription, an API key, or a free model to read requests, write and sort replies."),
         ("writing", "Writing emails", "How drafts are written from what OpenLeads knows, scored, and rewritten."),
         ("deliverability", "Deliverability", "The seven-signal engine that decides what is safe to send."),

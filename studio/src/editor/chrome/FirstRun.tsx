@@ -182,7 +182,7 @@ export function FirstRun(): React.ReactElement | null {
       {
         id: 'export',
         label: 'Take the code',
-        hint: 'Export gives you a React and TypeScript project. It is yours, with no Zory in it.',
+        hint: 'Export gives you a React and TypeScript project. It is yours, with no Studio in it.',
         done: seen.exported,
       },
     ],

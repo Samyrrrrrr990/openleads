@@ -1,4 +1,4 @@
-import { CheckIcon, ExternalLinkIcon, InboxIcon, ListChecksIcon, MailIcon, WebhookIcon } from "lucide-react";
+import { CheckIcon, ExternalLinkIcon, FlameIcon, InboxIcon, ListChecksIcon, MailIcon, WebhookIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Body, ErrorNote, LoadingRows } from "~/components/app/bits";
@@ -9,11 +9,12 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Spinner } from "~/components/ui/spinner";
 import { api } from "~/lib/api";
-import { classic } from "~/lib/router";
+import { classic, href } from "~/lib/router";
 import { PROVIDER_BRAND, PROVIDER_NAME, refreshSetup, saveSettings, type Setup, switchModel, useSetup } from "~/lib/setup";
-import { toast } from "~/lib/toast";
+import { fail, toast } from "~/lib/toast";
 import { useApi } from "~/lib/use-api";
 import { cn } from "~/lib/utils";
+import type { WarmupStatus } from "~/views/outreach/Warmup";
 
 const SECTION = sectionOf("settings");
 
@@ -386,6 +387,135 @@ function Models({ setup, focus }: { setup: Setup; focus?: string }) {
   );
 }
 
+// --- warm-up, as part of the mailbox --------------------------------------------- //
+
+const PHASE_TEXT: Record<string, string> = { ramping: "Ramping up", maintaining: "Warmed up", paused: "Cold sending paused", off: "Off" };
+
+/** Warm-up lives with the mailbox: a new address starts small and climbs, from the moment it's connected. */
+function WarmupRow() {
+  const res = useApi<WarmupStatus>("/api/warmup");
+  const [busy, setBusy] = useState("");
+  const [seed, setSeed] = useState({ email: "", password: "" });
+  const [adding, setAdding] = useState(false);
+  const w = res.data;
+  const post = async (path: string, body: Record<string, unknown>, key: string) => {
+    setBusy(key);
+    try {
+      await api.post(path, body);
+      await res.reload();
+      return true;
+    } catch (e) {
+      fail(e);
+      return false;
+    } finally {
+      setBusy("");
+    }
+  };
+  if (!w) {
+    return (
+      <li className="flex items-center gap-3 border-b border-border px-3.5 py-3 text-[13px] text-muted-foreground">
+        <PlainTile>
+          <FlameIcon className="size-4" />
+        </PlainTile>
+        {res.error ? res.error : "Reading warm-up"}
+      </li>
+    );
+  }
+  const plan = w.plans.find((p) => p.key === w.plan);
+  const note =
+    w.plan === "off"
+      ? `Off: cold email goes out up to your daily limit of ${w.target} from day one. Fine for an address that's been sending for months.`
+      : w.phase === "paused"
+        ? "Cold email is paused while bounces or spam reports settle. Warm-up notes keep going."
+        : w.phase === "maintaining"
+          ? `Warmed up: up to ${w.allowance} cold emails a day.${w.seeds.length ? ` Still sending ${w.warmup.planned} warm-up notes a day to keep it that way.` : ""}`
+          : `Day ${w.day} of about ${w.days}: ${w.allowance} cold emails today, climbing to ${w.target}.${w.seeds.length ? ` ${w.warmup.planned} warm-up notes to your seed inboxes today.` : " Add a seed inbox below and it also sends warm-up notes that build your reputation."}`;
+  return (
+    <li className="flex flex-col gap-3 border-b border-border px-3.5 py-3">
+      <div className="flex flex-wrap items-start gap-3">
+        <PlainTile>
+          <FlameIcon className="size-4" />
+        </PlainTile>
+        <div className="min-w-0 flex-1 basis-56">
+          <div className="flex items-center gap-2 text-[13px] font-medium">
+            Warm-up
+            <span className={cn("rounded-full px-1.5 text-2xs font-medium leading-4", w.phase === "paused" ? "bg-warning/15 text-warning-foreground" : w.phase === "off" ? "bg-muted text-muted-foreground" : "bg-success/12 text-success-foreground")}>{PHASE_TEXT[w.phase] ?? w.phase}</span>
+          </div>
+          <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground max-md:text-sm">{note}</p>
+        </div>
+        <div className="flex h-8 shrink-0 items-center rounded-lg border border-border p-0.5" role="group" aria-label="Warm-up plan">
+          {[...w.plans.map((p) => [p.key, p.label] as const), ["off", "Off"] as const].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={w.plan === key}
+              disabled={!!busy}
+              title={key === "off" ? "No ramp: the daily limit from day one" : w.plans.find((p) => p.key === key)?.note}
+              onClick={() => void post("/api/warmup/plan", { plan: key }, "plan").then((ok) => ok && toast(key === "off" ? "Warm-up off" : `${label} warm-up`))}
+              className={cn("h-full rounded-md px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60", w.plan === key && "bg-accent font-medium text-foreground")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {w.plan !== "off" && (
+        <div className="flex flex-col gap-2 ps-11 max-md:ps-0">
+          {plan && <p className="text-xs text-muted-foreground">{plan.note}</p>}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Seed inboxes:</span>
+            {w.seeds.length === 0 && <span className="text-xs text-muted-foreground">none yet</span>}
+            {w.seeds.map((s) => (
+              <span key={s.email} className="inline-flex h-6 items-center gap-1 rounded-full border border-border ps-2 pe-0.5 text-xs">
+                {s.email}
+                {s.automatic && <span className="text-muted-foreground">· automatic</span>}
+                <button type="button" aria-label={`Remove ${s.email}`} disabled={!!busy} className="grid size-5 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" onClick={() => void post("/api/warmup/seeds/remove", { email: s.email }, "seed")}>
+                  <XIcon className="size-3" />
+                </button>
+              </span>
+            ))}
+            {!adding && (
+              <Button size="xs" variant="ghost" onClick={() => setAdding(true)}>
+                Add one
+              </Button>
+            )}
+            <a className="ms-auto text-xs text-muted-foreground hover:text-foreground hover:underline" href={href("outreach", "warmup")}>
+              Schedule and health
+            </a>
+          </div>
+          {adding && (
+            <form
+              className="flex flex-wrap items-center gap-2"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!seed.email.trim()) return;
+                const ok = await post("/api/warmup/seeds/add", { email: seed.email.trim(), password: seed.password }, "seed");
+                if (ok) {
+                  toast(seed.password ? "Seed added. It checks placement and answers some notes" : "Seed added. Open and answer its notes now and then");
+                  setSeed({ email: "", password: "" });
+                  setAdding(false);
+                }
+              }}
+            >
+              <Input className="min-w-48 flex-1" placeholder="Another inbox you own" value={seed.email} onChange={(e) => setSeed({ ...seed, email: e.target.value })} aria-label="Seed inbox address" autoFocus />
+              <Input className="min-w-40 flex-1" type="password" placeholder="App password (optional)" value={seed.password} onChange={(e) => setSeed({ ...seed, password: e.target.value })} aria-label="Seed inbox app password" />
+              <Button size="sm" type="submit" disabled={!seed.email.trim() || busy === "seed"}>
+                {busy === "seed" && <Spinner />} Add
+              </Button>
+              <Button size="sm" variant="ghost" type="button" onClick={() => setAdding(false)}>
+                Cancel
+              </Button>
+              <p className="basis-full text-xs leading-5 text-muted-foreground">
+                OpenLeads sends short notes from your mailbox to it inside your send window. With an app password it also checks whether they land in the inbox, moves any out of spam and replies to some. The password stays on this computer.
+              </p>
+            </form>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
 // --- the mailbox --------------------------------------------------------------- //
 
 interface Preset {
@@ -444,7 +574,9 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
     });
     const first = Object.values(errors)[0];
     if (first) return first;
-    toast(`${m.title} connected`);
+    void api.post("/api/warmup/dns", {}).catch(() => undefined);
+    const w = await api.get<WarmupStatus>("/api/warmup").catch(() => null);
+    toast(w && w.plan !== "off" ? `${m.title} connected. Warm-up is on: ${w.allowance} cold emails today, climbing to ${w.target}` : `${m.title} connected`);
   };
 
   if (setup.mailbox) {
@@ -464,6 +596,7 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
             },
           }}
         />
+        <WarmupRow />
         <li className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-3.5 py-2.5 text-[13px] text-muted-foreground max-md:text-sm">
           <span className="min-w-0 flex-1 basis-56" role="status">
             {tested === "" ? "Changed your password? Check that the mailbox still logs in." : tested}
@@ -507,7 +640,7 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
           }}
         />
         <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 text-[13px] text-muted-foreground">
-          <span className="min-w-0 flex-1 basis-56">Daily limit, warm-up pace, and the name people see</span>
+          <span className="min-w-0 flex-1 basis-56">Daily limit and the name people see</span>
           <a className="shrink-0 font-medium text-foreground hover:underline max-md:inline-flex max-md:h-10 max-md:items-center" href={classic("settings", "settings/sending")}>
             Sending settings
           </a>
@@ -516,7 +649,7 @@ function Mailbox({ setup, focus }: { setup: Setup; focus?: string }) {
     );
   }
   return (
-    <Group id="mailbox" focus={focus} title="Mailbox" note="Pick where your email lives. OpenLeads sends from your own address and nothing sends without your approval. Your password stays on this computer, in a file only you can read.">
+    <Group id="mailbox" focus={focus} title="Mailbox" note="Pick where your email lives. OpenLeads sends from your own address and nothing sends without your approval. A new address warms up on its own: cold email starts small and climbs. Your password stays on this computer, in a file only you can read.">
       {MAIL.map((m) => {
         const url = /https?:\/\/[^\s)]+/.exec(presets[m.key]?.help ?? "")?.[0];
         const custom = m.key === "custom";

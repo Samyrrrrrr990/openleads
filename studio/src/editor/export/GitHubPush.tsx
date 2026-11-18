@@ -48,7 +48,7 @@ export function GitHubPush({
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [repoId, setRepoId] = useState<string>('');
   const [newRepoName, setNewRepoName] = useState(slug);
-  const [message, setMessage] = useState(`Update ${projectName} from Zory`);
+  const [message, setMessage] = useState(`Update ${projectName} from OpenLeads Studio`);
   const [progress, setProgress] = useState<{ fraction: number; label: string } | null>(null);
   const [result, setResult] = useState<{ url: string; sha: string; branch: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function GitHubPush({
         setProgress({ fraction: 0.01, label: `Creating ${newRepoName}` });
         target = await createRepo(token, newRepoName, {
           private: true,
-          description: `${projectName}, built with Zory.`,
+          description: `${projectName}, built with OpenLeads Studio.`,
         });
       }
 
@@ -145,7 +145,7 @@ export function GitHubPush({
         <p className={styles.githubTitle}>Push to GitHub</p>
         <p className={styles.githubBody}>
           Add a fine-grained token in Settings, with Contents: read and write on the repositories you
-          want Zory to push to. It stays in this browser and is never sent to us.
+          want Studio to push to. It stays in this browser and is never sent to us.
         </p>
         <a className={styles.githubLink} href="/app/settings">
           Open settings
@@ -164,7 +164,7 @@ export function GitHubPush({
       {phase === 'idle' || phase === 'loading' ? (
         <>
           <p className={styles.githubBody}>
-            Zory will read the repositories your token can write to. Nothing is pushed until you say
+            Studio will read the repositories your token can write to. Nothing is pushed until you say
             so.
           </p>
           <Button variant="outline" disabled={phase === 'loading'} onClick={() => void connect()}>

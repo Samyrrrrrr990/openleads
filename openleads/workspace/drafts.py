@@ -19,7 +19,7 @@ import time
 from openleads import settings
 from openleads.models import Draft
 
-SOURCES = ("sequence", "workflow", "ask")
+SOURCES = ("sequence", "workflow", "ask", "site")
 _GONE = ("replied", "bounced")
 REPLY_LOOKBACK = 30 * 86400     # a reply this recent means you're in a conversation
 _NO_MAILBOX = ("no SMTP host", "no mailbox credentials")
