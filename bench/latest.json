@@ -1,39 +1,71 @@
 {
   "version": "5.6.1",
-  "date": "2026-11-19",
+  "date": "2026-11-20",
   "count_per_query": 10,
   "repeat": 1,
   "totals": {
-    "leads": 118,
+    "leads": 113,
     "people": 69,
-    "found": 72,
+    "found": 56,
     "pattern": 3,
-    "guessed": 43,
+    "guessed": 54,
     "junk_names": 1,
     "queries": 13,
     "queries_with_results": 13,
-    "fill_rate": 0.908,
-    "evidence_rate": 0.636,
+    "fill_rate": 0.869,
+    "evidence_rate": 0.522,
     "junk_rate": 0.014,
-    "median_seconds": 51.5
+    "median_seconds": 21.6
   },
   "queries": [
     {
       "query": "dentists in Austin",
-      "leads": 9,
-      "people": 6,
-      "found": 6,
+      "leads": 7,
+      "people": 0,
+      "found": 7,
       "pattern": 0,
-      "guessed": 3,
+      "guessed": 0,
       "junk_names": 0,
-      "seconds": 38.1,
+      "seconds": 30.4,
       "error": "",
       "sample": [
-        " <austin@blvddentistry.com> \u00b7 BLVD Dentistry & Orthodontics",
-        "Jaleesa Dandridge <jaleesa.dandridge@blvddentistry.com> \u00b7 BLVD Dentistry & Orthodontics",
-        "Mayra Saldana <mayra.saldana@blvddentistry.com> \u00b7 BLVD Dentistry & Orthodontics"
+        " <ctpd@ctpdkid.com> \u00b7 Central Texas Pediatric Dentistry",
+        " <smile@canvasdental.com> \u00b7 Canvas Dental",
+        " <admin@emergencydentalaustin.com> \u00b7 Austin Emergency Dental"
       ],
-      "notes": "9/10 leads in 38.1s \u00b7 sources ran out of results \u00b7 local degraded",
+      "notes": "7/10 leads in 30.4s \u00b7 sources ran out of results \u00b7 local degraded",
+      "sources": {
+        "local": "degraded"
+      },
+      "problem": "local: degraded \u2014 overpass-api.de: HTTP 502",
+      "repeat": 1,
+      "leads_range": [
+        7,
+        7,
+        7
+      ],
+      "seconds_range": [
+        30.4,
+        30.4,
+        30.4
+      ]
+    },
+    {
+      "query": "marketing agencies in Miami",
+      "leads": 9,
+      "people": 7,
+      "found": 3,
+      "pattern": 0,
+      "guessed": 6,
+      "junk_names": 0,
+      "seconds": 34.9,
+      "error": "",
+      "sample": [
+        " <office@missionmorph.com> \u00b7 Mission Morph",
+        "Valentin Madzharov <valentin.madzharov@missionmorph.com> \u00b7 Mission Morph",
+        "Juan E. Galvan <juan.galvan@kobedigital.com> \u00b7 Kobe Digital"
+      ],
+      "notes": "9/10 leads in 34.9s \u00b7 sources ran out of results \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
@@ -45,59 +77,27 @@
         9
       ],
       "seconds_range": [
-        38.1,
-        38.1,
-        38.1
-      ]
-    },
-    {
-      "query": "marketing agencies in Miami",
-      "leads": 9,
-      "people": 7,
-      "found": 3,
-      "pattern": 0,
-      "guessed": 6,
-      "junk_names": 0,
-      "seconds": 51.5,
-      "error": "",
-      "sample": [
-        " <office@missionmorph.com> \u00b7 Mission Morph",
-        "Valentin Madzharov <valentin.madzharov@missionmorph.com> \u00b7 Mission Morph",
-        "Juan E. Galvan <juan.galvan@kobedigital.com> \u00b7 Kobe Digital"
-      ],
-      "notes": "9/10 leads in 51.5s \u00b7 sources ran out of results \u00b7 local degraded",
-      "sources": {
-        "local": "degraded"
-      },
-      "problem": "local: degraded \u2014 overpass-api.de: timed out",
-      "repeat": 1,
-      "leads_range": [
-        9,
-        9,
-        9
-      ],
-      "seconds_range": [
-        51.5,
-        51.5,
-        51.5
+        34.9,
+        34.9,
+        34.9
       ]
     },
     {
       "query": "law firms in London",
       "leads": 9,
-      "people": 6,
-      "found": 3,
+      "people": 7,
+      "found": 2,
       "pattern": 0,
-      "guessed": 6,
+      "guessed": 7,
       "junk_names": 0,
-      "seconds": 60.0,
+      "seconds": 13.9,
       "error": "",
       "sample": [
-        " <info@ateshsolicitors.com> \u00b7 Atesh Solicitors",
-        " <info@aronastjames.co.uk> \u00b7 Arona St James",
-        "Richard Baxter <richard.baxter@streathers.co.uk> \u00b7 Streathers Solicitors"
+        "Julian Chavez <julian.chavez@lancasters-solicitors.com> \u00b7 Lancasters Solicitors",
+        " <enquiries@krestonsolicitors.com> \u00b7 Kreston",
+        "Lee Reed <lee.reed@reeds.co.uk> \u00b7 Reeds Solicitors"
       ],
-      "notes": "9/10 leads in 60.0s \u00b7 time budget reached \u00b7 local degraded \u00b7 companies empty \u00b7 edgar failed",
+      "notes": "9/10 leads in 13.9s \u00b7 sources ran out of results \u00b7 local degraded \u00b7 companies empty \u00b7 edgar failed",
       "sources": {
         "local": "degraded",
         "companies": "empty",
@@ -111,59 +111,59 @@
         9
       ],
       "seconds_range": [
-        60.0,
-        60.0,
-        60.0
+        13.9,
+        13.9,
+        13.9
       ]
     },
     {
       "query": "accountants in Toronto",
-      "leads": 10,
-      "people": 7,
-      "found": 7,
+      "leads": 5,
+      "people": 3,
+      "found": 2,
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 29.6,
+      "seconds": 21.6,
       "error": "",
       "sample": [
-        "Samantha Marisa <samantha.marisa@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
-        "Liam Willson <liam.willson@valuecorp.ca> \u00b7 Ayoub Alam Mohammad",
-        "Ava Ludger <ava.ludger@valuecorp.ca> \u00b7 Ayoub Alam Mohammad"
+        " <info@vtac.ca> \u00b7 VTAC Accounting & Tax",
+        " <info@mudharcpa.ca> \u00b7 Mudhar CPA Professional Corporation",
+        "Richard Clarke <richard.clarke@deethco.com> \u00b7 Deeth & Co. LLP Chartered Accountants"
       ],
-      "notes": "10/10 leads in 29.6s \u00b7 local degraded",
+      "notes": "5/10 leads in 21.6s \u00b7 sources ran out of results \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
-      "problem": "",
+      "problem": "local: degraded \u2014 overpass\u2192nominatim (all mirrors paused after recent failures)",
       "repeat": 1,
       "leads_range": [
-        10,
-        10,
-        10
+        5,
+        5,
+        5
       ],
       "seconds_range": [
-        29.6,
-        29.6,
-        29.6
+        21.6,
+        21.6,
+        21.6
       ]
     },
     {
       "query": "software companies in Berlin",
       "leads": 10,
-      "people": 0,
-      "found": 10,
+      "people": 2,
+      "found": 8,
       "pattern": 0,
-      "guessed": 0,
+      "guessed": 2,
       "junk_names": 0,
-      "seconds": 55.4,
+      "seconds": 27.4,
       "error": "",
       "sample": [
         " <buero@bergemann-gartenbau.de> \u00b7 Garten-, Landschafts- und Sportplatzbau Christian Bergemann",
         " <info@qfm.eu> \u00b7 QFM Fernmelde- und Elektromontagen GmbH",
         " <info@dns-net.de> \u00b7 DNS:NET"
       ],
-      "notes": "10/10 leads in 55.4s \u00b7 local degraded \u00b7 companies empty \u00b7 edgar failed",
+      "notes": "10/10 leads in 27.4s \u00b7 local degraded \u00b7 companies empty \u00b7 edgar failed",
       "sources": {
         "local": "degraded",
         "companies": "empty",
@@ -177,59 +177,59 @@
         10
       ],
       "seconds_range": [
-        55.4,
-        55.4,
-        55.4
+        27.4,
+        27.4,
+        27.4
       ]
     },
     {
       "query": "gyms in Sydney",
-      "leads": 9,
-      "people": 0,
+      "leads": 10,
+      "people": 1,
       "found": 9,
       "pattern": 0,
-      "guessed": 0,
+      "guessed": 1,
       "junk_names": 0,
-      "seconds": 61.0,
+      "seconds": 46.3,
       "error": "",
       "sample": [
-        " <rockdale@fernwoodfitness.com.au> \u00b7 Fernwood Fitness",
-        " <alexandria@9degrees.com.au> \u00b7 9 Degrees Alexandria",
-        " <hurstville@clublime.com.au> \u00b7 Club Lime"
+        " <chatswood@9degrees.com.au> \u00b7 9 degrees Chatswood",
+        " <info@climbfit.com.au> \u00b7 Climb Fit",
+        " <rockdale@fernwoodfitness.com.au> \u00b7 Fernwood Fitness"
       ],
-      "notes": "9/10 leads in 61.0s \u00b7 time budget reached \u00b7 local degraded",
+      "notes": "10/10 leads in 46.3s \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
-      "problem": "local: degraded \u2014 overpass-api.de: timed out",
+      "problem": "",
       "repeat": 1,
       "leads_range": [
-        9,
-        9,
-        9
+        10,
+        10,
+        10
       ],
       "seconds_range": [
-        61.0,
-        61.0,
-        61.0
+        46.3,
+        46.3,
+        46.3
       ]
     },
     {
       "query": "fintech founders",
       "leads": 10,
       "people": 10,
-      "found": 1,
+      "found": 0,
       "pattern": 0,
-      "guessed": 9,
+      "guessed": 10,
       "junk_names": 1,
-      "seconds": 16.8,
+      "seconds": 9.1,
       "error": "",
       "sample": [
         "Aditya Acharya <aditya.acharya@havenservicing.com> \u00b7 Haven",
         "Owen Botkin <owen.botkin@forum.market> \u00b7 Forum",
         "Benjamin Nguyen <benjamin.nguyen@masterpiecelabs.xyz> \u00b7 Masterpiece"
       ],
-      "notes": "10/10 leads in 16.8s \u00b7 yc ok \u00b7 hn ok",
+      "notes": "10/10 leads in 9.1s \u00b7 yc ok \u00b7 hn ok",
       "sources": {
         "yc": "ok",
         "hn": "ok"
@@ -242,27 +242,27 @@
         10
       ],
       "seconds_range": [
-        16.8,
-        16.8,
-        16.8
+        9.1,
+        9.1,
+        9.1
       ]
     },
     {
       "query": "AI startup founders",
       "leads": 10,
       "people": 7,
-      "found": 6,
+      "found": 4,
       "pattern": 0,
-      "guessed": 4,
+      "guessed": 6,
       "junk_names": 0,
-      "seconds": 13.4,
+      "seconds": 13.7,
       "error": "",
       "sample": [
-        "Daniel Habib <daniel@true3d.com> \u00b7 True3D",
+        "Daniel Habib <daniel.habib@true3d.com> \u00b7 True3D",
         " <general@idealjob.app> \u00b7 outGoing",
-        "Ty Sharp <ty@inbuild.ai> \u00b7 inBuild"
+        "Max Clarke <max.clarke@usepostal.com> \u00b7 Postal"
       ],
-      "notes": "10/10 leads in 13.4s \u00b7 yc ok \u00b7 hn ok",
+      "notes": "10/10 leads in 13.7s \u00b7 yc ok \u00b7 hn ok",
       "sources": {
         "yc": "ok",
         "hn": "ok"
@@ -275,27 +275,27 @@
         10
       ],
       "seconds_range": [
-        13.4,
-        13.4,
-        13.4
+        13.7,
+        13.7,
+        13.7
       ]
     },
     {
       "query": "rust developers in Berlin",
       "leads": 10,
       "people": 10,
-      "found": 8,
+      "found": 7,
       "pattern": 0,
-      "guessed": 2,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 51.5,
+      "seconds": 3.2,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
         "James Munns <james@onevariable.com> \u00b7 oxidecomputer",
         "Orhun Parmaks\u0131z <orhunparmaksiz@gmail.com> \u00b7 ratatui | @jetbrains | @archlinux"
       ],
-      "notes": "10/10 leads in 51.5s \u00b7 github ok",
+      "notes": "10/10 leads in 3.2s \u00b7 github ok",
       "sources": {
         "github": "ok"
       },
@@ -307,9 +307,9 @@
         10
       ],
       "seconds_range": [
-        51.5,
-        51.5,
-        51.5
+        3.2,
+        3.2,
+        3.2
       ]
     },
     {
@@ -320,14 +320,14 @@
       "pattern": 0,
       "guessed": 10,
       "junk_names": 0,
-      "seconds": 25.6,
+      "seconds": 7.4,
       "error": "",
       "sample": [
         "Robin Rombach <robin.rombach@uni-heidelberg.de> \u00b7 Heidelberg University",
         "Andreas Blattmann <andreas.blattmann@uni-heidelberg.de> \u00b7 Heidelberg University",
         "Dominik Lorenz <dominik.lorenz@uni-heidelberg.de> \u00b7 Heidelberg University"
       ],
-      "notes": "10/10 leads in 25.6s \u00b7 openalex ok",
+      "notes": "10/10 leads in 7.3s \u00b7 openalex ok",
       "sources": {
         "openalex": "ok"
       },
@@ -339,9 +339,9 @@
         10
       ],
       "seconds_range": [
-        25.6,
-        25.6,
-        25.6
+        7.4,
+        7.4,
+        7.4
       ]
     },
     {
@@ -352,14 +352,14 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 4.6,
+      "seconds": 1.6,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
         " <sales@stripe.com> \u00b7 stripe.com",
         "Patrick Collison <patrick.collison@stripe.com> \u00b7 stripe.com"
       ],
-      "notes": "4/10 leads in 4.6s \u00b7 sources ran out of results \u00b7 domains ok",
+      "notes": "4/10 leads in 1.6s \u00b7 sources ran out of results \u00b7 domains ok",
       "sources": {
         "domains": "ok"
       },
@@ -371,59 +371,59 @@
         4
       ],
       "seconds_range": [
-        4.6,
-        4.6,
-        4.6
+        1.6,
+        1.6,
+        1.6
       ]
     },
     {
       "query": "real estate agents in Chicago",
-      "leads": 8,
-      "people": 3,
-      "found": 7,
+      "leads": 9,
+      "people": 6,
+      "found": 5,
       "pattern": 1,
-      "guessed": 0,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 53.0,
+      "seconds": 31.2,
       "error": "",
       "sample": [
-        " <contact@centercoastrealty.com> \u00b7 Center Coast Realty",
+        " <helaine@chicagocondofinder.com> \u00b7 Chicago Condo Finder",
         " <marketing@zerillorealty.com> \u00b7 Zerillo Realty",
-        " <info@fultongrace.com> \u00b7 Fulton Grace Realty"
+        "Patrick Harrington <patrick.harrington@becknellindustrial.com> \u00b7 Becknell Industrial"
       ],
-      "notes": "8/10 leads in 53.0s \u00b7 sources ran out of results \u00b7 local degraded",
+      "notes": "9/10 leads in 31.2s \u00b7 sources ran out of results \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
-      "problem": "local: degraded \u2014 overpass-api.de: timed out",
+      "problem": "local: degraded \u2014 overpass-api.de: HTTP 502",
       "repeat": 1,
       "leads_range": [
-        8,
-        8,
-        8
+        9,
+        9,
+        9
       ],
       "seconds_range": [
-        53.0,
-        53.0,
-        53.0
+        31.2,
+        31.2,
+        31.2
       ]
     },
     {
       "query": "plumbers in Denver",
       "leads": 10,
-      "people": 0,
-      "found": 10,
+      "people": 3,
+      "found": 7,
       "pattern": 0,
-      "guessed": 0,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 54.3,
+      "seconds": 48.6,
       "error": "",
       "sample": [
         " <spike@goldenspikeroofing.com> \u00b7 Golden Spike Roofing Inc",
-        " <info@abacuscabinetry.com> \u00b7 Abacus Cabinetry, Inc.",
-        " <info@skyyguard.com> \u00b7 Skyyguard"
+        "Christie Gorman-McCarthy <christie.gormanmccarthy@goldenspikeroofing.com> \u00b7 Golden Spike Roofing Inc",
+        "Melissa Schulte <melissa.schulte@goldenspikeroofing.com> \u00b7 Golden Spike Roofing Inc"
       ],
-      "notes": "10/10 leads in 54.3s \u00b7 local degraded",
+      "notes": "10/10 leads in 48.6s \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
@@ -435,9 +435,9 @@
         10
       ],
       "seconds_range": [
-        54.3,
-        54.3,
-        54.3
+        48.6,
+        48.6,
+        48.6
       ]
     }
   ]
