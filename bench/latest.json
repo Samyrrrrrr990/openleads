@@ -1,39 +1,39 @@
 {
   "version": "5.6.1",
-  "date": "2026-11-21",
+  "date": "2026-11-22",
   "count_per_query": 10,
   "repeat": 1,
   "totals": {
-    "leads": 122,
-    "people": 81,
-    "found": 71,
+    "leads": 114,
+    "people": 71,
+    "found": 70,
     "pattern": 3,
-    "guessed": 48,
+    "guessed": 41,
     "junk_names": 1,
     "queries": 13,
-    "queries_with_results": 13,
-    "fill_rate": 0.938,
-    "evidence_rate": 0.607,
-    "junk_rate": 0.012,
-    "median_seconds": 37.1
+    "queries_with_results": 12,
+    "fill_rate": 0.877,
+    "evidence_rate": 0.64,
+    "junk_rate": 0.014,
+    "median_seconds": 35.2
   },
   "queries": [
     {
       "query": "dentists in Austin",
       "leads": 10,
-      "people": 6,
+      "people": 4,
       "found": 7,
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 37.1,
+      "seconds": 35.2,
       "error": "",
       "sample": [
-        " <austin@blvddentistry.com> \u00b7 BLVD Dentistry & Orthodontics",
-        "Jaleesa Dandridge <jaleesa.dandridge@blvddentistry.com> \u00b7 BLVD Dentistry & Orthodontics",
-        "Mayra Saldana <mayra.saldana@blvddentistry.com> \u00b7 BLVD Dentistry & Orthodontics"
+        " <info@kcdentalaustin.com> \u00b7 KC Dental",
+        " <ctpd@ctpdkid.com> \u00b7 Central Texas Pediatric Dentistry",
+        " <info@mydentalsmiles.com> \u00b7 Dental Smiles Family and Cosmetic"
       ],
-      "notes": "10/10 leads in 37.1s \u00b7 local degraded",
+      "notes": "10/10 leads in 35.2s \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
@@ -45,9 +45,9 @@
         10
       ],
       "seconds_range": [
-        37.1,
-        37.1,
-        37.1
+        35.2,
+        35.2,
+        35.2
       ]
     },
     {
@@ -58,14 +58,14 @@
       "pattern": 0,
       "guessed": 6,
       "junk_names": 0,
-      "seconds": 35.7,
+      "seconds": 36.0,
       "error": "",
       "sample": [
         " <office@missionmorph.com> \u00b7 Mission Morph",
         "Valentin Madzharov <valentin.madzharov@missionmorph.com> \u00b7 Mission Morph",
         "Juan E. Galvan <juan.galvan@kobedigital.com> \u00b7 Kobe Digital"
       ],
-      "notes": "10/10 leads in 35.7s \u00b7 local degraded",
+      "notes": "10/10 leads in 36.0s \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
@@ -77,27 +77,27 @@
         10
       ],
       "seconds_range": [
-        35.7,
-        35.7,
-        35.7
+        36.0,
+        36.0,
+        36.0
       ]
     },
     {
       "query": "law firms in London",
       "leads": 10,
-      "people": 8,
+      "people": 9,
       "found": 7,
-      "pattern": 1,
-      "guessed": 2,
+      "pattern": 0,
+      "guessed": 3,
       "junk_names": 0,
-      "seconds": 39.2,
+      "seconds": 37.5,
       "error": "",
       "sample": [
-        " <info@hillmanlegal.co.uk> \u00b7 Hillman Legal Partnerships",
-        "Ken Smart Aff.SWW <ken.affsww@hillmanlegal.co.uk> \u00b7 Hillman Legal Partnerships",
-        "Gordon Stacey Cook <gordon@hillmanlegal.co.uk> \u00b7 Hillman Legal Partnerships"
+        " <raynespark@howell-jones.com> \u00b7 howell jones solicitors",
+        "Liz Whittle <liz.whittle@howell-jones.com> \u00b7 howell jones solicitors",
+        "Emma Sayers <emma.sayers@howell-jones.com> \u00b7 howell jones solicitors"
       ],
-      "notes": "10/10 leads in 39.2s \u00b7 local degraded \u00b7 companies empty \u00b7 edgar failed",
+      "notes": "10/10 leads in 37.5s \u00b7 local degraded \u00b7 companies empty \u00b7 edgar failed",
       "sources": {
         "local": "degraded",
         "companies": "empty",
@@ -111,27 +111,27 @@
         10
       ],
       "seconds_range": [
-        39.2,
-        39.2,
-        39.2
+        37.5,
+        37.5,
+        37.5
       ]
     },
     {
       "query": "accountants in Toronto",
       "leads": 10,
-      "people": 6,
-      "found": 6,
+      "people": 7,
+      "found": 4,
       "pattern": 0,
-      "guessed": 4,
+      "guessed": 6,
       "junk_names": 0,
-      "seconds": 58.8,
+      "seconds": 29.4,
       "error": "",
       "sample": [
-        " <support@liquiditycurve.com> \u00b7 Liquidity Curve Systems Inc",
-        "Vinod Gupta <vinod.gupta@liquiditycurve.com> \u00b7 Liquidity Curve Systems Inc",
-        " <info@firptacanada.ca> \u00b7 FIRPTA CANADA"
+        " <info@mudharcpa.ca> \u00b7 Mudhar CPA Professional Corporation",
+        " <info@gondaliyacpa.ca> \u00b7 Gondaliya CPA",
+        "Sharad Gondaliya <sharad@gondaliyacpa.ca> \u00b7 Gondaliya CPA"
       ],
-      "notes": "10/10 leads in 58.8s \u00b7 local degraded",
+      "notes": "10/10 leads in 29.4s \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
@@ -143,31 +143,63 @@
         10
       ],
       "seconds_range": [
-        58.8,
-        58.8,
-        58.8
+        29.4,
+        29.4,
+        29.4
       ]
     },
     {
       "query": "software companies in Berlin",
+      "leads": 10,
+      "people": 0,
+      "found": 10,
+      "pattern": 0,
+      "guessed": 0,
+      "junk_names": 0,
+      "seconds": 60.0,
+      "error": "",
+      "sample": [
+        " <info@bundesdruckerei.de> \u00b7 Bundesdruckerei",
+        " <vertrieb.berlin@kiesel.net> \u00b7 Kiesel Ost GmbH",
+        " <info@jonas-redmann.com> \u00b7 Jonas & Redmann - The Automation Company"
+      ],
+      "notes": "10/10 leads in 60.0s \u00b7 time budget reached \u00b7 local timeout \u00b7 companies empty \u00b7 edgar failed",
+      "sources": {
+        "local": "timeout",
+        "companies": "empty",
+        "edgar": "failed"
+      },
+      "problem": "",
+      "repeat": 1,
+      "leads_range": [
+        10,
+        10,
+        10
+      ],
+      "seconds_range": [
+        60.0,
+        60.0,
+        60.0
+      ]
+    },
+    {
+      "query": "gyms in Sydney",
       "leads": 10,
       "people": 3,
       "found": 7,
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 58.7,
+      "seconds": 38.6,
       "error": "",
       "sample": [
-        " <info@dns-net.de> \u00b7 DNS:NET",
-        " <info@3dcontentlogistics.com> \u00b7 3D Content Logistics GmbH",
-        " <info@procurand.de> \u00b7 Procurand"
+        " <penshurst@jetts.com.au> \u00b7 Jetts Fitness",
+        " <alexandria@9degrees.com.au> \u00b7 9 Degrees Alexandria",
+        " <info@inspiredstudio.com.au> \u00b7 Inspired"
       ],
-      "notes": "10/10 leads in 58.7s \u00b7 local degraded \u00b7 companies empty \u00b7 edgar failed",
+      "notes": "10/10 leads in 38.6s \u00b7 local degraded",
       "sources": {
-        "local": "degraded",
-        "companies": "empty",
-        "edgar": "failed"
+        "local": "degraded"
       },
       "problem": "",
       "repeat": 1,
@@ -177,41 +209,9 @@
         10
       ],
       "seconds_range": [
-        58.7,
-        58.7,
-        58.7
-      ]
-    },
-    {
-      "query": "gyms in Sydney",
-      "leads": 8,
-      "people": 0,
-      "found": 8,
-      "pattern": 0,
-      "guessed": 0,
-      "junk_names": 0,
-      "seconds": 40.6,
-      "error": "",
-      "sample": [
-        " <chatswood@9degrees.com.au> \u00b7 9 degrees Chatswood",
-        " <rockdale@fernwoodfitness.com.au> \u00b7 Fernwood Fitness",
-        " <hurstville@clublime.com.au> \u00b7 Club Lime"
-      ],
-      "notes": "8/10 leads in 40.6s \u00b7 sources ran out of results \u00b7 local degraded",
-      "sources": {
-        "local": "degraded"
-      },
-      "problem": "local: degraded \u2014 overpass.private.coffee: timed out",
-      "repeat": 1,
-      "leads_range": [
-        8,
-        8,
-        8
-      ],
-      "seconds_range": [
-        40.6,
-        40.6,
-        40.6
+        38.6,
+        38.6,
+        38.6
       ]
     },
     {
@@ -222,14 +222,14 @@
       "pattern": 0,
       "guessed": 9,
       "junk_names": 1,
-      "seconds": 16.1,
+      "seconds": 17.5,
       "error": "",
       "sample": [
         "Aditya Acharya <aditya.acharya@havenservicing.com> \u00b7 Haven",
         "Owen Botkin <owen.botkin@forum.market> \u00b7 Forum",
         "Benjamin Nguyen <benjamin.nguyen@masterpiecelabs.xyz> \u00b7 Masterpiece"
       ],
-      "notes": "10/10 leads in 16.1s \u00b7 yc ok \u00b7 hn ok",
+      "notes": "10/10 leads in 17.5s \u00b7 yc ok \u00b7 hn ok",
       "sources": {
         "yc": "ok",
         "hn": "ok"
@@ -242,9 +242,9 @@
         10
       ],
       "seconds_range": [
-        16.1,
-        16.1,
-        16.1
+        17.5,
+        17.5,
+        17.5
       ]
     },
     {
@@ -255,14 +255,14 @@
       "pattern": 0,
       "guessed": 5,
       "junk_names": 0,
-      "seconds": 12.6,
+      "seconds": 12.0,
       "error": "",
       "sample": [
         "Daniel Habib <daniel@true3d.com> \u00b7 True3D",
         " <general@idealjob.app> \u00b7 outGoing",
         "Max Clarke <max.clarke@usepostal.com> \u00b7 Postal"
       ],
-      "notes": "10/10 leads in 12.6s \u00b7 yc ok \u00b7 hn ok",
+      "notes": "10/10 leads in 12.0s \u00b7 yc ok \u00b7 hn ok",
       "sources": {
         "yc": "ok",
         "hn": "ok"
@@ -275,9 +275,9 @@
         10
       ],
       "seconds_range": [
-        12.6,
-        12.6,
-        12.6
+        12.0,
+        12.0,
+        12.0
       ]
     },
     {
@@ -288,14 +288,14 @@
       "pattern": 0,
       "guessed": 2,
       "junk_names": 0,
-      "seconds": 51.4,
+      "seconds": 51.7,
       "error": "",
       "sample": [
         "Rust Saiargaliev <rust.saiargaliev@amureki.me> \u00b7 voiio",
         "James Munns <james@onevariable.com> \u00b7 oxidecomputer",
         "Orhun Parmaks\u0131z <orhunparmaksiz@gmail.com> \u00b7 ratatui | @jetbrains | @archlinux"
       ],
-      "notes": "10/10 leads in 51.4s \u00b7 github ok",
+      "notes": "10/10 leads in 51.7s \u00b7 github ok",
       "sources": {
         "github": "ok"
       },
@@ -307,41 +307,37 @@
         10
       ],
       "seconds_range": [
-        51.4,
-        51.4,
-        51.4
+        51.7,
+        51.7,
+        51.7
       ]
     },
     {
       "query": "machine learning researchers",
-      "leads": 10,
-      "people": 10,
+      "leads": 0,
+      "people": 0,
       "found": 0,
       "pattern": 0,
-      "guessed": 10,
+      "guessed": 0,
       "junk_names": 0,
-      "seconds": 29.7,
-      "error": "",
-      "sample": [
-        "Robin Rombach <robin.rombach@uni-heidelberg.de> \u00b7 Heidelberg University",
-        "Andreas Blattmann <andreas.blattmann@uni-heidelberg.de> \u00b7 Heidelberg University",
-        "Dominik Lorenz <dominik.lorenz@uni-heidelberg.de> \u00b7 Heidelberg University"
-      ],
-      "notes": "10/10 leads in 29.7s \u00b7 openalex ok",
+      "seconds": 16.2,
+      "error": "openalex: failed \u2014 api.openalex.org: HTTP 429 (rate-limited)",
+      "sample": [],
+      "notes": "0/10 leads in 16.2s \u00b7 sources ran out of results \u00b7 openalex failed",
       "sources": {
-        "openalex": "ok"
+        "openalex": "failed"
       },
-      "problem": "",
+      "problem": "openalex: failed \u2014 api.openalex.org: HTTP 429 (rate-limited)",
       "repeat": 1,
       "leads_range": [
-        10,
-        10,
-        10
+        0,
+        0,
+        0
       ],
       "seconds_range": [
-        29.7,
-        29.7,
-        29.7
+        16.2,
+        16.2,
+        16.2
       ]
     },
     {
@@ -352,14 +348,14 @@
       "pattern": 2,
       "guessed": 0,
       "junk_names": 0,
-      "seconds": 5.1,
+      "seconds": 4.7,
       "error": "",
       "sample": [
         "Jane Diaz <jane.diaz@stripe.com> \u00b7 stripe.com",
         " <sales@stripe.com> \u00b7 stripe.com",
         "Patrick Collison <patrick.collison@stripe.com> \u00b7 stripe.com"
       ],
-      "notes": "4/10 leads in 5.1s \u00b7 sources ran out of results \u00b7 domains ok",
+      "notes": "4/10 leads in 4.7s \u00b7 sources ran out of results \u00b7 domains ok",
       "sources": {
         "domains": "ok"
       },
@@ -371,27 +367,27 @@
         4
       ],
       "seconds_range": [
-        5.1,
-        5.1,
-        5.1
+        4.7,
+        4.7,
+        4.7
       ]
     },
     {
       "query": "real estate agents in Chicago",
       "leads": 10,
       "people": 7,
-      "found": 9,
-      "pattern": 0,
+      "found": 8,
+      "pattern": 1,
       "guessed": 1,
       "junk_names": 0,
-      "seconds": 31.8,
+      "seconds": 32.6,
       "error": "",
       "sample": [
-        " <contact@centercoastrealty.com> \u00b7 Center Coast Realty",
         " <helaine@chicagocondofinder.com> \u00b7 Chicago Condo Finder",
-        "Patrick Harrington <pharrington@becknellindustrial.com> \u00b7 Becknell Industrial"
+        " <marketing@zerillorealty.com> \u00b7 Zerillo Realty",
+        " <info@fultongrace.com> \u00b7 Fulton Grace Realty"
       ],
-      "notes": "10/10 leads in 31.8s \u00b7 local degraded",
+      "notes": "10/10 leads in 32.6s \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
@@ -403,9 +399,9 @@
         10
       ],
       "seconds_range": [
-        31.8,
-        31.8,
-        31.8
+        32.6,
+        32.6,
+        32.6
       ]
     },
     {
@@ -416,14 +412,14 @@
       "pattern": 0,
       "guessed": 3,
       "junk_names": 0,
-      "seconds": 50.9,
+      "seconds": 52.2,
       "error": "",
       "sample": [
         " <spike@goldenspikeroofing.com> \u00b7 Golden Spike Roofing Inc",
         "Christie Gorman-McCarthy <christie.gormanmccarthy@goldenspikeroofing.com> \u00b7 Golden Spike Roofing Inc",
         "Melissa Schulte <melissa.schulte@goldenspikeroofing.com> \u00b7 Golden Spike Roofing Inc"
       ],
-      "notes": "10/10 leads in 50.9s \u00b7 local degraded",
+      "notes": "10/10 leads in 52.2s \u00b7 local degraded",
       "sources": {
         "local": "degraded"
       },
@@ -435,9 +431,9 @@
         10
       ],
       "seconds_range": [
-        50.9,
-        50.9,
-        50.9
+        52.2,
+        52.2,
+        52.2
       ]
     }
   ]
